@@ -58,8 +58,8 @@ void HbTextEditPrivate::init()
     mTextBaseLinePen.setWidthF((qreal)1.0);
 
     q->setScrollable(true);
-    setBackgroundItem(HbStyle::P_TextEdit_frame_normal);
-    q->setFocusHighlight(HbStyle::P_TextEdit_frame_highlight,HbWidget::FocusHighlightActive);
+    setBackgroundItem(HbStylePrivate::P_TextEdit_frame_normal);
+    setFocusHighlight((HbStyle::Primitive)HbStylePrivate::P_TextEdit_frame_highlight,HbWidget::FocusHighlightActive);
 }
 
 void HbTextEditPrivate::updatePaletteFromTheme()
@@ -72,6 +72,8 @@ void HbTextEditPrivate::updatePaletteFromTheme()
     QColor selectedBackground = HbColorScheme::color("qtc_textedit_marker_normal");
     QColor hintText = HbColorScheme::color("qtc_textedit_hint_normal");
     mTextBaseLinePen.setColor(HbColorScheme::color("qtc_textedit_normal"));
+    setCursorColor(HbColorScheme::color("qtc_textedit_cursor"));
+
     QPalette pal = q->palette();
 
     if (textColor.isValid()) {

@@ -27,6 +27,8 @@
 
 #include <qtsingleapplication.h>
 
+#include <f32file.h>
+
 class HbThemeServer;
 
 class HbThemeServerApplication : public QtSingleApplication
@@ -37,23 +39,9 @@ public:
     HbThemeServerApplication(int &argc, char *argv[]);
     ~HbThemeServerApplication();
 
-    struct Options {
-        static bool help;
-        static bool start;
-        static bool stop;
-        static bool persistent;
-        static QString error;
-    };
-
     bool initialize();
     int exec();
     static void setPriority();
-
-public slots:
-    void stop();
-
-private slots:
-    void receiveMessage(const QString &message);
 
 private:
     bool loadLibrary(const QString &name);
@@ -61,8 +49,7 @@ private:
     HbThemeServer *server;
 };
 
-#ifdef Q_OS_SYMBIAN
-#include <f32file.h>
+
 class Lock
 {
 public:
@@ -86,7 +73,6 @@ private:
     RFs mFs;
     RFile mFile;
 };
-#endif
 
 // Guard against starting multiple copies of the server
 class HbThemeServerLocker
@@ -97,9 +83,7 @@ public:
 private:
     static bool serverExists();
 private:
-#ifdef Q_OS_SYMBIAN
     Lock mLock;
-#endif
 };
 
 #endif // HBTHEMESERVERAPPLICATION_P_H

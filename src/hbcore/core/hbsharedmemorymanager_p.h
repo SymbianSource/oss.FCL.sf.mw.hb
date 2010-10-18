@@ -49,19 +49,19 @@ class HB_CORE_PRIVATE_EXPORT HbSharedMemoryManager
     : public HbMemoryManager
 {
 public:
-    int alloc( int size );
-    int realloc( int oldOffset,int newSize );
-    void free( int offset );
+    // Allocates a new HbSharedMemoryManager
+    static HbSharedMemoryManager* create();
+
+    qptrdiff alloc( int size );
+    qptrdiff realloc( qptrdiff oldOffset,int newSize );
+    void free( qptrdiff offset );
     void *base();
-    bool isWritable()
-    {
-        return writable;
-    }
-    static HbMemoryManager *instance();
-    static void releaseInstance();
     int size();
-    HbSharedCache *createSharedCache(
-        const char *offsetMapData, int size, int offsetItemCount, int sharedCacheOffset = -1);
+    HbSharedCache *createSharedCache(const char *dataArray,
+                                     int size,
+                                     int offsetItemCount,
+                                     int globalParametersOffset,
+                                     qptrdiff sharedCacheOffset = -1);
     HbSharedCache *cache();
 
     int freeSharedMemory();
@@ -74,24 +74,22 @@ public:
 protected:
     HbSharedMemoryManager();
     ~HbSharedMemoryManager();
+    bool initialize();
 
 private:
-    bool initialize();
     int loadMemoryFile(const QString &filePath);
     template<typename T>
-    inline T *address(int offset)
+    inline T *address(qptrdiff offset)
     {
         return reinterpret_cast<T *>(static_cast<char *>(base()) + offset);
     }
 
 protected:
-    bool writable;
     HbSharedMemoryAllocator *mainAllocator;
     HbSharedMemoryAllocator *subAllocator;
     HbSharedMemoryWrapper *chunk;
 
 private:
-    static HbSharedMemoryManager *memManager;
 
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
     int totalAllocated;

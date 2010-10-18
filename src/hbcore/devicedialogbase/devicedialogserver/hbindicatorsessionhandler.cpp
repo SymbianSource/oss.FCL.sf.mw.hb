@@ -28,6 +28,7 @@
 #include <qdatastream.h>
 #include <QVariantMap>
 #include <hbdevicedialogtrace_p.h>
+#include <hbdevicedialogerrors_p.h>
 #include "hbdevicedialogsession_p.h"
 #include "hbdevicedialogserversym_p_p.h"
 #include "hbdevicedialogserverdefs_p.h"
@@ -125,8 +126,8 @@ void HbIndicatorSessionHandler::HandleMessageL( const RMessage2 &aMessage )
         break;
     }
     case EHbSrvActivatedIndicatorData: {
-		WriteIndicatorDataL(aMessage);
-		break;		
+        WriteIndicatorDataL(aMessage);
+        break;      
     }
     default: {
         break;
@@ -173,12 +174,12 @@ void HbIndicatorSessionHandler::IndicatorsDeactivated(
 
 void HbIndicatorSessionHandler::IndicatorUserActivated(const QVariantMap& data)
 {
-	QString type = data.value("type").toString();
-		
-	if (indicatorTypes.contains(type) && iIndicatorChannelOpen) {
-		indicatorDataMap = data;
-		TRAP_IGNORE(WriteIndicatorDataL(iIndicatorChannel));
-	}
+    QString type = data.value("type").toString();
+        
+    if (indicatorTypes.contains(type) && iIndicatorChannelOpen) {
+        indicatorDataMap = data;
+        TRAP_IGNORE(WriteIndicatorDataL(iIndicatorChannel));
+    }
 }
 
 HbDeviceDialogServerPrivate& HbIndicatorSessionHandler::Server()
@@ -190,16 +191,18 @@ HbDeviceDialogServerPrivate& HbIndicatorSessionHandler::Server()
     \internal
     handle indicator activation.
 */
-void HbIndicatorSessionHandler::ActivateIndicatorL( const RMessage2 &aMessage )
+void HbIndicatorSessionHandler::ActivateIndicatorL(const RMessage2 &aMessage)
 {
     TRACE_ENTRY
+    
+    QString type;
     QVariant parameter;
-    QString type = indicatorTypeFromMessageL(aMessage, parameter);
-    if (!indicatorTypes.contains(type)) {
-        indicatorTypes.append(type);
-    }
+    indicatorTypeFromMessageL(aMessage, type, parameter);
     HbDeviceDialogServer::IndicatorParameters indicatorParameters(type, aMessage, parameter);
     TInt result = Server().activateIndicator(indicatorParameters);
+    if (result == HbDeviceDialogNoError && !indicatorTypes.contains(type)) {
+        indicatorTypes.append(type); // there is heap to append if activate succeeded
+    }
     aMessage.Complete(result);
     TRACE_EXIT_ARGS("result: " << result)
 }
@@ -211,14 +214,15 @@ void HbIndicatorSessionHandler::ActivateIndicatorL( const RMessage2 &aMessage )
 void HbIndicatorSessionHandler::DeactivateIndicatorL( const RMessage2 &aMessage )
 {
     TRACE_ENTRY
+    QString type;
     QVariant parameter;
-    QString type = indicatorTypeFromMessageL(aMessage, parameter);
+    indicatorTypeFromMessageL(aMessage, type, parameter);
     indicatorTypes.removeAll(type);
     
     if (indicatorTypes.isEmpty() && iIndicatorChannelOpen) {
-		indicatorDataMap.clear();
-		iIndicatorChannelOpen = false;
-		iIndicatorChannel.Complete(KErrCancel);
+        indicatorDataMap.clear();
+        iIndicatorChannelOpen = false;
+        iIndicatorChannel.Complete(KErrCancel);
     }    
     
     HbDeviceDialogServer::IndicatorParameters indicatorParameters(type, aMessage, parameter);
@@ -364,8 +368,8 @@ TInt HbIndicatorSessionHandler::DoWriteIndicatorInfoL(TInt &error)
 
 void HbIndicatorSessionHandler::WriteIndicatorDataL(const RMessage2& aMessage)
 {    
-	iIndicatorChannelOpen = EFalse;
-	QByteArray array;
+    iIndicatorChannelOpen = EFalse;
+    QByteArray array;
     QDataStream stream( &array, QIODevice::WriteOnly );
 
     QVariant var(indicatorDataMap);
@@ -374,43 +378,46 @@ void HbIndicatorSessionHandler::WriteIndicatorDataL(const RMessage2& aMessage)
     // Get client data buffer size
     TInt size = aMessage.GetDesMaxLength( KSlot0 );
     
-	TPckgBuf<TInt> buf( EHbIndicatorUserActivated );	
-	User::LeaveIfError(aMessage.Write(KSlot1, buf));
+    TPckgBuf<TInt> buf( EHbIndicatorUserActivated );    
+    User::LeaveIfError(aMessage.Write(KSlot1, buf));
 
     if (size >= array.size()) {
-		// Buffer ok. Write data.
-		TPtr8 ptr( reinterpret_cast<TUint8*>(array.data()), array.size(), array.size());
-		TInt error = aMessage.Write( KSlot0, ptr );		
-		aMessage.Complete(error);
-		indicatorDataMap.clear();
+        // Buffer ok. Write data.
+        TPtr8 ptr( reinterpret_cast<TUint8*>(array.data()), array.size(), array.size());
+        TInt error = aMessage.Write( KSlot0, ptr );     
+        aMessage.Complete(error);
+        indicatorDataMap.clear();
     } else {
-		aMessage.Complete(array.size());
+        aMessage.Complete(array.size());
     }    
 }
 /*!
     \internal
     get the indicator type and parameter from the message.
 */
-QString HbIndicatorSessionHandler::indicatorTypeFromMessageL(const RMessage2 &aMessage,
-		QVariant &parameter) const
+void HbIndicatorSessionHandler::indicatorTypeFromMessageL(const RMessage2 &aMessage,
+    QString &indicatorType, QVariant &parameter) const
 {
     TRACE_ENTRY
-    TInt dataSize = aMessage.GetDesLength( KSlot0 );
+    TInt dataSize = aMessage.GetDesLength(KSlot0);
+    if (dataSize < 0) {
+        User::Leave(KErrBadDescriptor);
+    }
 
-    HBufC8* data = HBufC8::NewLC( dataSize );
-    TPtr8 ptr( data->Des() );
-    aMessage.ReadL( KSlot0, ptr );
+    HBufC8* data = HBufC8::NewLC(dataSize);
+    TPtr8 ptr(data->Des());
+    aMessage.ReadL(KSlot0, ptr);
 
-    QByteArray resArray( (const char*) ptr.Ptr(), ptr.Size() );
-    QDataStream outStream( &resArray, QIODevice::ReadOnly );
-    QString indicatorType;
-
-    outStream >> indicatorType;
-    outStream >> parameter;
-
-    CleanupStack::PopAndDestroy( data );
+    int error = KErrNone;
+    QT_TRYCATCH_ERROR(error,
+        QByteArray resArray((const char*) ptr.Ptr(), ptr.Size());
+        QDataStream outStream(&resArray, QIODevice::ReadOnly);
+        outStream >> indicatorType;
+        outStream >> parameter;
+    )
+    User::LeaveIfError(error);
+    CleanupStack::PopAndDestroy(data);
     TRACE_EXIT
-    return indicatorType;
 }
 
 /*!

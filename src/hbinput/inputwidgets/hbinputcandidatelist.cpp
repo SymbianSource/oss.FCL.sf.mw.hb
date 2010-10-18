@@ -34,23 +34,25 @@
 
 #include <hbdeviceprofile.h>
 
+#include <HbFrameDrawer>
+#include <hbframedrawerpool_p.h>
 #include <hbinputmethod.h>
 #include <hbinputsettingproxy.h>
 #include <hbinputvkbhost.h>
 #include <hbinputregioncollector_p.h>
 
-#include "hbdialog_p.h"
+#include "hbinputpopupbase_p.h"
 
+const QString HbCandidateListBackground("qtg_fr_popup_secondary");
 const int HbCandListDefaultNumRows = 5;
 const qreal HbCandListMaxWidthMultiplier = 0.8;
 const qreal HbCandListMinWidth = 30.0;
 const qreal HbAutoComplPopupSideMargin = 15.0;
-const qreal HbAutoComplPopupVerticalMargin = 15.0;
 const qreal HbAutoComplPopupMinAllowedHeight = 25.0;
 
 /// @cond
 
-class HbCandidateListPrivate : public HbDialogPrivate
+class HbCandidateListPrivate : public HbInputPopupBasePrivate
 {
     Q_DECLARE_PUBLIC(HbCandidateList)
 
@@ -58,7 +60,7 @@ public:
     HbCandidateListPrivate(HbInputMethod *input);
     ~HbCandidateListPrivate();
     void calculateAndSetSize(qreal maxWidth);
-    void initFrameIcon();
+    void setBackground();
 
 public:
     HbListWidget *mList;
@@ -66,7 +68,6 @@ public:
     int numRows;
     int numCandidates;
     int longestStringWidth;
-    HbFrameItem *mFrameBackground;
     HbListWidgetItem *mSpellQueryItem;
     bool mCandidateCommitted;
     bool mSpellQueryOpenIsPending;
@@ -77,14 +78,11 @@ HbCandidateListPrivate::HbCandidateListPrivate(HbInputMethod *input)
       numRows(HbCandListDefaultNumRows),
       numCandidates(0),
       longestStringWidth(0),
-      mFrameBackground(0),
       mSpellQueryItem(0),
       mCandidateCommitted(false),
       mSpellQueryOpenIsPending(false)
 {
-    Q_Q(HbCandidateList);
-
-    mList = new HbListWidget(q);
+    mList = new HbListWidget();
     mList->setEnabledAnimations(HbAbstractItemView::None);
 }
 
@@ -92,15 +90,14 @@ HbCandidateListPrivate::~HbCandidateListPrivate()
 {
 }
 
-void HbCandidateListPrivate::initFrameIcon()
+void HbCandidateListPrivate::setBackground()
 {
-    Q_Q(HbCandidateList);
-
-    mFrameBackground = static_cast<HbFrameItem *>(q->primitive(HbStyle::P_Popup_background));
-
-    if (mFrameBackground == 0) {
-        mFrameBackground = static_cast<HbFrameItem *>(q->style()->createPrimitive((HbStyle::Primitive)(HbStyle::P_Popup_background), q));
-    }
+  Q_Q(HbCandidateList);
+  HbFrameDrawer *drawer = HbFrameDrawerPool::get(HbCandidateListBackground, HbFrameDrawer::NinePieces, QSizeF(q->boundingRect().width(), q->boundingRect().height()));
+  if (drawer) {
+    drawer->setFillWholeRect(true);
+    q->setBackgroundItem(new HbFrameItem(drawer));
+  }
 }
 
 
@@ -144,7 +141,7 @@ void HbCandidateListPrivate::calculateAndSetSize(qreal maxWidth)
 /// @endcond
 
 /*!
-@proto
+@stable
 @hbinput
 \class HbCandidateList
 \brief Hb based candidate list popup.
@@ -162,18 +159,15 @@ Constructor.
 @param parent parent of the widget.
 */
 HbCandidateList::HbCandidateList(HbInputMethod *input, QGraphicsItem *parent)
-    : HbDialog(*new HbCandidateListPrivate(input), parent)
+    : HbInputPopupBase(*new HbCandidateListPrivate(input), parent)
 {
     Q_D(HbCandidateList);
 
     HbInputRegionCollector::instance()->attach(this);
 
-    d->setPriority(HbPopupPrivate::VirtualKeyboard + 1);  // Should be shown on top of virtual keyboard.
-    d->initFrameIcon();
-
-    // Make sure the preview pane never steals focus.
-    setFlag(QGraphicsItem::ItemIsPanel, true);
-    setActive(false);
+    d->setBackground();
+  
+    d->mList->setParent(this);
 
     setTimeout(NoTimeout);
     setAttribute(Qt::WA_InputMethodEnabled, false);
@@ -196,13 +190,14 @@ Populates the candidate list with text strings given as parameter.
 void HbCandidateList::populateList(const QStringList &candidates, bool addSpellQuery)
 {
     Q_D(HbCandidateList);
-	// Only for the first time when we launch candidate list its not setting a layout, 
-	// Mostly the problem is form Qt side, for the time being to resolve issue related to candidate list
-	// making visible property true.  
+    // Only for the first time when we launch candidate list its not setting a layout, 
+    // Mostly the problem is form Qt side, for the time being to resolve issue related to candidate list
+    // making visible property true.  
     setVisible(true);
+    QEvent event(QEvent::Polish);
+    QApplication::sendEvent(this, &event);
     setContentWidget(d->mList);
 
-    d->setPriority(HbPopupPrivate::VirtualKeyboard + 1);  // Should be shown on top of virtual keyboard.
     d->mList->clear();
 
     int longestwidth = 0;
@@ -331,14 +326,6 @@ void HbCandidateList::hideEvent(QHideEvent *event)
     }
 }
 
-void HbCandidateList::updatePrimitives()
-{
-    Q_D(HbCandidateList);
-
-    d->mFrameBackground->frameDrawer().setFrameType(HbFrameDrawer::NinePieces);
-    d->mFrameBackground->frameDrawer().setFrameGraphicsName("qtg_fr_popup_secondary");
-    d->mFrameBackground->setGeometry(boundingRect());
-}
 
 /*!
 Finds correct size and position for auto-completion popup. It checks if there is enough space to display candidate popup,
@@ -358,11 +345,11 @@ bool HbCandidateList::setSizeAndPositionForAutoCompletion(HbVkbHost *vkbHost)
             freeViewRect.contains(microFocus)) {
             QRectF topRect = freeViewRect;
             topRect.setBottom(microFocus.top());
-            topRect.adjust(HbAutoComplPopupSideMargin, HbAutoComplPopupVerticalMargin, -HbAutoComplPopupSideMargin, -HbAutoComplPopupVerticalMargin);
+            topRect.adjust(HbAutoComplPopupSideMargin, 0, -HbAutoComplPopupSideMargin, 0);
 
             QRectF bottomRect = freeViewRect;
             bottomRect.setTop(microFocus.bottom());
-            bottomRect.adjust(HbAutoComplPopupSideMargin, HbAutoComplPopupVerticalMargin, -HbAutoComplPopupSideMargin, -HbAutoComplPopupVerticalMargin);
+            bottomRect.adjust(HbAutoComplPopupSideMargin, 0, -HbAutoComplPopupSideMargin, 0);
 
             if (topRect.height() > bottomRect.height()) {
                 if (topRect.height() > HbAutoComplPopupMinAllowedHeight) {

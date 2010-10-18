@@ -26,6 +26,7 @@
 #include "hbtitlepane_p.h"
 #include "hbtitlepane_p_p.h"
 #include "hbevent.h"
+#include "hbstyle_p.h"
 
 #include <hbstyleoptiontitlepane_p.h>
 #include <hbapplication.h>
@@ -35,7 +36,6 @@
 #include <hbmenu.h>
 #include <hbtapgesture.h>
 #include <hbswipegesture.h>
-#include <hbpangesture.h>
 #include <hbmarqueeitem.h>
 
 #include <QGestureEvent>
@@ -43,9 +43,7 @@
 
 #include <QGraphicsSceneMouseEvent>
 
-/*!
-	@beta
-    @hbcore
+/*
     \class HbTitlePane
     \brief HbTitlePane represents a title pane decorator.
 
@@ -54,7 +52,8 @@
 */
 
 HbTitlePanePrivate::HbTitlePanePrivate() :
-    mText(), mTextItem(0), mToggled(false), mIcon(0), mMode(QIcon::Normal), mTouchArea(0)
+    mText(), mTextItem(0), mIcon(0), mMode(QIcon::Normal), mTouchArea(0), mMargueeAnimation(false),
+    mTapStarted(false), mSwipeStarted(false)
 {
 
 }
@@ -72,29 +71,17 @@ void HbTitlePanePrivate::init()
     q->setText(HbApplication::applicationName());
 }
 
-void HbTitlePanePrivate::toggle(bool on)
-{
-    mToggled = on;
-}
-
 void HbTitlePanePrivate::createPrimitives()
 {
     Q_Q(HbTitlePane);
 
-    mTextItem = q->style()->createPrimitive(HbStyle::P_TitlePane_text, q);
-    mIcon = q->style()->createPrimitive(HbStyle::P_TitlePane_icon, q);
-    mTouchArea = q->style()->createPrimitive(HbStyle::P_TitlePane_toucharea, q);
-
-    QGraphicsObject *touchArea = static_cast<QGraphicsObject*>(mTouchArea);
-    touchArea->grabGesture(Qt::TapGesture);
-    touchArea->grabGesture(Qt::SwipeGesture);
-    touchArea->grabGesture(Qt::PanGesture);
-
+    mTextItem = HbStylePrivate::createPrimitive(HbStylePrivate::P_TitlePane_text, q);
+    mIcon = HbStylePrivate::createPrimitive(HbStylePrivate::P_TitlePane_icon, q);
+    mTouchArea = HbStylePrivate::createPrimitive(HbStylePrivate::P_TitlePane_toucharea, q);
     q->ungrabGesture(Qt::TapGesture);
     q->ungrabGesture(Qt::SwipeGesture);
-    q->ungrabGesture(Qt::PanGesture);
 
-    setBackgroundItem(HbStyle::P_TitlePane_background);
+    setBackgroundItem(HbStylePrivate::P_TitlePane_background);
 }
 
 void HbTitlePanePrivate::updatePrimitives()
@@ -102,10 +89,100 @@ void HbTitlePanePrivate::updatePrimitives()
     Q_Q(HbTitlePane);
     HbStyleOptionTitlePane option;
     q->initStyleOption(&option);
-    q->style()->updatePrimitive(q->backgroundItem(), HbStyle::P_TitlePane_background, &option);
-    q->style()->updatePrimitive(mTextItem, HbStyle::P_TitlePane_text, &option);
-    q->style()->updatePrimitive(mIcon, HbStyle::P_TitlePane_icon, &option);
-    q->style()->updatePrimitive(mTouchArea, HbStyle::P_TitlePane_toucharea, &option);
+    HbStylePrivate::updatePrimitive(q->backgroundItem(), HbStylePrivate::P_TitlePane_background, &option);
+    HbStylePrivate::updatePrimitive(mTextItem, HbStylePrivate::P_TitlePane_text, &option);
+    HbStylePrivate::updatePrimitive(mIcon, HbStylePrivate::P_TitlePane_icon, &option);
+    HbStylePrivate::updatePrimitive(mTouchArea, HbStylePrivate::P_TitlePane_toucharea, &option);
+}
+
+void HbTitlePanePrivate::handleTap(HbTapGesture *tap)
+{
+    Q_Q(HbTitlePane);
+    switch (tap->state()) {
+    case Qt::GestureStarted:
+        if (q->scene()) {
+            q->scene()->setProperty(HbPrivate::OverridingGesture.latin1(), Qt::TapGesture);
+            tap->setProperty(HbPrivate::ThresholdRect.latin1(), q->mapRectToScene(q->boundingRect()).toRect());
+        }
+        mMode = QIcon::Active;
+        updatePrimitives();
+#ifdef HB_EFFECTS
+        HbEffect::start(q, "decorator", "pressed");
+#endif
+        HbWidgetFeedback::triggered(q, Hb::InstantPressed);
+        mTapStarted = true;
+        break;
+
+    case Qt::GestureCanceled: 
+        cancelTap();
+        break;
+
+    case Qt::GestureFinished: {
+        if (q->scene()) {
+            q->scene()->setProperty(HbPrivate::OverridingGesture.latin1(), QVariant());
+        }
+        mMode = QIcon::Selected;
+        updatePrimitives();
+#ifdef HB_EFFECTS
+        HbEffect::start(q, "decorator", "latched");
+#endif
+        HbWidgetFeedback::triggered(q, Hb::InstantReleased);
+        QPointF launchPos(q->scenePos().x() + q->boundingRect().width() / 2 + 3, 
+                          q->scenePos().y() + q->boundingRect().height());
+        emit q->launchPopup(launchPos);
+        mTapStarted = false;
+        break;
+    }
+    default:
+        mTapStarted = false;
+        break;
+    }
+}
+
+void HbTitlePanePrivate::handleSwipe(HbSwipeGesture *swipe)
+{
+    Q_Q(HbTitlePane);
+    HbWidgetFeedback::triggered(q, Hb::InstantFlicked);
+
+    switch (swipe->state()) {
+    case Qt::GestureStarted:
+        mSwipeStarted = true;
+        break;
+
+    case (Qt::GestureFinished):
+        if (swipe->sceneHorizontalDirection() == QSwipeGesture::Right) {
+            emit q->swipeRight();
+        } else if (swipe->sceneHorizontalDirection() == QSwipeGesture::Left) {
+            emit q->swipeLeft();
+        }
+
+        if (mMode != QIcon::Normal) {
+            mMode = QIcon::Normal;
+            updatePrimitives();
+        }
+        mSwipeStarted = false;
+        break;
+
+    default:
+        mSwipeStarted = false;
+        break;
+    }
+}
+
+void HbTitlePanePrivate::cancelTap()
+{
+    Q_Q(HbTitlePane);
+
+    if (q->scene()) {
+        q->scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+    }
+    HbWidgetFeedback::triggered(q, Hb::InstantReleased);
+
+    if (mMode != QIcon::Normal) {
+        mMode = QIcon::Normal;
+        updatePrimitives();
+    }
+    mTapStarted = false;
 }
 
 // ======== MEMBER FUNCTIONS ========
@@ -119,6 +196,7 @@ HbTitlePane::HbTitlePane(QGraphicsItem *parent)
 {
     Q_D(HbTitlePane);
     d->init();
+    setFlag(QGraphicsItem::ItemHasNoContents, true);
 }
 
 HbTitlePane::HbTitlePane(HbTitlePanePrivate &dd, QGraphicsItem *parent)
@@ -126,6 +204,7 @@ HbTitlePane::HbTitlePane(HbTitlePanePrivate &dd, QGraphicsItem *parent)
 {
     Q_D(HbTitlePane);
     d->init();
+    setFlag(QGraphicsItem::ItemHasNoContents, true);
 }
 
 /*
@@ -187,11 +266,9 @@ void HbTitlePane::setText(const QString &text)
 
     if (tmp != d->mText) {
         d->mText = tmp;
+        d->mMargueeAnimation = true;
         updatePrimitives();
-        HbMarqueeItem* marquee = qgraphicsitem_cast<HbMarqueeItem*>(d->mTextItem);
-        if (marquee) {
-            marquee->startAnimation();
-        }
+        d->mMargueeAnimation = false;
     }
 }
 
@@ -214,6 +291,7 @@ void HbTitlePane::initStyleOption(HbStyleOptionTitlePane *option) const
 
     option->caption = d->mText;
     option->mode = d->mMode;
+    option->margueeAnimation = d->mMargueeAnimation;
     if (mainWindow() && mainWindow()->currentView()) {
         if (mainWindow()->currentView()->viewFlags() & HbView::ViewTitleBarTransparent) {
             option->transparent = true;
@@ -224,82 +302,25 @@ void HbTitlePane::initStyleOption(HbStyleOptionTitlePane *option) const
 void HbTitlePane::gestureEvent(QGestureEvent *event)
 {
     Q_D(HbTitlePane);
-
     if (mainWindow() && mainWindow()->currentView()) {
         if (mainWindow()->currentView()->menu()->isEmpty()) {
             return;
         }
     }
+
     HbTapGesture *tap = qobject_cast<HbTapGesture*>(event->gesture(Qt::TapGesture));
-    HbPanGesture *pan = qobject_cast<HbPanGesture*>(event->gesture(Qt::PanGesture));
     HbSwipeGesture *swipe = qobject_cast<HbSwipeGesture*>(event->gesture(Qt::SwipeGesture));
 
-    if(tap) {
-
-        switch(tap->state()) {
-        case Qt::GestureStarted: {
-                if (scene()) {
-                    scene()->setProperty(HbPrivate::OverridingGesture.latin1(),Qt::TapGesture);
-                    tap->setProperty(HbPrivate::ThresholdRect.latin1(), mapRectToScene(boundingRect()).toRect());
-                }
-                d->mMode = QIcon::Active;
-                updatePrimitives();
-#ifdef HB_EFFECTS
-                HbEffect::start(this, "decorator", "pressed");
-#endif
-                HbWidgetFeedback::triggered(this, Hb::InstantPressed);
-                d->toggle(true);
-                break;
-            }
-        case Qt::GestureCanceled: {
-                if (scene()) {
-                    scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
-                }
-                HbWidgetFeedback::triggered(this, Hb::InstantReleased);
-
-                if (d->mMode != QIcon::Normal) {
-                    d->mMode = QIcon::Normal;
-                    updatePrimitives();
-                }
-                d->toggle(false);
-
-                break;
-            }
-        case Qt::GestureFinished: {
-                if (scene()) {
-                    scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
-                }
-                d->mMode = QIcon::Selected;
-                updatePrimitives();
-#ifdef HB_EFFECTS
-                HbEffect::start(this, "decorator", "latched");
-#endif
-                if (d->mToggled) {
-                    HbWidgetFeedback::triggered(this, Hb::InstantReleased);
-                }
-                HbWidgetFeedback::triggered(this, Hb::InstantClicked);
-                QPointF launchPos(scenePos().x() + boundingRect().width() / 2 + 3, scenePos().y() + boundingRect().height());
-                emit launchPopup(launchPos);
-                break;
-            }
-        default:
-            break;
+    if (tap) {
+        if (!(d->mSwipeStarted && tap->state() == Qt::GestureFinished)) {
+            d->handleTap(tap);
         }
-    } else if(pan) {
-       if(d->mMode != QIcon::Normal) {
-           HbWidgetFeedback::triggered(this, Hb::InstantReleased);
-           d->toggle(false);
-           d->mMode = QIcon::Normal;
-           updatePrimitives();
+    }
+    if (swipe) {
+        if (swipe->state() == Qt::GestureStarted && d->mTapStarted) {
+             d->cancelTap();
         }
-   } else if(swipe) {
-        HbWidgetFeedback::triggered(this, Hb::InstantFlicked);
-
-        if(swipe->sceneHorizontalDirection() == QSwipeGesture::Right) {
-            emit swipeRight();
-        } else if(swipe->sceneHorizontalDirection() == QSwipeGesture::Left) {
-            emit swipeLeft();
-        }
+        d->handleSwipe(swipe);
     }
 }
 
@@ -325,11 +346,19 @@ void HbTitlePane::polish(HbStyleParameters &params)
 bool HbTitlePane::eventFilter(QObject *object, QEvent *event)
 {
     Q_UNUSED(object);
-    if (event->type() == QEvent::ActionAdded || event->type() == QEvent::ActionRemoved
-        || event->type() == HbEvent::WindowLayoutDirectionChanged)
-    {
+    Q_D(HbTitlePane);
+    if (event->type() == HbEvent::WindowLayoutDirectionChanged) {
        repolish();
+    } else if (event->type() == QEvent::ActionAdded || event->type() == QEvent::ActionRemoved) {
+        if (mainWindow() && mainWindow()->currentView()) {
+            if (mainWindow()->currentView()->menu()->isEmpty()) {
+                d->mIcon->setVisible(false);
+            } else {
+                d->mIcon->setVisible(true);
+            }
+        }
     }
+
     return false;
 }
 
@@ -362,7 +391,7 @@ QVariant HbTitlePane::itemChange(GraphicsItemChange change, const QVariant & val
 QGraphicsItem *HbTitlePane::primitive(const QString &itemName) const
 {
     Q_D(const HbTitlePane);
-    if (itemName == "") {
+    if (itemName.isEmpty()) {
         return 0;
     } else {
         if (itemName == "background") {

@@ -30,6 +30,7 @@
 #include "hbstring_p.h"
 #include "hbvector_p.h"
 #include <QSharedData>
+#include <QSize>
 
 struct DeviceProfile {
     HbString mName;

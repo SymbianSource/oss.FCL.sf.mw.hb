@@ -45,7 +45,7 @@ void HbDeviceFadeControl::setFadeOff(bool fadeOff)
     Q_UNUSED(fadeOff)
 }
 
-// Return if this fade controll is a setter. There is only one setter
+// Return if this fade control is a setter. There is only one setter
 // (device dialog server)in a device. All other instances are getters.
 bool HbDeviceFadeControl::isSetter()
 {

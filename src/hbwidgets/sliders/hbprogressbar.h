@@ -73,11 +73,11 @@ public:
 
     Qt::Orientation orientation() const;
 
+    QGraphicsItem *primitive(const QString &itemName) const;
+
     enum { Type = Hb::ItemType_ProgressBar };
     int type() const { return Type; }  
 
-    QGraphicsItem* primitive(HbStyle::Primitive primitive) const; 
-    
 public slots:
     void setProgressValue(int value);
     void setMaximum(int maximum);
@@ -91,6 +91,7 @@ signals:
 protected:
     HbProgressBar(HbProgressBarPrivate &dd, QGraphicsItem *parent = 0);
     void initStyleOption(HbStyleOptionProgressBar *option) const;
+    void initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive);
     void closeEvent ( QCloseEvent * event );
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
     void changeEvent(QEvent *event);

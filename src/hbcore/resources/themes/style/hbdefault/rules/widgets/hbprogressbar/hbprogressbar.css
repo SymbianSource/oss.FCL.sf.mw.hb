@@ -1,7 +1,12 @@
 /* Layout selection*/
-HbProgressBar[!minMaxTextVisible]
+HbProgressBar[!minMaxTextVisible][orientation="Horizontal"]
 {   
-    layout:progressbar_no_text;
+    layout:progressbar_no_text_horizontal;
+}
+
+HbProgressBar[!minMaxTextVisible][orientation="Vertical"]
+{   
+    layout:progressbar_no_text_vertical;
 }
 
 HbProgressBar[minMaxTextVisible][orientation="Horizontal"][minMaxTextAlignment="AlignTop"]

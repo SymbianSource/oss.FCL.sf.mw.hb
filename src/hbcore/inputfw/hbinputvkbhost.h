@@ -48,16 +48,13 @@ public:
     */
     enum HbVkbStatus {
         HbVkbStatusClosed,
-        HbVkbStatusMinimized,
         HbVkbStatusOpened,
     };
 
 public:
     virtual ~HbVkbHost() {}
     virtual void openKeypad(HbVirtualKeyboard *vkb = 0, HbInputMethod *owner = 0, bool animationAllowed = true) = 0;
-    virtual void openMinimizedKeypad(HbVirtualKeyboard *vkb, HbInputMethod *owner) = 0;
     virtual void closeKeypad(bool animationAllowed = true) = 0;
-    virtual void minimizeKeypad(bool animationAllowed = true) = 0;
     virtual HbVkbStatus keypadStatus() const = 0;
     virtual QSizeF keyboardArea() const = 0;
     virtual HbVirtualKeyboard *activeKeypad() const = 0;

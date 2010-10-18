@@ -28,6 +28,7 @@
 #include <hbinstance.h>
 #include <hbdeviceprofile.h>
 #include <hbstyle.h>
+#include "hbstyle_p.h"
 
 #include <QCoreApplication>
 
@@ -41,7 +42,8 @@ const char *GRAPHICSWIDGETCLASSNAME = "QGraphicsWidget";
 
 HbXmlLoaderBaseActions::HbXmlLoaderBaseActions() : 
     mContext(), 
-    mStack()
+    mStack(),
+    mMainWindow(0)
 {
 }
 
@@ -303,17 +305,17 @@ QString HbXmlLoaderBaseActions::translate( const QString &value, const QString &
     if( ! mContext.isEmpty() ) {
         QByteArray contextUtf8(mContext.toUtf8());
         QByteArray valueUtf8(value.toUtf8());
-		
-		if (comment.isEmpty()) {
-			return QCoreApplication::translate( 
-						contextUtf8.data(), valueUtf8.data(), 
-						0, QCoreApplication::UnicodeUTF8 );
-		} else {
-			QByteArray commentUtf8(comment.toUtf8());
-			return QCoreApplication::translate( 
-						contextUtf8.data(), valueUtf8.data(), 
-						commentUtf8.data(), QCoreApplication::UnicodeUTF8 );
-		}        
+        
+        if (comment.isEmpty()) {
+            return QCoreApplication::translate( 
+                        contextUtf8.data(), valueUtf8.data(), 
+                        0, QCoreApplication::UnicodeUTF8 );
+        } else {
+            QByteArray commentUtf8(comment.toUtf8());
+            return QCoreApplication::translate( 
+                        contextUtf8.data(), valueUtf8.data(), 
+                        commentUtf8.data(), QCoreApplication::UnicodeUTF8 );
+        }        
     } else {
         return value;
     }
@@ -336,27 +338,13 @@ Hb::Edge HbXmlLoaderBaseActions::getAnchorOppositeEdge( Hb::Edge edge ) const
 #ifndef HB_BIN_CSS
 bool HbXmlLoaderBaseActions::toPixels(const HbXmlLengthValue &lengthVal, qreal& result) const
 {
-    bool retVal(true);
-    switch (lengthVal.mType) {
-        case HbXmlLengthValue::None:
-            retVal = false;
-            break;
-        case HbXmlLengthValue::PlainNumber:
-        case HbXmlLengthValue::Pixel:
-            result = lengthVal.mValue;
-            break;
-        case HbXmlLengthValue::Unit:
-            result = mCurrentProfile.unitValue() * lengthVal.mValue;
-            break;
-        case HbXmlLengthValue::Millimeter:
-            result = mCurrentProfile.ppmValue() * lengthVal.mValue;
-            break;
-        case HbXmlLengthValue::Variable:
-        case HbXmlLengthValue::Expression:
-            retVal = hbInstance->style()->parameter( lengthVal.mString, result, mCurrentProfile );
-            break;
+    if (!mMainWindow) {
+        qWarning() << "HbXmlLoaderBaseActions: Main window not set, using default device profile";
     }
-    return retVal;
+    HbDeviceProfile profile = mMainWindow 
+        ? HbDeviceProfile::profile(mMainWindow)
+        : HbDeviceProfile::current();
+    return hbInstance->style()->d_func()->valueFromTokens(lengthVal.mValues, result, profile);
 }
 #endif
 

@@ -30,7 +30,7 @@
 #include "hbinputextrauserdictionary.h"
 
 /*!
-@proto
+@stable
 @hbcore
 \class HbExtraDictionaryFactory
 \brief A factory class for creating and accessing instances of HbExtraDictionary database.

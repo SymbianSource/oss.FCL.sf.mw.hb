@@ -49,6 +49,7 @@ void HbInputModeHandlerPrivate::init()
     Q_Q(HbInputModeHandler);
     mTimer = new QTimer(q);
     q->connect(mTimer, SIGNAL(timeout()), q, SLOT(_q_timeout()));
+    mTimer->setSingleShot(true);
 }
 
 // A virtual timeout function mode handlers should implement this slot.
@@ -73,12 +74,21 @@ int HbInputModeHandlerPrivate::cursorPosition()
     return -1;
 }
 
+bool HbInputModeHandlerPrivate::isPunctuationKey(const Qt::Key key, const HbKeyboardType keypad)
+{
+    // Currently, Punctuation key is present only for For ITUT Keypad (i.e. Key_1 is is the punctuation key)
+    if ( (!HbInputUtils::isQwertyKeyboard(keypad)) && (Qt::Key_1 == key) ) {
+        return true;
+    }
+    return false;
+}
+
 void HbInputModeHandlerPrivate::getAndFilterCharactersBoundToKey(QString &allowedChars, HbKeyboardType type, \
                                                                  int key, HbModifiers modifiers)
 {
     allowedChars.clear();
     HbInputLanguage language = mInputMethod->inputState().language();
-	
+    
     if (!mKeymap) {
         mKeymap = HbKeymapFactory::instance()->keymap(language);
     }
@@ -87,13 +97,13 @@ void HbInputModeHandlerPrivate::getAndFilterCharactersBoundToKey(QString &allowe
         return;
     }
     QString chars = mappedKey->characters(modifiers);
-	// check whether current input language supports native digits. if yes, replace latin digits with native digits    
+    // check whether current input language supports native digits. if yes, replace latin digits with native digits    
     for (int i = 0; i < chars.length(); i++) {
         if (chars.at(i) >= '0' && chars.at(i) <= '9') {
             chars = chars.replace(chars.at(i), HbInputUtils::findFirstNumberCharacterBoundToKey(mappedKey,
-				language, HbInputUtils::inputDigitType(language)));
-        }		
-    }		
+                language, HbInputUtils::inputDigitType(language)));
+        }       
+    }       
     // We need to see which of the characters in keyData are allowed to the editor.
     // this looks like expensive operation, need to find out a better way/place to do it.
     HbInputFocusObject *focusedObject = mInputMethod->focusObject();
@@ -159,8 +169,8 @@ bool HbInputModeHandler::filterEvent(const QEvent * event)
         if (event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease) {
             const QKeyEvent *keyEvent = static_cast<const QKeyEvent *>(event);
             return filterEvent(keyEvent);
-		}
-	}
+        }
+    }
     return false;
 }
 
@@ -263,17 +273,17 @@ void HbInputModeHandler::commitFirstMappedNumber(int key, HbKeyboardType type)
     if (!d->mKeymap) {
         d->mKeymap = HbKeymapFactory::instance()->keymap(language);
     }
-	bool isNumericEditor = d->mInputMethod->focusObject()->editorInterface().isNumericEditor();
-	HbInputDigitType digitType = HbInputUtils::inputDigitType(language);
-	if (isNumericEditor) {
-        QLocale::Language systemLanguage = QLocale::system().language();		 
-		if (language.language() != systemLanguage) {
+    bool isNumericEditor = d->mInputMethod->focusObject()->editorInterface().isNumericEditor();
+    HbInputDigitType digitType = HbInputUtils::inputDigitType(language);
+    if (isNumericEditor) {
+        QLocale::Language systemLanguage = QLocale::system().language();         
+        if (language.language() != systemLanguage) {
             digitType = HbDigitTypeLatin;
-	 	}
-	}	
+        }
+    }   
     QChar numChr = HbInputUtils::findFirstNumberCharacterBoundToKey(
         d->mKeymap->keyForKeycode(type, key), language, digitType);
-	// when a number is to be entered, it should commit 
+    // when a number is to be entered, it should commit 
     // the previous string and then append the number to the string
     if (numChr != 0) {
         commitAndAppendString(numChr);
@@ -289,7 +299,8 @@ QChar HbInputModeHandler::getNthCharacterInKey(int &index, int key, HbKeyboardTy
     Q_D(HbInputModeHandler);
     HbModifiers modifiers = 0;
     int textCase = d->mInputMethod->inputState().textCase();
-    if (type != HbKeyboardSctPortrait && (textCase == HbTextCaseUpper || textCase == HbTextCaseAutomatic)) {
+    if ( (type != HbKeyboardSctPortrait && type != HbKeyboardSctUrl && type != HbKeyboardSctEmail) && 
+        (textCase == HbTextCaseUpper || textCase == HbTextCaseAutomatic)) {
         modifiers |= HbModifierShiftPressed;
     }
 

@@ -26,7 +26,7 @@
 #ifndef HB_INPUT_SETTING_LIST_H
 #define HB_INPUT_SETTING_LIST_H
 
-#include <hbdialog.h>
+#include <hbinputpopupbase.h>
 #include <hbinputdef.h>
 
 class HbInputSettingListPrivate;
@@ -34,7 +34,7 @@ class HbListWidgetItem;
 class HbInputLanguage;
 class HbInputMethodDescriptor;
 
-class HB_INPUT_EXPORT HbInputSettingList : public HbDialog
+class HB_INPUT_EXPORT HbInputSettingList : public HbInputPopupBase
 {
     Q_OBJECT
 

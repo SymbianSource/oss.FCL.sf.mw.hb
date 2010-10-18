@@ -45,6 +45,7 @@ class HB_CORE_PRIVATE_EXPORT HbViewPrivate : public HbWidgetPrivate
 
 public:
     HbViewPrivate();
+    void delayedConstruction();
     virtual ~HbViewPrivate();
 
     HbStackedLayout *mLayout;
@@ -72,6 +73,7 @@ private:
     }
 
     friend class HbMainWindowPrivate;
+    friend class HbDocumentLoaderActions;
 };
 
 #endif // HBVIEW_P_H

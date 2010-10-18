@@ -26,7 +26,7 @@
 #include "hbinputcontextplugin.h"
 
 /*!
-@proto
+@stable
 @hbcore
 \class HbInputContextPlugin
 \brief Extends QInputContextPlugin to support HbInputMethod input method selection UI elements.

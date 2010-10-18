@@ -37,32 +37,31 @@ hbAddLibrary(hbcore/HbCore)
 
 # Input
 SOURCES  += $$PWD/main.cpp 
-SOURCES  += $$PWD/hbthemeserver.cpp
-SOURCES  += $$PWD/hbthemeserverapplication.cpp
-SOURCES  += $$PWD/hbthemeserverutils.cpp
 SOURCES  += $$PWD/hbiconcacheitemcreator_p.cpp 
 SOURCES  += $$PWD/hbpixmapiconprocessor_p.cpp
 SOURCES  += $$PWD/hbpiciconprocessor_p.cpp
 SOURCES  += $$PWD/hbicondatacache_p.cpp
-SOURCES  += $$PWD/hbcache_p.cpp
 
-HEADERS += $$PWD/hbthemeserver_p.h
-HEADERS += $$PWD/hbthemeserverapplication_p.h
-HEADERS += $$PWD/hbthemeserverutils_p.h
 HEADERS += $$PWD/hbiconcacheitemcreator_p.h
 HEADERS += $$PWD/hbiconprocessor_p.h
 HEADERS += $$PWD/hbpixmapiconprocessor_p.h
 HEADERS += $$PWD/hbpiciconprocessor_p.h
 HEADERS += $$PWD/hbicondatacache_p.h
-HEADERS += $$PWD/hbcache_p.h
 HEADERS += $$PWD/hbdoublelinkedlist_p.h
 HEADERS += $$PWD/hbdoublelinkedlistinline_p.h
 
-symbian:CONFIG += nvg
-
 symbian {
+    CONFIG += nvg
+    
+    SOURCES  += $$PWD/hbthemeserver.cpp
+    SOURCES  += $$PWD/hbthemeserverapplication.cpp
+    SOURCES  += $$PWD/hbthemeserverutils.cpp
     SOURCES  += $$PWD/hbthemeserver_symbian.cpp
     SOURCES  += $$PWD/hbthemewatcher_symbian.cpp
+
+    HEADERS += $$PWD/hbthemeserver_p.h
+    HEADERS += $$PWD/hbthemeserverapplication_p.h
+    HEADERS += $$PWD/hbthemeserverutils_p.h
     HEADERS += $$PWD/hbthemeserver_symbian_p_p.h
     HEADERS += $$PWD/hbthemewatcher_symbian_p.h
     LIBS += -lapgrfx -lws32 -lavkon -lcone -leikcore -lNVGDecoder_SW -llibvgi -lfbscli -lefsrv
@@ -99,10 +98,11 @@ symbian {
     # AllFiles is needed to be able to access icon and effect files in
     # an application's private folder for example.
     TARGET.CAPABILITY = CAP_SERVER ProtServ
+    MMP_RULES += SMPSAFE
     
 }
 
-QT = core gui svg network
+QT += svg
 
 # installation
 !local {

@@ -53,7 +53,7 @@ public:
                                const QVariant &vgImage,
                                const QSize &vgImageSize) = 0;
 
-    virtual void performEffectSw(QPainter *painter);
+    virtual void performEffectSw(QPainter *devicePainter, QPixmap *result, QPointF *resultPos);
 
     void setChainRoot(HbVgEffect *effect);
     HbVgEffect *chainRoot() const;
@@ -63,6 +63,12 @@ public:
     bool forceSwMode() const;
 
     static void releaseCachedResources();
+
+    enum ChainBehavior {
+        ChainBehavNormal,
+        ChainBehavAsSource
+    };
+    virtual ChainBehavior chainBehavior() const;
 
 public slots:
     void setOpacity(qreal opacity);
@@ -85,6 +91,7 @@ protected:
 
     const QGraphicsItem *sourceItemForRoot() const;
     QRectF sourceBoundingRectForRoot() const;
+    QPixmap sourcePixmapForRoot(Qt::CoordinateSystem system, QPoint *offset);
 
     void draw(QPainter *painter);
     void sourceChanged(ChangeFlags flags);

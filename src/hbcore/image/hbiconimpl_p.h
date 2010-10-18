@@ -27,6 +27,7 @@
 #define HBICONIMPL_P_H
 
 #include <QIcon>
+#include <QMetaType>
 #include <hbglobal.h>
 
 #include "hbthemecommon_p.h"
@@ -39,10 +40,16 @@ class HbIconImpl
 {
 public:
 
+    enum ErrorCode {
+        ErrorNone,
+        ErrorLowGraphicsMemory,
+        ErrorUnknown
+    };
+
     HbIconImpl()
         : createdOnServer(false),
-          iconRefCount(1)
-
+          iconRefCount(1),
+          renderMode( ESWRendering )
     {
 
     }
@@ -77,6 +84,10 @@ public:
                        HbMaskableIconImpl *maskIconData = 0) = 0;
     virtual QSize defaultSize() const = 0;
     virtual QSize size() = 0;
+    virtual ErrorCode initialize() {
+        return ErrorNone;
+    }
+
     void setColor(const QColor &color) {
         this->iconColor = color;
     }
@@ -157,7 +168,7 @@ protected:
     Qt::AspectRatioMode aspectRatioMode;
     QIcon::Mode mode;
     bool mirrored;
-    QSize defaultIconSize;
+    mutable QSize defaultIconSize;
     bool createdOnServer;
     uint iconRefCount;
     QColor iconColor;
@@ -165,5 +176,6 @@ protected:
     HbRenderingMode renderMode;
 };
 
-#endif // HBICONIMPL_P_H
+Q_DECLARE_METATYPE(HbIconImpl *)
 
+#endif // HBICONIMPL_P_H

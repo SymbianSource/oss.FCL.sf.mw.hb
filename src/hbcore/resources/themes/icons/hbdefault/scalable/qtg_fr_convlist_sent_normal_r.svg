@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
 <svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 15 30" width="15px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
-<rect fill="none" height="30" width="15"/>
+<g>
 <rect fill="#14141E" fill-opacity="0.1" fill-rule="evenodd" height="30" stroke-opacity="0.1" width="15"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="6" x2="6" y1="35" y2="-11.5052">
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="6.1646" x2="5.838" y1="36.2109" y2="-5.8348">
 <stop offset="0" style="stop-color:#E6E6E6"/>
 <stop offset="1" style="stop-color:#FFFFFF"/>
 </linearGradient>
 <rect fill="url(#SVGID_1_)" fill-rule="evenodd" height="30" width="12"/>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="12.5" x2="12.5" y1="-14" y2="43.7704">
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="12.5" x2="12.5" y1="-8.4326" y2="39.5682">
 <stop offset="0" style="stop-color:#66CCAD"/>
 <stop offset="1" style="stop-color:#3FA990"/>
 </linearGradient>
 <rect fill="url(#SVGID_2_)" fill-rule="evenodd" height="30" width="3" x="11"/>
+<rect fill="none" fill-rule="evenodd" height="30" width="15"/>
+</g>
 </svg>

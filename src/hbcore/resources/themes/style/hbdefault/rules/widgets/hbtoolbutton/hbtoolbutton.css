@@ -2,35 +2,29 @@ HbToolButton{
     layout:icon_button;
 }
 
-HbToolButton[toolButtonStyle="1"]{	
+HbToolButton[icon][!text]{	
     layout:icon_button;
 }
 
-HbToolButton[toolButtonStyle="2"]{
+HbToolButton[!icon][text]{
     layout:text_button;
 }
 
-HbToolButton[toolButtonStyle="3"]{
+HbToolButton[icon][text]{
     layout:icon_text_button;
 }
 
-HbToolButton[toolbutton_extension_layout="true"][toolButtonStyle="3"] {
+HbToolButton[toolbutton_extension_layout="true"][icon][text] {
     layout: icon_text_button_extension;
 }
 
-HbToolBar > HbToolButton[toolButtonStyle="3"][orientation="2"] {
+HbToolBar > HbToolButton[text][orientation="2"] {
     min-width:15un;
     min-height:1un;
     pref-height:var(hb-param-widget-toolbar-height);
 }
 
-HbToolBar > HbToolButton[toolButtonStyle="2"][orientation="2"] {
-    min-width:15un;
-    min-height:1un;
-    pref-height:var(hb-param-widget-toolbar-height);
-}
-
-HbToolBar > HbToolButton[toolButtonStyle="1"][orientation="2"] {
+HbToolBar > HbToolButton[icon][!text][orientation="2"] {
     min-width:9un;
     min-height:1un;
     pref-height:var(hb-param-widget-toolbar-height);
@@ -78,19 +72,19 @@ HbToolButton::background{
     bottom:0un;
 }
 
-HbToolButton[toolbutton_extension_layout="true"][toolButtonStyle="2"]::text {
+HbToolButton[toolbutton_extension_layout="true"][!icon][text]::text {
     text-align: left;
 }
 
-HbToolButton[toolbutton_extension_layout="true"][toolButtonStyle="3"]::text {
+HbToolButton[toolbutton_extension_layout="true"][icon][text]::text {
     bottom:var(hb-param-margin-gene-bottom);
 }
 
-HbToolBar > HbToolButton[toolButtonStyle="3"]::icon{
+HbToolBar > HbToolButton[icon][text]::icon{
     left:-var(hb-param-margin-gene-left);
 }
 
-HbToolBar > HbToolButton[toolButtonStyle="3"]::text{
+HbToolBar > HbToolButton[icon][text]::text{
     left:-var(hb-param-margin-gene-middle-horizontal);
     right:var(hb-param-margin-gene-right);
     font-variant:primary;
@@ -98,11 +92,11 @@ HbToolBar > HbToolButton[toolButtonStyle="3"]::text{
     text-align: left;
 }
 
-HbToolButton[toolbutton_extension_layout="true"][toolButtonStyle="3"]::icon {
+HbToolButton[toolbutton_extension_layout="true"][icon][text]::icon {
     top:-var(hb-param-margin-gene-middle-vertical);
 }
 
-HbToolButton[toolbutton_extension_layout="true"][toolButtonStyle="3"]::text{
+HbToolButton[toolbutton_extension_layout="true"][icon][text]::text{
     left:-var(hb-param-margin-gene-middle-horizontal);
     right:var(hb-param-margin-gene-middle-horizontal);
     top:-var(hb-param-margin-gene-middle-vertical);
@@ -113,12 +107,21 @@ HbToolButton[toolbutton_extension_layout="true"][toolButtonStyle="3"]::text{
     text-line-count-max: 1;
 }
 
-HbToolBar > HbToolButton[dialogtoolbar]::text {
+HbToolBar > HbToolButton[dialogtoolbar][!icon]::text {
     left:-0.75un;
     right:0.75un;
     font-variant:primary;
     text-height:var(hb-param-text-height-primary);
     text-align:center center;
+    text-line-count-max: 1;
+}
+
+HbToolBar > HbToolButton[dialogtoolbar][icon]::text {
+    left:-0.75un;
+    right:0.75un;
+    font-variant:primary;
+    text-height:var(hb-param-text-height-primary);
+    text-align:left;
     text-line-count-max: 1;
 }
 
@@ -141,3 +144,4 @@ HbTitleBar > HbToolButton[buttonStyle="3"]::icon{
     fixed-width:var(hb-param-graphic-size-primary-small);
     fixed-height:var(hb-param-graphic-size-primary-small);
 }
+

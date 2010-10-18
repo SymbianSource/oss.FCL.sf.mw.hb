@@ -30,7 +30,7 @@
 #include "hbinputdialogcontent_p.h"
 #include <hbstyleoptioninputdialog_p.h>
 #include <hbvalidator.h>
-
+#include <hbstyletextprimitivedata.h>
 #include <QGraphicsScene>
 
 #ifdef HBINPUTDIALOG_DEBUG
@@ -254,7 +254,7 @@ bool HbInputDialog::isAdditionalRowVisible()
     \param validator Validator uses undo stack to back out invalid changes. Therefore undo
     is enabled when validator is set.
 
-	\param row This parameter indicates which row of the user field.0 means the 
+    \param row This parameter indicates which row of the user field.0 means the 
     the first user field and 1 means second user field
 
     \sa HbAbstractEdit::validator
@@ -329,28 +329,6 @@ void HbInputDialog::setEchoMode(HbLineEdit::EchoMode echoMode,int row)
 };
 
 /*!
-    \deprecated HbInputDialog::primitive(HbStyle::Primitive)
-        is deprecated.
-    
-    Provides access to primitives of HbInputDialog. 
-    \param primitive is the type of the requested primitive. The available 
-    primitives are P_InputDialog_text, and P_InputDialog_additionaltext.
-
-*/
-QGraphicsItem* HbInputDialog::primitive(HbStyle::Primitive primitive) const
-{
-    Q_D(const HbInputDialog);
-    switch (primitive) {
-    case HbStyle::P_InputDialog_text:
-        return d->mContentWidget->mLabel1;
-    case HbStyle::P_InputDialog_additionaltext:
-        return d->mContentWidget->mLabel2;
-    default:
-        return 0;
-    }
-}
-
-/*!
     \reimp
 */
 void HbInputDialog::initStyleOption(HbStyleOptionInputDialog *option) const
@@ -361,6 +339,23 @@ void HbInputDialog::initStyleOption(HbStyleOptionInputDialog *option) const
     option->additionalText = d->mPromptAdditionalText;
 }
 
+void HbInputDialog::initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive)
+{
+    HbWidgetBase::initPrimitiveData(primitiveData, primitive);
+    QString itemName = HbStyle::itemName(primitive);
+    if (itemName == QLatin1String("label-1")) {
+        HbStyleTextPrimitiveData *data = hbstyleprimitivedata_cast<HbStyleTextPrimitiveData*>(primitiveData);
+        data->text = promptText();
+        data->textWrapping = Hb::TextWordWrap;
+    }
+
+    if (itemName == QLatin1String("label-2")) {
+        HbStyleTextPrimitiveData *data = hbstyleprimitivedata_cast<HbStyleTextPrimitiveData*>(primitiveData);
+        data->text = promptText(1);
+        data->textWrapping = Hb::TextWordWrap;
+    }
+}
+
 /*!
     \reimp
 */
@@ -368,17 +363,37 @@ void HbInputDialog::updatePrimitives()
 {
     Q_D(HbInputDialog); 
     HbDialog::updatePrimitives();
-    HbStyleOptionInputDialog option;
-    initStyleOption(&option);
     if (d->mContentWidget->mLabel1) {
-        style()->updatePrimitive(d->mContentWidget->mLabel1, HbStyle::P_InputDialog_text, &option);
-    }
-
-    if (d->mContentWidget->mLabel2 && d->mContentWidget->mAdditionalRowVisible) {
-        style()->updatePrimitive(d->mContentWidget->mLabel2, HbStyle::P_InputDialog_additionaltext, &option);
-    }
+        HbStyleTextPrimitiveData data;
+        initPrimitiveData(&data, d->mContentWidget->mLabel1);
+        style()->updatePrimitive(d->mContentWidget->mLabel1, &data, this);
+    }    
+    
+    if (d->mContentWidget->mLabel2) {
+        HbStyleTextPrimitiveData data;
+        initPrimitiveData(&data, d->mContentWidget->mLabel2);
+        style()->updatePrimitive(d->mContentWidget->mLabel2, &data, this);
+    }    
 }
 
+
+/*!
+    Recreaction of all the primitives.
+ */
+void HbInputDialog::recreatePrimitives()
+{
+    Q_D(HbInputDialog);
+    if (d->mContentWidget->mLabel1) {
+        delete d->mContentWidget->mLabel1;
+        d->mContentWidget->mLabel1 = 0;
+        d->mContentWidget->mLabel1 = style()->createPrimitive(HbStyle::PT_IconItem, "label-1",d->mContentWidget);
+    }
+    if (d->mContentWidget->mLabel2) {
+        delete d->mContentWidget->mLabel2;
+        d->mContentWidget->mLabel2 = 0;
+        d->mContentWidget->mLabel2 = style()->createPrimitive(HbStyle::PT_IconItem, "label-2",d->mContentWidget);
+    }
+}
 void HbInputDialog::done(int code)
 {
     Q_D(HbInputDialog);
@@ -674,5 +689,20 @@ void HbInputDialog::queryIp(const QString &promptText,
     dlg->setInputMode(IpInput);    
     dlg->open(receiver,member);
 }
+
+QGraphicsItem *HbInputDialog::primitive(const QString &itemName) const
+{
+    Q_D(const HbInputDialog);
+
+    if(!itemName.compare(QString("label-1"))){
+        return d->mContentWidget->mLabel1;
+    }
+    if(!itemName.compare(QString("label-2"))){
+        return d->mContentWidget->mLabel2;
+    }
+
+    return HbDialog::primitive(itemName);
+}
+
 #include "moc_hbinputdialog.cpp"
 

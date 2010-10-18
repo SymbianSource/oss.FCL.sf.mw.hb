@@ -83,6 +83,7 @@ class HbDocumentLoaderActions : public HbXmlLoaderBaseActions
     
         bool setSizeHint(Qt::SizeHint hint, const HbXmlLengthValue &hintWidth, const HbXmlLengthValue &hintHeight, bool fixed);
         bool setToolTip( const HbXmlVariable &tooltip );
+        bool setBackground( const QString &name, HbFrameDrawer::FrameType type );
 
         bool createAnchorLayout( const QString &widget, bool modify );
         bool addAnchorLayoutItem( const QString &src, const QString &srcId, Hb::Edge srcEdge, 
@@ -132,6 +133,13 @@ class HbDocumentLoaderActions : public HbXmlLoaderBaseActions
         bool addStackedLayoutItem( const QString &itemname, int *index );
                                 
         bool createNullLayout( const QString &widget );
+
+        bool setObjectTree(QList<QObject *> roots);
+        void addToObjectMap(QList<QGraphicsItem *> objects);
+        void addToObjectMap( QList<QObject *> objects );
+
+    protected:
+        void widgetAddedToMap(QGraphicsWidget *widget);
     
     private:
         Q_DISABLE_COPY(HbDocumentLoaderActions)

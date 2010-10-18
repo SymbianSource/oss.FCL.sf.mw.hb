@@ -248,17 +248,20 @@ bool HbWidgetLoaderMemorySyntax::load( HbWidgetLoader::LayoutDefinition* layoutD
     // Construct layout from layout definition
     retVal = mActions->createAnchorLayout(QString(), false);
     for (int i = 0; retVal && i < layoutDef->anchorItems.count(); i++){
-		const HbWidgetLoader::AnchorItem &item = layoutDef->anchorItems.at(i);
+        const HbWidgetLoader::AnchorItem &item = layoutDef->anchorItems.at(i);
         HbXmlLengthValue minLength, prefLength, maxLength;
-        minLength.mType = item.minType;
-        minLength.mValue = item.minVal;
-        minLength.mString = item.minText;
-        prefLength.mType = item.prefType;
-        prefLength.mValue = item.prefVal;
-        prefLength.mString = item.prefText;
-        maxLength.mType = item.maxType;
-        maxLength.mValue = item.maxVal;
-        maxLength.mString = item.maxText;
+
+
+        for (int i=0; i<item.minVal.count(); i++) {
+            minLength.mValues.append(item.minVal.at(i));
+        }
+        for (int j=0; j<item.prefVal.count(); j++) {
+            prefLength.mValues.append(item.prefVal.at(j));
+        }
+        for (int k=0; k<item.maxVal.count(); k++) {
+            maxLength.mValues.append(item.maxVal.at(k));
+        }
+
         QSizePolicy::Policy sizepolicy;
         QSizePolicy::Policy *sizepolicy_p = 0;
         if ( item.sizepolicy != -1 ) {

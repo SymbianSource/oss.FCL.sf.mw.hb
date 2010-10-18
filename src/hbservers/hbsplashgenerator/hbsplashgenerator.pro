@@ -45,6 +45,7 @@ symbian {
     TARGET.CAPABILITY = CAP_APPLICATION
     TARGET.EPOCHEAPSIZE = 0x20000 0xA00000
     TARGET.UID3 = 0x2002E68B
+    MMP_RULES += SMPSAFE
 
     splashgenrssrules = \
      "hidden = KAppIsHidden;" \

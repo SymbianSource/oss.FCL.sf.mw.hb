@@ -87,6 +87,11 @@ const QString GLOBAL_SELECTOR = "*";
 
 Q_GLOBAL_STATIC(HbLayeredStyleLoader::ConcernStacks, globalConcernStacks)
 
+/**
+ * Keeps a list of files known not to exist
+ */
+Q_GLOBAL_STATIC(QSet<uint>, missingFiles);
+
 /*!
     Returns a static instance of a stack related to the given concern
     
@@ -100,18 +105,30 @@ HbLayeredStyleLoader *HbLayeredStyleLoader::getStack(Concern con)
     ConcernStacks *stacks = globalConcernStacks();
     if (stacks) {
         if (!stacks->contains(con)) {
-            (*stacks)[con].mConcern = con;
-            if (con != Concern_All) {
-                HbLayeredStyleLoader *allStack = getStack(Concern_All);
-                if (allStack) {
-                    (*stacks)[con].mUsedLayers = allStack->mUsedLayers;
-                }
-            }
+            (*stacks)[con].init(con);
         }
         result = &((*stacks)[con]);
     }
     
     return result;
+}
+
+void HbLayeredStyleLoader::init(Concern con)
+{
+    mConcern = con;
+    if (con == Concern_All) {
+        mAllStack = 0;
+    } else {
+        mAllStack = getStack(Concern_All);
+        if (mAllStack) {
+            mUsedLayers = mAllStack->mUsedLayers;
+        }
+    }
+#ifdef HB_USETHEMESERVER
+    mServerHbCssMisses = HbThemeClient::global()->getSharedMissedHbCss();
+#else
+    mServerHbCssMisses = 0;
+#endif
 }
 
 
@@ -138,43 +155,52 @@ int HbLayeredStyleLoader::load(
 #ifdef LAYEREDSTYLELOADER_DEBUG
     qDebug() << "HbLayeredStyleLoader::load called for" << fileName;
 #endif
+    uint fileNameHash = qHash(fileName);
+    if (missingFiles()->contains(fileNameHash)) {
+        return 0;
+    }
+    if (mServerHbCssMisses && mServerHbCssMisses->contains(fileNameHash)) {
+        return 0;
+    }
+
     Layer &layer = mStyleLayers[priority];
     HbCss::StyleSheet* styleSheet = 0;
 
-    // Check for the availability of the file, as QFile::Exists takes more time this method is used
-    QFile file(fileName);
-    bool fileExists = file.open(QIODevice::ReadOnly);
-    file.close();
-    //if file doesn't exist no need to proceed further
-    if (fileExists) {
-        //if sharing is required based on Layer Priority, e.g. Core, Operator, Theme, 
-        //get the shared stylesheet from the theme client, which in turn fetches it 
-        // from the server.
-        if (sharingNeeded(priority)) {
-            
+    //if sharing is required based on Layer Priority, e.g. Core, Operator, Theme, 
+    //get the shared stylesheet from the theme client, which in turn fetches it 
+    // from the server.
+    if (sharingNeeded(priority)) {
+
 #ifdef LAYEREDSTYLELOADER_DEBUG
-            QTime time;
-            time.start();
+        QTime time;
+        time.start();
 #endif
 #ifdef HB_USETHEMESERVER
-            styleSheet = HbThemeClient::global()->getSharedStyleSheet(fileName,priority);
+        bool fileExists(true);
+        styleSheet = HbThemeClient::global()->getSharedStyleSheet(fileName,priority,fileExists);
+        if (!fileExists) {
+            missingFiles()->insert(fileNameHash);
+            return 0;
+        }
 #endif
 #ifdef LAYEREDSTYLELOADER_DEBUG
-            qDebug() << "Time elapsed in getting the shared stylesheet "<< fileName << " is : %d ms" <<time.elapsed();
+        qDebug() << "Time elapsed in getting the shared stylesheet "<< fileName << " is : %d ms" <<time.elapsed();
 #endif
-        }
-        // fallback incase of themeserver could not open the file or OOM condition in SharedMemory.
-        if (!styleSheet) {
-            //if sharing of stylesheet is not required, it means stylesheet is app specific
-            //so it won't be loaded from the server
-            styleSheet = HbMemoryUtils::create<HbCss::StyleSheet>(HbMemoryManager::HeapMemory);
+    }
+    // fallback incase of themeserver could not open the file or OOM condition in SharedMemory.
+    if (!styleSheet) {
+        //if sharing of stylesheet is not required, it means stylesheet is app specific
+        //so it won't be loaded from the server
 
-            HbCss::Parser parser;
-            parser.init(fileName, true);
+        HbCss::Parser parser;
+        if (parser.init(fileName, true)) {
+            styleSheet = HbMemoryUtils::create<HbCss::StyleSheet>(HbMemoryManager::HeapMemory);
             if (!parser.parse(styleSheet)) {
                 HbMemoryUtils::release<HbCss::StyleSheet>(styleSheet);
                 styleSheet = 0;
             }
+        } else {
+            missingFiles()->insert(fileNameHash);
         }
     }
 
@@ -189,7 +215,9 @@ int HbLayeredStyleLoader::load(
     qDebug("Handle returned: %x", handle);
 #endif
 
-    updateLayersListIfRequired(priority);
+    if (handle) {
+        updateLayersListIfRequired(priority);
+    }
     return handle;
 }
 
@@ -213,17 +241,20 @@ int HbLayeredStyleLoader::load(QIODevice *device, LayerPriority priority)
         QString contents = stream.readAll();
 
         HbCss::Parser parser;
-        parser.init(contents, false);
-        HbCss::StyleSheet* styleSheet = 
-            HbMemoryUtils::create<HbCss::StyleSheet>(HbMemoryManager::HeapMemory);
+        if (parser.init(contents, false)) {
+            HbCss::StyleSheet* styleSheet = 
+                HbMemoryUtils::create<HbCss::StyleSheet>(HbMemoryManager::HeapMemory);
 
-        if (parser.parse(styleSheet)) {
-            layer.styleSelector.addStyleSheet(styleSheet);
-            handle = reinterpret_cast<qptrdiff>(layer.styleSelector.styleSheets.last());
+            if (parser.parse(styleSheet)) {
+                layer.styleSelector.addStyleSheet(styleSheet);
+                handle = reinterpret_cast<qptrdiff>(layer.styleSelector.styleSheets.last());
+            }
         }
     }
 
-    updateLayersListIfRequired(priority);
+    if (handle) {
+        updateLayersListIfRequired(priority);
+    }
     return handle;
 }
 
@@ -279,11 +310,15 @@ QVector<int> HbLayeredStyleLoader::loadDir(const QString &dirPath, QDir::SortFla
 {
     QVector<int> fileList;
 
+    bool dirPathHasSeparator = dirPath.endsWith(QDir::separator());
+
     QDir dir(dirPath, CSS_FILTER, sort, QDir::Readable | QDir::Files);
     QStringList files = dir.entryList();
+    fileList.reserve(files.count());
+
     for (QStringList::Iterator it = files.begin(); it != files.end(); ++it) {
         QString cssPath = dirPath;
-        if (!dirPath.endsWith(QDir::separator())) {
+        if (!dirPathHasSeparator) {
             cssPath.append(QDir::separator());
         }
         cssPath.append(*it);
@@ -379,14 +414,14 @@ void HbLayeredStyleLoader::clear(LayerPriority priority)
 }
 
 
-static inline bool qcss_selectorStyleRuleLessThan(
-    const QPair<int, HbCss::StyleRule> &lhs, const QPair<int, HbCss::StyleRule> &rhs)
+static inline bool qcss_selectorStyleRuleLessThan(const HbCss::WeightedRule &lhs, 
+                                                  const HbCss::WeightedRule &rhs)
 {
     return lhs.first < rhs.first;
 }
 
-static inline bool qcss_selectorDeclarationLessThan(
-    const QPair<int, HbCss::Declaration> &lhs, const QPair<int, HbCss::Declaration> &rhs)
+static inline bool qcss_selectorDeclarationLessThan(const HbCss::WeightedDeclaration &lhs, 
+                                                    const HbCss::WeightedDeclaration &rhs)
 {
     return lhs.first < rhs.first;
 }
@@ -394,12 +429,9 @@ static inline bool qcss_selectorDeclarationLessThan(
 
 bool HbLayeredStyleLoader::hasOrientationSpecificStyleRules(HbStyleSelector::NodePtr node) const
 {
-    HbWidget* widget = (HbWidget*) node.ptr;
+    HbWidget* widget = static_cast<HbWidget*>(node);
     HbWidgetStyleLoader *loader = HbWidgetStyleLoader::instance();
     loader->loadCss(widget);
-    
-    QVector<QVector<HbCss::WeightedRule> > weightedRulesList;
-    HbLayeredStyleLoader *allStack = mConcern == Concern_All ? 0 : getStack(Concern_All);
 
     QListIterator<LayerPriority> iter(mUsedLayers);
     while (iter.hasNext()) {
@@ -410,10 +442,10 @@ bool HbLayeredStyleLoader::hasOrientationSpecificStyleRules(HbStyleSelector::Nod
                 return true;
             }
         }
-        if (allStack) {
+        if (mAllStack) {
             QMap<LayerPriority, Layer>::const_iterator allIt = 
-                allStack->mStyleLayers.constFind(priority);
-            if (allIt != allStack->mStyleLayers.constEnd()) {
+                mAllStack->mStyleLayers.constFind(priority);
+            if (allIt != mAllStack->mStyleLayers.constEnd()) {
                 if (allIt->styleSelector.hasOrientationSpecificStyleRules(node)) {
                     return true;
                 }
@@ -435,46 +467,42 @@ HbVector<HbCss::Declaration> HbLayeredStyleLoader::declarationsForNode(
     const Qt::Orientation orientation, 
     const char *extraPseudo) const
 {
-    HbWidget* widget = (HbWidget*) node.ptr;
+    HbWidget* widget = static_cast<HbWidget*>(node);
     HbWidgetStyleLoader *loader = HbWidgetStyleLoader::instance();
     loader->loadCss(widget);
-    
-    QVector<QVector<HbCss::WeightedDeclaration> > weightedDeclsList;
-    HbLayeredStyleLoader *allStack = mConcern == Concern_All ? 0 : getStack(Concern_All);
+
+    QList<HbCss::WeightedDeclaration> weightedDecls;
 
     QListIterator<LayerPriority> iter(mUsedLayers);
     while (iter.hasNext()) {
         LayerPriority priority = iter.next();
         QMap<LayerPriority, Layer>::const_iterator it = mStyleLayers.constFind(priority);
         if (it != mStyleLayers.constEnd()) {
-            weightedDeclsList.append(
-                it->styleSelector.weightedDeclarationsForNode(node, orientation, extraPseudo));
+            it->styleSelector.weightedDeclarationsForNode(
+                node, 
+                orientation, 
+                &weightedDecls, 
+                extraPseudo);
         }
-        if (allStack) {
+        if (mAllStack) {
             QMap<LayerPriority, Layer>::const_iterator allIt = 
-                allStack->mStyleLayers.constFind(priority);
-            if (allIt != allStack->mStyleLayers.constEnd()) {
-                weightedDeclsList.append(
-                    allIt->styleSelector.weightedDeclarationsForNode(
-                        node, 
-                        orientation, 
-                        extraPseudo));
+                mAllStack->mStyleLayers.constFind(priority);
+            if (allIt != mAllStack->mStyleLayers.constEnd()) {
+                allIt->styleSelector.weightedDeclarationsForNode(
+                    node, 
+                    orientation, 
+                    &weightedDecls,
+                    extraPseudo);
             }
         }
     }
     
-    QVector<HbCss::WeightedDeclaration> weightedDecls;
-    int count = 0;
-    for (int i=0; i<weightedDeclsList.count(); i++) {
-        count += weightedDeclsList.at(i).count();
+    if (weightedDecls.count() > 1) {
+        qStableSort(weightedDecls.begin(), weightedDecls.end(), qcss_selectorDeclarationLessThan);
     }
-    weightedDecls.reserve(count);
-    for (int i=0; i<weightedDeclsList.count(); i++) {
-        weightedDecls += weightedDeclsList.at(i);
-    }
-    qStableSort(weightedDecls.begin(), weightedDecls.end(), qcss_selectorDeclarationLessThan);
 
     HbVector<HbCss::Declaration> decls;
+    decls.reserve(weightedDecls.count());
     for (int j = 0; j < weightedDecls.count(); j++)
         decls += weightedDecls.at(j).second;
     return decls;
@@ -489,51 +517,39 @@ HbVector<HbCss::Declaration> HbLayeredStyleLoader::declarationsForNode(
 HbVector<HbCss::StyleRule> HbLayeredStyleLoader::styleRulesForNode(HbStyleSelector::NodePtr node,
         const Qt::Orientation orientation) const
 {
-    HbWidget* widget = (HbWidget*) node.ptr;
-    HbWidgetStyleLoader *loader = HbWidgetStyleLoader::instance();
-    loader->loadCss(widget);
-    
-    QVector<QVector<HbCss::WeightedRule> > weightedRulesList;
-    HbLayeredStyleLoader *allStack = mConcern == Concern_All ? 0 : getStack(Concern_All);
+    HbWidget* widget = static_cast<HbWidget*>(node);
+    HbWidgetStyleLoader::instance()->loadCss(widget);
+
+    QList<HbCss::WeightedRule> weightedRules;
 
     QListIterator<LayerPriority> iter(mUsedLayers);
     while (iter.hasNext()) {
         LayerPriority priority = iter.next();
         QMap<LayerPriority, Layer>::const_iterator it = mStyleLayers.constFind(priority);
         if (it != mStyleLayers.constEnd()) {
-            weightedRulesList.append(
-                it->styleSelector.weightedStyleRulesForNode(node, orientation));
+            it->styleSelector.weightedStyleRulesForNode(node, orientation, &weightedRules);
         }
-        if (allStack) {
+        if (mAllStack) {
             QMap<LayerPriority, Layer>::const_iterator allIt = 
-                allStack->mStyleLayers.constFind(priority);
-            if (allIt != allStack->mStyleLayers.constEnd()) {
-                weightedRulesList.append(
-                    allIt->styleSelector.weightedStyleRulesForNode(node, orientation));
+                mAllStack->mStyleLayers.constFind(priority);
+            if (allIt != mAllStack->mStyleLayers.constEnd()) {
+                allIt->styleSelector.weightedStyleRulesForNode(node, orientation, &weightedRules);
             }
         }
     }
-    
-    QVector<HbCss::WeightedRule> weightedRules;
-    int count = 0;
-    for (int i=0; i<weightedRulesList.count(); i++) {
-        count += weightedRulesList.at(i).count();
+    if (weightedRules.count() > 1) {
+        qStableSort(weightedRules.begin(), weightedRules.end(), qcss_selectorStyleRuleLessThan);
     }
-    weightedRules.reserve(count);
-    for (int i=0; i<weightedRulesList.count(); i++) {
-        weightedRules += weightedRulesList.at(i);
-    }
-    qStableSort(weightedRules.begin(), weightedRules.end(), qcss_selectorStyleRuleLessThan);
 
-    HbVector<HbCss::StyleRule> rules;
 #ifdef LAYEREDSTYLELOADER_DEBUG
     qDebug() << "Style rules for" << widget->metaObject()->className();
     qDebug("\n%s", HbCssFormatter::weightedStyleRulesToString(weightedRules).toLatin1().constData());
 #endif
-    rules.reserve(count);
-    for (int j = 0; j < weightedRules.count(); j++) {
+
+    HbVector<HbCss::StyleRule> rules;
+    rules.reserve(weightedRules.count());
+    for (int j = 0; j < weightedRules.count(); j++)
         rules += weightedRules.at(j).second;
-    }
     return rules;
 }
 
@@ -541,10 +557,8 @@ HbVector<HbCss::StyleRule> HbLayeredStyleLoader::styleRulesForNode(HbStyleSelect
 /*!
      Provides the variable rule sets for the loaded CSS files.
 */
-void HbLayeredStyleLoader::variableRuleSets(QHash<QString, HbCss::Declaration> *variables) const
+void HbLayeredStyleLoader::variableRuleSets(QHash<quint32, HbCss::Declaration> *variables) const
 {
-    HbLayeredStyleLoader *allStack = mConcern == Concern_All ? 0 : getStack(Concern_All);
-    
     QListIterator<LayerPriority> iter(mUsedLayers);
     while (iter.hasNext()) {
         LayerPriority priority = iter.next();
@@ -564,33 +578,15 @@ void HbLayeredStyleLoader::variableRuleSets(QHash<QString, HbCss::Declaration> *
                 }
             }
         }
-        if (allStack) {
+        if (mAllStack) {
             QMap<LayerPriority, Layer>::const_iterator allIt = 
-                allStack->mStyleLayers.constFind(priority);
-            if (allIt != allStack->mStyleLayers.constEnd()) {
+                mAllStack->mStyleLayers.constFind(priority);
+            if (allIt != mAllStack->mStyleLayers.constEnd()) {
                 allIt->styleSelector.variableRuleSets(variables);
             }
         }
     }
 }
-
-/*!
-     Finds the variable from core layer. The found varibale is returned in val
-     
-     \return True if it finds in default colorgroup.css, false otherwise
-*/
-bool HbLayeredStyleLoader::findInDefaultVariables(
-    const QString& variableName, 
-    HbCss::Value &val) const
-{
-    bool found = false;
-    if (mDefaultVariables.contains(variableName)) {
-        val = mDefaultVariables.value(variableName).values.first();
-        found = true;
-    }
-    return found;
-}
-
 
 /*!
      Updates the cached list of used layers to include the specified layer.

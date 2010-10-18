@@ -190,15 +190,15 @@ QFont HbFontSpecPrivate::font()
 
     if (mRole != HbFontSpec::Undefined) {
     tInfo->roleToTypeface(mRole, typefaceFamily, weight);
-		mFontName = typefaceFamily;
-	} else if (!tInfo->containsFamily(typefaceFamily)) {
-		QString aliasFamily;
-		if (tInfo->tryGetFamilyFromAliasName(typefaceFamily, aliasFamily, weight)) {
-			typefaceFamily = aliasFamily;
-		}
-	} else {
-		weight = tInfo->getWeight(typefaceFamily);
-	}
+        mFontName = typefaceFamily;
+    } else if (!tInfo->containsFamily(typefaceFamily)) {
+        QString aliasFamily;
+        if (tInfo->tryGetFamilyFromAliasName(typefaceFamily, aliasFamily, weight)) {
+            typefaceFamily = aliasFamily;
+        }
+    } else {
+        weight = tInfo->getWeight(typefaceFamily);
+    }
     QFont font(typefaceFamily);
 
     font.setWeight(weight);

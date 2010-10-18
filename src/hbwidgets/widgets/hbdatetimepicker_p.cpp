@@ -26,17 +26,11 @@
 #include "hbdatetimepicker_p.h"
 #include "hbdatetimepicker.h"
 #include "hbstyleoption_p.h"
-#include "hbfeaturemanager_r.h"
-
-//TODO:remove frameitem dependency
-#include "hbframeitem.h"
-
-#include <QStringListModel>
-#include <QGraphicsLinearLayout>
-#include <QModelIndex>
-#include <QDate>
-#include <QLocale>
-#include <QPointer>
+#include "hbtextitem.h"
+#ifdef HB_TEXT_MEASUREMENT_UTILITY
+#include "hbtextmeasurementutility_r.h"
+#include "hbtextmeasurementutility_r_p.h"
+#endif
 
 //#define HBDATETIMEPICKER_DEBUG
 #ifdef HBDATETIMEPICKER_DEBUG
@@ -127,6 +121,9 @@ bool HbDateTimeParser::parseFormat(const QString &format)
                     appendSeparator(&newSeparators, format, index, i - index, lastQuote);
                     i += sn.count - 1;
                     index = i + 1;
+                    if(newDisplay & hour) {
+                        return false; // error in format
+                    }
                     newDisplay |= hour;
                 }
                 break;
@@ -137,6 +134,9 @@ bool HbDateTimeParser::parseFormat(const QString &format)
                     appendSeparator(&newSeparators, format, index, i - index, lastQuote);
                     i += sn.count - 1;
                     index = i + 1;
+                    if(newDisplay & MinuteSection) {
+                        return false; // error in format
+                    }
                     newDisplay |= MinuteSection;
                 }
                 break;
@@ -147,6 +147,9 @@ bool HbDateTimeParser::parseFormat(const QString &format)
                     appendSeparator(&newSeparators, format, index, i - index, lastQuote);
                     i += sn.count - 1;
                     index = i + 1;
+                    if(newDisplay & SecondSection) {
+                        return false; // error in format
+                    }
                     newDisplay |= SecondSection;
                 }
                 break;
@@ -158,6 +161,9 @@ bool HbDateTimeParser::parseFormat(const QString &format)
                     appendSeparator(&newSeparators, format, index, i - index, lastQuote);
                     i += sn.count - 1;
                     index = i + 1;
+                    if(newDisplay & MSecSection) {
+                        return false; // error in format
+                    }
                     newDisplay |= MSecSection;
                 }
                 break;
@@ -168,10 +174,13 @@ bool HbDateTimeParser::parseFormat(const QString &format)
                     const SectionNode sn = { AmPmSection, i - add, (cap ? 1 : 0) };
                     newSectionNodes.append(sn);
                     appendSeparator(&newSeparators, format, index, i - index, lastQuote);
+                    if(newDisplay & AmPmSection) {
+                        return false; // error in format
+                    }
                     newDisplay |= AmPmSection;
                     if (i + 1 < format.size()
                         && format.at(i+1) == (cap ? QLatin1Char('P') : QLatin1Char('p'))) {
-                            ++i;
+                        ++i;
                     }
                     index = i + 1;
                 }
@@ -181,11 +190,14 @@ bool HbDateTimeParser::parseFormat(const QString &format)
                     const int repeat = countRepeat(format, i, 4);
                     if (repeat >= 2) {
                         const SectionNode sn = { repeat == 4 ? YearSection : YearSection2Digits,
-                            i - add, repeat == 4 ? 4 : 2 };
+                                                 i - add, repeat == 4 ? 4 : 2 };
                         newSectionNodes.append(sn);
                         appendSeparator(&newSeparators, format, index, i - index, lastQuote);
                         i += sn.count - 1;
                         index = i + 1;
+                        if(newDisplay & sn.type) {
+                            return false; //error in format
+                        }
                         newDisplay |= sn.type;
                     }
                 }
@@ -197,6 +209,9 @@ bool HbDateTimeParser::parseFormat(const QString &format)
                     newSeparators.append(unquote(format.mid(index, i - index)));
                     i += sn.count - 1;
                     index = i + 1;
+                    if(newDisplay & MonthSection) {
+                        return false; // error in format
+                    }
                     newDisplay |= MonthSection;
                 }
                 break;
@@ -208,6 +223,9 @@ bool HbDateTimeParser::parseFormat(const QString &format)
                     appendSeparator(&newSeparators, format, index, i - index, lastQuote);
                     i += sn.count - 1;
                     index = i + 1;
+                    if(newDisplay & (DayOfWeekSection | DaySection)) {
+                        return false; // error in format, dd and ddd not yet supported in same format
+                    }
                     newDisplay |= sn.type;
                 }
                 break;
@@ -254,7 +272,7 @@ int HbDateTimeParser::sectionSize(int sectionIndex) const
         return mDisplayFormat.size() - sectionPos(sectionIndex) - mSeparators.last().size();
     } else {
         return sectionPos(sectionIndex + 1) - sectionPos(sectionIndex)
-            - mSeparators.at(sectionIndex + 1).size();
+                - mSeparators.at(sectionIndex + 1).size();
     }
 }
 
@@ -278,9 +296,41 @@ const HbDateTimeParser::SectionNode &HbDateTimeParser::sectionNode(int sectionIn
 }
 /////////////////////////////////////////////////
 
+HbDatePickerViewLabel::HbDatePickerViewLabel(QGraphicsItem *parent) : HbWidget(parent){
+    mTextItem = 0;
+    createPrimitives();
+    updatePrimitives();
+}
+HbDatePickerViewLabel::HbDatePickerViewLabel(const QString &displayText, QGraphicsItem *parent):HbWidget(parent){
+    mTextItem = 0;
+    createPrimitives();
+    updatePrimitives();
 
+    ((HbTextItem*)mTextItem)->setText(displayText);
+}
+
+void HbDatePickerViewLabel::initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive){
+    HbWidget::initPrimitiveData(primitiveData, primitive);
+}
+
+void HbDatePickerViewLabel::createPrimitives(){
+    if(!mTextItem){
+        mTextItem = style()->createPrimitive(HbStyle::PT_TextItem,"text", this);
+    }
+}
+
+void HbDatePickerViewLabel::updatePrimitives(){
+    HbWidget::updatePrimitives();
+    if(mTextItem){
+        HbStyleTextPrimitiveData data;
+        initPrimitiveData(&data, mTextItem);
+        style()->updatePrimitive(mTextItem, &data, this);
+    }
+}
+
+/////////////////////////////////////////////////
 HbDateTimePickerPrivate::HbDateTimePickerPrivate()
-:HbWidgetPrivate()
+    :HbWidgetPrivate()
     ,mDayPicker(0)
     ,mMonthPicker(0)
     ,mYearPicker(0)
@@ -305,6 +355,7 @@ HbDateTimePickerPrivate::HbDateTimePickerPrivate()
     ,mDateTimeMode(QVariant::Date) //default is date mode
     ,mLayout(0)         
     //,mFormat() //set the format again in init()
+    ,mFormatEventType(-1)
     //,mDisplaySecions() //is blank by default
     ,mParser()
     ,mYearFormat()
@@ -315,10 +366,10 @@ HbDateTimePickerPrivate::HbDateTimePickerPrivate()
     ,mSecondFormat() 
     ,mIs24HourFormat(false)
     ,mIsTwoDigitYearFormat(false)
-    ,mBackground(0)
-    ,mFrame(0)
     ,mContent(0)
     ,mIntervals()
+    ,mBackground(0)
+    ,mFrame(0)
     ,mHighlight(0)
 {
     mMinimumDate = HBDATETIMEPICKER_DATETIME_MIN;
@@ -340,26 +391,24 @@ void HbDateTimePickerPrivate::init(QVariant::Type dateTimeMode)
 
     //create base content widget which contains the tumble views
     mContent=new HbWidget(q);
-    mLayout = new QGraphicsLinearLayout(Qt::Horizontal);
+    mLayout = new QGraphicsGridLayout;
     mLayout->setSpacing(1);
     mLayout->setContentsMargins(0,0,0,0);
     mContent->setLayout(mLayout);
-    q->style()->setItemName(mContent,"content");
+    HbStyle::setItemName(mContent,"content");
 
     mDateTimeMode = dateTimeMode;
     mIntervals[QDateTimeEdit::MinuteSection]=1;
-
+    mFormatEventType = QEvent::registerEventType(QEvent::User+1);
     //read the format from locale
-    mFormat = localeDateTimeFormat(dateTimeMode);
-
-    //parse the format and set the sections in order
-    parseDisplayFormat(mFormat);
-
+    QString newFormat = localeDateTimeFormat(dateTimeMode);
+    if(isFormatValid(newFormat)){
+        mFormat = newFormat;
+        postFormatEvent();
+    }
+    
     //create primitives
     createPrimitives();
-
-    //recreate and rearrange depending on the format
-    rearrangeTumbleViews();
 }
 
 /*!
@@ -382,59 +431,58 @@ bool HbDateTimePickerPrivate::isFormatValid(const QString &newDisplayFormat)
     if(newDisplayFormat == mFormat) {
         return false;
     }
-    return true;
+
+    return mParser.parseFormat(newDisplayFormat);
 }
 
 /* 
    this will reset the display sections and re add them in order
    mentioned in the display format passed. this also sets the mIs24HourFormat var.
 */
-void HbDateTimePickerPrivate::parseDisplayFormat(const QString &format)
+void HbDateTimePickerPrivate::processDisplaySections()
 {
-    if(mParser.parseFormat(format)) {
-        for(int i=0;i<mParser.mSectionNodes.count();++i) {
-            switch(mParser.mSectionNodes[i].type) {
-                case HbDateTimeParser::DaySection:
-                case HbDateTimeParser::DayOfWeekSection:
-                    mDayFormat = QString(mParser.mSectionNodes[i].count,'d');
-                    break;
+    for(int i=0;i<mParser.mSectionNodes.count();++i) {
+        switch(mParser.mSectionNodes[i].type) {
+        case HbDateTimeParser::DaySection:
+        case HbDateTimeParser::DayOfWeekSection:
+            mDayFormat = QString(mParser.mSectionNodes[i].count,'d');
+            break;
 
-                case HbDateTimeParser::MonthSection:
-                    mMonthFormat = QString(mParser.mSectionNodes[i].count,'M');
-                    break;
+        case HbDateTimeParser::MonthSection:
+            mMonthFormat = QString(mParser.mSectionNodes[i].count,'M');
+            break;
 
-                case HbDateTimeParser::YearSection:
-                    mIsTwoDigitYearFormat = false;
-                    mYearFormat = QString(mParser.mSectionNodes[i].count,'y');
-                    break;
+        case HbDateTimeParser::YearSection:
+            mIsTwoDigitYearFormat = false;
+            mYearFormat = QString(mParser.mSectionNodes[i].count,'y');
+            break;
 
-                case HbDateTimeParser::YearSection2Digits:
-                    mIsTwoDigitYearFormat = true;
-                    mYearFormat = QString(mParser.mSectionNodes[i].count,'y');
-                    break;
+        case HbDateTimeParser::YearSection2Digits:
+            mIsTwoDigitYearFormat = true;
+            mYearFormat = QString(mParser.mSectionNodes[i].count,'y');
+            break;
 
-                case HbDateTimeParser::SecondSection:
-                    mSecondFormat = QString(mParser.mSectionNodes[i].count,'s');
-                    break;
+        case HbDateTimeParser::SecondSection:
+            mSecondFormat = QString(mParser.mSectionNodes[i].count,'s');
+            break;
 
-                case HbDateTimeParser::MinuteSection:
-                    mMinuteFormat = QString(mParser.mSectionNodes[i].count,'m');
-                    break;
+        case HbDateTimeParser::MinuteSection:
+            mMinuteFormat = QString(mParser.mSectionNodes[i].count,'m');
+            break;
 
-                case HbDateTimeParser::Hour12Section:
-                    mIs24HourFormat = false;
-                    mHourFormat = QString(mParser.mSectionNodes[i].count,'h');
-                    break;
+        case HbDateTimeParser::Hour12Section:
+            mIs24HourFormat = false;
+            mHourFormat = QString(mParser.mSectionNodes[i].count,'h');
+            break;
 
-                case HbDateTimeParser::Hour24Section:
-                    mIs24HourFormat = true;
-                    mHourFormat = QString(mParser.mSectionNodes[i].count,'h');
-                    break;
+        case HbDateTimeParser::Hour24Section:
+            mIs24HourFormat = true;
+            mHourFormat = QString(mParser.mSectionNodes[i].count,'h');
+            break;
 
-                default:
-                    break;
-                    /*case HbDateTimeParser::DayOfWeekSection: not supported */
-            }
+        default:
+            break;
+            /*case HbDateTimeParser::DayOfWeekSection: not supported */
         }
     }
 }
@@ -447,36 +495,41 @@ void HbDateTimePickerPrivate::parseDisplayFormat(const QString &format)
 void HbDateTimePickerPrivate::rearrangeTumbleViews()
 {                  
     Q_Q(HbDateTimePicker);
-
     if(!(mParser.mDisplaySections & (HbDateTimeParser::YearSection|
-				     HbDateTimeParser::YearSection2Digits))) {
+                     HbDateTimeParser::YearSection2Digits))) {
       deleteAndNull(mYearPicker);
+            delete mLabelYear;
       mYearModel = 0;
     }
     if(!(mParser.mDisplaySections & HbDateTimeParser::MonthSection)) {
-      deleteAndNull(mMonthPicker);
-      mMonthModel = 0;
+        deleteAndNull(mMonthPicker);
+        delete mLabelMonth;
+        mMonthModel = 0;
     }
     if(!(mParser.mDisplaySections & HbDateTimeParser::DaySection)) {
-      deleteAndNull(mDayPicker);
-      mDayModel = 0;
+        deleteAndNull(mDayPicker);
+        delete mLabelDay;
+        mDayModel = 0;
     }
     if(!(mParser.mDisplaySections & (HbDateTimeParser::Hour12Section|
-				     HbDateTimeParser::Hour24Section))) {
+                     HbDateTimeParser::Hour24Section))) {
       deleteAndNull(mHourPicker);
+            delete mLabelHour;
       mHourModel = 0;
     }
     if(!(mParser.mDisplaySections & HbDateTimeParser::MinuteSection)) {
-      deleteAndNull(mMinutePicker);
-      mMinuteModel = 0;
+        deleteAndNull(mMinutePicker);
+        delete mLabelMinute;
+        mMinuteModel = 0;
     }
     if(!(mParser.mDisplaySections & HbDateTimeParser::SecondSection)) {
-      deleteAndNull(mSecondPicker);
-      mSecondModel = 0;
+        deleteAndNull(mSecondPicker);
+        delete mLabelSecond;
+        mSecondModel = 0;
     }
     if(!(mParser.mDisplaySections & HbDateTimeParser::AmPmSection)) {
-      deleteAndNull(mAmPmPicker);
-      mAmPmModel = 0;
+        deleteAndNull(mAmPmPicker);
+        mAmPmModel = 0;
     }
 
     mYearOffset = -1;
@@ -487,99 +540,135 @@ void HbDateTimePickerPrivate::rearrangeTumbleViews()
     mSecondOffset = -1;
 
     while(mLayout->count()) {
-      mLayout->removeAt(0);
+        mLayout->removeAt(0);
     }
-
-    QPointer<VIEWER> lastAdded;
 
     for(int i=0;i<mParser.mSectionNodes.count();i++) {
         switch(mParser.mSectionNodes[i].type) {
-            case HbDateTimeParser::AmPmSection:
-                if(!mAmPmPicker) {
-                    mAmPmPicker = new VIEWER(q);
-                    mAmPmModel = static_cast<QStringListModel*>(mAmPmPicker->model());
-                }
-                mLayout->addItem(mAmPmPicker);
-                lastAdded = mAmPmPicker;
-                break;
+        case HbDateTimeParser::AmPmSection:
+            if(!mAmPmPicker) {
+                mAmPmPicker = new VIEWER(q);
+                mAmPmModel = static_cast<QStringListModel*>(mAmPmPicker->model());
+            }
+
+            mLayout->addItem(mAmPmPicker, 1, i);
+            mLastAdded = mAmPmPicker;
+            break;
 
             case HbDateTimeParser::DaySection:
             case HbDateTimeParser::DayOfWeekSection:
-                if(!mDayPicker) {
-                    mDayPicker = new VIEWER(q);
-                    mDayModel = static_cast<QStringListModel*>(mDayPicker->model());
-                    mDayPicker->setLoopingEnabled(true);
+            if(!mDayPicker) {
+                mDayPicker = new VIEWER(q);
+                mDayModel = static_cast<QStringListModel*>(mDayPicker->model());
+                mDayPicker->setLoopingEnabled(true);
+            }
+
+                if(mLabelDay.isNull()){
+                    mLabelDay = new HbDatePickerViewLabel("Day", q);//TODO:Text should come from common.ts
                 }
-                mLayout->addItem(mDayPicker);
-                lastAdded = mDayPicker;
-                break;
+
+                mLayout->addItem(mLabelDay, 0, i);
+                mLayout->addItem(mDayPicker, 1, i);
+                mLastAdded = mDayPicker;
+            break;
 
             case HbDateTimeParser::MonthSection:
-                if(!mMonthPicker) {
-                    mMonthPicker = new VIEWER(q);
-                    mMonthModel = static_cast<QStringListModel*>(mMonthPicker->model());
-                    mMonthPicker->setLoopingEnabled(true);
+            if(!mMonthPicker) {
+                mMonthPicker = new VIEWER(q);
+                mMonthModel = static_cast<QStringListModel*>(mMonthPicker->model());
+                mMonthPicker->setLoopingEnabled(true);
+            }
+
+                if(mLabelMonth.isNull()){
+                    mLabelMonth = new HbDatePickerViewLabel("Month", q);//TODO:Text should come from common.ts
                 }
-                mLayout->addItem(mMonthPicker);
-                lastAdded = mMonthPicker;
-                break;
+
+                mLastAdded = mMonthPicker;
+                mLayout->addItem(mLabelMonth, 0, i);
+                mLayout->addItem(mMonthPicker, 1, i);
+            break;
 
             case HbDateTimeParser::YearSection:
             case HbDateTimeParser::YearSection2Digits:
-                if(!mYearPicker) {
-                    mYearPicker = new VIEWER(q);
-                    mYearModel = static_cast<QStringListModel*>(mYearPicker->model());
-                    mYearPicker->setLoopingEnabled(true);
+            if(!mYearPicker) {
+                mYearPicker = new VIEWER(q);
+                mYearModel = static_cast<QStringListModel*>(mYearPicker->model());
+                mYearPicker->setLoopingEnabled(true);
+            }
+
+                if(mLabelYear.isNull()){
+                    mLabelYear = new HbDatePickerViewLabel("Year", q);//TODO:Text should come from common.ts
                 }
-                mLayout->addItem(mYearPicker);
-                lastAdded = mYearPicker;
-                break;
+
+                mLayout->addItem(mLabelYear, 0, i);
+                mLayout->addItem(mYearPicker, 1, i);
+                mLastAdded = mYearPicker;
+            break;
 
             case HbDateTimeParser::SecondSection:
-                if(!mSecondPicker) {
-                    mSecondPicker = new VIEWER(q);
-                    mSecondModel = static_cast<QStringListModel*>(mSecondPicker->model());
-                    mSecondPicker->setLoopingEnabled(true);
+            if(!mSecondPicker) {
+                mSecondPicker = new VIEWER(q);
+                mSecondModel = static_cast<QStringListModel*>(mSecondPicker->model());
+                mSecondPicker->setLoopingEnabled(true);
+            }
+
+                if(mLabelSecond.isNull()){
+                    mLabelSecond = new HbDatePickerViewLabel("Seconds", q);//TODO:Text should come from common.ts
                 }
-                mLayout->addItem(mSecondPicker);
-                lastAdded = mSecondPicker;
-                break;
+
+                mLayout->addItem(mLabelSecond, 0, i);
+                mLayout->addItem(mSecondPicker, 1, i);
+                mLastAdded = mSecondPicker;
+            break;
 
             case HbDateTimeParser::MinuteSection:
-                if(!mMinutePicker) {
-                    mMinutePicker = new VIEWER(q);
-                    mMinuteModel = static_cast<QStringListModel*>(mMinutePicker->model());
-                    mMinutePicker->setLoopingEnabled(true);
+            if(!mMinutePicker) {
+                mMinutePicker = new VIEWER(q);
+                mMinuteModel = static_cast<QStringListModel*>(mMinutePicker->model());
+                mMinutePicker->setLoopingEnabled(true);
+            }
+                if(mLabelMinute.isNull()){
+                    mLabelMinute = new HbDatePickerViewLabel("Minute", q);//TODO:Text should come from common.ts
                 }
-                mLayout->addItem(mMinutePicker);
-                lastAdded = mMinutePicker;
-                break;
+                mLayout->addItem(mLabelMinute, 0, i);
+                mLayout->addItem(mMinutePicker, 1, i);
+                mLastAdded = mMinutePicker;
+            break;
 
             case HbDateTimeParser::Hour12Section:
             case HbDateTimeParser::Hour24Section:
-                if(!mHourPicker) {
-                    mHourPicker = new VIEWER(q);
-                    mHourModel = static_cast<QStringListModel*>(mHourPicker->model());
-                    mHourPicker->setLoopingEnabled(true);
+            if(!mHourPicker) {
+                mHourPicker = new VIEWER(q);
+                mHourModel = static_cast<QStringListModel*>(mHourPicker->model());
+                mHourPicker->setLoopingEnabled(true);
+            }
+
+                if(mLabelHour.isNull()){
+                    mLabelHour = new HbDatePickerViewLabel("Hour", q);//TODO:Text should come from common.ts
                 }
-                mLayout->addItem(mHourPicker);
-                lastAdded = mHourPicker;
-                break;
+
+                mLayout->addItem(mLabelHour, 0, i); 
+                mLayout->addItem(mHourPicker, 1, i);
+                mLastAdded = mHourPicker;
+
+            break;
 
             default:
-                break;
+            break;
         }
-        
-        if(lastAdded){
-            lastAdded->primitive("highlight")->hide();
-            lastAdded->primitive("separator")->show();
+
+        if(mLastAdded){
+            mLastAdded->primitive("highlight")->hide();
+            mLastAdded->primitive("separator")->show();
+            mLastAdded->primitive("background")->hide();
+            mLastAdded->primitive("frame")->hide();
         }
 
     }
 
     //For the last added tumble view, hide the separator.
-    if(lastAdded){
-        lastAdded->primitive("separator")->hide();
+    if(mLastAdded){
+        mLastAdded->primitive("separator")->hide();
     }
 
     setRanges();
@@ -747,7 +836,7 @@ void HbDateTimePickerPrivate::emitDateTimeChange()
 
 
 void HbDateTimePickerPrivate::setDateTimeRange(const QDateTime &startdt,
-        const QDateTime &enddt)
+                                               const QDateTime &enddt)
 {
     Q_Q(HbDateTimePicker);
     QDateTime start(startdt);
@@ -866,7 +955,7 @@ void HbDateTimePickerPrivate::setDateTime(const QDateTime &newDate)
                 index = newDateTime.time().minute()-mMinuteOffset;
             }
 #ifdef HBDATETIMEPICKER_DEBUG
-    qDebug() << "setMinuteRange:selecting= " << index;
+            qDebug() << "setMinuteRange:selecting= " << index;
 #endif
             mMinutePicker->setSelected(index);
         }
@@ -926,8 +1015,8 @@ void HbDateTimePickerPrivate::setYearRange(int start,int end)
 
 
     resizeModel(mYearModel, mYearOffset, 
-        mYearOffset+mYearModel->rowCount()-1, start, 
-        end, &HbDateTimePickerPrivate::localeYear);
+                mYearOffset+mYearModel->rowCount()-1, start,
+                end, &HbDateTimePickerPrivate::localeYear);
 
     mYearOffset = start;
 
@@ -953,9 +1042,9 @@ void HbDateTimePickerPrivate::setMonthRange(int start,int end)
         newIndex = end-start;
     }
     resizeModel(mMonthModel,
-            mMonthOffset,mMonthOffset+mMonthModel->rowCount()-1,
-            start,end,
-            &HbDateTimePickerPrivate::localeMonth);
+                mMonthOffset,mMonthOffset+mMonthModel->rowCount()-1,
+                start,end,
+                &HbDateTimePickerPrivate::localeMonth);
     mMonthOffset = start;
 
     mMonthPicker->setSelected(newIndex);
@@ -990,9 +1079,9 @@ void HbDateTimePickerPrivate::setDayRange(int start,int end)
     }
 
     resizeModel(mDayModel,
-            mDayOffset,mDayOffset+mDayModel->rowCount()-1,
-            start,end,
-            &HbDateTimePickerPrivate::localeDay);
+                mDayOffset,mDayOffset+mDayModel->rowCount()-1,
+                start,end,
+                &HbDateTimePickerPrivate::localeDay);
     mDayOffset = start;
 
     mDayPicker->setSelected(newIndex);
@@ -1028,9 +1117,9 @@ void HbDateTimePickerPrivate::setHourRange(int start,int end)
     }
 
     resizeModel(mHourModel,
-            mHourOffset,mHourOffset+mHourModel->rowCount()-1,
-            start,end,
-            &HbDateTimePickerPrivate::localeHour);
+                mHourOffset,mHourOffset+mHourModel->rowCount()-1,
+                start,end,
+                &HbDateTimePickerPrivate::localeHour);
     mHourOffset = start;
 
     mHourPicker->setSelected(newIndex);
@@ -1065,17 +1154,17 @@ void HbDateTimePickerPrivate::setMinuteRange(int start,int end)
     }
 
     resizeModel(mMinuteModel, 
-		mMinuteOffset,mMinuteModel->index(mMinuteModel->rowCount() - 1).data().toInt(),
-		start,end,
-		&HbDateTimePickerPrivate::localeMinute, 
-		mIntervals[QDateTimeEdit::MinuteSection]);
+                mMinuteOffset,mMinuteModel->index(mMinuteModel->rowCount() - 1).data().toInt(),
+                start,end,
+                &HbDateTimePickerPrivate::localeMinute,
+                mIntervals[QDateTimeEdit::MinuteSection]);
     mMinuteOffset = start;
 
     //Select the nearest value when the range is set.
     int index = 0;
 
     for(int i=start;i<newIndex;i+=mIntervals[QDateTimeEdit::MinuteSection]) {
-      index++;
+        index++;
     }
 #ifdef HBDATETIMEPICKER_DEBUG
     qDebug() << "initMinute:selecting= " << index;
@@ -1113,9 +1202,9 @@ void HbDateTimePickerPrivate::setSecondRange(int start,int end)
     }
 
     resizeModel(mSecondModel,
-            mSecondOffset,mSecondOffset+mSecondModel->rowCount()-1,
-            start,end,
-            &HbDateTimePickerPrivate::localeSecond);
+                mSecondOffset,mSecondOffset+mSecondModel->rowCount()-1,
+                start,end,
+                &HbDateTimePickerPrivate::localeSecond);
     mSecondOffset = start;
 
     mSecondPicker->setSelected(newIndex);
@@ -1187,7 +1276,7 @@ QString HbDateTimePickerPrivate::localeAmPm(bool isAm)
 {
     QString text = isAm ? mLocale.amText() : mLocale.pmText();
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
-    if ( HbFeatureManager::instance()->featureStatus( HbFeatureManager::TextMeasurement ) ) {
+    if (HbTextMeasurementUtility::instance()->locTestMode()) {
         text.append(QChar(LOC_TEST_START));
         text.append("qtl_datetimepicker_popup_ampm_sec");
         text.append(QChar(LOC_TEST_END));
@@ -1204,9 +1293,9 @@ QString HbDateTimePickerPrivate::localeAmPm(bool isAm)
    model classes with one interface/virtual function specialization.
 */
 void HbDateTimePickerPrivate::resizeModel(QStringListModel *model,
-            int oldStart, int oldEnd,
-            int newStart, int newEnd,
-            QString (HbDateTimePickerPrivate::*localeFunc)(int), int interval)
+                                          int oldStart, int oldEnd,
+                                          int newStart, int newEnd,
+                                          QString (HbDateTimePickerPrivate::*localeFunc)(int), int interval)
 {
     class ConnectionRemover {
     public:
@@ -1221,98 +1310,21 @@ void HbDateTimePickerPrivate::resizeModel(QStringListModel *model,
     }Obj(this);
 
 #ifdef HBDATETIMEPICKER_DEBUG
-            qDebug() << "resizeModel: oldStart=" << oldStart
-                     << " oldEnd=" << oldEnd << " newStart=" 
-                     << newStart << " newEnd=" << newEnd
-                     << " interval=" << interval;
+    qDebug() << "resizeModel: oldStart=" << oldStart
+            << " oldEnd=" << oldEnd << " newStart="
+            << newStart << " newEnd=" << newEnd
+            << " interval=" << interval;
 #endif
-	    bool b1=false,b2=false;
-            int oldinterval=model->rowCount()>1 ? (model->index(1,0).data().toInt(&b1)-model->index(0,0).data().toInt(&b2)):0; 
+    bool b1=false,b2=false;
+    int oldinterval=model->rowCount()>1 ? (model->index(1,0).data().toInt(&b1)-model->index(0,0).data().toInt(&b2)):0;
 #ifdef HBDATETIMEPICKER_DEBUG
-            qDebug() << "resizeModel:sameoldInterval=" << oldinterval;
+    qDebug() << "resizeModel:sameoldInterval=" << oldinterval;
 #endif
-            if(b1 && b2 && (oldinterval == interval) && (newStart == oldStart)) {
-                if(newEnd>oldEnd) {
-                    int rowCount=model->rowCount();
-#ifdef HBDATETIMEPICKER_DEBUG
-                    qDebug() << "resizeModel:sameinserting(" << rowCount << "," <<(newEnd-oldEnd)/interval << ")";
-#endif
-                    model->insertRows(rowCount,(newEnd-oldEnd)/interval);
-                    for(int i=0;i<((newEnd-oldEnd)/interval);++i) {
-                        QModelIndex index=model->index(i+rowCount,0);
-                        if(index.isValid()) {
-                            model->setData(index,(this->*localeFunc)(((i+1)*interval)+oldEnd));
-#ifdef HBDATETIMEPICKER_DEBUG
-                            qDebug() << "resizeModel:samesetData(" << ((i+1)*interval)+oldEnd << "," << (this->*localeFunc)((i+1)*interval+oldEnd) << ")";
-#endif
-                        }
-                    }
-                }
-                if(oldEnd>newEnd) {
-                    //if the start offset is preset more items can fit at end
-                    int stay=((newEnd-newStart)/interval)+1;
-                    int count=model->rowCount()-stay;
-#ifdef HBDATETIMEPICKER_DEBUG
-                    qDebug() << "resizeModel:removing(" <<model->rowCount()-count << "," << count << ")"
-                             << " data=" << model->index((model->rowCount()-count),0).data().toString();
-#endif
-                    model->removeRows((model->rowCount()-count),count);
-                }
-                return;//optimizing inserts when interval is set
-            } else {
-	        if(b1 && b2) {		
-		    model->removeRows(0,model->rowCount());
-                    oldStart = oldEnd = 0;
-	        }
-            }
-
-        if((model->rowCount() == 0) && (newEnd-newStart>=0)) {
-#ifdef HBDATETIMEPICKER_DEBUG
-            qDebug() << "resizeModel:default addition inserting(0," << (newEnd-newStart+1)/interval << ")";
-#endif
-
-            model->insertRows(0,((newEnd-newStart)/interval)+1);
-            for(int i=0;i<=((newEnd-newStart)/interval);++i) {
-                QString text=(this->*localeFunc)((i*interval)+newStart);
-#ifdef HB_TEXT_MEASUREMENT_UTILITY
-                if ( localeFunc == &HbDateTimePickerPrivate::localeMonth &&
-                        HbFeatureManager::instance()->featureStatus( HbFeatureManager::TextMeasurement ) ) {
-                    text.append(QChar(LOC_TEST_START));
-                    text.append("qtl_datetimepicker_popup_month_sec");
-                    text.append(QChar(LOC_TEST_END));
-                }
-#endif
-                QModelIndex index=model->index(i,0);
-                if(index.isValid()) {
-                    model->setData(index,text);
-#ifdef HBDATETIMEPICKER_DEBUG
-                    qDebug() << "resizeModel:setData(" << i << "," << text << ")";
-#endif
-                }
-            }
-            return;
-        }
-
-        if(newStart<oldStart) {
-#ifdef HBDATETIMEPICKER_DEBUG
-            qDebug() << "resizeModel:inserting(0," << (oldStart-newStart)/interval << ")";
-#endif
-            model->insertRows(0,(oldStart-newStart)/interval);
-            for(int i=0;i<((oldStart-newStart)/interval);++i) {
-                QModelIndex index=model->index(i,0);
-                if(index.isValid()) {
-                    model->setData(index,(this->*localeFunc)((i*interval)+newStart));
-#ifdef HBDATETIMEPICKER_DEBUG
-                    qDebug() << "resizeModel:setData(" << i << "," << (this->*localeFunc)((i*interval)+newStart) << ")";
-#endif
-                }
-            }
-        }
-
+    if(b1 && b2 && (oldinterval == interval) && (newStart == oldStart)) {
         if(newEnd>oldEnd) {
             int rowCount=model->rowCount();
 #ifdef HBDATETIMEPICKER_DEBUG
-            qDebug() << "resizeModel:inserting(" << rowCount << "," <<(newEnd-oldEnd)/interval << ")";
+            qDebug() << "resizeModel:sameinserting(" << rowCount << "," <<(newEnd-oldEnd)/interval << ")";
 #endif
             model->insertRows(rowCount,(newEnd-oldEnd)/interval);
             for(int i=0;i<((newEnd-oldEnd)/interval);++i) {
@@ -1320,51 +1332,126 @@ void HbDateTimePickerPrivate::resizeModel(QStringListModel *model,
                 if(index.isValid()) {
                     model->setData(index,(this->*localeFunc)(((i+1)*interval)+oldEnd));
 #ifdef HBDATETIMEPICKER_DEBUG
-                    qDebug() << "resizeModel:setData(" << i << "," << (this->*localeFunc)((i+1)*interval+oldEnd) << ")";
+                    qDebug() << "resizeModel:samesetData(" << ((i+1)*interval)+oldEnd << "," << (this->*localeFunc)((i+1)*interval+oldEnd) << ")";
 #endif
                 }
             }
         }
-        if(newStart>oldStart) {
-#ifdef HBDATETIMEPICKER_DEBUG
-            qDebug() << "resizeModel:removing(0," << (newStart-oldStart)/interval << ")"
-                             << " data=" << model->index((newStart-oldStart)/interval,0).data().toString();
-#endif
-            model->removeRows(0,(newStart-oldStart)/interval);
-        }
-
         if(oldEnd>newEnd) {
-//#ifdef HBDATETIMEPICKER_DEBUG
-//            qDebug() << "resizeModel:removing(" <<model->rowCount()-((oldEnd-newEnd)/interval)<<"," << (oldEnd-newEnd)/interval << ")";
-//#endif
-//            model->removeRows((model->rowCount()-((oldEnd-newEnd)/interval)),(oldEnd-newEnd)/interval);
-                    //if the start offset is preset more items can fit at end
-                    int stay=((newEnd-newStart)/interval)+1;
-                    int count=model->rowCount()-stay;
+            //if the start offset is preset more items can fit at end
+            int stay=((newEnd-newStart)/interval)+1;
+            int count=model->rowCount()-stay;
 #ifdef HBDATETIMEPICKER_DEBUG
-                    qDebug() << "resizeModel:removing(" <<model->rowCount()-count << "," << count << ")"
-                             << " data=" << model->index((model->rowCount()-count),0).data().toString();
+            qDebug() << "resizeModel:removing(" <<model->rowCount()-count << "," << count << ")"
+                    << " data=" << model->index((model->rowCount()-count),0).data().toString();
 #endif
-                    model->removeRows((model->rowCount()-count),count);
+            model->removeRows((model->rowCount()-count),count);
         }
+        return;//optimizing inserts when interval is set
+    } else {
+        if(b1 && b2) {
+            model->removeRows(0,model->rowCount());
+            oldStart = oldEnd = 0;
+        }
+    }
+
+    if((model->rowCount() == 0) && (newEnd-newStart>=0)) {
+#ifdef HBDATETIMEPICKER_DEBUG
+        qDebug() << "resizeModel:default addition inserting(0," << (newEnd-newStart+1)/interval << ")";
+#endif
+
+        model->insertRows(0,((newEnd-newStart)/interval)+1);
+        for(int i=0;i<=((newEnd-newStart)/interval);++i) {
+            QString text=(this->*localeFunc)((i*interval)+newStart);
+#ifdef HB_TEXT_MEASUREMENT_UTILITY
+            if ( localeFunc == &HbDateTimePickerPrivate::localeMonth &&
+                 HbTextMeasurementUtility::instance()->locTestMode() ) {
+                text.append(QChar(LOC_TEST_START));
+                text.append("qtl_datetimepicker_popup_month_sec");
+                text.append(QChar(LOC_TEST_END));
+            }
+#endif
+            QModelIndex index=model->index(i,0);
+            if(index.isValid()) {
+                model->setData(index,text);
+#ifdef HBDATETIMEPICKER_DEBUG
+                qDebug() << "resizeModel:setData(" << i << "," << text << ")";
+#endif
+            }
+        }
+        return;
+    }
+
+    if(newStart<oldStart) {
+#ifdef HBDATETIMEPICKER_DEBUG
+        qDebug() << "resizeModel:inserting(0," << (oldStart-newStart)/interval << ")";
+#endif
+        model->insertRows(0,(oldStart-newStart)/interval);
+        for(int i=0;i<((oldStart-newStart)/interval);++i) {
+            QModelIndex index=model->index(i,0);
+            if(index.isValid()) {
+                model->setData(index,(this->*localeFunc)((i*interval)+newStart));
+#ifdef HBDATETIMEPICKER_DEBUG
+                qDebug() << "resizeModel:setData(" << i << "," << (this->*localeFunc)((i*interval)+newStart) << ")";
+#endif
+            }
+        }
+    }
+
+    if(newEnd>oldEnd) {
+        int rowCount=model->rowCount();
+#ifdef HBDATETIMEPICKER_DEBUG
+        qDebug() << "resizeModel:inserting(" << rowCount << "," <<(newEnd-oldEnd)/interval << ")";
+#endif
+        model->insertRows(rowCount,(newEnd-oldEnd)/interval);
+        for(int i=0;i<((newEnd-oldEnd)/interval);++i) {
+            QModelIndex index=model->index(i+rowCount,0);
+            if(index.isValid()) {
+                model->setData(index,(this->*localeFunc)(((i+1)*interval)+oldEnd));
+#ifdef HBDATETIMEPICKER_DEBUG
+                qDebug() << "resizeModel:setData(" << i << "," << (this->*localeFunc)((i+1)*interval+oldEnd) << ")";
+#endif
+            }
+        }
+    }
+    if(newStart>oldStart) {
+#ifdef HBDATETIMEPICKER_DEBUG
+        qDebug() << "resizeModel:removing(0," << (newStart-oldStart)/interval << ")"
+                << " data=" << model->index((newStart-oldStart)/interval,0).data().toString();
+#endif
+        model->removeRows(0,(newStart-oldStart)/interval);
+    }
+
+    if(oldEnd>newEnd) {
+        //#ifdef HBDATETIMEPICKER_DEBUG
+        //            qDebug() << "resizeModel:removing(" <<model->rowCount()-((oldEnd-newEnd)/interval)<<"," << (oldEnd-newEnd)/interval << ")";
+        //#endif
+        //            model->removeRows((model->rowCount()-((oldEnd-newEnd)/interval)),(oldEnd-newEnd)/interval);
+        //if the start offset is preset more items can fit at end
+        int stay=((newEnd-newStart)/interval)+1;
+        int count=model->rowCount()-stay;
+#ifdef HBDATETIMEPICKER_DEBUG
+        qDebug() << "resizeModel:removing(" <<model->rowCount()-count << "," << count << ")"
+                << " data=" << model->index((model->rowCount()-count),0).data().toString();
+#endif
+        model->removeRows((model->rowCount()-count),count);
+    }
 }  
 
 
 void HbDateTimePickerPrivate::createPrimitives()
-{
+{    
     Q_Q(HbDateTimePicker);
-    if(!mBackground) {
-        mBackground = q->style()->createPrimitive(HbStyle::P_DateTimePicker_background,q);
-        q->style()->setItemName(mBackground,"background");
-    }
-    if(!mFrame) {
-        mFrame = q->style()->createPrimitive(HbStyle::P_DateTimePicker_frame,q);
-        q->style()->setItemName(mFrame,"frame");
+    if (!mBackground) {
+        mBackground = q->style()->createPrimitive(HbStyle::PT_FrameItem,"background",q);
     }
 
-    if(!mHighlight){
-        mHighlight = q->style()->createPrimitive(HbStyle::P_TumbleView_highlight,q);
-        q->style()->setItemName(mHighlight,"highlight");
+    if(!mFrame) {
+        mFrame = q->style()->createPrimitive(HbStyle::PT_FrameItem,"frame",q);
+    }
+
+    if(!mHighlight) {
+        mHighlight = q->style()->createPrimitive(HbStyle::PT_FrameItem,"highlight",q);
     }
 }
 
@@ -1446,7 +1533,7 @@ void HbDateTimePickerPrivate::_q_monthChanged(int index)
 
         //set if dayrange changed
         if((start != mDayOffset)
-                ||(end !=mDayOffset+mDayModel->rowCount()-1)) {
+            ||(end !=mDayOffset+mDayModel->rowCount()-1)) {
             setDayRange(start,end);
         }
     }
@@ -1503,7 +1590,7 @@ void HbDateTimePickerPrivate::_q_yearChanged(int index)
 
         //set if range changed
         if((start != mMonthOffset)
-                || (end != mMonthModel->rowCount()-1)) {
+            || (end != mMonthModel->rowCount()-1)) {
             setMonthRange(start,end);
         }
 
@@ -1526,7 +1613,7 @@ void HbDateTimePickerPrivate::_q_yearChanged(int index)
 
         //set if dayrange changed
         if((start != mDayOffset)
-                ||(end !=mDayOffset+mDayModel->rowCount()-1)) {
+            ||(end !=mDayOffset+mDayModel->rowCount()-1)) {
             setDayRange(start,end);
         }
     }
@@ -1574,7 +1661,7 @@ void HbDateTimePickerPrivate::_q_hoursChanged(int index)
 
         //set if range changed
         if((start != mMinuteOffset)
-                || (end != start+mMinuteModel->rowCount()-1)) {
+            || (end != start+mMinuteModel->rowCount()-1)) {
             setMinuteRange(start,end);
         }
 
@@ -1597,7 +1684,7 @@ void HbDateTimePickerPrivate::_q_hoursChanged(int index)
 
         //set if seconds range changed
         if((start != mSecondOffset)
-                ||(end !=mSecondOffset+mSecondModel->rowCount()-1)) {
+            ||(end !=mSecondOffset+mSecondModel->rowCount()-1)) {
             setSecondRange(start,end);
         }
     }
@@ -1627,7 +1714,7 @@ void HbDateTimePickerPrivate::_q_minutesChanged(int index)
     qDebug() << "_q_minutesChanged:" << index;
     qDebug() << mLocale.toInt(mMinuteModel->index(mMinuteOffset+index,0).data().toString(),bOk, 10);
 #endif
-	QTime newTime(mDateTime.time().hour(),mLocale.toInt(mMinuteModel->index(index,0).data().toString(),bOk, 10),mDateTime.time().second());
+    QTime newTime(mDateTime.time().hour(),mLocale.toInt(mMinuteModel->index(index,0).data().toString(),bOk, 10),mDateTime.time().second());
     if(newTime.isValid()) {
         mDateTime.setTime(newTime);
     }
@@ -1657,7 +1744,7 @@ void HbDateTimePickerPrivate::_q_minutesChanged(int index)
 
         //set if seconds range changed
         if((start != mSecondOffset)
-                ||(end !=mSecondOffset+mSecondModel->rowCount()-1)) {
+            ||(end !=mSecondOffset+mSecondModel->rowCount()-1)) {
             setSecondRange(start,end);
         }
     }
@@ -1722,4 +1809,21 @@ void HbDateTimePickerPrivate::_q_ampmChanged(int index)
             }
         } 
     }
+}
+void HbDateTimePickerPrivate::processFormatEvent()
+{
+    QDateTime tempDate=mDateTime;
+    processDisplaySections();
+    //recreate and rearrange depending on the format
+    rearrangeTumbleViews();
+    setDateTime(tempDate);
+    emitDateTimeChange();
+}
+void HbDateTimePickerPrivate::postFormatEvent()
+{
+    Q_Q(HbDateTimePicker);
+    
+    QCoreApplication::removePostedEvents(q,QEvent::Type(mFormatEventType));
+
+    QCoreApplication::postEvent(q,new QEvent(QEvent::Type(mFormatEventType)));
 }

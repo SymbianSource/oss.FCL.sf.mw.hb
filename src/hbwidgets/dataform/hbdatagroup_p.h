@@ -68,7 +68,7 @@ protected:
     void initStyleOption( HbStyleOptionDataGroup *option );    
     virtual QSizeF sizeHint( Qt::SizeHint which, const QSizeF &constraint ) const;
     virtual void pressStateChanged( bool value, bool animate );
-	virtual QVariant itemChange( GraphicsItemChange change, const QVariant &value );
+    virtual QVariant itemChange( GraphicsItemChange change, const QVariant &value );
 
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbDataGroup )

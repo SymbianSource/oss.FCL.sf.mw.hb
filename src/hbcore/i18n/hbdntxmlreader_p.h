@@ -46,13 +46,15 @@
 #define DirectoryLocalizerLocalizedNameStr "localizedName"
 #define DirectoryLocalizerDirectorySeparatorX2 "\\"
 #define DirectoryLocalizerDirectorySeparatorX1 "/"
+#define DirectoryLocalizerPhoneMemDrive "c:"
+#define DirectoryLocalizerRomDrive "z:"
 #endif
 
 
 class HbDNTXmlReader : public QXmlDefaultHandler
 {
 public:
-	HbDNTXmlReader();
+    HbDNTXmlReader();
     ~HbDNTXmlReader();
     
     bool startDocument();
@@ -69,17 +71,17 @@ public:
     QMap<QString,QString> getFullPaths();
 private:
     QTranslator* trans;
-	QMap<QString, QString>* fullPaths;
-	QMap<QString, QString>* pathStrings;
-	
-	bool parseDirectoryPaths; 
-	bool parsePathStrings;
-	int elementNumber;
-	bool validElement;
-		
-	QStringList elements;
-	QString temp;
-	bool twoDone;
+    QMap<QString, QString>* fullPaths;
+    QMap<QString, QString>* pathStrings;
+    
+    bool parseDirectoryPaths; 
+    bool parsePathStrings;
+    int elementNumber;
+    bool validElement;
+        
+    QStringList elements;
+    QString temp;
+    bool twoDone;
 };
 
 #endif // HBDNTXMLREADER_P_H

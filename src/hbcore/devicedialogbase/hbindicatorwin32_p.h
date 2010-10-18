@@ -32,8 +32,6 @@
 
 #include "hbindicator.h"
 
-class HbIndicatorPluginManager;
-
 // Indicators are implemented only for Symbian/S60 OS. All others use a stub which shows
 #include "hbindicatorclientinfo_p.h"
 
@@ -56,8 +54,6 @@ public: // methods
     HbIndicatorPrivate();
     virtual ~HbIndicatorPrivate();
 
-    static HbIndicatorPluginManager *pluginManager();
-
     void init();
     bool activate(const QString &indicatorType, const QVariant &parameter = QVariant());
     bool deactivate(const QString &indicatorType, const QVariant &parameter = QVariant());
@@ -73,9 +69,6 @@ signals:
     void deactivated(const QList<IndicatorClientInfo> &clientInfo);
     void error(int errorCode);
 private slots:
-    void indicatorActivated(const IndicatorClientInfo &clientInfo);
-    void indicatorUpdated(const IndicatorClientInfo &clientInfo);
-    void indicatorRemoved(const IndicatorClientInfo &clientInfo);
     void indicatorUserActivated(const QVariantMap& data);
 private:
     void timerEvent(QTimerEvent *event);
@@ -88,7 +81,6 @@ public: // data
     int iLastError;
     bool iListening;
     QBasicTimer timer;
-    static HbIndicatorPluginManager *mIndicatorPluginManager;
 };
 
 #endif // HBINDICATORWIN32_P_H

@@ -26,19 +26,25 @@
 #include "hbtoolbutton.h"
 #include "hbtoolbutton_p.h"
 #include "hbtooltip.h"
-#include "hbstyleoptiontoolbutton_p.h"
 #include "hbtoolbarextension.h"
 #include "hbtoolbarextension_p.h"
 #include "hbaction.h"
 #include "hbaction_p.h"
-#include <hbglobal.h>
 #include "hbcolorscheme.h"
 #include "hbtextitem.h"
 #include "hbiconitem.h"
 #include "hbview.h"
 #include "hbmainwindow.h"
+#include "hbframeitem.h"
+#include "hbevent.h"
 
 #include "hbglobal_p.h" // remove when removing HB_DEPRECATED
+
+#include "hbstyle_p.h" // for iconmodes...
+
+#include <hbstyleframeprimitivedata.h>
+#include <hbstyleiconprimitivedata.h>
+#include <hbstyletextprimitivedata.h>
 
 #include <QGraphicsSceneHelpEvent>
 #include <QGraphicsSceneMouseEvent>
@@ -64,9 +70,6 @@
     construct tool buttons directly in the same way as any other widget, and
     arrange them alongside other widgets in layouts.
 
-    The style of a tool button is adjustable with setToolButtonStyle().
-    By default a tool button shows only an icon.
-
     A tool button's background is set as HbIcon. This makes it possible to
     specify different images for the normal and pressed states.
 
@@ -79,36 +82,6 @@
 
     \sa HbAction, HbPushButton
 */
-
-/*!
-    \enum HbToolButton::ToolButtonStyle
-    \deprecated HbToolButton::ToolButtonStyle
-
-    This enum defines available tool button styles.
-
-    The tool button style describes how the button's text and icon should be displayed.
- */
-
-/*!
-    \var HbToolButton::ToolButtonIcon
-    \deprecated HbToolButton::ToolButtonIcon
-
-    Only display the icon.
- */
-
-/*!
-    \var HbToolButton::ToolButtonText
-    \deprecated HbToolButton::ToolButtonText
-
-    Only display the text.
- */
-
-/*!
-    \var HbToolButton::ToolButtonTextAndIcon
-    \deprecated HbToolButton::ToolButtonTextAndIcon
-
-    Display both text and icon.
- */
 
 /*!
     \fn void HbToolButton::triggered(HbAction *action)
@@ -135,8 +108,7 @@ HbToolButtonPrivate::HbToolButtonPrivate() :
     frameItem(0),
     customBackground(),
     backgroundVisible(true),
-    buttonStyle(HbToolButton::ToolButtonIcon),
-    toolBarPosition(HbStyleOptionToolButton::TB_None),
+    toolBarPosition(TB_None),
     orientation(Qt::Vertical),
     mDialogToolBar(false),
     toolbarExtensionFrame(false),
@@ -153,46 +125,36 @@ void HbToolButtonPrivate::createPrimitives()
     Q_Q(HbToolButton);
     if (backgroundVisible) {
         if (!frameItem){
-            frameItem = q->style()->createPrimitive(HbStyle::P_ToolButton_frame, q);
+            frameItem = q->style()->createPrimitive(HbStyle::PT_FrameItem, "background", q);
         }
     } else if (frameItem) {
         delete frameItem;
         frameItem = 0;
     }
-
-    if (action && !action->text().isEmpty()) {
-        if (!textItem) {
-            textItem = static_cast<HbTextItem *>(q->style()->createPrimitive(HbStyle::P_ToolButton_text, q));            
-            textItem->setTextWrapping(Hb::TextWordWrap);
+    if (!textItem) {
+        textItem = q->style()->createPrimitive(HbStyle::PT_TextItem, "text", q);
         }
-        textItem->setVisible(buttonStyle & HbToolButton::ToolButtonText);
-    } else if (textItem) {
-        delete textItem;
-        textItem = 0;
+    HbStyleTextPrimitiveData textData;
+    textData.textWrapping = Hb::TextWordWrap;
+    q->style()->updatePrimitive(textItem, &textData, q);
+        
+    if (!iconItem) {
+        iconItem = q->style()->createPrimitive(HbStyle::PT_IconItem, "icon", q);
     }
-
-    if (action && (buttonStyle & HbToolButton::ToolButtonIcon)) {
-        if (!iconItem) {
-            iconItem = q->style()->createPrimitive(HbStyle::P_ToolButton_icon, q);
-        }
-    } else if (iconItem){
-        delete iconItem;
-        iconItem = 0;
-    }
+    
 }
 
 void HbToolButtonPrivate::setOrientation(Qt::Orientation orientation)
 {
     if (this->orientation != orientation) {
         this->orientation = orientation;
-        Q_Q(HbToolButton);        
-        if (q->isVisible() && polished) {
-            q->repolish();
-        }
+        Q_Q(HbToolButton);
+        q->setMinimumSize(QSizeF());
+        q->repolish();
     }    
 }
 
-void HbToolButtonPrivate::setToolBarPosition(HbStyleOptionToolButton::ToolBarPosition position)
+void HbToolButtonPrivate::setToolBarPosition(ToolButtonPosition position)
 {
     Q_Q(HbToolButton);
     if (toolBarPosition != position) {
@@ -233,8 +195,173 @@ void HbToolButtonPrivate::setLayoutProperty(const char *name, bool value)
 {
     Q_Q(HbToolButton);
     q->setProperty(name, value);
-    if (q->isVisible() && polished) {
         q->repolish();
+}
+
+
+bool HbToolButtonPrivate::useTransparentGraphics() const
+{
+    Q_Q(const HbToolButton);
+    if (q->mainWindow() && q->mainWindow()->currentView()) {
+        if (q->mainWindow()->currentView()->viewFlags() & HbView::ViewTitleBarTransparent) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool HbToolButtonPrivate::isToolBarExtension() const
+{
+    return (action != 0 && toolbarExtensionFrame);
+}
+
+void HbToolButtonPrivate::framePrimitiveData(HbStyleFramePrimitiveData *data)
+{
+    Q_Q(HbToolButton);
+
+    data->fillWholeRect = true;
+
+    if (orientation == Qt::Vertical) {
+        data->frameType = HbFrameDrawer::ThreePiecesHorizontal;
+    } else {
+        data->frameType = HbFrameDrawer::ThreePiecesVertical;
+    }
+
+    QStringList list;
+    QString frameGraphicsFooter;
+    // data->state already set by abstractbutton's data init
+    QIcon::Mode mode = HbStylePrivate::iconMode(data->state);
+    QIcon::State state = HbStylePrivate::iconState(data->state);
+
+    // custom background
+    if (!q->background().isNull()) {
+        data->frameGraphicsName = customBackground.iconName(mode, state);
+        return;
+    }
+
+    // in toolbar extension
+    if(isToolBarExtension()) {
+        if (mode == QIcon::Normal && state == QIcon::On) {
+            if(!q->isCheckable()){
+                data->frameGraphicsName = QLatin1String("qtg_fr_popup_grid_pressed");
+            } else {
+                data->frameGraphicsName = QLatin1String("qtg_fr_tb_ext");
+            }
+        } else {
+            data->frameGraphicsName = QLatin1String("");
+        }
+        data->frameType = HbFrameDrawer::NinePieces;
+        return;
+    }
+
+    if (!toolBarPosition) {
+        if (mode == QIcon::Disabled && state == QIcon::Off) {
+            data->frameGraphicsName = QLatin1String("qtg_fr_btn_disabled");
+        } else if (mode == QIcon::Normal && state == QIcon::On) {
+            if(!q->isCheckable()){
+                data->frameGraphicsName = QLatin1String("qtg_fr_btn_pressed");
+            } else {
+                data->frameGraphicsName = QLatin1String("qtg_fr_btn_latched");
+            }
+        } else if (mode == QIcon::Selected && state == QIcon::Off) {
+            data->frameGraphicsName = QLatin1String("qtg_fr_btn_highlight");
+        } else {
+            data->frameGraphicsName = QLatin1String("qtg_fr_btn_normal");
+        }
+        data->frameType = HbFrameDrawer::NinePieces;
+        return;
+    }
+    // For toolbar:
+
+    QString frameGraphicsHeader;
+    if (!mDialogToolBar){
+        if (useTransparentGraphics()) {
+            frameGraphicsHeader = orientation == Qt::Vertical ?
+                                  QLatin1String("qtg_fr_tb_trans_h_"):
+                                  QLatin1String("qtg_fr_tb_trans_v_");
+        } else {
+            frameGraphicsHeader = orientation == Qt::Vertical ?
+                                  QLatin1String("qtg_fr_tb_h_"):
+                                  QLatin1String("qtg_fr_tb_v_");
+        }
+    } else {
+        frameGraphicsHeader = QLatin1String("qtg_fr_popup_sk_");
+        data->mirroringMode = HbIcon::LayoutDirection;
+    }
+
+    switch (toolBarPosition) {
+        case TB_OnlyOne:
+            if (orientation == Qt::Vertical) {
+                list << QLatin1String("_l") << QLatin1String("_c") << QLatin1String("_r");
+            } else {
+                list << QLatin1String("_t") << QLatin1String("_c") << QLatin1String("_b");
+            }
+            break;
+        case TB_Beginning:
+            if (orientation== Qt::Vertical) {
+                list << QLatin1String("_l") << QLatin1String("_c") << QLatin1String("_cr");
+            } else {
+                list << QLatin1String("_t") << QLatin1String("_c") << QLatin1String("_cb");
+            }
+            break;
+        case TB_Middle:
+            if (orientation == Qt::Vertical) {
+                list << QLatin1String("_cl") << QLatin1String("_c") << QLatin1String("_cr");
+            } else {
+                list << QLatin1String("_ct") << QLatin1String("_c") << QLatin1String("_cb");
+            }
+            break;
+        case TB_End:
+            if (orientation== Qt::Vertical) {
+                list << QLatin1String("_cl") << QLatin1String("_c") << QLatin1String("_r");
+            } else {
+                list << QLatin1String("_ct") << QLatin1String("_c") << QLatin1String("_b");
+            }
+            break;
+
+        default:
+        case TB_None:
+            break;
+    } // switch case end
+
+    data->fileNameSuffixList = list;
+    if (mode == QIcon::Disabled && state == QIcon::Off) {
+        frameGraphicsFooter = QLatin1String("disabled");
+    } else if (mode == QIcon::Normal && state == QIcon::On) {
+        if(!q->isCheckable()) {
+            frameGraphicsFooter = QLatin1String("pressed");
+        } else {
+            frameGraphicsFooter = QLatin1String("latched");
+        }
+    } else if (mode == QIcon::Selected && state == QIcon::Off) {
+        frameGraphicsFooter = QLatin1String("highlight");
+    } else {
+        frameGraphicsFooter = QLatin1String("normal");
+    }
+    data->frameGraphicsName = QString ("%0%1").arg(frameGraphicsHeader).arg(frameGraphicsFooter);
+    data->mirroringMode = HbIcon::LayoutDirection;
+}
+
+void HbToolButtonPrivate::iconPrimitiveData(HbStyleIconPrimitiveData *data)
+{
+    Q_Q(HbToolButton);
+    if (q->action()) {
+        data->icon = q->action()->icon();
+    } else if(action){
+        data->icon = action->icon();
+    } else {
+        data->icon = HbIcon();
+    }
+    data->iconMode = HbStylePrivate::iconMode(data->state);
+    data->iconState = HbStylePrivate::iconState(data->state);
+    return;
+}
+void HbToolButtonPrivate::textPrimitiveData(HbStyleTextPrimitiveData *data)
+{
+    if(action) {
+        data->text = action->text();
+    } else {
+        data->text = QString();
     }
 }
 
@@ -247,7 +374,6 @@ QSizeF HbToolButtonPrivate::getMinimumSize()
     mSizeHintPolish = false;
     //workaround ends
     q->updateGeometry();
-    QCoreApplication::sendPostedEvents(q, QEvent::LayoutRequest);
     QSizeF size = q->minimumSize();
     return size;
 }
@@ -266,21 +392,24 @@ void HbToolButtonPrivate::_q_actionChanged()
 {
     Q_Q(HbToolButton);
     HbAction *hbAction = qobject_cast<HbAction *>(action);
-    if ((hbAction && !hbAction->icon().isNull()) || !action->icon().isNull()) {
-        if (orientation == Qt::Horizontal) {
-            buttonStyle = HbToolButton::ToolButtonIcon;
-        } else if (!action->text().isEmpty()) {
-            buttonStyle = HbToolButton::ToolButtonTextAndIcon;
-        } else {
-            buttonStyle = HbToolButton::ToolButtonIcon;
-        }
+    bool oldIconProperty = q->property("icon").toBool();
+    bool oldTextProperty = q->property("text").toBool();
+    if ((hbAction && !hbAction->icon().isNull()) || (action && !action->icon().isNull())) {
+        q->setProperty("icon", true);
     } else {
-        buttonStyle = HbToolButton::ToolButtonText;
+        q->setProperty("icon", false);
     }
-    // action text/icon may have changed,            
-    if (polished) {
-        q->repolish();        
-        QCoreApplication::sendPostedEvents(q, QEvent::Polish);
+    if ((!action->text().isEmpty() && (orientation == Qt::Vertical || isToolBarExtension())) ||
+        (orientation == Qt::Horizontal && !q->property("icon").toBool())) {
+        q->setProperty("text", true);
+    } else {
+        q->setProperty("text", false);
+    }
+    if (oldTextProperty != q->property("text").toBool() ||
+        oldIconProperty != q->property("icon").toBool()) {
+        q->repolish();
+    } else if (polished) {
+        q->updatePrimitives();
     }
 }
 
@@ -357,13 +486,12 @@ void HbToolButton::setAction(HbAction *action)
         connect(action, SIGNAL(triggered()), this, SLOT(_q_actionTriggered()));
         connect(action, SIGNAL(changed()), this, SLOT(_q_actionChanged()));
     }
-
+    // If action was null then there is a chance that the iconitem is not yet created.
+    // If the new action is null then we may need to get rid of the icon completely.
+    if ((!oldAction && action) || (oldAction && !action)) {
+        repolish(); // will call createPrimitives()
+    }
     if (isVisible() && d->polished) {
-        // If action was null then there is a chance that the iconitem is not yet created.
-        // If the new action is null then we may need to get rid of the icon completely.
-        if ((!oldAction && action) || (oldAction && !action)) {
-            repolish(); // will call createPrimitives()
-        }
         updatePrimitives();
     }
 }
@@ -391,79 +519,12 @@ void HbToolButton::setBackground(const HbIcon &background)
 }
 
 /*!
- \deprecated HbToolButton::toolButtonStyle() const
-         is deprecated.
-
-    @beta
-    Returns the tool button style.
-
-    The default value is \b HbToolButton::ToolButtonIcon.
-
-    \sa setToolButtonStyle()
- */
-HbToolButton::ToolButtonStyle HbToolButton::toolButtonStyle() const
-{
-    HB_DEPRECATED("HbToolButton::toolButtonStyle() is deprecated.");
-
-    Q_D(const HbToolButton);
-    return d->buttonStyle;
-}
-
-/*!
- \deprecated HbToolButton::setToolButtonStyle(HbToolButton::ToolButtonStyle)
-         is deprecated.
-
-    @beta
-    Sets the tool button style.
-
-    \sa toolButtonStyle()
- */
-void HbToolButton::setToolButtonStyle(HbToolButton::ToolButtonStyle style)
-{    
-    HB_DEPRECATED("HbToolButton::setToolButtonStyle(HbToolButton::ToolButtonStyle style) is deprecated.");
-
-    Q_D(HbToolButton);
-    if (d->buttonStyle != style) {
-        d->buttonStyle = style;
-
-        // action text/icon may have changed,
-        // primitives might need to be created/cleaned up
-        if (size() != QSize(0, 0)) {
-            repolish();
-        }
-    }
-}
-
-/*!
-
-    \deprecated HbToolButton::primitive(HbStyle::Primitive)
-         is deprecated.
-
-    \reimp
- */
-QGraphicsItem *HbToolButton::primitive(HbStyle::Primitive primitive) const
-{
-    Q_D(const HbToolButton);
-    switch (primitive) {
-        case HbStyle::P_ToolButton_frame:
-            return d->frameItem;
-        case HbStyle::P_ToolButton_icon:
-            return d->iconItem;
-        case HbStyle::P_ToolButton_text:
-            return d->textItem;
-        default:
-            return 0;
-    }
-}
-
-/*!
     \reimp
  */
 void HbToolButton::updatePrimitives()
 {
     Q_D(HbToolButton);
-
-    HbStyleOptionToolButton option;
+    
     if (d->action) {
         setCheckable(d->action->isCheckable());
         setChecked(d->action->isChecked());
@@ -485,65 +546,71 @@ void HbToolButton::updatePrimitives()
         setToolTip(QString());
     }
 
-    initStyleOption(&option);
     setProperty("dialogtoolbar", d->mDialogToolBar);
     if (d->frameItem) {
-        style()->updatePrimitive(d->frameItem, HbStyle::P_ToolButton_frame, &option);
-    }
-    if (d->textItem) {
-        style()->updatePrimitive(d->textItem, HbStyle::P_ToolButton_text, &option);
+        HbStyleFramePrimitiveData data;
+        initPrimitiveData(&data, d->frameItem);
+        style()->updatePrimitive(d->frameItem, &data, this);
+        d->frameItem->update();
     }
     if (d->iconItem) {
-        style()->updatePrimitive(d->iconItem, HbStyle::P_ToolButton_icon, &option);
-        HbAction *hbAction = qobject_cast<HbAction *>(d->action);
-        if (hbAction) {
-            if (hbAction->icon().flags() & HbIcon::Colorized) {
-                static_cast<HbIconItem *>(d->iconItem)->setFlags(HbIcon::Colorized);
-            }
-            if (hbAction->icon().mirroringMode() != HbIcon::Default) {
-                HbIconItem *iconItem = static_cast<HbIconItem *>(d->iconItem);
-                iconItem->setMirroringMode( hbAction->icon().mirroringMode() );
+        HbStyleIconPrimitiveData data;
+        initPrimitiveData(&data, d->iconItem);
+
+        bool itemHasNoContents = false;
+        if (data.icon.isSet()) {
+            if (data.icon.value().isNull()) {
+                itemHasNoContents = true;
+            } else {
+                style()->updatePrimitive(d->iconItem, &data, this);
+                d->iconItem->update();
             }
         }
+        if (itemHasNoContents) {
+            setProperty("icon", false);
+        } else {
+            setProperty("icon", true);
+        }
+        d->iconItem->setFlag(QGraphicsItem::ItemHasNoContents, itemHasNoContents);
+    }
+    if (d->textItem) {
+        HbStyleTextPrimitiveData data;
+        initPrimitiveData(&data, d->textItem);
+        bool itemHasNoContents = false;
+        if (data.text.isSet()) {
+            if ( data.text.value().isEmpty() || data.text.value().isNull()) {
+                itemHasNoContents = true;
+            }
+        }
+        if ((!property("icon").toBool() && d->orientation == Qt::Horizontal) ||
+            (!itemHasNoContents && (d->orientation == Qt::Vertical || d->isToolBarExtension()))) {
+            setProperty("text", true);
+            itemHasNoContents = false;
+        } else {
+            setProperty("text", false);
+            itemHasNoContents = true;
+        }
+        d->textItem->setFlag(QGraphicsItem::ItemHasNoContents, itemHasNoContents);
+        if(!itemHasNoContents) {
+            style()->updatePrimitive(d->textItem, &data, this);
+            /* HbDialog::setPrimaryAction deprecation action coloring - begin */
+            if (d->action && d->action->property("invalid_addition").isValid() ) {
+                HbTextItem *textItem = qgraphicsitem_cast<HbTextItem*>(d->textItem);
+                textItem->setTextColor(QColor("magenta"));
+            }
+            /* HbDialog::setPrimaryAction deprecation action coloring - end */
+            d->textItem->update();
+        }
 
+                /* HbDialog::setPrimaryAction deprecation action coloring - begin */
+                if (d->action && d->action->property("invalid_addition").isValid() ) {
+                    HbIconItem *iconItem = qgraphicsitem_cast<HbIconItem*>(d->iconItem);
+                    iconItem->setColor(QColor("magenta"));
+                }
+                /* HbDialog::setPrimaryAction deprecation action coloring - end */
     }
 }
 
-/*!
-    Initializes \a option with the values from this HbToolButton. This method is useful for
-    subclasses when they need a HbStyleOptionToolButton, but don't want to fill in all the
-    information themselves.
- */
-void HbToolButton::initStyleOption(HbStyleOptionToolButton *option)
-{
-    Q_D(HbToolButton);
-    HbAbstractButton::initStyleOption(option);
-
-    Q_ASSERT(option);
-    option->customBackground = d->customBackground;
-    option->backgroundVisible = d->backgroundVisible;
-    option->toolBarPosition = d->toolBarPosition;
-    option->orientation = d->orientation;
-    option->isCheckable = d->checkable;
-    option->useSecondaryGraphics = d->mDialogToolBar;
-    option->useTransparentGraphics = false;
-    if (mainWindow() && mainWindow()->currentView()) {
-        if (mainWindow()->currentView()->viewFlags() & HbView::ViewTitleBarTransparent) {
-            option->useTransparentGraphics = true;
-        }
-    }
-
-    if (d->action) {
-        option->text = d->action->text();
-        HbAction *hbAction = qobject_cast<HbAction*>(d->action);
-        if (hbAction)
-            option->icon = hbAction->icon();
-        else
-            option->icon = d->action->icon();
-
-        option->isToolBarExtension = d->toolbarExtensionFrame;
-    }
-}
 
 /*!
     \internal
@@ -591,18 +658,47 @@ void HbToolButton::nextCheckState()
 /*!
     \reimp
  */
+void HbToolButton::checkStateSet()
+{
+    Q_D(HbToolButton);
+    if (d->checked || (d->checkable && d->down)) {
+        setProperty( "state", "latched" );
+    } else if (d->down) {
+        setProperty( "state", "pressed" );
+    } else {
+        setProperty( "state", "normal" );
+    }
+}
+
+/*!
+    \reimp
+ */
 bool HbToolButton::sceneEvent(QEvent *event)
 {
     if (event->type() == QEvent::GraphicsSceneHelp) {
         Q_D(HbToolButton);
         // Check whether toolbutton is inside a toolbar.
-        if (d->toolBarPosition != HbStyleOptionToolButton::TB_None) {
+        if (d->toolBarPosition != HbToolButtonPrivate::TB_None) {
             d->showToolTip();
             event->accept();
             return true;
         }
     }
     return HbAbstractButton::sceneEvent(event);
+}
+
+void HbToolButton::initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive)
+{
+    Q_D(HbToolButton);
+    HbAbstractButton::initPrimitiveData(primitiveData, primitive);
+    QString itemName = HbStyle::itemName(primitive);
+    if (itemName == QLatin1String("background")) {
+        d->framePrimitiveData(hbstyleprimitivedata_cast<HbStyleFramePrimitiveData*>(primitiveData));
+    } else if (itemName == QLatin1String("text")) {
+        d->textPrimitiveData(hbstyleprimitivedata_cast<HbStyleTextPrimitiveData*>(primitiveData));
+    } else if (itemName == QLatin1String("icon")) {
+        d->iconPrimitiveData(hbstyleprimitivedata_cast<HbStyleIconPrimitiveData*>(primitiveData));
+    }
 }
 
 /*!
@@ -613,6 +709,13 @@ bool HbToolButton::event(QEvent *event)
     if (event->type() == QEvent::GraphicsSceneMouseRelease) {
         mouseReleaseEvent(static_cast<QGraphicsSceneMouseEvent*>(event));
         return true;
+    } else if(event->type() == HbEvent::ThemeChanged) {
+        Q_D(HbToolButton);
+        changeEvent(event);
+        if (d->frameItem) {
+            HbFrameItem *item = static_cast<HbFrameItem*>(d->frameItem);
+            item->frameDrawer().themeChanged();
+        }
     }
 
     return HbAbstractButton::event(event);
@@ -625,9 +728,6 @@ void HbToolButton::polish(HbStyleParameters &params)
     d->createPrimitives();
     updatePrimitives();
     HbAbstractButton::polish(params);
-    // workaround for caching problem
-    setMinimumSize(minimumSize());
-    // workaround ends
 }
 
 #include "moc_hbtoolbutton.cpp"

@@ -32,10 +32,12 @@
 
 #include <QGraphicsItem>
 #include <QGraphicsWidget>
+#include <QStyle>
 
 class HbStyleOption;
 class HbWidgetBasePrivate;
 class QGestureEvent;
+class HbStylePrimitiveData;
 
 class HB_CORE_EXPORT HbWidgetBase: public QGraphicsWidget
 {
@@ -68,8 +70,11 @@ protected:
 
     virtual void gestureEvent(QGestureEvent *event);
 
-    void initStyleOption(HbStyleOption *option) const;
+    void updateGeometry();
 
+    void initStyleOption(HbStyleOption *option) const;
+    void initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive);
+    
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbWidgetBase)
     Q_DISABLE_COPY(HbWidgetBase)

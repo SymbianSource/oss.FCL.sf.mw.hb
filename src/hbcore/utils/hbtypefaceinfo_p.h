@@ -40,11 +40,11 @@ public:
     HbTypefaceInfo(QObject *parent = 0);
     ~HbTypefaceInfo();
 
-  	void roleToTypeface(HbFontSpec::Role role, QString &typefaceFamily, int &weight) const;
-	int textHeightToSizeInPixels(const QString &typefaceFamily, int weight, qreal textHeight) const;
-	bool tryGetFamilyFromAliasName(const QString &aliasFamily, QString &typefaceFamily, int &weight) const;
-	bool containsFamily(const QString& typefaceFamily) const;
-	int getWeight(const QString& typefaceFamily) const;
+    void roleToTypeface(HbFontSpec::Role role, QString &typefaceFamily, int &weight) const;
+    int textHeightToSizeInPixels(const QString &typefaceFamily, int weight, qreal textHeight) const;
+    bool tryGetFamilyFromAliasName(const QString &aliasFamily, QString &typefaceFamily, int &weight) const;
+    bool containsFamily(const QString& typefaceFamily) const;
+    int getWeight(const QString& typefaceFamily) const;
 
 private:
     mutable HbTypefaceInfoPrivate *d;

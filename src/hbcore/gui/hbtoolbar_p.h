@@ -88,7 +88,7 @@ public:
 
     void setExtensionLayout(HbToolButton *button, bool extensionLayout);
     void prepareButtonForExtension(HbToolButton *button);
-    void prepareButtonForToolbar(HbToolButton *button,bool handlePolish = true);
+    void prepareButtonForToolbar(HbToolButton *button);
     void resetVisibleButtonsList();
     void createToolButton(QAction *Action,bool update = false);
     void actionAdded(int index);
@@ -98,6 +98,7 @@ public:
     bool fullUpdateNeeded(int index);
     void updateExtension(bool moreButtonNeeded);
     void suppressNextAppearEffect(bool suppress = true);
+    void updateDialogToolbar(bool enable);
 
 #ifdef HB_EFFECTS
 public:
@@ -131,17 +132,17 @@ public:
     bool delayedHide;
     bool delayedStartEffects;
     bool emitVisibilityChangeSignal;
-    bool polishButtons;
     QSizeF minimumToolButtonSize;
     int maxToolBarButtons;
     QPointer<HbToolBarExtension> moreExtension;
     QPointer<HbToolButton> moreExtensionButton;
 
-    bool mDialogToolBar;
-    bool mDoLayout;    
+    bool mDialogToolBar; 
     bool mDoLayoutPending;
     bool mOrientationEffectsRunning;
     bool mSuppressNextAppearEffect;
+    bool mAppearedOnce;
+    bool initialButtonsPolish;
 
 private:
     static HbToolBarPrivate *d_ptr( HbToolBar *toolbar ) {
@@ -156,6 +157,7 @@ private:
     friend class HbToolBarExtensionPrivate;
     friend class HbScreen;
     friend class HbDialog;
+    friend class HbDialogPrivate;
 };
 
 #endif // HBTOOLBAR_P_H

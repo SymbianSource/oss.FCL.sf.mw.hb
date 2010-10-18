@@ -23,9 +23,8 @@
 **
 ****************************************************************************/
 
-#include "hbgestures_p.h"
-#include "hbtapandholdgesture_p.h"
 #include "hbtapandholdgesture.h"
+#include "hbgestures_p.h"
 
 #include <QObject>
 
@@ -47,6 +46,10 @@
     the tap-and-hold (long tap) gesture. If you want your custom widget to
     receive both short and long taps, use HbTapGesture instead, since it
     supports both.
+    
+    For the tap-and-hold gesture, start and finish events are both sent after
+    a time threshold, first Qt::GestureStarted and then Qt::GestureFinished
+    immediately after that.
     
     \section _usecases_hbtapandholdgesture Using the HbTapAndHoldGesture class
     
@@ -73,32 +76,25 @@
    
     \code
     void MyWidget::gestureEvent(QGestureEvent *event)
-    {
-        if (HbTapAndHoldGesture *tapAndHold =
+    {    
+       if (HbTapAndHoldGesture *tapAndHold =
             qobject_cast<HbTapAndHoldGesture *>
                 (event->gesture(Qt::TapAndHoldGesture))) {
-       
+
             switch (tapAndHold->state()) {
-           
-            case Qt::GestureStarted:
-                // Visualize the active state of the widget.
-                break;
-                
-            // No GestureUpdated events are sent for this gesture type,
-            // so no handling is needed for those
-             
-            case Qt::GestureCanceled:
-                // Visualize the non-active state of the widget.
-                break;
-            case Qt::GestureFinished:              
-                // Visualize the non-active state of the widget.
-                // Emit a long tap signal.              
+
+            // The only interesting event for the tap-and-hold gesture
+            // is GestureFinished, so all handling related to
+            // the gesture is best done here.
+
+            case Qt::GestureFinished:
+                // Tap-and-hold gesture is recognized.
+                // Emit a long tap signal.
                 break;
             default:
                 break;
-            }           
+            }
         }
-       
         // Handle other gesture types that have been grabbed. There may be
         // several, since all gestures that are active at the same moment
         // are sent within the same gesture event.
@@ -121,9 +117,9 @@
 */
 HbTapAndHoldGesture::HbTapAndHoldGesture(QObject* parent)
     :
-    QTapAndHoldGesture(parent)
+    QTapAndHoldGesture(parent),
+    priv(new HbTapAndHoldGesturePrivate)
 {
-    priv = new HbTapAndHoldGesturePrivate(this);
 }
 
 /*!
@@ -136,7 +132,7 @@ HbTapAndHoldGesture::HbTapAndHoldGesture(HbTapAndHoldGesturePrivate* dd, QObject
     QTapAndHoldGesture(parent),
     priv(dd)
 {
-    priv->q_ptr = this;
+    hbWarning("Shared private not supported for tap-and-hold");
 }
 
 /*!

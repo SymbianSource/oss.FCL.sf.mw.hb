@@ -168,24 +168,29 @@ bool HbIndicatorPluginManager::activateIndicator(const QString &indicatorType,
 
         indicator->disconnect(this, SLOT(deactivateIndicator()));
         connect(indicator, SIGNAL(deactivate()), SLOT(deactivateIndicator()), Qt::QueuedConnection);
-
-        indicator->processClientRequest(
-                HbIndicatorInterface::RequestActivate, parameter);
-        //in case indicator deactivated itself, find the indicator again.
-        index = findPlugin(indicatorType, &indicatorInfo);
-
-        if (index >= 0 && !indicatorInfo->activated) {
-            indicatorInfo->activated = true;
-            emit indicatorActivated(indicator);
-            indicatorInfo->statusAreaIconPath = statusAreaIconPath(indicator);
-            emit indicatorActivated(IndicatorClientInfo(
-                indicator->indicatorType(), indicatorInfo->statusAreaIconPath,
-                indicator->category(), hasMenuData(*indicator)));
-
-            connect(indicator, SIGNAL(dataChanged()), SLOT(indicatorDataChanged()));
-            connect(indicator, SIGNAL(userActivated(QVariantMap)), SLOT(userActivateIndicator(QVariantMap)));
-        }
         success = true;
+        try {
+            indicator->processClientRequest(
+                HbIndicatorInterface::RequestActivate, parameter);
+        } catch (const std::bad_alloc &) {
+            success = false;
+        }
+        if (success) {
+            //in case indicator deactivated itself, find the indicator again.
+            index = findPlugin(indicatorType, &indicatorInfo);
+
+            if (index >= 0 && !indicatorInfo->activated) {
+                indicatorInfo->activated = true;
+                emit indicatorActivated(indicator);
+                indicatorInfo->statusAreaIconPath = statusAreaIconPath(indicator);
+                emit indicatorActivated(IndicatorClientInfo(
+                    indicator->indicatorType(), indicatorInfo->statusAreaIconPath,
+                    indicator->category(), hasMenuData(*indicator)));
+
+                connect(indicator, SIGNAL(dataChanged()), SLOT(indicatorDataChanged()));
+                connect(indicator, SIGNAL(userActivated(QVariantMap)), SLOT(userActivateIndicator(QVariantMap)));
+            }
+        }
     }
     return success;
 }
@@ -218,7 +223,7 @@ bool HbIndicatorPluginManager::removeIndicator(const QString &indicatorType)
         //plugin-interface may also be HbIndicatorInterface.
         //in that case, don't delete.
         HbIndicatorInterface *testPlugin =
-                dynamic_cast<HbIndicatorInterface*>(pluginInfo.plugin());
+            qobject_cast<HbIndicatorInterface*>(pluginInfo.mLoader->instance());
         if ( testPlugin != indicator) {
             //indicator deletion must occur before idle-timer-cleanup.
             delete indicator;
@@ -253,13 +258,9 @@ QList<IndicatorClientInfo>
             HbIndicatorInterface *indicator = indicatorInfo.indicator;
             HbIndicatorInterface::Category category = indicator->category();
 
-            QString path(indicatorInfo.statusAreaIconPath);
-
-            if (!path.isEmpty()) {
-                IndicatorClientInfo clientInfo(indicator->indicatorType(), path, 
-                    category, hasMenuData(*indicator));
-                clientInfoList.append(clientInfo);
-            }
+            IndicatorClientInfo clientInfo(indicator->indicatorType(), 
+                indicatorInfo.statusAreaIconPath, category, hasMenuData(*indicator));
+            clientInfoList.append(clientInfo);
         }
     }
     return clientInfoList;
@@ -302,11 +303,15 @@ bool HbIndicatorPluginManager::deactivateIndicator(const QString &indicatorType,
     int index = findPlugin(indicatorType, &info);
     if (index >= 0 && checkAccess(index, indicatorType, securityCredentials)) {
         HbIndicatorInterface *indicator = info->indicator;
-        if (indicator->indicatorType() == indicatorType && info->activated) {
-            indicator->processClientRequest(
-                    HbIndicatorInterface::RequestDeactivate, parameter);
-        }
         success = true;
+        if (indicator->indicatorType() == indicatorType && info->activated) {
+            try {
+                indicator->processClientRequest(
+                    HbIndicatorInterface::RequestDeactivate, parameter);
+            } catch (const std::bad_alloc &) {
+                success = false;
+            }
+        }
     }
     TRACE_EXIT
     return success;

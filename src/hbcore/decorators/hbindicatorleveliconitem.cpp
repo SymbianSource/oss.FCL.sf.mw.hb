@@ -46,7 +46,7 @@ void HbIndicatorLevelIconItem::paint(QPainter *painter,
                                      const QStyleOptionGraphicsItem *option,
                                      QWidget *widget)
 {
-	Q_UNUSED(widget);
+    Q_UNUSED(widget);
 
     QRectF iconRect(boundingRect());
     

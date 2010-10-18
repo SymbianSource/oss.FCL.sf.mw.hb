@@ -34,21 +34,60 @@
 /*!
     @stable
     @hbwidgets
+
     \class HbDeviceNotificationDialog
-    \brief HbDeviceNotificationDialog is a non-modal dialog displayed on the top of
-    running applications. Functionality is based on HbNotificationDialog and it uses
-    HbDeviceDialog framework.
 
-    HbDeviceNotificationDialog is a concrete class. For the content it provides two rows of text,
-    an image or an animation. Interface of HbDeviceNotificationDialog is similar to HbNotificationDialog
-    with additional show(), update() and close() methods. Dialog is shown when show() is
-    called.
-    It is recommended that the dialog data is initialized before calling show() or update()
-    methods, because those methods use interprocess communication.
+    \brief HbDeviceNotificationDialog is a non-modal dialog for displaying device-wide notifications.
 
-    Main use of HbDeviceNotificationDialog is to show information to user without user input.
+    HbDeviceNotificationDialog is device dialog version of HbNotificationDialog and offers
+    similar API.
 
-     \section _usecases HbDeviceNotificationDialog use cases
+    The dialog is shown by device dialog service which HbNotificationDialog is a client of.
+ 
+    The dialog is displayed on top of all applications. It appears at top left corner of a display.
+    It is intended for applications to show device-wide notifications to user in non-intrusive way.
+    It can also be used by server components which don't have HbMainWindow.
+
+    HbDeviceNotificationDialog does not require user input and is usually closed by timeout.
+    For content, it supports two rows of text and an icon or animation. Two text rows may consist
+    either of a title spanning two lines or title and text. Setters are provided for setting
+    title, text and icon.
+
+    An asynchronous show() method launches a dialog. Device dialog framework decides when the
+    dialog is actually shown. There may be a delay untill dialog appears on display. close()
+    closes a dialog.
+
+    After dialog has been lauched, properties may be updated by setters and calling update().
+    Calling update() is optional as setters schedule an automatic update event which
+    updates dialog parameters next time event loop is entered.
+
+    It is recommended that dialog properties are set before calling show() as updating them after
+    causes interprocess communication.
+
+    The dialog closes when tapped. A tap triggers activated() signal if enabled by
+    enableTouchActivation().
+
+    If there is no need to update or receive activation from a launched dialog,
+    HbDeviceNotificationDialog object can be deleted after show() returns. Device
+    dialog framework takes care of displaying the dialog.
+ 
+    Device notifications dialogs are synchronized with each other. If several of them
+    are to be shown at the same time, they are shown sequentially instead of on top of each other.
+
+    In place of an icon, notification dialog may contain an animation. Supported icon animation
+    formats are:
+    - GIF (.gif)
+    - MNG (.mng)
+    - Frame animations (.axml)
+
+    \section _platform_spec Platform-specific implementation notes for HbDeviceNotificationDialog
+
+    \subsection _nonsymbian Non-Symbian
+    Device dialog service is implemented only for the Symbian platform. On other platforms device 
+    notification dialogs are displayed on client's main window.
+ 
+
+    \section _usecases HbDeviceNotificationDialog use cases
 
     Use cases in this section:
     - \ref _uc2
@@ -60,10 +99,8 @@
     The following code snippet creates a device notification dialog containing title, text and icon.
 
     \code
-    QString iconName("C:/xxxx.png");
-
     HbDeviceNotificationDialog notificationDialog;
-    notificationDialog.setIconName(iconName);
+    notificationDialog.setIconName("qtg_large_info");
     notificationDialog.setTitle("Title");
     notificationDialog.setText("Text");
     notificationDialog.show();
@@ -72,7 +109,7 @@
     or equivalent dialog can be created using convenience method:
 
     \code
-    HbDeviceNotificationDialog::notification(iconName, "Text", "Title");
+    HbDeviceNotificationDialog::notification("qtg_large_info", "Text", "Title");
     \endcode
 
     When using convenience methods, it is not possible to receive user interaction events,
@@ -83,8 +120,8 @@
     \subsection _uc2_001 Receiving user interactions events
 
     Below is an example of receiving user interaction events from device notification dialog. With
-    following example user is able to receive activated and close events. Note that
-    dialog is cancelled, if it goes out of scope.
+    following example user is able to receive activated and close events. Note that in this case the
+    dialog is closed by device dialog framework if HbDeviceNotificationDialog object is deleted.
 
     \code
     mNotificationDialog = new HbDeviceNotificationDialog;
@@ -98,16 +135,7 @@
 
     \subsection _uc2_002 Using animations in a device notification dialog
 
-    HbDeviceNotificationDialog supports animations.
-    Supported formats are the following.
-
-    - GIF (.gif)
-    - MNG (.mng)
-    - Frame animations (.axml)
-
-    There is a built-in support for GIF and MNG animations.
-
-    Frame animations can be used by first creating an animation definition file:
+    Create an animation definition file:
 
     \code
     <animations>
@@ -119,8 +147,8 @@
     </animations>
     \endcode
 
-	After this, create a HbDeviceNotificationDialog as described above and
-	set the definition file and the logical name of the animation:
+    Create a HbDeviceNotificationDialog as described above and
+    set the definition file and the logical name of the animation:
 
     \code
     QString animationDefinitionXML("c:\animation.axml");
@@ -128,24 +156,37 @@
 
     mNotificationDialog->setAnimationDefinition(animationDefinitionXML);
     mNotificationDialog->setIconName(logicalIconName);
+    mNotificationDialog->show();
     \endcode
 
-    \sa HbIconAnimationManager::addDefinitionFile
-    \note Animation definition files must be stored in a place where they can 
-    be accessed.
+
+    \sa HbNotificationDialog, HbDeviceDialog, CHbDeviceNotificationDialogSymbian
 */
 
 /*!
     \fn void HbDeviceNotificationDialog::aboutToClose();
 
-    This signal is emitted when the dialog is closed with a timeout
+    This signal is emitted when notification dialog has closed.
+
+    \sa show()
  */
 
 /*!
     \fn void HbDeviceNotificationDialog::activated();
 
-    This signal is emitted when the dialog is closed with a pointer tap
+    This signal is emitted when the dialog is tapped and touch activation is
+    enabled.
+    
+    \sa enableTouchActivation()
 */
+
+static const char keyTimeout[] = "timeout";
+static const char keyIconName[] = "iconName";
+static const char keyText[] = "text";
+static const char keyTitle[] = "title";
+static const char keyTouchActivation[] = "touchActivation";
+static const char keyTitleTextWrapping[] = "titleTextWrapping";
+static const char keyAnimationDefinition[] = "animationDefinition";
 
 HbDeviceNotificationDialogPrivate::HbDeviceNotificationDialogPrivate()
 : QObject(), mDeviceDialog(0), mUpdateTimerId(0), mShowing(false)
@@ -190,7 +231,7 @@ void HbDeviceNotificationDialogPrivate::show()
 
     connect(mDeviceDialog, SIGNAL(deviceDialogClosed()), this, SLOT(deviceDialogClosed()));
 
-    if (mData["touchActivation"].toBool()) {
+    if (q_func()->isTouchActivating()) {
         connect(mDeviceDialog, SIGNAL(dataReceived(QVariantMap)), this, SLOT(dataReceived(QVariantMap)));
     }
     if (!mDeviceDialog->show("com.nokia.hb.devicenotificationdialog/1.0", mData)) {
@@ -256,7 +297,7 @@ void HbDeviceNotificationDialogPrivate::deviceDialogClosed()
 }
 
 /*!
-    Constructor.
+    Constructs HbDeviceNotificationDialog with \a parent.
 */
 HbDeviceNotificationDialog::HbDeviceNotificationDialog(QObject *parent)
 : QObject(parent), d_ptr(new HbDeviceNotificationDialogPrivate)
@@ -266,16 +307,15 @@ HbDeviceNotificationDialog::HbDeviceNotificationDialog(QObject *parent)
     d->q_ptr = this;
 
     QVariantMap data;
-    data["touchActivation"] = false;
-    data["titleTextWrapping"] = Hb::TextWordWrap;
-    data["timeout"] = 3000;
 
     d->init(data);
     TRACE_EXIT
 }
 
 /*!
-    Destructor.
+    Destructs HbDeviceNotificationDialog. The dialog launched by show() is closed if aboutToClose()
+    or activated() signals are connected to by an application. Otherwise the dialog is left
+    executing and closes itself by a timeout.
 */
 HbDeviceNotificationDialog::~HbDeviceNotificationDialog()
 {
@@ -286,175 +326,176 @@ HbDeviceNotificationDialog::~HbDeviceNotificationDialog()
 
 /*!
     Convenience method for showing notification dialog with text and title.
-    \param iconName - path and name of the icon shown on dialog.
-    \param title - title shown on dialog. By default: empty.
+
+    \param iconName Path and name of the icon shown on dialog.
+    \param title Title shown on dialog. Default is empty.
 */
 void HbDeviceNotificationDialog::notification(const QString &iconName, const QString& title)
 {
     TRACE_STATIC_ENTRY
-    HbDeviceNotificationDialog *self = new HbDeviceNotificationDialog;
-    self->setIconName(iconName);
-    self->setTitle(title);
-    self->show();
-    self->deleteLater();
-    self = 0;
+    HbDeviceNotificationDialog dialog;
+    dialog.setIconName(iconName);
+    dialog.setTitle(title);
+    dialog.show();
     TRACE_EXIT
 }
 
 /*!
     Convenience method for showing notification dialog with icon, text and title.
-    \param iconName - path and name of the icon shown on dialog.
-    \param text - text shown on dialog.
-    \param title - title shown on dialog.
+
+    \param iconName Path and name of the icon shown on dialog.
+    \param text Text shown on dialog.
+    \param title Title shown on dialog.
 */
 void HbDeviceNotificationDialog::notification(const QString &iconName, const QString &text, const QString &title)
 {
     TRACE_STATIC_ENTRY
-    HbDeviceNotificationDialog *self = new HbDeviceNotificationDialog;
-    self->setIconName(iconName);
-    self->setText(text);
-    self->setTitle(title);
-    self->show();
-    self->deleteLater();
-    self = 0;
+    HbDeviceNotificationDialog dialog;
+    dialog.setIconName(iconName);
+    dialog.setText(text);
+    dialog.setTitle(title);
+    dialog.show();
     TRACE_EXIT
 }
 
 /*!
-    Sets message box icon name or animation logical name. The dialog gets updated next time ShowL() or UpdateL()
-    is called.
+    Sets icon name or animation logical name.
 
-    \param aIconName Icon name. Icon can be from Hb resources or themes. Or can be a file in
+    \param iconName Icon name. Icon can be from Hb resources or themes. Or can be a file in
     a file system.
 
-    \sa IconName()
+    \sa iconName(), show(), update() 
 */
 void HbDeviceNotificationDialog::setIconName(const QString &iconName)
 {
     TRACE_ENTRY
     Q_D(HbDeviceNotificationDialog);
-    d->mData["iconName"] = iconName;
+    d->mData[keyIconName] = iconName;
     d->scheduleUpdateEvent();
     TRACE_EXIT
 }
 
 /*!
-    Set and update text on dialog. Text is not set, if show() or update()
-    is not called.
-    \param text - text shown on dialog.
-    \sa show(), update()
+    Sets dialog text. Changes also title text wrapping. If text is empty,
+    sets title text wrapping to Hb::TextWordWrap, otherwise Hb::TextNoWrap.
+
+    \param text Dialog text.
+
+    \sa text(), show(), update()
 */
 void HbDeviceNotificationDialog::setText(const QString &text)
 {
     TRACE_ENTRY
     Q_D(HbDeviceNotificationDialog);
-    d->mData["text"] = text;
+    d->mData[keyText] = text;
     d->scheduleUpdateEvent();
     TRACE_EXIT
 }
 
 /*!
-    Set and update title on dialog. Title is not set, if show() or update()
-    is not called.
-    \param title - title shown on dialog.
-    \sa show(), update()
+    Sets title text.
+
+    \param title Title text.
+
+    \sa title(), show(), update()
 */
 void HbDeviceNotificationDialog::setTitle(const QString &title)
 {
     TRACE_ENTRY
     Q_D(HbDeviceNotificationDialog);
-    d->mData["title"] = title;
+    d->mData[keyTitle] = title;
     d->scheduleUpdateEvent();
     TRACE_EXIT
 }
 
 /*!
-    Enable user interaction on dialog. Setting is not set, if show() or update()
-    is not called.
-    \param enable - When enabled, activated() signal is emitted on user action.
+    Enables user interaction on dialog.
 
-    Default value is false.
-    \sa show(), update()
+    \param enable True enableds activated() signal on user action.
+
+    \sa isTouchActivating(), show(), update()
 */
 void HbDeviceNotificationDialog::enableTouchActivation(bool enable)
 {
     TRACE_ENTRY
     Q_D(HbDeviceNotificationDialog);
-    d->mData["touchActivation"] = enable;
+    d->mData[keyTouchActivation] = enable;
     d->scheduleUpdateEvent();
     TRACE_EXIT
 }
 
 /*!
-    Set dialog timeout. Timeout is not set, if show() or update()
-    is not called.
-    \param timeout - Set timeout for dialog.
+    Sets dialog timeout.
 
-    Default value is HbPopup::StandardTimeout (3000 ms).
-    \sa show(), update()
+    \param timeout Timeout is milliseconds.
+
+    \sa timeout(), show(), update()
 */
 void HbDeviceNotificationDialog::setTimeout(int timeout)
 {
     TRACE_ENTRY
     Q_D(HbDeviceNotificationDialog);
-    d->mData["timeout"] = timeout;
+    d->mData[keyTimeout] = timeout;
     d->scheduleUpdateEvent();
     TRACE_EXIT
 }
 
 /*!
-    Set dialog title text wrapping.
-    \param wrapping - Set wrapping for dialog title text.
+    Sets title text wrapping. The title can wrap only if there is no text for the dialog.
+    The title can wrap to a maximum of two lines. setText() also changes title text wrapping.
 
-    Default value is NoWrap.
-    \sa show(), update()
+    \param wrapping Title text wrapping.
+
+    \sa titleTextWrapping(), setText(), show(), update()
 */
 void HbDeviceNotificationDialog::setTitleTextWrapping(Hb::TextWrapping wrapping)
 {
     TRACE_ENTRY
     Q_D(HbDeviceNotificationDialog);
-    d->mData["titleTextWrapping"] = wrapping;
+    d->mData[keyTitleTextWrapping] = wrapping;
     d->scheduleUpdateEvent();
     TRACE_EXIT
 }
 
 /*!
-    Set animation definition on dialog. Animation logical name has to be set
-    using setIcon(). Animation is not set, if show() or update()
-    is not called.
-    \param animationDefinition - path and name animation definition file shown in dialog.
-    \sa show(), update(), setIconName()
+    Set animation definition. Animation logical name has to be set
+    using setIcon(). Animation definition files must be stored to a place where they
+    can be accessed by device dialog service.
+
+    Supported animation formats are following:
+    - GIF (.gif)
+    - MNG (.mng)
+        - Frame animations
+
+    \param animationDefinition Path and name of the animation definition file.
+
+    \sa setIconName(), animationDefinition(), HbIconAnimationManager::addDefinitionFile(), show(), update()
 */
 void HbDeviceNotificationDialog::setAnimationDefinition(QString &animationDefinition)
 {
     TRACE_ENTRY
     Q_D(HbDeviceNotificationDialog);
-    d->mData["animationDefinition"] = animationDefinition;
+    d->mData[keyAnimationDefinition] = animationDefinition;
     d->scheduleUpdateEvent();
     TRACE_EXIT
 }
 
 /*!
-    Returns name and path of the icon shown on dialog. If not set, returns empty string.
+    Returns icon or animation file name.
 
-    \sa setIconName
+    \sa setIconName()
 */
 QString HbDeviceNotificationDialog::iconName() const
 {
     TRACE_ENTRY
     Q_D(const HbDeviceNotificationDialog);
 
-    const char *key = "iconName";
-    QVariantMap::const_iterator i = d->mData.find(key);
-    if (i != d->mData.end() && i.key() == "iconName") {
-        return i.value().toString();
-    }
     TRACE_EXIT
-    return QString();
+    return d->mData.value(keyIconName).toString();
 }
 
 /*!
-    Get text shown on dialog. If not set, returns empty string.
+    Returns dialog text.
 
     \sa setText()
 */
@@ -463,17 +504,12 @@ QString HbDeviceNotificationDialog::text() const
     TRACE_ENTRY
     Q_D(const HbDeviceNotificationDialog);
 
-    const char *key = "text";
-    QVariantMap::const_iterator i = d->mData.find(key);
-    if (i != d->mData.end() && i.key() == "text") {
-        return i.value().toString();
-    }
     TRACE_EXIT
-    return QString();
+    return d->mData.value(keyText).toString();
 }
 
 /*!
-    Get title shown on dialog. If not set, returns empty string.
+    Returns title text.
 
     \sa setTitle()
 */
@@ -482,30 +518,27 @@ QString HbDeviceNotificationDialog::title() const
     TRACE_ENTRY
     Q_D(const HbDeviceNotificationDialog);
 
-    const char *key = "title";
-    QVariantMap::const_iterator i = d->mData.find(key);
-    if (i != d->mData.end() && i.key() == "title") {
-        return i.value().toString();
-    }
     TRACE_EXIT
-    return QString();
+    return d->mData.value(keyTitle).toString();
 }
 
 /*!
-    Get trigger action setting.
+    Returns whether touch activation is enabled. Default value is false.
 
-    \sa setTriggerAction()
+    \sa enableTouchActivation()
 */
 bool HbDeviceNotificationDialog::isTouchActivating() const
 {
     TRACE_ENTRY
     Q_D(const HbDeviceNotificationDialog);
     TRACE_EXIT
-    return d->mData["touchActivation"].toBool();
+    return d->mData.value(keyTouchActivation).toBool();
 }
 
 /*!
-    Get timeout setting.
+    Returns timeout.
+
+    Default value is HbPopup::StandardTimeout (3000 ms).
 
     \sa setTimeout()
 */
@@ -514,12 +547,14 @@ int HbDeviceNotificationDialog::timeout() const
     TRACE_ENTRY
     Q_D(const HbDeviceNotificationDialog);
     TRACE_EXIT
-    return d->mData["timeout"].toInt();
+    const QVariant defaultValue(3000); // HbPopup::StandardTimeout
+    return d->mData.value(keyTimeout, defaultValue).toInt();
 }
 
 /*!
-    Returns the style of text wrapping for the title.
-
+    Returns title text wrapping.
+    
+    The title can wrap only if dialog text is empty. The title can wrap to a maximum of two lines.
     The default is Hb::TextWordWrap.
 
      \sa setTitleTextWrapping()
@@ -529,11 +564,14 @@ Hb::TextWrapping HbDeviceNotificationDialog::titleTextWrapping() const
     TRACE_ENTRY
     Q_D(const HbDeviceNotificationDialog);
     TRACE_EXIT
-    return (Hb::TextWrapping)d->mData["titleTextWrapping"].toInt();
+    const QVariant defaultValue(
+        static_cast<int>(text().isEmpty() ? Hb::TextWordWrap : Hb::TextNoWrap));
+    return static_cast<Hb::TextWrapping>(d->mData.value(keyTitleTextWrapping,
+        defaultValue).toInt());
 }
 
 /*!
-    Returns the animation definition file name.
+    Returns animation definition file name.
 
     \sa setAnimationDefinition()
 */
@@ -542,22 +580,18 @@ QString HbDeviceNotificationDialog::animationDefinition() const
     TRACE_ENTRY
     Q_D(const HbDeviceNotificationDialog);
 
-    const char *key = "animationDefinition";
-    QVariantMap::const_iterator i = d->mData.find(key);
-    if (i != d->mData.end() && i.key() == "animationDefinition") {
-        return i.value().toString();
-    }
     TRACE_EXIT
-    return QString();
+    return d->mData.value(keyAnimationDefinition).toString();
 }
 
 /*!
-    Show the dialog.
-    \code
-    // example to show dialog.
-    mNotificationDialog->setText("Dialog text");
-    mNotificationDialog->show();
-    \endcode
+    Shows a notification dialog and returns immediately without waiting for it to close.
+    Closing of the dialog is indicated by aboutToClose() signal. Tapping of dialog is
+    indicated by activated() signal. Dialog can be updated while showing by property
+    setters.
+
+    \sa update(), aboutToClose(), activated()
+
 */
 void HbDeviceNotificationDialog::show()
 {
@@ -567,12 +601,12 @@ void HbDeviceNotificationDialog::show()
 }
 
 /*!
-    Update the dialog.
-    \code
-    // example to update already showing dialog.
-    mNotificationDialog->setText("Update title");
-    mNotificationDialog->update();
-    \endcode
+    Updates changed properties to a showing notification dialog via interprocess
+    communication. Has no effect if show() has not been called or the dialog has
+    closed already. Calling update() is optional as setting any property schedules
+    an event and the showing notification is updated next time Qt event loop executes.
+
+    \sa show()
 */
 void HbDeviceNotificationDialog::update()
 {
@@ -581,8 +615,7 @@ void HbDeviceNotificationDialog::update()
     TRACE_EXIT
 }
 /*!
-    Close the dialog. Method has no effect if convenience methods
-    are used to show device notification dialog.
+    Closes a device notification dialog.
 */
 void HbDeviceNotificationDialog::close()
 {

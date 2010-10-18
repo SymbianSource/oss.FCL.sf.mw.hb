@@ -30,6 +30,7 @@
 #include <QHash>
 #include <QSet>
 
+
 class HbSmileyThemePrivate : public QSharedData
 {
 public:
@@ -42,6 +43,8 @@ public: // data
 
     QHash<QString,QSet<QString> > smileyToPatterns;
     QHash <QString, QString> patternToSmiley;
+    mutable QRegExp regexp;
+    mutable bool dirty;
 };
 
 HbSmileyThemePrivate::HbSmileyThemePrivate()
@@ -50,7 +53,8 @@ HbSmileyThemePrivate::HbSmileyThemePrivate()
 
 HbSmileyThemePrivate::HbSmileyThemePrivate(const HbSmileyThemePrivate &other) : QSharedData(other),
         smileyToPatterns(other.smileyToPatterns),
-        patternToSmiley(other.patternToSmiley)
+        patternToSmiley(other.patternToSmiley),
+        dirty(true)
 {
 }
 
@@ -161,6 +165,9 @@ bool HbSmileyTheme::load (const QString &fileName)
     if (ret) {
         *this = tmpTheme;
     }
+
+    d->dirty = true;
+
     return ret;
 }
 
@@ -193,7 +200,8 @@ void HbSmileyTheme::insert(const QString &smiley, const QString &pattern)
         patterns << pattern;
         d->smileyToPatterns[smiley] = patterns;
         d->patternToSmiley[pattern] = smiley;
-    }
+        d->dirty = true;
+    }    
 }
 
 
@@ -255,6 +263,7 @@ void HbSmileyTheme::remove(const QString &smiley)
         foreach(QString pattern, tmpPatterns) {
             d->patternToSmiley.remove(pattern);
         }
+        d->dirty = true;
     }
 }
 
@@ -278,6 +287,7 @@ void HbSmileyTheme::removePattern(const QString &pattern)
                 d->smileyToPatterns[smiley] = tmpPatterns;
             }
             d->patternToSmiley.remove(pattern);
+            d->dirty = true;
         }
     }
 }
@@ -294,7 +304,8 @@ void HbSmileyTheme::clear()
     if (!isNull()) {
         d.detach();
         d->smileyToPatterns.clear();
-        d->patternToSmiley.clear();        
+        d->patternToSmiley.clear();
+        d->dirty = true;
     }
 }
 
@@ -343,6 +354,26 @@ QStringList HbSmileyTheme::patterns() const
     return d->patternToSmiley.keys();
 }
 
+/*!
+* Returns the regular expression for matching the smiley patterns from the theme.
+*
+* \sa patterns()
+*/
+const QRegExp& HbSmileyTheme::regExp() const
+{
+    if (d->dirty) {
+        QString regexpStr;
+        foreach (QString pattern, patterns()) {
+            regexpStr += QRegExp::escape(pattern) + "|";
+        }
+        regexpStr.remove(regexpStr.count()-1, 1);
+
+        d->regexp.setPattern(regexpStr);
+        d->dirty = false;
+    }
+
+    return d->regexp;
+}
 
 /*!
 * Returns the smiley theme as a QVariant.

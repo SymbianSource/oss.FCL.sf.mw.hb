@@ -25,28 +25,16 @@
 #ifndef HBTHEMESERVER_P_H
 #define HBTHEMESERVER_P_H
 
-#include <QMainWindow>
-
-class HbThemeServer;
 class HbThemeServerPrivate;
-class QLabel;
 
-#ifdef Q_OS_SYMBIAN
-class HbThemeServer
-#else
-class HbThemeServer : public QMainWindow
-#endif
-{
+class HbThemeServer {
+
 public:
-    HbThemeServer(QWidget *parent = 0);
+    HbThemeServer();
     ~HbThemeServer();
     bool startServer();
-    void stopServer();
 
 private:
-#ifndef Q_OS_SYMBIAN
-    QLabel *statusLabel;
-#endif
     HbThemeServerPrivate *themeServer;
 };
 

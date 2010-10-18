@@ -33,6 +33,7 @@
 #include <QSet>
 #include <hbmainwindow.h>
 #include <hbmainwindow_p.h>
+#include <hbinstance_p.h>
 
 /*!
  * \class HbVgEffect
@@ -104,7 +105,8 @@ HbVgEffectPrivate::HbVgEffectPrivate()
       mainWindow(0),
       lastUsedRotation(0),
       lastRotationTransformAngle(0),
-      forceSwMode(false)
+      forceSwMode(false),
+      alwaysClearPixmaps(true) // Enable it always for now, due to limited gpu memory.
 {
 }
 
@@ -131,6 +133,22 @@ VGImage HbVgEffectPrivate::ensurePixmap(QPixmap *pixmap, const QSize &size)
     return qPixmapToVGImage(*pixmap);
 }
 #endif
+
+/*!
+ * Clears all the pixmaps that live as member variables. This is not mandatory,
+ * but helps reducing graphics memory usage.
+ *
+ * The downside is decreased performance due to new pixmap creation in the next
+ * ensurePixmap() call.
+ *
+ * \internal
+ */
+void HbVgEffectPrivate::clearPixmaps()
+{
+    // Note: If the effect used tryCache() then the underlying pixmap data for
+    // dstPixmap will not really be destroyed here due to implicit sharing.
+    srcPixmap = dstPixmap = tmpPixmap = QPixmap();
+}
 
 /*!
  * Invalidates the cache but only if it has not been done already.
@@ -398,10 +416,19 @@ void HbVgEffect::setForceSwMode(bool b)
  * world transform is not reset before calling this, in contrast to
  * performEffect(). (this means that neither d->srcPixmap nor
  * d->worldTransform is available).
+ *
+ * If the effect is able to render itself into a pixmap then it should do so
+ * when \a result and \a resultPos are not 0. In this case the effect should not
+ * paint anything onto \a devicePainter but all its output should go into a
+ * newly created pixmap starting at position (0, 0). This pixmap is then
+ * returned to the caller in \a result. The offset that will be needed when
+ * painting the pixmap onto the devicePainter is passed back in \a resultPos.
  */
-void HbVgEffect::performEffectSw(QPainter *painter)
+void HbVgEffect::performEffectSw(QPainter *devicePainter, QPixmap *result, QPointF *resultPos)
 {
-    drawSource(painter);
+    Q_UNUSED(result);
+    Q_UNUSED(resultPos);
+    drawSource(devicePainter);
 }
 
 /*!
@@ -428,7 +455,7 @@ void HbVgEffect::draw(QPainter *painter)
     if (d->forceSwMode || !paintEngine || paintEngine->type() != QPaintEngine::OpenVG) {
         // No sourcePixmap() and world transform change here because
         // in most cases we will just call drawSource().
-        performEffectSw(painter);
+        performEffectSw(painter, 0, 0);
         d->paramsChanged = d->cacheInvalidated = false;
         return;
     }
@@ -466,6 +493,12 @@ void HbVgEffect::draw(QPainter *painter)
 
     // Restore the painter's previously set transformations.
     painter->setWorldTransform(d->worldTransform);
+
+    // Make sure we don't keep any unused pixmaps alive in case the application
+    // wants to minimize gpu memory usage (on the expense of performance).
+    if (d->alwaysClearPixmaps || HbInstancePrivate::d_ptr()->mDropHiddenIconData) {
+        d->clearPixmaps();
+    }
 
 #else
     // OpenVG code disabled => effect is not shown (but have the source drawn still).
@@ -620,6 +653,18 @@ QRectF HbVgEffect::sourceBoundingRectForRoot() const
 }
 
 /*!
+ * Calls sourcePixmap() for this effect, or, in case of chained effects, for the
+ * root of the chain.
+ */
+QPixmap HbVgEffect::sourcePixmapForRoot(Qt::CoordinateSystem system, QPoint *offset)
+{
+    Q_D(HbVgEffect);
+    return d->rootEffect
+        ? d->rootEffect->sourcePixmapForRoot(system, offset)
+        : sourcePixmap(system, offset);
+}
+
+/*!
  * Installs the effect on a given graphics item. This is merely a wrapper to
  * QGraphicsItem::setGraphicsEffect(). To uninstall the effect use
  * setGraphicsEffect in the usual way (i.e. pass null). This function will do
@@ -636,4 +681,14 @@ void HbVgEffect::install(QGraphicsItem *item)
         d->sourceGraphicsItem = item;
         item->setGraphicsEffect(this);
     }
+}
+
+/*!
+ * A sw-based mask effect should return ChainBehavAsSource. Anything else should
+ * stick to the default ChainBehavNormal. There can only be 0 or 1 effect with
+ * ChainBehavAsSource in a chain.
+ */
+HbVgEffect::ChainBehavior HbVgEffect::chainBehavior() const
+{
+    return ChainBehavNormal;
 }

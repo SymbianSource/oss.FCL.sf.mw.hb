@@ -1,0 +1,16 @@
+
+HbDatePickerViewItem[state = "normal"]::text-1
+{
+    color: var(qtc_tumbler_normal);
+}
+
+HbDatePickerViewItem[state = "pressed"]::text-1
+{
+    color: var(qtc_tumbler_selected);
+}
+
+HbDatePickerViewItem[state = "selected"]::text-1
+{
+    color: var(qtc_tumbler_selected);
+}
+

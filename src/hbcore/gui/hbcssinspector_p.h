@@ -41,6 +41,7 @@ QT_FORWARD_DECLARE_CLASS(QTreeView)
 QT_FORWARD_DECLARE_CLASS(QTextEdit)
 QT_FORWARD_DECLARE_CLASS(HbAnchorArrowDrawer)
 QT_FORWARD_DECLARE_CLASS(HbMainWindow)
+QT_FORWARD_DECLARE_CLASS(HbPopupManager)
 
 
 class HbCssInfoDrawer : public HbWidgetBase
@@ -54,15 +55,15 @@ public:
 public slots:
     void updateFocusItem(const QGraphicsItem* item);
 
-    void setBoxVisible(bool visible) { mShowBox = visible; };
-    void setItemTextVisible(bool visible) { mShowItemText = visible; };
-    void setGuideLinesVisible(bool visible) { mDrawGuideLines = visible; };
+    void setBoxVisible(bool visible) { mShowBox = visible; }
+    void setItemTextVisible(bool visible) { mShowItemText = visible; }
+    void setGuideLinesVisible(bool visible) { mDrawGuideLines = visible; }
 
-    void setHintTextVisible(bool visible) { mShowHintText = visible; };
-    void setMinHintBoxVisible(bool visible) { mShowMinHintBox = visible; };
-    void setPrefHintBoxVisible(bool visible) { mShowPrefHintBox = visible; };
-    void setMaxHintBoxVisible(bool visible) { mShowMaxHintBox = visible; };
-    void setSizePrefsVisible(bool visible) { mShowSizePrefs = visible; };
+    void setHintTextVisible(bool visible) { mShowHintText = visible; }
+    void setMinHintBoxVisible(bool visible) { mShowMinHintBox = visible; }
+    void setPrefHintBoxVisible(bool visible) { mShowPrefHintBox = visible; }
+    void setMaxHintBoxVisible(bool visible) { mShowMaxHintBox = visible; }
+    void setSizePrefsVisible(bool visible) { mShowSizePrefs = visible; }
 
 protected:
     void changeEvent(QEvent *event);
@@ -100,13 +101,20 @@ class HoveredWidgetFilter : public QObject
 public:
     HoveredWidgetFilter(QGraphicsScene *scene);
     virtual ~HoveredWidgetFilter();
+    
+    enum UpdateMode {
+        Hover,
+        Click,
+        ClickBlocking,
+        Manual,
+        AutoRefresh
+    };
 
 signals:
     void newItemHovered(const QGraphicsItem* item);
 
 public slots:
-    void setHoverMode(bool enabled) { mHoverMode = enabled; };
-    void setBlockingMode(bool enabled) { mBlockingMode = enabled; };
+    void setMode(HoveredWidgetFilter::UpdateMode mode) { mMode = mode; }
 
 protected:
     bool eventFilter(QObject *obj, QEvent *event);
@@ -116,8 +124,7 @@ private:
     QGraphicsItem *mCurrentItem;
     HbAnchorArrowDrawer *mArrowDrawer;
     HbCssInfoDrawer *mCssInfoDrawer;
-    bool mHoverMode;
-    bool mBlockingMode;
+    UpdateMode mMode;
 
 friend class HbCssInspectorWindow;
 };
@@ -140,18 +147,36 @@ private:
 };
 
 
+class ModelItemWrapper {
+public:
+    ModelItemWrapper(QGraphicsItem *item);
+    ModelItemWrapper(HbMainWindow *window);
+    ModelItemWrapper(HbPopupManager *mPopupMgr);
+    ModelItemWrapper();
+
+    QGraphicsItem *graphicsItem() const;
+    HbMainWindow *window() const;
+    HbPopupManager *popupManager() const;
+
+private:
+    QGraphicsItem *mGraphicsItem;
+    HbMainWindow *mWindow;
+    HbPopupManager *mPopupMgr;
+};
+
+
 class CssInspectorModelItem
 {
 public:
-    CssInspectorModelItem(QGraphicsItem *item, int row,
+    CssInspectorModelItem(ModelItemWrapper *item, int row,
         CssInspectorModelItem *parent=0);
     ~CssInspectorModelItem();
     CssInspectorModelItem *child(int i);
     CssInspectorModelItem *parent();
-    QGraphicsItem *data();
+    ModelItemWrapper *data();
     int row();
 private:
-    QGraphicsItem *mItem;
+    ModelItemWrapper *mItem;
     QHash<int, CssInspectorModelItem*> mChildren;
     CssInspectorModelItem *mParent;
     int mRow;
@@ -162,7 +187,7 @@ class CssInspectorModel : public QAbstractItemModel
 {
     Q_OBJECT
 public:
-    CssInspectorModel(HbMainWindow *win=0, QObject *parent=0);
+    CssInspectorModel(QObject *parent=0);
     ~CssInspectorModel();
 
     QVariant data(const QModelIndex &index, int role) const;
@@ -175,7 +200,6 @@ public:
     int columnCount(const QModelIndex &parent = QModelIndex()) const;
 
 private:
-    HbMainWindow *mWin;
     CssInspectorModelItem *mRootItem;
 };
 
@@ -197,6 +221,7 @@ class HbCssInspectorWindow : public QWidget
 
 public:
     static HbCssInspectorWindow *instance();
+    static bool exists();
     virtual ~HbCssInspectorWindow();
 
 public slots:
@@ -204,15 +229,21 @@ public slots:
     void setVisible(bool visible);
     void refresh();
 
+signals:
+    void modeChanged(HoveredWidgetFilter::UpdateMode mode);
+
 private:
     void removeFilters();
     void addFilters();
-    static QString anchorsToHtmlInfo(HbAnchorLayout *anchorLayout, const QString itemName, const QString layoutName);
+    static QString anchorsToHtmlInfo(const QGraphicsWidget *widget, const QString layoutName);
     static QString anchorItemName(QGraphicsLayoutItem* item, QGraphicsLayout* layout, bool& isIdBased);
 
 private slots:
     void updateFromTreeView(const QModelIndex &index);
     void updateColumnSizes(const QModelIndex &index);
+    void changeMode();
+    void updateCurrentItem();
+    void updateSizeMode();
 
 private:
     explicit HbCssInspectorWindow(QWidget *parent = 0);
@@ -224,6 +255,8 @@ private:
     QTreeView *mTreeView;
     QLabel *mPathLabel;
     QLabel *mSizeHintLabel;
+    QLabel *mActualSizeLabel;
+    QLabel *mPositionLabel;
     QLabel *mSizePolicyHoriz;
     QLabel *mSizePolicyVert;
 
@@ -242,6 +275,14 @@ private:
     QRadioButton *mHoverRadio;
     QRadioButton *mClickRadio;
     QRadioButton *mBlockRadio;
+    QRadioButton *mManualRadio;
+    QRadioButton *mRefreshRadio;
+
+    QRadioButton *mSizePxRadio;
+    QRadioButton *mSizeUnRadio;
+
+    const QGraphicsItem *mCurrentItem;
+    QTimer *mUpdateTimer;
 };
 
 #endif

@@ -30,7 +30,6 @@
 #include "hblistviewitem.h"
 #include "hblistitemcontainer_p.h"
 #include "hbscrollbar.h"
-#include <hbwidgetfeedback.h>
 #include "hbmodeliterator.h"
 
 #include <QGraphicsSceneMouseEvent>

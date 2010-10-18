@@ -73,9 +73,27 @@
 #define CSSBIN_TRACES
 #endif
 
+//define debug macros.
+#ifdef THEME_SERVER_TRACES
+#define THEME_GENERIC_DEBUG qDebug
+#else
+#define THEME_GENERIC_DEBUG QT_NO_QDEBUG_MACRO
+#endif
+
+#ifdef THEME_INDEX_TRACES
+#define THEME_INDEX_DEBUG qDebug
+#else
+#define THEME_INDEX_DEBUG QT_NO_QDEBUG_MACRO
+#endif
+
+#ifdef CSSBIN_TRACES
+#define THEME_CSSBIN_DEBUG qDebug
+#else
+#define THEME_CSSBIN_DEBUG QT_NO_QDEBUG_MACRO
+#endif
+
 // To enable fute testing for cache
 //#define HB_ICON_CACHE_DEBUG
-
 
 enum HbThemeType {
     BaseTheme   = 0,
@@ -90,7 +108,7 @@ struct HbSharedChunkHeader
     quint32 identifier;
     quint32 mainAllocatorOffset;
     quint32 subAllocatorOffset;
-    quint32 sharedCacheOffset;	
+    quint32 sharedCacheOffset;  
     // Base theme offsets
     quint32 baseThemePathOffset;
     quint32 baseThemeNameOffset;
@@ -210,10 +228,16 @@ struct HbSharedBLOBInfo
     int dataSize;
 };
 
+//Rendering Modes
+enum HbRenderingMode {
+    ESWRendering,
+    EHWRendering
+};
+
 struct HbSharedIconInfo
 {
     HbIconFormatType type;
-
+    HbRenderingMode  renderingMode;
     union
     {
         HbSharedPixmapInfo pixmapData;
@@ -223,7 +247,9 @@ struct HbSharedIconInfo
         HbSharedBLOBInfo blobData;
     };
 
-    HbSharedIconInfo():type(INVALID_FORMAT){}
+    HbSharedIconInfo()
+        : type(INVALID_FORMAT),
+          renderingMode(ESWRendering) {}
 
 };
 
@@ -236,10 +262,18 @@ struct HbSharedStyleSheetInfo
 {
     int offset;
     int refCount;
+    bool fileExists;
     HbSharedStyleSheetInfo():
         offset(-1),
-        refCount(0)
+        refCount(0),
+        fileExists(true)
     {}
+};
+
+struct HbSharedMissedHbCssInfo
+{
+    int offset;
+    HbSharedMissedHbCssInfo(): offset(-1) {}
 };
 
 struct HbSharedEffectInfo
@@ -251,7 +285,8 @@ struct HbSharedEffectInfo
 struct HbSharedWMLInfo
 {
     int offset;
-    HbSharedWMLInfo() : offset(-1) {}
+    bool fileExists;
+    HbSharedWMLInfo() : offset(-1), fileExists(true) {}
 };
 
 struct HbDeviceProfileInfo
@@ -306,9 +341,7 @@ enum HbThemeServerRequest {
      EServerHeapMarkStart,
      EServerHeapMarkEnd,
      EServerAllocFail,
-     EServerAllocReset,
-     EFreeGPUMem,
-     ETotalGPUMem,
+     EServerAllocReset,     
      ERefCount,
 #endif
      EGPULRUSize,
@@ -316,6 +349,7 @@ enum HbThemeServerRequest {
      EEffectLookupFilePath,
      EEffectAdd,
      EUnloadIcon,
+     EBatchUnloadIcon,
      EUnloadMultiIcon,
      EMemoryGood,
      EFreeRam,
@@ -324,21 +358,25 @@ enum HbThemeServerRequest {
      EFreeSharedMem,
      EAllocatedSharedMem,
      EAllocatedHeapMem,
-     ETypefaceOffset
+     ETypefaceOffset,
+     EFreeGPUMem,
+     ETotalGPUMem,
+     ECachedSgImages,
+     ECachedPixmapImages,
+     ECurrentRenderingMode,
+     ETotalSgImagesCost
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
      ,ECreateMemoryReport
 #endif
+     ,EMissedHbCssLookup
  };
-//Rendering Modes
-enum HbRenderingMode {
-    ESWRendering,
-    EHWRendering
-};
 
 struct HbFreeRamNotificationData
 {
     int bytesToFree;
     bool useSwRendering;
-};	
+};  
+
+typedef bool (*HbAsyncIconInfoCallback)(const HbSharedIconInfo &, void *);
 
 #endif /* HBTHEMECOMMON_P_H */

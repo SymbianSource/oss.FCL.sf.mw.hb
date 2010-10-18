@@ -1,19 +1,18 @@
 HbDialog {
     max-width:expr(var(hb-param-screen-width)-2*var(hb-param-margin-gene-screen));
     max-height:expr(var(hb-param-screen-height)-2*var(hb-param-margin-gene-screen));
-	layout:default;
+    layout:default;
 }
-
 HbDialog[heading_layout] {
-	layout:content_header;
+    layout:content_header;
 }
 
 HbDialog[controls_layout] {
-	layout:content_controls;
+    layout:content_controls;
 }
 
 HbDialog[heading_layout][controls_layout] {
-	layout:content_header_controls;
+    layout:content_header_controls;
 }
 
 HbDialog::heading {
@@ -22,27 +21,46 @@ HbDialog::heading {
     top:-var(hb-param-margin-gene-popup);
     bottom:var(hb-param-margin-gene-popup);
     text-height:var(hb-param-text-height-primary);
+    text-line-count-min:1;
+    text-line-count-max:1;
+    text-wrap-mode:no-wrap;
     text-align:left;
     font-variant:primary;
-    max-height:expr(var(hb-param-text-height-primary)+2*var(hb-param-margin-gene-popup));
-	bottom:var(hb-param-margin-gene-popup);
+    /*max-height:expr(var(hb-param-text-height-primary)+2*var(hb-param-margin-gene-popup));*/
 }
 
-HbDialog::controls {	
-    top:-var(hb-param-margin-gene-popup);
+HbDialog::background {
+    left:0un;
+    right:0un;
+    top:0un;
+    bottom:0un;
+    /*max-height:expr(var(hb-param-text-height-primary)+2*var(hb-param-margin-gene-popup));*/
+}
+
+HbDialog[!fullScreen]::controls {
     min-width:expr(var(hb-param-screen-short-edge)-2*var(hb-param-margin-gene-screen));
-	fixed-height:var(hb-param-widget-popup-softkey-height);
+    fixed-height:var(hb-param-widget-popup-softkey-height);
 }
 
-HbDialog::content {
+HbDialog[fullScreen]::controls {
+    fixed-height:var(hb-param-widget-toolbar-height);
+}
+
+HbDialog[!fullScreen]::content {
     left:-var(hb-param-margin-gene-popup);
     right:var(hb-param-margin-gene-popup);
     top:-var(hb-param-margin-gene-popup);
     bottom:var(hb-param-margin-gene-popup);
-
 }
 
-HbDialog > HbListWidget {
+HbDialog[fullScreen]::content {
+    left:-var(hb-param-margin-view-left);
+    right:var(hb-param-margin-view-right);
+    top:-var(hb-param-margin-view-top);
+    bottom:var(hb-param-margin-view-bottom);
+}
+
+HbDialog[list_content]::content {
     left:-var(hb-param-margin-gene-popup-list);
     right:var(hb-param-margin-gene-popup-list);
     top:-var(hb-param-margin-gene-popup-list);

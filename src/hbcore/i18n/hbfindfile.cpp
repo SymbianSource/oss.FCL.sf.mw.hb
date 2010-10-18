@@ -122,7 +122,7 @@ bool HbFindFile::hbFindFile(QString &str, const QChar &defaultDrive)
     QString drives = availableDrives();
     for (int i = 0; i < drives.size(); i++) {
         if (drives.at(i) == defaultDrive) {
-    	    continue;
+            continue;
         }
         file = drives.at(i) + QString(":") + str;
         QFileInfo info(file);

@@ -22,44 +22,23 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
-#include "hbthemeserver_p.h"
-#include <QLabel>
-#include <QDebug>
 
+#include "hbthemeserver_p.h"
 #include "hbthemecommon_p.h"
-#include <hbmemoryutils_p.h>
-#ifdef Q_OS_SYMBIAN
 #include "hbthemeserver_symbian_p_p.h"
 #include "hbthemecommon_symbian_p.h"
-#else
-#include "hbthemeserver_generic_p_p.h"
-#endif
 
-#ifdef THEME_SERVER_TRACES
-QLabel *testLabel = 0;
-#endif
+#include <hbmemoryutils_p.h>
+
+#include <QDebug>
 
 /**
  * Constructor
  */
 
-HbThemeServer::HbThemeServer(QWidget *parent) :
-#ifndef Q_OS_SYMBIAN
-    QMainWindow(parent),
-#endif
+HbThemeServer::HbThemeServer() :
     themeServer(0)
 {
-#ifdef Q_OS_SYMBIAN
-    Q_UNUSED(parent);
-#else
-    statusLabel = new QLabel;
-    statusLabel->setText("Theme Server Started");
-    setCentralWidget(statusLabel);
-    setWindowTitle("Theme Server");
-#ifdef THEME_SERVER_TRACES
-    testLabel = statusLabel;
-#endif
-#endif
 }
 
 /**
@@ -72,7 +51,7 @@ bool HbThemeServer::startServer()
     if (!manager) {
         return success;
     }
-#ifdef Q_OS_SYMBIAN
+
     TRAPD(err, themeServer =  HbThemeServerPrivate::NewL(CActive::EPriorityStandard));
     if (KErrNone != err) {
         return success;
@@ -81,23 +60,8 @@ bool HbThemeServer::startServer()
     if (KErrNone == error) {
         success = true;
     } else {
-#ifdef THEME_SERVER_TRACES
-        qDebug() << Q_FUNC_INFO << "Error Starting SERVER";
-#endif
+        THEME_GENERIC_DEBUG() << Q_FUNC_INFO << "Error Starting SERVER";
     }
-#else
-    QT_TRY {
-        themeServer = new HbThemeServerPrivate();
-    } QT_CATCH(const std::bad_alloc &) {
-        return success;
-    }
-    success = themeServer->start();
-    if (!success) {
-#ifdef THEME_SERVER_TRACES
-        qDebug() << Q_FUNC_INFO << "Error Starting SERVER";
-#endif
-    }
-#endif
 
     // Parses the device profiles and device modes and stores in the
     // shared memory.
@@ -106,22 +70,10 @@ bool HbThemeServer::startServer()
 }
 
 /**
- * stopServer
- */
-void HbThemeServer::stopServer()
-{
-#ifndef Q_OS_SYMBIAN
-    delete themeServer;
-    themeServer = 0;
-#endif // Q_OS_SYMBIAN
-}
-
-/**
  * Destructor
  */
 HbThemeServer::~HbThemeServer()
 {
-    stopServer();
     GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory)
     if (manager) {
         manager->releaseInstance(HbMemoryManager::SharedMemory);

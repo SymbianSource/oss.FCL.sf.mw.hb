@@ -40,7 +40,7 @@ struct ItemPrimitive
 {
     QGraphicsItem* item;
     QGraphicsItem *touchItem;
-    HbStyle::Primitive type;
+    HbStylePrivate::Primitive type;
 };
 
 class HbSliderPrivate : public HbWidgetPrivate

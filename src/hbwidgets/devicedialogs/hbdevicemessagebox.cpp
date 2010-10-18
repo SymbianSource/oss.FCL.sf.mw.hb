@@ -49,10 +49,9 @@ HbDeviceMessageBoxPrivate::HbDeviceMessageBoxPrivate() : QObject(),
 HbDeviceMessageBoxPrivate::~HbDeviceMessageBoxPrivate()
 {
     TRACE_ENTRY
-    // information/warning dialogs may be left at server when client is deleted. If there are no connected
+    // Dialogs may be left at server when client is deleted. If there are no connected
     // signals, device dialog widget is not deleted but runs at server and is closed by a timeout.
-    if (mProperties[Type].mValue.toInt() != HbMessageBox::MessageTypeQuestion &&
-        q_ptr->receivers(SIGNAL(aboutToClose())) <= 0) {
+    if (q_ptr->receivers(SIGNAL(aboutToClose())) <= 0) {
         mDeviceDialog->disconnect(q_ptr, SLOT(aboutToClose()));
         mDeviceDialog->disconnect(this, SLOT(triggerAction(QVariantMap)));
         if (mUpdateTimerId != 0) {
@@ -365,7 +364,7 @@ int HbDeviceMessageBoxPrivate::timeoutValue(HbPopup::DefaultTimeout timeout)
         {HbPopup::NoTimeout,0},
         {HbPopup::ConfirmationNoteTimeout,1500},
         {HbPopup::StandardTimeout,3000},
-        {HbPopup::ContextMenuTimeout,6000},
+        {HbPopup::ContextMenuTimeout,6000}
     };
     int count = sizeof(timeoutValues) / sizeof(timeoutValues[0]);
     if (timeout < 0 || timeout >= count) {
@@ -407,14 +406,13 @@ HbDeviceMessageBoxPrivate::ActionSelector HbDeviceMessageBoxPrivate::actionSelec
     @stable
     @hbwidgets
     \class HbDeviceMessageBox
-    \brief HbDeviceMessageBox displays a message box on top of any running applications.
+    \brief HbDeviceMessageBox displays a message box on top all applications.
 
-    HbDeviceMessageBox is a device dialog version of HbMessageBox. It displays a message box
-    with text, icon or animation and optional accept and reject buttons. It is not a widget.
-    The message box is displayed by a device dialog service which HbDeviceMessageBox is a
-    client of.
+    HbDeviceMessageBox is a device-dialog version of HbMessageBox. It is a modal
+    dialog and displayed on top all applications by a device-dialog service.
+    HbDeviceMessageBox is a client of the service.
 
-    Device dialogs are shown on top of any running applications and are always modal by nature.
+    For content it provides text, icon or animation and optional accept and reject buttons.
 
     A device message box is lauched by a show(). A new message box is lauched every time show()
     is called. aboutToClose() signal is emitted when the box has closed. There is also syncronous
@@ -441,6 +439,10 @@ HbDeviceMessageBoxPrivate::ActionSelector HbDeviceMessageBoxPrivate::actionSelec
     be updated. Information and warning convenience methods return immediately. Question waits for
     a message box to close and is not compatible with gestures.
 
+    If none of HbDeviceMessageBox signals have been connected to, the object can be deleted after
+    show() has been called and device-dialog service takes care showing the message box. If any
+    signals are connected, message box is closed when HbDeviceMessageBox object goes out of scope.  
+
     Four types of message boxes are predefined. The type determines a set of default properties that
     are set on construction. Below is a table listing types and their default properties.
 
@@ -453,12 +455,18 @@ HbDeviceMessageBoxPrivate::ActionSelector HbDeviceMessageBoxPrivate::actionSelec
         <tr><td>Question</td><td>Question icon</td><td>"Yes" and "No" buttons</td><td>No timeout</td><td>Button press</td><td>Question sound</td></tr>
     </table>
 
-    In place of an icon, message box may conatain an animation. Supported icon animation formats are:
+    In place of an icon, message box may contain an animation. Supported icon animation formats are:
     - GIF (.gif)
     - MNG (.mng)
     - Frame animations (.axml)
 
-    Sample code:
+    \section _platform_spec Platform-specific implementation notes for HbDeviceNotificationDialog
+
+    \subsection _nonsymbian Non-Symbian
+    Device dialog service is implemented only for the Symbian platform. On other platforms device 
+    message boxes are displayed on client's main window.
+
+    \section _code_samples Sample code
 
     \code
     // Ask from user whether to continue operation or not.
@@ -527,7 +535,7 @@ HbDeviceMessageBoxPrivate::ActionSelector HbDeviceMessageBoxPrivate::actionSelec
     msg->show();
     \endcode
 
-    \sa HbMessageBox, HbDialog, HbDeviceDialog
+    \sa HbMessageBox, HbDialog, HbDeviceDialog, CHbDeviceMessageBoxSymbian
 */
 
 /*!
@@ -555,9 +563,10 @@ HbDeviceMessageBoxPrivate::ActionSelector HbDeviceMessageBoxPrivate::actionSelec
 */
 
 /*!
-    Constructor.
+    Constructs HbDeviceMessageBox.
+
     \param type Type of the message box.
-    \param parent An optional parameter.
+    \param parent Parent pointer or 0.
 */
 HbDeviceMessageBox::HbDeviceMessageBox(HbMessageBox::MessageBoxType type, QObject *parent) :
     QObject(parent), d_ptr(new HbDeviceMessageBoxPrivate)
@@ -570,10 +579,11 @@ HbDeviceMessageBox::HbDeviceMessageBox(HbMessageBox::MessageBoxType type, QObjec
 }
 
 /*!
-    Constructor.
+    Constructs HbDeviceMessageBox.
+
     \param text Message box text.
     \param type Type of the message box.
-    \param parent An optional parameter.
+    \param parent Parent pointer or 0.
 */
 HbDeviceMessageBox::HbDeviceMessageBox(const QString &text, HbMessageBox::MessageBoxType type,
     QObject *parent) : QObject(parent), d_ptr(new HbDeviceMessageBoxPrivate)
@@ -587,7 +597,9 @@ HbDeviceMessageBox::HbDeviceMessageBox(const QString &text, HbMessageBox::Messag
 }
 
 /*!
-    Destructs the class.
+    Destructs HbDeviceMessageBox. The message box launched by show() is closed if aboutToClose()
+    signal is connected to by an application. Otherwise the box is left executing
+    and should close itself by a timeout.
 */
 HbDeviceMessageBox::~HbDeviceMessageBox()
 {
@@ -597,7 +609,8 @@ HbDeviceMessageBox::~HbDeviceMessageBox()
 }
 
 /*!
-    Shows a message box and returns immediately without waiting for it to close. Closing of the
+    Shows a message box and returns immediately without waiting for it to close. A new message box
+    is launched each time show() is called. Closing of the
     message box is indicated by aboutToClose() signal. Button presses are indicated by
     QAction::triggered() signals. The message box can be updated while showing by property
     setters.
@@ -702,7 +715,7 @@ bool HbDeviceMessageBox::isAcceptAction(const QAction *action) const
 
     \param type Message box type.
 
-    \sa setMessageBoxType()
+    \sa messageBoxType(), show()
 */
 void HbDeviceMessageBox::setMessageBoxType(HbMessageBox::MessageBoxType type)
 {
@@ -733,7 +746,7 @@ HbMessageBox::MessageBoxType HbDeviceMessageBox::messageBoxType() const
     eg. HbMessageBox::Yes | HbMessageBox::No. Button flags are scanned starting from lsb.
     First button found goes to accept position and so forth.
 
-    \sa standardButtons()
+    \sa standardButtons(), show(), update()
 */
 void HbDeviceMessageBox::setStandardButtons(HbMessageBox::StandardButtons buttons)
 {
@@ -887,7 +900,7 @@ QAction *HbDeviceMessageBox::action(ActionRole role) const
     \param action Action or null. Ownership does not transfer.
     \param role Selects an action.
 
-    \sa action()
+    \sa action(), show(), update()
 */
 void HbDeviceMessageBox::setAction(QAction *action, ActionRole role)
 {
@@ -906,7 +919,7 @@ void HbDeviceMessageBox::setAction(QAction *action, ActionRole role)
 
     \param text Message box text.
 
-    \sa text(), HbMessageBox::setText()
+    \sa text(), show(), update(), HbMessageBox::setText()
 */
 void HbDeviceMessageBox::setText(const QString &text)
 {
@@ -931,7 +944,7 @@ QString HbDeviceMessageBox::text() const
     \param aIconName Icon name. Icon can be from Hb resources or themes. Or can be a file in
     a file system.
 
-    \sa IconName()
+    \sa IconName(), show(), update()
 */
 void HbDeviceMessageBox::setIconName(const QString &iconName)
 {
@@ -955,7 +968,7 @@ QString HbDeviceMessageBox::iconName() const
 
     \param visible Enables icon visibility.
 
-    \sa iconVisible()
+    \sa iconVisible(), show(), update()
 */
 void HbDeviceMessageBox::setIconVisible(bool visible)
 {
@@ -979,7 +992,7 @@ bool HbDeviceMessageBox::iconVisible() const
 
     \param timeout Timeout in milliseconds. 0 denotes no timeout (infinite).
 
-    \sa timeout() setTimeout(HbPopup::DefaultTimeout)
+    \sa timeout(), setTimeout(HbPopup::DefaultTimeout), show(), update()
 */
 void HbDeviceMessageBox::setTimeout(int timeout)
 {
@@ -994,7 +1007,7 @@ void HbDeviceMessageBox::setTimeout(int timeout)
 
     \param timeout Timeout as an enumerated constant.
 
-    \sa enum HbPopup::DefaultTimeout timeout() setTimeout(int)
+    \sa enum HbPopup::DefaultTimeout, timeout(), setTimeout(int), show(), update()
 */
 void HbDeviceMessageBox::setTimeout(HbPopup::DefaultTimeout timeout)
 {
@@ -1020,7 +1033,7 @@ int HbDeviceMessageBox::timeout() const
 
     \param dismissPolicy Dismiss policy.
 
-    \sa dismissPolicy()
+    \sa dismissPolicy(), show(), update()
 */
 void HbDeviceMessageBox::setDismissPolicy(HbPopup::DismissPolicy dismissPolicy)
 {
@@ -1053,7 +1066,7 @@ HbPopup::DismissPolicy HbDeviceMessageBox::dismissPolicy() const
 
     \param animationDefinition Path and name of the animation definition file.
 
-    \sa setIcon(), animationDefinition(), HbIconAnimationManager::addDefinitionFile()
+    \sa setIcon(), animationDefinition(), HbIconAnimationManager::addDefinitionFile(), show(), update()
 */
 void HbDeviceMessageBox::setAnimationDefinition(QString &animationDefinition)
 {

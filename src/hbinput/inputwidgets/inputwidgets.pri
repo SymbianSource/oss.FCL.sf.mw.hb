@@ -29,7 +29,6 @@ DEPENDPATH += $$PWD
 
 # hb input widget public headers
 PUBLIC_HEADERS += $$PWD/hbinputvkbwidget.h
-PUBLIC_HEADERS += $$PWD/hbinputvirtualrocker.h
 PUBLIC_HEADERS += $$PWD/hbinputcandidatelist.h
 PUBLIC_HEADERS += $$PWD/hbinputmodeindicator.h
 PUBLIC_HEADERS += $$PWD/hbinputexactwordpopup.h
@@ -43,16 +42,18 @@ PUBLIC_HEADERS += $$PWD/hbinputbuttongroup.h
 PUBLIC_HEADERS += $$PWD/hbinputbutton.h
 PUBLIC_HEADERS += $$PWD/hbinputsctkeyboard.h
 PUBLIC_HEADERS += $$PWD/hbinputmethodselectionlist.h
+PUBLIC_HEADERS += $$PWD/hbinputsettingpopup.h
+PUBLIC_HEADERS += $$PWD/hbinputpopupbase.h
 
 # hb input widget private headers
 PRIVATE_HEADERS += $$PWD/hbinputvkbwidget_p.h
 PRIVATE_HEADERS += $$PWD/hbinputcheckboxlist_p.h
 PRIVATE_HEADERS += $$PWD/hbinputbuttongroup_p.h
 PRIVATE_HEADERS += $$PWD/hbinputsctkeyboard_p.h
+PRIVATE_HEADERS += $$PWD/hbinputpopupbase_p.h
 
 # hb input widget sources
 SOURCES += $$PWD/hbinputvkbwidget.cpp
-SOURCES += $$PWD/hbinputvirtualrocker.cpp
 SOURCES += $$PWD/hbinputcandidatelist.cpp
 SOURCES += $$PWD/hbinputmodeindicator.cpp
 SOURCES += $$PWD/hbinputexactwordpopup.cpp
@@ -67,3 +68,5 @@ SOURCES += $$PWD/hbinputbuttongroup.cpp
 SOURCES += $$PWD/hbinputbutton.cpp
 SOURCES += $$PWD/hbinputsctkeyboard.cpp
 SOURCES += $$PWD/hbinputmethodselectionlist.cpp
+SOURCES += $$PWD/hbinputsettingpopup.cpp
+SOURCES += $$PWD/hbinputpopupbase.cpp

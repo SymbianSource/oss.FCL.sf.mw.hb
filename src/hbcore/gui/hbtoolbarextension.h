@@ -59,12 +59,14 @@ protected:
     bool event ( QEvent *event );
     void polish( HbStyleParameters &params );
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+    void initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive);
 
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbToolBarExtension )
     Q_DISABLE_COPY( HbToolBarExtension )
 
     Q_PRIVATE_SLOT( d_func(), void _q_orientationChanged() )
+    Q_PRIVATE_SLOT( d_func(), void _q_toolbarOrientationChanged() )
     Q_PRIVATE_SLOT( d_func(), void _q_animateButtonClicked() )
 };
 

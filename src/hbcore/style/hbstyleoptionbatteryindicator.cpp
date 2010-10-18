@@ -26,7 +26,7 @@
 #include "hbstyleoptionbatteryindicator_p.h"
 
 /*
-		  
+          
     \class HbStyleOptionBatteryIndicator
     \brief HbStyleOptionBatteryIndicator has the style component for battery indicator
 */

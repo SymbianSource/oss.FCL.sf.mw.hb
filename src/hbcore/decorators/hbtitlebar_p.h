@@ -78,6 +78,7 @@ signals:
     void activated(const QList<IndicatorClientInfo> &clientInfo);
     void deactivated(const QList<IndicatorClientInfo> &clientInfo);
     void allActivated(const QList<IndicatorClientInfo> &clientInfo);
+    void updated(const QList<IndicatorClientInfo> &clientInfo);
 
 public slots:
     void gestureSwipeRight();

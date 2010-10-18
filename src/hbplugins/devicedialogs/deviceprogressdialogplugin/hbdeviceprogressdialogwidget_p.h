@@ -42,6 +42,7 @@ class HbDeviceProgressDialogWidget : public HbProgressDialog, public HbDeviceDia
     Q_PROPERTY(QString iconName READ iconName WRITE setIconName)
     Q_PROPERTY(QString animationDefinition READ animationDefinition WRITE setAnimationDefinition)
     Q_PROPERTY(QString cancelAction READ cancelAction WRITE setCancelAction)
+    Q_PROPERTY(int showLevel READ showLevel WRITE setShowLevel)
 
 public:
     HbDeviceProgressDialogWidget(HbProgressDialog::ProgressDialogType progressDialogType, const QVariantMap &parameters);
@@ -69,9 +70,11 @@ private:
     QString cancelAction() const;
     void setCancelAction(QString &actionData);
     void hideEvent(QHideEvent *event);
-    void showEvent(QShowEvent *event);
+    void closeEvent(QCloseEvent *event);
     void setAnimationDefinition(QString &animationDefinition);
     QString animationDefinition() const;
+    void setShowLevel(int level);
+    int showLevel() const;
 
     QAction *action(ActionIndex index) const;
     static void parseActionData(QString &data);
@@ -86,7 +89,7 @@ private:
     QString mIconName;
     HbAction *mAction;
     HbProgressDialog::ProgressDialogType mProgressDialogType;
-    bool mShowEventReceived;
+    bool mCloseEventReceived;
     QString mAnimationDefinition;
 };
 

@@ -30,6 +30,7 @@
 #include "hbeffectinternal_p.h"
 #include "hbwidgetfeedback.h"
 #include "hbscreen_p.h"
+#include "hbscreenshotitem_p.h"
 #include <QEvent>
 #include <QGraphicsSceneMouseEvent>
 
@@ -42,6 +43,10 @@
   \internal
 */
 
+// An internal view switch flag, it is used to indicate the type of
+// the effect (show/hide) to getEffectTarget.
+const int Hiding = 0x1000000;
+
 HbContentWidget::HbContentWidget(HbMainWindow *mainWindow, QGraphicsItem *parent /*= 0*/):
     HbStackedWidget(parent),
     mViewSwitchRunning(false),
@@ -51,6 +56,8 @@ HbContentWidget::HbContentWidget(HbMainWindow *mainWindow, QGraphicsItem *parent
 {
     // Do not defer this, it causes invalidation and updating.
     setFocusPolicy(Qt::StrongFocus);
+
+    setAcceptTouchEvents(true);
 }
 
 QSizeF HbContentWidget::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
@@ -129,14 +136,24 @@ QGraphicsWidget *HbContentWidget::getEffectTarget(HbView *view, Hb::ViewSwitchFl
     // the effect target.
     QGraphicsWidget *viewWidget = view->widget();
     QGraphicsWidget *effectTarget = viewWidget ? viewWidget : view;
+    HbMainWindowPrivate *mwd = HbMainWindowPrivate::d_ptr(mMainWindow);
     if (flags & Hb::ViewSwitchFullScreen) {
-        effectTarget = HbMainWindowPrivate::d_ptr(mMainWindow)->mClippingItem;
+        effectTarget = mwd->mClippingItem;
         if (!(flags & Hb::ViewSwitchSequential)) {
             // The Parallel+FullScreen combination does not make sense
             // (e.g. cannot animate the one and only titlebar
             // concurrently).
             qWarning("HbMainWindow: parallel fullscreen view switch is not supported");
             effectTarget = 0;
+        }
+    } else if (flags & Hb::ViewSwitchCachedFullScreen) {
+        // This version supports sequential effects too, but in the
+        // hiding case the effect must run on the special graphics
+        // item that will show a screenshot of the mainwindow.
+        if (flags & Hiding) {
+            effectTarget = mwd->screenshotItem();
+        } else {
+            effectTarget = mwd->mClippingItem;
         }
     }
     return effectTarget;
@@ -152,6 +169,13 @@ void HbContentWidget::hideEffectFinished(HbEffect::EffectStatus status)
     // of the effect or this notification), the item is hidden properly before
     // resetting the transform etc. and thus there is no flicker.
     mHidingView->setVisible(false);
+    if (mViewSwitchFlags & Hb::ViewSwitchCachedFullScreen) {
+        HbMainWindowPrivate *mwd = HbMainWindowPrivate::d_ptr(mMainWindow);
+        mwd->screenshotItem()->releaseAndHide();
+        if (mViewSwitchFlags & Hb::ViewSwitchSequential) {
+            mwd->mClippingItem->show();
+        }
+    }
     // Start the "show" phase if not yet started.
     if (mViewSwitchFlags & Hb::ViewSwitchSequential) {
         // Do not show targetView yet, leave it to the effect in order to
@@ -190,19 +214,38 @@ void HbContentWidget::runViewSwitchEffectHide(HbView *viewToHide, Hb::ViewSwitch
     HbEffectInternal::cancelAll(0, true); // ignore looping effects, those are not view switch effects and must not be stopped here
     mViewSwitchRunning = true;
 
-    // Make the new view the current one right away. This must be done asap to prevent
-    // messed up state in mainwindow, the stack widget, etc. due to events coming during
-    // the view switch animation.
-    // 2nd param (hideOld): We still want to see the old view (normally setCurrentWidget would hide it).
-    // 3rd param (showNew): The new view is not yet needed (the effect will take care of making it visible).
-    setCurrentWidget(mTargetView, false, false);
+    bool hideOld = false;
+    if (flags & Hb::ViewSwitchCachedFullScreen) {
+        // Take a screenshot (must be done before touching anything in the view
+        // stack) and show it. The screenshot will effectively replace the
+        // hiding view.
+        HbMainWindowPrivate::d_ptr(mMainWindow)->screenshotItem()->takeAndShowScreenshot();
+        hideOld = true;
+    }
+
+    // Make the new view the current one right away. This must be done asap to
+    // prevent messed up state in mainwindow, the stack widget, etc. due to
+    // events coming during the view switch animation.
+    //
+    // 2nd param (hideOld): We still want to see the old view (normally
+    // setCurrentWidget would hide it), except in the cached case.
+    //
+    // 3rd param (showNew): The new view is not yet needed (the effect will take
+    // care of making it visible).
+    setCurrentWidget(mTargetView, hideOld, false);
 
     mHidingView = viewToHide;
     mViewSwitchFlags = flags;
 
-    QGraphicsWidget *effectTarget = getEffectTarget(viewToHide, flags);
+    QGraphicsWidget *effectTarget = getEffectTarget(viewToHide, (Hb::ViewSwitchFlags) (flags | Hiding));
     if (effectTarget) {
         mMainWindow->setInteractive(false); // disable input while the effects are running
+        if ((flags & Hb::ViewSwitchCachedFullScreen) && (flags & Hb::ViewSwitchSequential)) {
+            // Get rid of decorators for the duration of the hide effect
+            // otherwise they would show up under the screenshot item when
+            // it disappears.
+            HbMainWindowPrivate::d_ptr(mMainWindow)->mClippingItem->hide();
+        }
         QString event = getEffectEvent("hide", flags, viewToHide, mTargetView);
         HbEffectInternal::EffectFlags effectFlags =
             HbEffectInternal::ClearEffectWhenFinished // the effect must not be persistent
@@ -243,6 +286,11 @@ bool HbContentWidget::event(QEvent *event)
         // No need for any real polishing.
         static_cast<HbWidgetPrivate *>(d_ptr)->polished = true;
         return true;
+    } else if (event->type() == QEvent::TouchBegin) {
+        // Accept all touch begin events to get the full Begin..End sequence
+        event->accept();
+        return true;
     }
+
     return HbWidget::event(event);
 }

@@ -44,6 +44,8 @@
 #include "hbthemeclient_p.h"
 #endif
 
+#include <QSettings>
+
 /*!
     Sets the active theme that is used with the Hb applications. HbTheme changed() signal will be emitted if theme change is
     applied succesfully. In addition to the active theme content loading also the underlying priority themes will be updated
@@ -51,7 +53,7 @@
 
     Depending on the platform setTheme functionality might by restricted.
     
-    \param themePath, absolute path to the folder where themes index.theme file is located.
+    \param themePath absolute path to the folder where themes index.theme file is located.
 */
 void HbThemeServices::setTheme(const QString &themePath)
 {
@@ -68,7 +70,7 @@ void HbThemeServices::setTheme(const QString &themePath)
     themeRequestProp.Close();
 #else
     HbThemeClient::global()->setTheme(themePath);
-#endif	
+#endif  
 }
     
 /*!
@@ -86,4 +88,53 @@ const QString HbThemeServices::themePath()
         path.append(info.name);
     }
     return path;
+}
+
+/*!
+    Returns the list of available themes.
+
+    \return list of themes. First item of QPair is the unlocalized theme name
+    and the second item is the absolute path to the theme.
+*/
+const QList<QPair<QString, QString> > HbThemeServices::availableThemes()
+{
+    QList<QPair<QString, QString> > themes;
+
+    QStringList rootDirs;
+#ifdef Q_OS_SYMBIAN
+    QFileInfoList driveList = QDir::drives();
+    QString themesPath = "resource/hb/themes";
+    foreach(const QFileInfo & drive, driveList) {
+        QDir themeFolder(drive.absolutePath() + themesPath);
+        if (themeFolder.exists()) {
+            rootDirs << themeFolder.absolutePath();
+        }
+    }
+#else
+    QString envDir = QDir::fromNativeSeparators(qgetenv("HB_THEMES_DIR"));
+    if (!envDir.isEmpty())
+        rootDirs << envDir + "/themes";
+#endif
+
+    foreach(const QString &rootDir, rootDirs) {
+        QDir root = rootDir;
+        QDir dir = rootDir+"/icons";
+        QStringList themeNamesList = dir.entryList(QDir::AllDirs|QDir::NoDotAndDotDot,QDir::Name);
+        foreach(QString themeName, themeNamesList) {
+            QDir iconThemePath(dir.path()+'/'+themeName);
+            QFile themeIndexFile(root.path()+'/'+themeName+".themeindex");
+            if(themeIndexFile.exists() && iconThemePath.exists("index.theme")) {
+                QSettings iniSetting(iconThemePath.path()+"/index.theme",QSettings::IniFormat);
+                iniSetting.beginGroup("Icon Theme");
+                bool hidden = iniSetting.value("Hidden",true).toBool();
+                QString name = iniSetting.value("Name").toString();
+                iniSetting.endGroup();
+                if(!hidden && !name.isEmpty()) {
+                    themes.append(QPair<QString,QString>(name, iconThemePath.absolutePath()));
+                }
+            }
+        }
+    }
+
+    return themes;
 }

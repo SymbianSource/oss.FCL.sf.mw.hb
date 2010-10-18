@@ -35,32 +35,30 @@
 
 #include <QCoreApplication>
 #include <QApplication>
-#if defined(Q_WS_S60)
-#include <QDesktopWidget>
-#endif
 
 #define SKIP_WSINI
 
-
-
 #define DISPLAY_DEFINITION_FILE "displaydefinition.xml"
+
 
 /*
     \class HbDeviceProfileDatabase
     \brief HbDeviceProfileDatabase provides access to supported profile information.
-    This uses HbDeviceProfileReader and HbWsiniParser to parse the display definition
-    xml and the device mode ini files respectively. After parsing the files HbDeviceProfileDataBase
-    will store the List of profiles i.e HbDeviceProfileList in to the sharedmemory and maintains
-    the offset of it. This class is used by client/server.
-    Themeserver will use this class when it starts up.
-    Client uses this class when it is unable to get the deviceprofile information
-    from the themeserver.
 
-    This class is not supposed to use directly. Instead, use \c HbDeviceProfile
+    This uses HbDeviceProfileReader to parse the display definition xml and the
+    device mode ini files respectively. After parsing the files
+    HbDeviceProfileDatabase will store the list of profiles i.e
+    HbDeviceProfileList in to the shared memory and maintains the offset of it,
+    this is done in the Theme Server.
+
+    Clients only use this class directly when they are unable to get the
+    deviceprofile information from the Theme Server, normally the only instance
+    of this class is the one used by Theme Server.
+
+    This class is not intended to be used directly. Instead, use \c HbDeviceProfile.
     
     \sa HbDeviceProfile
     \internal
-    \proto
 */
 
 HbDeviceProfileDatabase *HbDeviceProfileDatabase::instance(HbMemoryManager::MemoryType type)
@@ -93,7 +91,7 @@ HbDeviceProfileDatabase::HbDeviceProfileDatabase(HbMemoryManager::MemoryType typ
     }
 }
 
-int HbDeviceProfileDatabase::deviceProfilesOffset()
+qptrdiff  HbDeviceProfileDatabase::deviceProfilesOffset()
 {
     return mDeviceProfilesOffset;
 }
@@ -129,7 +127,7 @@ void HbDeviceProfileDatabase::init()
 
 
 
-#if defined(Q_WS_S60)
+#if defined(Q_OS_SYMBIAN)
     const QRectF screenGeometry(qApp->desktop()->screenGeometry());
     QSizeF screenSize(screenGeometry.size());
 
@@ -197,6 +195,9 @@ void HbDeviceProfileDatabase::completeProfileData()
 #ifdef Q_OS_SYMBIAN
 void HbDeviceProfileDatabase::initOrientationStatus()
 {
+    // The ThemeServer will publish orientation data as a P&S property.
+    // This is done in HbOrientationStatus, so initialize it here.
+    // Skip if an app instantiates this class as a fallback.
     if (HbMemoryManager::SharedMemory == mType) {
         Qt::Orientation defaultOrientation = Qt::Vertical;
         if (mDeviceProfiles && mDeviceProfiles->count()) {
@@ -209,5 +210,3 @@ void HbDeviceProfileDatabase::initOrientationStatus()
     }
 }
 #endif //Q_OS_SYMBIAN
-// end of file
-

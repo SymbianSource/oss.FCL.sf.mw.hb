@@ -18,7 +18,7 @@
  */
  
 
-/* Hb parameters version 0.17 */ 
+/* Hb parameters version 0.18 */ 
 
 /* special variables that can be used e.g. in expressions:
 hb-param-screen-width
@@ -35,7 +35,7 @@ hb-param-graphic-size-primary-large: 8un;
 hb-param-graphic-size-function: 5un;
 hb-param-graphic-size-secondary: 3un;
 hb-param-graphic-size-image-portrait: 9.5un;
-hb-param-graphic-size-image-landscape: 8un;
+hb-param-graphic-size-image-landscape: 8.25un;
 
 hb-param-text-height-primary: 4un;
 hb-param-text-height-secondary: 3.5un;

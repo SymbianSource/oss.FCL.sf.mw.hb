@@ -93,6 +93,7 @@ class HB_CORE_PRIVATE_EXPORT HbXmlLoaderBinaryActions : public HbXmlLoaderAbstra
             const HbXmlLengthValue &hintHeight,
             bool fixed);
         bool setToolTip( const HbXmlVariable &tooltip );
+        bool setBackground( const QString &name, HbFrameDrawer::FrameType type );
 
         bool createAnchorLayout( const QString &widget, bool modify );
         bool addAnchorLayoutItem(

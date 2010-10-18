@@ -39,7 +39,10 @@ public:
     virtual void IndicatorUserActivated(const TDesC& aType, CHbSymbianVariantMap& aData) = 0;
 };
 
-class CHbIndicatorSymbian : public CBase
+class CHbIndicatorSymbian
+#if !defined(HB_DOXYGEN)
+: public CBase
+#endif // !defined(HB_DOXYGEN)
 {
 public:
     enum TIndicatorError {
@@ -49,7 +52,7 @@ public:
     };
     
     IMPORT_C static CHbIndicatorSymbian* NewL();
-    IMPORT_C ~CHbIndicatorSymbian();
+    IMPORT_C virtual ~CHbIndicatorSymbian();
 
     IMPORT_C TBool Activate(const TDesC& aIndicatorType, const CHbSymbianVariant* aParameter = 0);
     IMPORT_C TBool Deactivate(const TDesC& aIndicatorType, const CHbSymbianVariant* aParameter = 0);

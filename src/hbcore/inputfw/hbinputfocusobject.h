@@ -67,6 +67,7 @@ public:
     QRectF microFocus() const;
     QString preEditString() const;
     qreal findVkbZValue() const;
+    quint8 editorPriority() const;
     Qt::InputMethodHints inputMethodHints() const;
     void setInputMethodHints(Qt::InputMethodHints hints);
 
@@ -78,8 +79,16 @@ public:
     QObject *object() const;
     void setFocus();
 
+    Qt::Orientation orientation() const;
+
+    bool isVisible() const;
+
     static bool isReadOnlyWidget(QObject *editorobject);
     static bool isEditor(QObject *object);
+
+signals:
+    void aboutToChangeOrientation();
+    void orientationChanged();
 
 protected:
     HbInputFocusObjectPrivate *const d_ptr;

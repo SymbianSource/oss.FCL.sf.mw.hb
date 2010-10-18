@@ -26,11 +26,10 @@
 #ifndef HBTAPANDHOLDGESTURELOGIC_P_H
 #define HBTAPANDHOLDGESTURELOGIC_P_H
 
-#include "hbgestures_p.h"
+#include <hbglobal.h>
 
 #include <QObject>
 #include <QGestureRecognizer>
-#include <hbglobal.h>
 
 class QEvent;
 class QMouseEvent;

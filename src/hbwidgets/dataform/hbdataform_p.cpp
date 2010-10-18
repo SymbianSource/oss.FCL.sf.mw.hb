@@ -161,6 +161,22 @@ QModelIndex HbDataFormPrivate::pageModelIndex(int index) const
     return modelIndex;
 }
 
+
+/*
+    collapses all grouppages .
+*/
+void HbDataFormPrivate::collapseAllGroupPages(const QModelIndex index)  
+{
+    Q_Q(HbDataForm);  
+    HbDataFormModelItem *modelItem = static_cast<HbDataFormModel *>(q->model())->itemFromIndex(index);
+    for(int i = 0; i < modelItem->childCount() ; i++) {
+        if( modelItem->childAt(i)->type() == HbDataFormModelItem::GroupPageItem ) {
+            QModelIndex childIndex = static_cast<HbDataFormModel *>(q->model())->indexFromItem(modelItem->childAt(i));
+            mContainer->setItemTransientStateValue(childIndex, "expanded", false);
+        }
+    }
+}
+
 /*!
     Creates a DataForm Page \a page in DataForm .
     DataForm Page is an invisible DataItem which can be changed/selected using combo box.
@@ -173,17 +189,14 @@ void HbDataFormPrivate::addFormPage(const QString& page)
     // Create combobox if not created 
     if(!mHeadingWidget) {
         mHeadingWidget = new HbDataFormHeadingWidget();
-        static_cast<HbDataItemContainer*>(mContainer)->setFormHeading(mHeadingWidget);        
-        QEvent polishEvent(QEvent::Polish);
-        QCoreApplication::sendEvent(mHeadingWidget, &polishEvent);
+        static_cast<HbDataItemContainer*>(mContainer)->setFormHeading(mHeadingWidget);
     }
 
     if(!mHeadingWidget->mPageCombo) {
         mHeadingWidget->createPrimitives();
         mHeadingWidget->mPageCombo = new HbComboBox(mHeadingWidget);
         HbStyle::setItemName(mHeadingWidget->mPageCombo,"dataForm_Combo");
-        QEvent polishEvent(QEvent::Polish);
-        QCoreApplication::sendEvent(mHeadingWidget->mPageCombo, &polishEvent);
+        mHeadingWidget->callPolish();
         // setFormHeading to the layout
         if(mHeadingWidget->mPageCombo || !mHeadingWidget->mDescription.isEmpty() || 
             !mHeadingWidget->mHeading.isEmpty()) {

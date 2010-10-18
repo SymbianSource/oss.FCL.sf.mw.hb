@@ -29,12 +29,13 @@
 
 #include "hbwidget_p.h"
 #include "hbprogressbar.h"
+#include <hbstyleframeprimitivedata.h>
+#include <hbstyletextprimitivedata.h>
 
 #ifdef HB_EFFECTS
 #include "hbeffect.h"
 #endif
 
-class QGraphicsItem;
 
 class HbProgressBarPrivate : public HbWidgetPrivate
 {
@@ -47,22 +48,23 @@ public:
     void createTextPrimitives();
     virtual void setRange(int minimum, int maximum);
     virtual void setOrientation(Qt::Orientation orientation);
-	virtual void setProgressValue(int value);
-	virtual void setEnableFlag(bool flag);
+    virtual void setProgressValue(int value);
+    virtual void setEnableFlag(bool flag);
 
+    virtual void updateProgressTrack();
+    void updateWaitTrack();
 #ifdef HB_EFFECTS
     void _q_delayedHide(HbEffect::EffectStatus status);
     void _q_delayedShow(HbEffect::EffectStatus status);
 #endif
 
 public:
-    QGraphicsItem *mFrame;
-    QGraphicsItem *mTrack;
-    QGraphicsItem *mWaitTrack;
-    QGraphicsItem *mMinTextItem;
-    QGraphicsItem *mMaxTextItem;
-    QGraphicsItem *mTouchAreaItem;
-
+    QGraphicsObject *mFrame;
+    QGraphicsObject *mTrack;
+    QGraphicsObject *mWaitTrack;
+    QGraphicsObject *mMinTextItem;
+    QGraphicsObject *mMaxTextItem;
+    QGraphicsObject *mTouchAreaItem;
 
     uint mMinMaxTextVisible : 1;
     int mMaximum;
@@ -78,6 +80,7 @@ public:
 
     uint mDelayHideInProgress : 1;
     uint mShowEffectInProgress : 1;
+    bool mStopWaitAnimation;
 };
 
 #endif  //HBPROGRESSBARPRIVATE_H

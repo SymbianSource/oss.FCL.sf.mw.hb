@@ -42,13 +42,17 @@ symbian {
 
     TARGET.CAPABILITY = ProtServ SwEvent TrustedUI ReadDeviceData
     TARGET.UID3 = 0x20022FC5
+    TARGET.EPOCHEAPSIZE = 0x400000 0xA00000
+    MMP_RULES += SMPSAFE
     LIBS += -lapgrfx -lws32 -lavkon -lcone -leikcore -lapparc -lefsrv
 
     myrssrules = \
     "hidden = KAppIsHidden;"
     RSS_RULES += myrssrules
-    MMP_RULES += "SYSTEMINCLUDE $${EPOCROOT}epoc32/include/middleware"
-    MMP_RULES += "SYSTEMINCLUDE $${EPOCROOT}epoc32/include/mw"
+
+    exists($${EPOCROOT}epoc32/include/mw) {
+        INCLUDEPATH += $${EPOCROOT}epoc32/include/mw
+    }
 }
 
 include($${HB_SOURCE_DIR}/src/hbcore/devicedialogbase/devicedialogdebug/devicedialogtrace.pri)

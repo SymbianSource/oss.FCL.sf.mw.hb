@@ -170,6 +170,7 @@
     @param data Data sent by indicator.
 */
 
+/// \cond
 class HbIndicatorInterfacePrivate
 {
 public:
@@ -191,6 +192,7 @@ public:
     HbIndicatorInterface::Category category;
     HbIndicatorInterface::InteractionTypes interactionTypes;
 };
+/// \endcond
 
 /*!
     Destructor

@@ -48,7 +48,12 @@ public:
     virtual ~HbDialogPrivate();
 
     void doLayout();
+    void createHeadingBackground();
     void removeSpaces(QString& string);
+
+    virtual void setFullScreen(bool enable);
+
+    void _q_actionTriggered();
 
     QGraphicsWidget *contentWidget;
     QGraphicsWidget *headingWidget;
@@ -56,6 +61,9 @@ public:
     HbAction *secondaryAction;
     HbAction *closingAction;
     HbToolBar *toolBar;
+    bool dismissOnAction;
+    QString headingText;
+    QGraphicsObject *headingFrameItem;
 
 private:
     static HbDialogPrivate *d_ptr( HbDialog *popup ) {

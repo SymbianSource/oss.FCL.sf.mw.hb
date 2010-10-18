@@ -31,7 +31,10 @@
 #include <hbabstractviewitem.h>
           
 class HbGridViewItemPrivate;
-class HbStyleOptionGridViewItem;
+class HbStylePrimitiveData;
+
+class QGraphicsObject;
+class QPointF;
 
 class HB_WIDGETS_EXPORT HbGridViewItem: public HbAbstractViewItem
 {
@@ -61,9 +64,10 @@ protected:
     HbGridViewItem &operator=(const HbGridViewItem &source);
 
     HbGridViewItem(HbGridViewItemPrivate &dd, QGraphicsItem *parent);
-    void initStyleOption(HbStyleOptionGridViewItem *option) const;
     QPainterPath shape() const;
     void polish(HbStyleParameters& params);
+    void initPrimitiveData( HbStylePrimitiveData     *primitiveData, 
+                            const QGraphicsObject    *primitive);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbGridViewItem)

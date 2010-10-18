@@ -1,4 +1,4 @@
-/* Simple Label groupBox */
+/* Simple Label groupBox heading text  */
 HbGroupBoxHeadingWidget[groupBoxType="1"]::text
 {
     color: var(qtc_viewtitle_normal);

@@ -43,6 +43,7 @@ public:
     QString caption;
     QIcon::Mode mode;
     bool transparent;
+    bool margueeAnimation;
 };
 
 #endif // HBSTYLEOPTIONTITLEPANE_H

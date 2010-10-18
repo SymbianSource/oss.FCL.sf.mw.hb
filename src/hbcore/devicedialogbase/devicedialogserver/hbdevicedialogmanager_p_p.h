@@ -42,6 +42,7 @@
 #include <hbdevicedialogserverstatus_p.h>
 #include <hbdevicedialogpluginmanager_p.h>
 #include <hbdevicedialogscontainer_p.h>
+#include <hborientationstatus_p.h>
 
 class HbDeviceDialogManager;
 class HbIndicatorPluginManager;
@@ -72,7 +73,7 @@ public:
     mDeviceDialogManger(deviceDialogManger) {}
 protected:
     bool eventFilter(QObject* obj, QEvent *event);
-private:	
+private:    
     HbDeviceDialogManagerPrivate *mDeviceDialogManger;
 };
 
@@ -101,7 +102,16 @@ public:
     enum {
         HousekeeperTimerPeriod = 2000,
         MaxSessionlessDialogLife = 5, // 5 * HousekeeperTimerPeriod
-        MaxDialogClosingPeriod = 2 // 2 * HousekeeperTimerPeriod
+        MaxDialogClosingPeriod = 2, // 2 * HousekeeperTimerPeriod
+        // Minimum heap to be available to allow normal level device dialog show
+        NormalLevelMinHeap = 0x200000, // 2MB
+        // Minimum heap to be available to allow indicator activation
+        IndicatorMinHeap = NormalLevelMinHeap,
+        SecurityLevelMinHeap = 0x100000, // 1MB
+    };
+    enum ForegroundControl {
+        FgControlNone,
+        FgControlSecurityCriticalClosed
     };
 
     // Constructor and destructor
@@ -122,8 +132,8 @@ public:
     QList<IndicatorClientInfo> indicatorClientInfoList() const;
 
     // Device dialog control related API
-    void moveToForeground(bool foreground);
     void doMoveToForeground(bool foreground, int priority);
+    void controlForeground(ForegroundControl control = FgControlNone);
     void updateWindowRegion() const;
     void resetWindowRegion() const;
     bool showDialogs();
@@ -136,8 +146,9 @@ public:
     static int checkpluginerror(int errorCode);
     static void addSecurityCredentials(const HbDeviceDialogServer::Parameters &parameters,
         QVariantMap &credentials);
-    static void setDialogPriority(HbPopup *popup, HbDeviceDialogPlugin::DeviceDialogGroup group);
+    static void setDialogPriority(HbPopup *popup, HbDeviceDialogsContainer::Dialog::Flags flags);
     static bool checkDialogInfo(const HbDeviceDialogPlugin::DeviceDialogInfo &deviceDialogInfo);
+    static bool heapAvailable(int aBytes = NormalLevelMinHeap);
     void deleteDeviceDialog(int id);
     bool eventFilter(QObject *obj, QEvent *event);
 
@@ -147,6 +158,9 @@ public slots:
     void indicatorActivated(const IndicatorClientInfo &clientInfo);
     void indicatorUpdated(const IndicatorClientInfo &clientInfo);
     void indicatorRemoved(const IndicatorClientInfo &clientInfo);
+
+private slots:
+    void wsOrientationChanged(int renderOrientation);
 
 private:
     void addRegionRect(int widgetId, const QRectF &rect);
@@ -191,8 +205,10 @@ private:
     };
     QList<RegionMapping> mRegionList;
     RRegion mWindowRegion;
-    RProperty mProperty;    
+    RProperty mHbOriProperty;
+    int mWgOrdinalPriority;
 #endif
+    HbOrientationStatus::HbWsOrientationListener mWsOriListener;
 };
 
 #endif // HBDEVICEDIALOGMANAGER_P_P_H

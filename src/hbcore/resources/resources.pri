@@ -28,9 +28,9 @@ RESOURCES += resources/resources.qrc
 
 symbian {
     RESOURCES += $$PWD/hbvariant_s60.qrc
-    BLD_INF_RULES.prj_exports += "resources/displaydefinition_hw.xml $${EPOCROOT}epoc32/data/z/resource/displaydefinition.xml"
-    BLD_INF_RULES.prj_exports += "resources/displaydefinition.xml $${EPOCROOT}epoc32/release/winscw/udeb/z/resource/displaydefinition.xml"
-    BLD_INF_RULES.prj_exports += "resources/displaydefinition.xml $${EPOCROOT}epoc32/release/winscw/urel/z/resource/displaydefinition.xml"
+    hbPrjExport("resources/displaydefinition_hw.xml", "$${EPOCROOT}epoc32/data/z/resource/displaydefinition.xml")
+    hbPrjExport("resources/displaydefinition.xml", "$${EPOCROOT}epoc32/release/winscw/udeb/z/resource/displaydefinition.xml")
+    hbPrjExport("resources/displaydefinition.xml", "$${EPOCROOT}epoc32/release/winscw/urel/z/resource/displaydefinition.xml")
 } else {
     RESOURCES += $$PWD/hbvariant_default.qrc
 }

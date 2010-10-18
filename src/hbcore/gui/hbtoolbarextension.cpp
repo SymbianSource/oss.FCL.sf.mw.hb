@@ -32,6 +32,8 @@
 #include "hbdeviceprofile.h"
 #include "hbtoolbar_p.h"
 #include "hbmainwindow.h"
+#include "hbstyle_p.h"
+#include <hbframeitem.h>
 #ifdef HB_EFFECTS
 #include <hbeffect.h>
 #include <hbeffectinternal_p.h>
@@ -41,57 +43,127 @@ bool HbToolBarExtensionPrivate::extensionEffectsLoaded = false;
 #include <QDebug>
 #include <QGraphicsGridLayout>
 #include <QEventLoop>
-#include <QGraphicsLinearLayout> 
-
+#include <QGraphicsLinearLayout>
+    
 /*!
-    @stable
-    @hbcore
-    \class HbToolBarExtension
-
-    \brief HbToolBarExtension is a popup style component that adds
-    extra functionality to an HbToolBar. A toolbar can contain more
-    than one toolbar extension.  An extension popup is opened when a
-    toolbar button with associated with the extension is triggered.
-
-    A toolbar extension uses the QGraphicsWidget action API to manage
-    buttons. In addition the HbDialog API can be used to fill the
-    extension popup with custom widgets (e.g.  list or line edit). If
-    custom content widget is set, buttons generated based on actions
-    will not be visible.
-
-    An example of how to add a toolbar extension button to the toolbar:
-    \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,27}
+  @stable
+  @hbcore
+  \class HbToolBarExtension
+  \brief The HbToolBarExtension class provides a popup extension to a toolbar.
+    
+  You can use a toolbar extension to extend the main toolbar
+  (HbToolBar class) in a view with additional actions that are placed
+  in a subsidiary toolbar. Alternatively, a toolbar extension can
+  contain a widget, such as a list or grid. This is useful, for
+  example, for providing navigation between views when there are more
+  views than can fit as actions on the toolbar itself.
+    
+  A toolbar can contain more than one toolbar extension. A toolbar
+  extension opens when the user triggers the toolbar action that is
+  associated with the extension, usually by tapping it. The user
+  dismisses the toolbar extension by selecting an option (which runs a
+  command) or by tapping outside the extension.
+    
+  The following image shows a toolbar that has two extensions: the
+  leftmost one contains a list widget and the rightmost one contains
+  three standard actions.
+    
+  \image html toolbarextension.png A toolbar that has two extensions
+    
+  Use addAction() to create an action and add it to the toolbar
+  extension. There are several overloads of this function, which allow
+  you to specify both a text and image or just a text and also to
+  connect the action's \link HbAction::triggered() triggered()\endlink
+  signal to a slot on a receiver object. Use the insertAction(),
+  addActions() and insertActions() methods (which are inherited from
+  QGraphicsWidget) to add existing actions to the toolbar
+  extension. Use clearActions() to clear all of the actions and
+  removeAction() to remove individual actions.
+    
+  The order of the actions within the toolbar extension controls the
+  order of the buttons that the user sees. addAction() and
+  addActions() append the actions to the end of the toolbar and
+  insertAction() and insertActions() enable you to specify the
+  required position.
+    
+  You can use the HbDialog API to fill the toolbar extension popup
+  with widgets (such as a list, grid or line edit). If you do this,
+  any actions that you add to the toolbar extension will not be
+  visible.
+    
+  \section _usecases_hbtoolbarextension Using the HbToolBarExtension class
+    
+  \subsection _uc_001_hbtoolbarextension Creating a toolbar extension containing actions
+  The following example demonstrates how to add a toolbar extension button to the toolbar
+  and how to add actions to the toolbar extension.
+  \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,27}
+    
+  \subsection _uc_002_hbtoolbarextension Creating a toolbar extension containing a widget
+    
+  The following example demonstrates creating a toolbar extension containing a single-selection
+  list widget.
+    
+  \code
+  // Create the toolbar.
+  HbToolBar *toolBar = new HbToolBar();
+    
+  // Add the action that will open the toolbar extension.
+  HbAction *radioAction = toolBar->addAction("Channel");
+    
+  // Create the toolbar extension.
+  HbToolBarExtension *radioExtension = new HbToolBarExtension();
+    
+  // Set the heading.
+  HbLabel* heading = new HbLabel(QString("Channel"));
+  radioExtension->setHeadingWidget(heading);
+    
+  // Create a list widget.
+  HbListWidget *list = new HbListWidget();
+  list->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    
+  // Make the list single selection.
+  list->setSelectionMode(HbAbstractItemView::SingleSelection);
+    
+  // Add list items.
+  list->addItem("574.7");
+  list->addItem("976.5");
+  list->addItem("108.67");
+    
+  // Add the list widget to the toolbar extension object.
+  radioExtension->setContentWidget(list);
+    
+  // Add the toolbar extension to the toolbar action that will open it.
+  radioAction->setToolBarExtension(radioExtension);
+  \endcode
 */
-
+    
 /*!
-    \reimp
-    \fn int HbToolBarExtension::type() const
- */
-
-/*!
+  \fn int HbToolBarExtension::type() const
+*/
+    
+/*
   \primitives
   \primitive{background} HbFrameItem representing the extension background.
-  */
-
+*/
+    
 HbToolBarExtensionPrivate::HbToolBarExtensionPrivate() :
-        HbDialogPrivate(),
-        mToolButtons(),
-        mLayout(0),
-        extensionAction(0),
-        mAlignment(Qt::AlignTop),
-        mDefaultContentWidget(false),
-        // default values, in case CSS parsing fails
-        mMargins(0),
-        mRowsPortrait(4),
-        mRowsLandscape(3),
-        mColsPortrait(3),
-        mColsLandscape(4),
-        lazyInitDone(false),
-        orientationConnectDone(false),
-        //
-        mExtendedButton(0),
-        mToolBar(0)
+    HbDialogPrivate(),
+    mToolButtons(),
+    mLayout(0),
+    extensionAction(0),
+    mAlignment(Qt::AlignTop),
+    mDefaultContentWidget(false),
+    // default values, in case CSS parsing fails
+    mRowsPortrait(4),
+    mRowsLandscape(3),
+    mColsPortrait(3),
+    mColsLandscape(4),
+    lazyInitDone(false),
+    orientationConnectDone(false),
+    mExtendedButton(0),
+    mToolBar(0)
 {
+    frameType = HbPopup::Weak;
 }
 
 HbToolBarExtensionPrivate::~HbToolBarExtensionPrivate()
@@ -112,7 +184,13 @@ void HbToolBarExtensionPrivate::init()
 void HbToolBarExtensionPrivate::doLazyInit()
 {
     if ( !lazyInitDone ) {
-        setBackgroundItem(HbStyle::P_ToolBarExtension_background);
+        Q_Q(HbToolBarExtension);
+        QGraphicsObject *backgroundItem = q->style()->createPrimitive(HbStyle::PT_FrameItem, "background", q);
+        
+        HbStyleFramePrimitiveData data;
+        q->initPrimitiveData(&data, backgroundItem);
+        q->style()->updatePrimitive(backgroundItem, &data, 0);
+        q->setBackgroundItem(backgroundItem, -1);
 #ifdef HB_EFFECTS
         if (!extensionEffectsLoaded){
             HbEffectInternal::add("HB_TBE", "tbe_button_click", "clicked");
@@ -159,7 +237,7 @@ void HbToolBarExtensionPrivate::doLayout()
     }
 
     mLayout = new QGraphicsGridLayout();
-    mLayout->setContentsMargins( mMargins, mMargins, mMargins, mMargins );
+    mLayout->setContentsMargins(0, 0, 0, 0);
     mLayout->setSpacing(0.0);  // if non zero spacing needed, add to css
     for ( int i(0), j(0), ie(mToolButtons.count()); i < ie; ++i ) {
         HbToolButton *button = mToolButtons.at(i);
@@ -224,13 +302,14 @@ void HbToolBarExtensionPrivate::actionAdded( QActionEvent *event )
     }
 
     if ((hbAction && !hbAction->icon().isNull()) || !event->action()->icon().isNull()) {
-        if (HbToolButtonPrivate::d_ptr(button)->action->text().isEmpty()) {
-            button->setToolButtonStyle(HbToolButton::ToolButtonIcon);
-        } else {
-            button->setToolButtonStyle(HbToolButton::ToolButtonTextAndIcon);
-        }
+        q->setProperty("icon", true);
     } else {
-        button->setToolButtonStyle(HbToolButton::ToolButtonText);
+        q->setProperty("icon", false);
+    }
+    if (!HbToolButtonPrivate::d_ptr(button)->action->text().isEmpty()) {
+        q->setProperty("text", true);
+    } else {
+        q->setProperty("text", false);
     }
 
     button->setProperty("toolbutton_extension_layout", true);
@@ -292,21 +371,25 @@ void HbToolBarExtensionPrivate::setExtensionAction(HbAction *action)
 
 }
 
-void HbToolBarExtensionPrivate::_q_orientationChanged()
+void HbToolBarExtensionPrivate::_q_toolbarOrientationChanged()
 {
     Q_Q(HbToolBarExtension);
     if (mToolBar) {
         if (mToolBar->orientation() == Qt::Horizontal) {
             HbToolBarExtensionPrivate::d_ptr(q)->setAlignment(Qt::AlignTop);
-        } else if (mToolBar->orientation() == Qt::Vertical 
+        } else if (mToolBar->orientation() == Qt::Vertical
                    && q->layoutDirection() == Qt::LeftToRight) {
             HbToolBarExtensionPrivate::d_ptr(q)->setAlignment(Qt::AlignLeft);
         } else {
             HbToolBarExtensionPrivate::d_ptr(q)->setAlignment(Qt::AlignRight);
         }
     }
-    q->repolish();
-    doLayout();
+}
+
+void HbToolBarExtensionPrivate::_q_orientationChanged()
+{
+    Q_Q(HbToolBarExtension);
+    q->close();
 }
 
 void HbToolBarExtensionPrivate::_q_animateButtonClicked()
@@ -340,14 +423,18 @@ HbToolBarExtension::HbToolBarExtension( QGraphicsItem *parent ) :
 HbToolBarExtension::~HbToolBarExtension()
 {
 }
-
-/*!
-    \overload
-
-    Creates a new action with the given \a text. 
-    This action is added to the end of the toolbar extension.
-    TODO: If the grid is already full, this call will be ignored.
-    TODO: Find a way to notificate the caller.
+    
+    
+/*!  
+  Creates a new action with the given \a text and adds the action
+  to the end of the toolbar extension, provided space is
+  available. The space available in a toolbar extension depends on the
+  screen size and orientation. When there is no free space, this
+  function does nothing. There is currently no notification when there
+  is no free space.
+    
+  \overload
+  \return The new action.
 */
 HbAction *HbToolBarExtension::addAction( const QString &text )
 {
@@ -355,14 +442,18 @@ HbAction *HbToolBarExtension::addAction( const QString &text )
     addAction(action);
     return action;
 }
-
-/*!
-    \overload
-
-    Creates a new action with the given \a icon and \a text.
-    This action is added to the end of the toolbar extension.
-    TODO: If the grid is already full, this call will be ignored.
-    TODO: Find a way to notificate the caller.
+    
+    
+/*!  
+  Creates a new action with the given \a icon and \a text and adds
+  the action to the end of the toolbar extension, provided space is
+  available. The space available in a toolbar extension depends on the
+  screen size and orientation. When there is no free space, this
+  function does nothing. There is currently no notification when there
+  is no free space.
+    
+  \overload
+  \return The new action.
 */
 HbAction *HbToolBarExtension::addAction( const HbIcon &icon, 
                                          const QString &text )
@@ -371,20 +462,27 @@ HbAction *HbToolBarExtension::addAction( const HbIcon &icon,
     addAction(action);
     return action;
 }
-
-/*!
-    \overload
-
-    Creates a new action with the given \a text. 
-    This action is added to the end of the toolbar extension.
-    TODO: If the grid is already full, this call will be ignored.
-    The action's \link HbAction::triggered()
-    triggered()\endlink signal is connected to \a member in \a
-    receiver.
-    TODO: Find a way to notificate the caller.
+    
+    
+/*!  
+  Creates a new action with the given \a text, adds the action to
+  the end of the toolbar extension (provided space is available), and
+  connects the action's \link HbAction::triggered()
+  triggered()\endlink signal to a receiver object's slot.
+    
+  The space available in a toolbar extension depends on the screen
+  size and orientation.  When there is no free space, this function
+  does not add the action to the toolbar extension. There is currently
+  no notification when there is no free space.
+    
+  \overload
+  \param text The text for the new action.
+  \param receiver The object that is to receive the new action's signal.
+  \param member The slot on the receiver to which the action's signal is to connect.
+  \return The new action.
 */
-HbAction *HbToolBarExtension::addAction( const QString &text, 
-                                         const QObject *receiver, 
+HbAction *HbToolBarExtension::addAction( const QString &text,
+                                         const QObject *receiver,
                                          const char *member )
 {
     HbAction *action = new HbAction( text, this );
@@ -392,17 +490,24 @@ HbAction *HbToolBarExtension::addAction( const QString &text,
     addAction(action);
     return action;
 }
-
-/*!
-    \overload
-
-    Creates a new action with the given  \a icon and \a text. 
-    This action is added to the end of the toolbar extension.
-    TODO: If the grid is already full, this call will be ignored.
-    The action's \link HbAction::triggered()
-    triggered()\endlink signal is connected to \a member in \a
-    receiver.
-    TODO: Find a way to notificate the caller.
+    
+/*!  
+  Creates a new action with the given \a icon and \a text, adds the
+  action to the end of the toolbar extension (provided space is
+  available), and connects the action's \link HbAction::triggered()
+  triggered()\endlink signal to a receiver object's slot.
+    
+  The space available in a toolbar extension depends on the screen
+  size and orientation.  When there is no free space, this function
+  does not add the action to the toolbar extension. There is currently
+  no notification when there is no free space.
+    
+  \overload
+  \param icon The image for the new action.
+  \param text The text for the new action.
+  \param receiver The object that is to receive the new action's signal.
+  \param member The slot on the receiver to which the action's signal is to connect.
+  \return The new action.
 */
 HbAction *HbToolBarExtension::addAction( const HbIcon &icon, 
                                          const QString &text, 
@@ -414,10 +519,12 @@ HbAction *HbToolBarExtension::addAction( const HbIcon &icon,
     addAction(action);
     return action;
 }
-
-/*!
-    Returns the action associated with this extension.
- */
+    
+/*!  
+  Returns the action associated with this toolbar extension. This
+  is the action in the toolbar to which this toolbar extension belongs
+  that opens this toolbar extension when triggered.
+*/
 HbAction *HbToolBarExtension::extensionAction() const
 {
     Q_D( const HbToolBarExtension );
@@ -433,7 +540,7 @@ HbToolBarExtension::HbToolBarExtension( HbToolBarExtensionPrivate &dd, QGraphics
 }
 
 /*!
-    \reimp
+    
  */
 bool HbToolBarExtension::event( QEvent *event )
 {
@@ -442,7 +549,7 @@ bool HbToolBarExtension::event( QEvent *event )
         d->actionAdded( static_cast<QActionEvent *>(event) );
         return true;
     } else if ( event->type() == QEvent::ActionRemoved ) {
-        d->actionRemoved( static_cast<QActionEvent *>(event) );    
+        d->actionRemoved( static_cast<QActionEvent *>(event) );
         return true;
     } else if (event->type() == QEvent::ActionChanged ) {
         d->actionChanged();
@@ -455,41 +562,39 @@ bool HbToolBarExtension::event( QEvent *event )
 }
 
 /*!
-  \reimp
-  */
+    
+ */
 void HbToolBarExtension::polish( HbStyleParameters &params )
-{    
-    Q_D(HbToolBarExtension);  
-    d->doLazyInit();
-    const QString Margins       = "content-margins";
-    const QString RowsPortrait  = "max-rows-portrait";
-    const QString RowsLandscape = "max-rows-landscape";
-    const QString ColsPortrait  = "max-columns-portrait";
-    const QString ColsLandscape = "max-columns-landscape";
+{
+    if (isVisible()) {
+        Q_D(HbToolBarExtension);
+        d->doLazyInit();
+        const QLatin1String RowsPortrait("max-rows-portrait");
+        const QLatin1String RowsLandscape("max-rows-landscape");
+        const QLatin1String ColsPortrait("max-columns-portrait");
+        const QLatin1String ColsLandscape("max-columns-landscape");
 
-    params.addParameter( Margins );
-    params.addParameter( RowsPortrait );
-    params.addParameter( RowsLandscape );
-    params.addParameter( ColsPortrait );
-    params.addParameter( ColsLandscape );
-    d->initialiseContent();
-    if (d->mDefaultContentWidget) {       
-        HbDialog::polish(params);
-        if ( params.value( Margins ).isValid() 
-             && params.value( RowsPortrait ).isValid() 
-             && params.value( RowsLandscape ).isValid() 
-             && params.value( ColsPortrait ).isValid() 
-             && params.value( ColsLandscape ).isValid() ) {
-            d->mMargins = params.value( Margins ).toReal();
-            d->mRowsPortrait  = params.value( RowsPortrait ).toInt();
-            d->mRowsLandscape = params.value( RowsLandscape ).toInt();
-            d->mColsPortrait  = params.value( ColsPortrait ).toInt();
-            d->mColsLandscape = params.value( ColsLandscape ).toInt();
-            d->doLayout();
+        params.addParameter( RowsPortrait );
+        params.addParameter( RowsLandscape );
+        params.addParameter( ColsPortrait );
+        params.addParameter( ColsLandscape );
+        d->initialiseContent();
+        if (d->mDefaultContentWidget) {
+            HbDialog::polish(params);
+            if ( params.value( RowsPortrait ).isValid()
+                && params.value( RowsLandscape ).isValid()
+                && params.value( ColsPortrait ).isValid()
+                && params.value( ColsLandscape ).isValid() ) {
+                d->mRowsPortrait  = params.value( RowsPortrait ).toInt();
+                d->mRowsLandscape = params.value( RowsLandscape ).toInt();
+                d->mColsPortrait  = params.value( ColsPortrait ).toInt();
+                d->mColsLandscape = params.value( ColsLandscape ).toInt();
+                d->doLayout();
+            }
+            return;
         }
-    } else {
-        HbDialog::polish(params);
     }
+    HbDialog::polish(params);
 }
 
 QVariant HbToolBarExtension::itemChange(GraphicsItemChange change, 
@@ -500,8 +605,8 @@ QVariant HbToolBarExtension::itemChange(GraphicsItemChange change,
         if (value.toBool()) {
             HbMainWindow* w(mainWindow());
             if(w && !d->orientationConnectDone) {
-                QObject::connect(w,SIGNAL(orientationChanged(Qt::Orientation)),
-                                 this, SLOT(_q_orientationChanged()));
+                QObject::disconnect( w , SIGNAL(aboutToChangeOrientation()), this, SLOT(_q_orientationChanged()));
+                QObject::connect( w , SIGNAL(aboutToChangeOrientation()), this, SLOT(_q_orientationChanged()));
                 d->orientationConnectDone = true;
             }
             d->placeToolBarExtension();
@@ -511,4 +616,33 @@ QVariant HbToolBarExtension::itemChange(GraphicsItemChange change,
     return HbDialog::itemChange(change, value);
 }
 
+void HbToolBarExtension::initPrimitiveData(HbStylePrimitiveData *primitiveData,
+                                           const QGraphicsObject *primitive)
+{
+    Q_D(HbToolBarExtension);
+    HbDialog::initPrimitiveData(primitiveData, primitive);
+    QString itemName = HbStyle::itemName(primitive);
+    if (itemName == QLatin1String("background")) {
+        HbStyleFramePrimitiveData *data = hbstyleprimitivedata_cast<HbStyleFramePrimitiveData*>(primitiveData);
+        data->frameGraphicsName = d->frameType == HbPopup::Strong ?
+            QLatin1String("qtg_fr_popup") :
+            QLatin1String("qtg_fr_popup_trans");
+        data->frameType = HbFrameDrawer::NinePieces;
+    }
+}
+
+void HbToolBarExtensionPrivate::doSetFrameType(HbPopup::FrameType newFrameType)
+{
+    Q_Q(HbToolBarExtension);
+    switch( newFrameType ) {
+    case HbPopup::Weak:
+        q->setBackgroundItem(new HbFrameItem(QLatin1String("qtg_fr_popup_trans"), HbFrameDrawer::NinePieces), -1);
+        break;
+    case HbPopup::Strong:
+    default:
+        q->setBackgroundItem(new HbFrameItem(QLatin1String("qtg_fr_popup"), HbFrameDrawer::NinePieces), -1);
+        break;
+    }
+
+}
 #include "moc_hbtoolbarextension.cpp"

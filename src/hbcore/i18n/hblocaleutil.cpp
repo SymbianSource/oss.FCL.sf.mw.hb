@@ -47,20 +47,16 @@
 #include <hblocaleutil.h>
 
 #if defined(Q_OS_SYMBIAN)
-#define LANGUAGE_LIST_FILE "/resource/hbi18n/translations/language_list.txt"
-#define LANGUAGE_MAPPINGS_FILE "/resource/hbi18n/translations/locale_mappings.txt"
-#define LANGUAGE_ID_PREFIX "language"
-#define LANGUAGE_TRANSLATOR_PATH "/resource/hbi18n/translations/languages"
+#define LANGUAGE_LIST_FILE "/resource/hb/translations/language_list.txt"
+#define LANGUAGE_MAPPINGS_FILE "/resource/hb/translations/locale_mappings.txt"
+#define LANGUAGE_TRANSLATOR_PATH "/resource/hb/translations/languages"
+#define REGION_TRANSLATOR_PATH "/resource/hb/translations/regions"
+#define COLLATION_TRANSLATOR_PATH "/resource/hb/translations/collations"
 
-#define REGION_LIST_FILE "z:/resource/bootdata/regions.txt"
-#define REGION_ID_PREFIX "region"
-#define REGION_TRANSLATOR_PATH "/resource/hbi18n/translations/regions"
-#define REGION_DLL_PREFIX "elocl_reg."
+#define LANGUAGE_ID_PREFIX "txt_language"
+#define REGION_ID_PREFIX "txt_region"
+#define COLLATION_ID_PREFIX "txt_collation"
 
-#define COLLATION_LIST_FILE "z:/resource/bootdata/collations.txt"
-#define COLLATION_ID_PREFIX "collation"
-#define COLLATION_TRANSLATOR_PATH "/resource/hbi18n/translations/collations"
-#define COLLATION_DLL_PREFIX "elocl_col."
 #define COLLATION_DLL_PREFIX_POSITION 3
 #endif // Q_OS_SYMBIAN
 
@@ -68,12 +64,30 @@
     @beta
     @hbcore
     \class HbLocaleUtil
-    \brief HbLocaleUtil provides functions for quering supported languages, regions and collations and activing them.
+    \brief The HbLocaleUtil class supports querying the supported languages, regions and collations, and activating them.
      
-    Language and collation identifiers typically corresponds with two-letter ISO 639 language code, but for certain languages and collations combination of ISO 639 language code and  ISO 3166 country code id used.
-    Region identifiers always corresponds with two-letter ISO 3166 country code.
+    With HbLocaleUtil, you can query the supported languages, regions and 
+    collations from the device, and the ones currently set in the device. You 
+    can then use this data to activate the language, region and collation in the 
+    device; either individually, or as a set determined by the specified 
+    language.
     
-    HbLocaleUtil also provides functions for converting language, region and collation identifiers to their localised names. 
+    HbLocaleUtil returns the data from the device as identifiers. The language 
+    and collation identifiers typically correspond to two-letter ISO 639 
+    language codes. However, some languages and collations use a combination of 
+    an ISO 639 language code and an ISO 3166 country code, separated by an 
+    underscore character. Region identifiers always correspond to a two-letter 
+    ISO 3166 country code.
+    
+    HbLocaleUtil also provides functions for converting language, region and 
+    collation identifiers to their localized names. 
+    
+    Example:
+    \snippet{unittest_hblocaleutil/unittest_hblocaleutil.cpp,1}
+    
+    
+    \sa HbStringUtil, HbExtendedLocale
+    
 */
 
 #if defined(Q_OS_SYMBIAN)
@@ -90,15 +104,15 @@ struct HbLocaleMapping
 };
 
 QList<HbLocaleMapping> mappingList;
-QList<int> regions;
 QStringList availRegions;
 QHash<QString, QString> locRegionNames;
-QList<int> collations;
 QStringList availCollations;
 QHash<QString, QString> locCollationNames;
 
 /*!
-    \brief Reads langauge, region and collation mappings.
+    \relates HbLocaleUtil
+    
+    Reads language, region and collation mappings.
 */
 void readMappings()
 {
@@ -153,37 +167,19 @@ void readMappings()
 }
 #endif // Q_OS_SYMBIAN
 
-#if defined(Q_OS_SYMBIAN)
-
 /*!
-    \brief Changes the system UI language.
-      
-    \param dllExtension extension of the locale dll
-    \return true if operation was successful
-*/
-bool setLocale( const QString &dllExtension )
-{
-    TExtendedLocale dummy;
-    dummy.LoadSystemSettings();
-    QString name = QString( "elocl_lan." ).append( dllExtension );
-    TPtrC nameptr(name.utf16());
-    
-    TInt err = dummy.LoadLocaleAspect( nameptr );
-    if( err != KErrNone )
-        return false;
-    dummy.SaveSystemSettings();
-    // cause localeprivate update on next qlocale object( glp->m_language_id = 0 )
-    QSystemLocale dummy2;
-    return true;
-}
-#endif //Q_OS_SYMBIAN
 
-/*!
-    \brief Return identifier of the current UI language.
+    Returns the identifier of the current UI language. Typically the language 
+    identifier is an ISO 639 language code, but in some cases, it is a 
+    combination of an ISO 639 language code and an ISO 3166 country code. For 
+    example, for UK English, this returns "en", and for US English, this returns 
+    "en_US".
     
-    \attention Symbian specific API
+    \attention Only fully implemented on the Symbian platform. For other 
+    platforms, always returns an empty QString.
+    
+    \sa supportedLanguages(), localisedLanguageName(), changeLanguage(), languageRegionMappings()
 
-    \return Identifier of the language code for Symbian and empty QString for other platforms.
 */ 
 QString HbLocaleUtil::currentLanguage()
 {
@@ -205,14 +201,18 @@ QString HbLocaleUtil::currentLanguage()
 }
 
 /*!
-    \brief Returns identifiers of languages supported in a device. 
-    Language identifier may be two-letter ISO 639 language code or combination of ISO 639 language code and ISO 3166 country code 
-    Ex: Great Britain english it returns "en".
-    Ex: For U.S. english it returns "en_US"  
     
-    \attention Symbian specific API
+    Returns the identifiers of the languages supported on the device. Typically 
+    the language identifier is an ISO 639 language code, but in some cases, it 
+    is a combination of an ISO 639 language code and an ISO 3166 country code. 
+    For example, for UK English, this returns "en", and for US English, this 
+    returns "en_US".
     
-    \return identifiers of supported languages for Symbian and empty QStringList for other platforms 
+    \attention Only fully implemented on the Symbian platform. For other 
+    platforms, always returns an empty QStringList.
+    
+    \sa localisedLanguageName(), currentLanguage(), changeLanguage(), changeLocale()
+    
 */
 QStringList HbLocaleUtil::supportedLanguages()
 {
@@ -248,14 +248,19 @@ QStringList HbLocaleUtil::supportedLanguages()
 }
 
 /*!
-    \brief Converts two or five letter language identifier code to localised language name. 
     
-    \attention Symbian specific API
+    Returns the localised language name for the specified language identifier. 
+    If the translation fails, returns an empty QString.
     
-    \param language identifier 
+    \param language The two- or five-letter language identifier that corresponds to one of the following:
+    - An identifier returned by supportedLanguages() or currentLanguage()
+    - An HbLanguageRegionMapping::languageId string
     
-    \return Symbian - localised name of the language, an empty String if translation fails
-    \return other platforms - empty QString    
+    \attention Only fully implemented on the Symbian platform. For other 
+    platforms, always returns an empty QString.
+    
+    \sa changeLanguage(), currentLanguage()
+ 
 */ 
 QString HbLocaleUtil::localisedLanguageName( const QString &language )
 {
@@ -287,14 +292,20 @@ QString HbLocaleUtil::localisedLanguageName( const QString &language )
 }
 
 /*!
-    \brief Changes the system language.  
-    The language parameter should correspond with one of the identifiers returned by supportedLanguages(). 
-    
-    \attention Symbian specific API
+
+    Changes the system language to the one specified in \a language.
   
-    \param language identifier of language to set active
+    \param language The language identifier. This must correspond to an 
+    identifier returned by supportedLanguages(), or an 
+    HbLanguageRegionMapping::languageId string.
     
-    \return true if language change was successful and false for other platforms
+    \return \c true if successful, otherwise \c false.
+    
+    \attention Only fully implemented on the Symbian platform. For other 
+    platforms, always returns \c false.
+    
+    \sa localisedLanguageName(), currentLanguage()
+    
 */ 
 bool HbLocaleUtil::changeLanguage( const QString &language )
 {
@@ -302,92 +313,43 @@ bool HbLocaleUtil::changeLanguage( const QString &language )
     if(mappingList.isEmpty()) {
         readMappings();
     }
-	
     int lanCode = -1;
-    QString dllExt = "";
     for (int i = 0;  i < mappingList.count(); ++i) {
         HbLocaleMapping map = mappingList.at(i);
         if (map.langName == language) {
+            int retVal = -1;
             lanCode = map.symLangValue;
-            dllExt = map.languageDllId;
-            break;
+            retVal = SysLangUtil::ChangeLanguage(lanCode);
+            if (!retVal) {
+                // Never set Language code 0 to HAL
+                if ( language != 0 ) {
+                    HAL::Set( HAL::ELanguageIndex, lanCode );
+                }
+                return true;
+            }
+            else {
+                return false;
+            }
         }
-    }
-    
-    if (lanCode == -1) {
-        return false;
-    }
-    
-    CRepository* commonEngineRepository = 0;
-    TRAPD( err1, commonEngineRepository = CRepository::NewL( KCRUidCommonEngineKeys ) );    
-    if ( err1 != KErrNone ) { 
-        return false;
-    }
-    
-    if (!setLocale(dllExt)) {
-        delete commonEngineRepository;
-        return false;
-    }
-        
-    // Never set Language code 0 to HAL
-    if ( language !=0 ) {
-        if ( HAL::Set( HAL::ELanguageIndex, lanCode ) != KErrNone ) {
-            delete commonEngineRepository;
-            return false;
-        }
-    }
-    if ( commonEngineRepository->Set( KGSDisplayTxtLang, lanCode ) != KErrNone ) {
-        delete commonEngineRepository;
-        return false;
-    }
-    delete commonEngineRepository;
-    return true;
-
+    }        
+    return false;
 #else
     Q_UNUSED(language);
     return false;
 #endif
 }
 
-#if defined(Q_OS_SYMBIAN)  
 /*!
-    \brief reads the regions.txt file and reads the list of symbian region codes 
-*/
-void readRegions()
-{
-    QFile* file = new QFile(REGION_LIST_FILE);
-    if (!file->exists() ) 
-    {
-        delete file;
-        return;
-    }
-    if (!file->open(QIODevice::ReadOnly | QIODevice::Text))
-    {
-        delete file;
-        return;
-    } 
-    QTextStream in(file);
-    while (!in.atEnd())
-    {
-        QString line = in.readLine(256);
-        if (!line.isEmpty())
-        {
-            int regCode = line.toUInt();
-            regions.append(regCode);
-        }
-    }
-    return;
-}
-#endif
-
-/*!
-    \brief Returns names supported regions in a phone. 
-    Region names are identified by 2 letter code(ISO 3166 standard).
-    Ex: For United Kingdom it returns GB 
     
-    \attention Symbian specific API
+    Returns the identifiers of regions supported on the device. The region 
+    identifier is a two-letter ISO 3166 code, for example, "GB" for United 
+    Kingdom.
+    
+    \attention Only fully implemented on the Symbian platform. For other 
+    platforms, always returns an empty QStringList.
+    
+    \sa localisedRegionName(), currentRegion(), changeRegion()
 
-    \return list of supported regions in a device for Symbian and empty QStringList for other platforms 
 */
 QStringList HbLocaleUtil::supportedRegions()
 {
@@ -397,46 +359,53 @@ QStringList HbLocaleUtil::supportedRegions()
         return availRegions;
     }
 
-    if(regions.isEmpty())
-    {
-        readRegions();
+    QStringList regions; 
+    CArrayFixFlat<TInt>* systemEpocRegionCodes = 0;
+    TInt error = SysLangUtil::GetInstalledRegions( systemEpocRegionCodes );
+    if ( error != KErrNone ) {
+        delete systemEpocRegionCodes;
+        return regions;
     }
     
-    if(mappingList.isEmpty())
-    {
+    if(mappingList.isEmpty()) {
         readMappings();
     }
-    int regCount = regions.count();
-    for(int i = 0; i < regCount; i++)
-    {
-        int region = regions.at(i);
-        int count = mappingList.count();
-        for (int j = 0; j < count; j++)
-        {
-            HbLocaleMapping mapping = mappingList.at(j);
-            QString regCode = mapping.regionDllId;
-            if(region == regCode.toUInt())
-            {
-                availRegions.append(mapping.regName);
+    
+    for (int i = 0; i < systemEpocRegionCodes->Count(); ++i) {
+        int code = systemEpocRegionCodes->At(i);
+        for (int j = 0; j < mappingList.count(); ++j) {
+            HbLocaleMapping map = mappingList.at(j);
+            QString dllid = map.regionDllId;
+            bool ok;
+            int symRegionValue = dllid.toInt(&ok,10);
+            if (symRegionValue == code) {
+                availRegions.append(map.regName);
                 break;
             }
         }
     }
+    
+    delete systemEpocRegionCodes;
     return availRegions;
-#else
+#else 
     return QStringList();
 #endif
 }
 
 /*!
-    \brief Converts two letter region identifier to localised region name. 
+
+    Returns the localised region name for the given two-letter region 
+    identifier. If the translation fails, returns an empty QString.
     
-    \attention Symbian specific API
+    \param region The region identifier that corresponds to one of the following:
+    - An identifier returned by supportedRegions() or currentRegion()
+    - An HbLanguageRegionMapping::regionId string
     
-    \param region region identifier 
+    \attention Only fully implemented on the Symbian platform. For other 
+    platforms, always returns an empty QString.
     
-    \return Symbian - localised name of the region, an empty String if translation fails
-    \return other platforms - empty QString    
+    \sa currentRegion(), changeRegion()
+  
 */ 
 QString HbLocaleUtil::localisedRegionName( const QString &region ) 
 {
@@ -481,21 +450,24 @@ QString HbLocaleUtil::localisedRegionName( const QString &region )
 }
 
 /*!
-    \brief Changes the system region.  
-    The region parameter should correspond with one of the identifiers returned by supportedRegions(). 
-  
-    \attention Symbian specific API
+    Changes the system region to the one specified in \a region.
 
-    \param region identifier of region to set active
+    \param region The region identifier. This must correspond to an identifier 
+    returned by supportedRegions(), or an HbLanguageRegionMapping::regionId 
+    string.
     
-    \return true if region change was successful for Symbian and false for other platforms
+    \return \c true if successful, otherwise \c false.
+    
+    \attention Only fully implemented on the Symbian platform. For other 
+    platforms, always returns \c false.
+    
+    \sa localisedRegionName(), currentRegion()
+    
 */ 
 bool HbLocaleUtil::changeRegion( const QString &region )
 {
 #if defined(Q_OS_SYMBIAN)   
-    TExtendedLocale dummy;
-    QString regDllName = QString( "elocl_reg." );
-    
+   
     if(mappingList.isEmpty())
     {
         readMappings();
@@ -507,16 +479,17 @@ bool HbLocaleUtil::changeRegion( const QString &region )
         QString name = mapping.regName;
         if(name == region)
         {
-            dummy.LoadSystemSettings();
-            regDllName += mapping.regionDllId;
-            TPtrC nameptr(regDllName.utf16());
-            TInt err = dummy.LoadLocaleAspect( nameptr );
-            if( err != KErrNone )
+            int retVal = -1;
+            QString dllid = mapping.regionDllId;
+            bool ok;
+            int regioncode = dllid.toInt(&ok,10);
+            if(!regioncode)
                 return false;
-            dummy.SaveSystemSettings();
-            // cause localeprivate update on next qlocale object
-            QSystemLocale dummy2;
-            return true; 
+            retVal = SysLangUtil::ChangeRegion(regioncode);
+            if(retVal != 0)
+                return false;
+            else
+                return true;
         }
     }
     return false;
@@ -527,11 +500,15 @@ bool HbLocaleUtil::changeRegion( const QString &region )
 }
 
 /*!
-    \brief Return identifier of the current region.
+    
+    Returns the identifier of the current region. The region identifier is a 
+    two-letter ISO 3166 code, for example, "GB" for United Kingdom.
 
-    \attention Symbian specific API
+    \attention Only fully implemented on the Symbian platform. For other 
+    platforms, always returns an empty QString.
+    
+    \sa supportedRegions(), localisedRegionName(), changeRegion(), languageRegionMappings()
 
-    \return identifier of the region for Symbian and empty QString for other platforms
 */ 
 QString HbLocaleUtil::currentRegion()
 {
@@ -555,46 +532,19 @@ QString HbLocaleUtil::currentRegion()
     return QString();
 }
 
-#if defined(Q_OS_SYMBIAN)      
 /*!
-    \brief reads the collations.txt file and reads the list of symbian collation codes 
-*/
-void readCollations()
-{
-    QFile* file = new QFile(COLLATION_LIST_FILE);
-    if (!file->exists() ) 
-    {
-        delete file;
-        return ;
-    }
-    if (!file->open(QIODevice::ReadOnly | QIODevice::Text))
-    {
-        delete file;
-        return ;
-    } 
-    QTextStream in(file);
-    while (!in.atEnd())
-    {
-        QString line = in.readLine(256);
-        if (!line.isEmpty())
-        {
-            int colCode = line.toUInt();
-            collations.append(colCode);
-        }
-    }
-    return ;
-}
-#endif
-
-/*!
-    \brief Returns identifiers of collations supported in a device. 
-    Collation identifier may be two-letter ISO 639 language code or combination of ISO 639 language code and ISO 3166 country code 
-    Ex: Great Britain english it returns "en".
-    Ex: For U.S. english it returns "en_US"  
     
-    \attention Symbian specific API
-
-    \return identifiers of supported collations for Symbian and empty QStringList for other platforms 
+    Returns the identifiers of the collations supported on a device. Typically 
+    the collation identifier is an ISO 639 language code, but in some cases, it 
+    is a combination of an ISO 639 language code and an ISO 3166 country code. 
+    For example, for UK English, this returns "en", and for US English, this 
+    returns "en_US".
+    
+    \attention Only fully implemented on the Symbian platform. For other 
+    platforms, always returns an empty QStringList.
+    
+    \sa localisedCollationName(), currentCollation(), changeCollation()
+ 
 */
 QStringList HbLocaleUtil::supportedCollations()
 {
@@ -604,46 +554,52 @@ QStringList HbLocaleUtil::supportedCollations()
         return availCollations;
     }
 
-    if(collations.isEmpty())
-    {
-        readCollations();
+    QStringList collations; 
+    CArrayFixFlat<TInt>* systemEpocCollationCodes = 0;
+    TInt error = SysLangUtil::GetInstalledCollations( systemEpocCollationCodes );
+    if ( error != KErrNone ) {
+        delete systemEpocCollationCodes;
+        return collations;
     }
     
-    if(mappingList.isEmpty())
-    {
+    if(mappingList.isEmpty()) {
         readMappings();
     }
-    int colCount = collations.count();
-    for(int i = 0; i < colCount; i++)
-    {
-        int collation = collations.at(i);
-        int count = mappingList.count();
-        for (int j = 0; j < count; j++)
-        {
-            HbLocaleMapping mapping = mappingList.at(j);
-            QString colCode = mapping.collationDllId;
-            if(collation == colCode.toUInt())
-            {
-                availCollations.append(mapping.collName);
+    
+    for (int i = 0; i < systemEpocCollationCodes->Count(); ++i) {
+        int code = systemEpocCollationCodes->At(i);
+        for (int j = 0; j < mappingList.count(); ++j) {
+            HbLocaleMapping map = mappingList.at(j);
+            bool ok;
+            int symCollatValue = map.collationDllId.toInt(&ok,10);
+            if (symCollatValue == code) {
+                availCollations.append(map.collName);
                 break;
             }
         }
     }
+    
+    delete systemEpocCollationCodes;
     return availCollations;
-#else
+#else 
     return QStringList();
 #endif
 }
 
 /*!
-    \brief Converts collation identifier to localised collation name. 
     
-    \attention Symbian specific API
+    Returns the localised collation name for the given collation identifier. If 
+    the translation fails, returns an empty QString.
     
-    \param collation region collation identifier 
+    \param collation The region collation identifier that corresponds to one of the following:
+    - An identifier returned by supportedCollations() or currentCollation()
+    - An HbLanguageRegionMapping::collationId string
     
-    \return Symbian - localised name of the collation, an empty String if translation fails
-    \return other platforms - empty QString    
+    \attention Only fully implemented on the Symbian platform. For other 
+    platforms, always returns an empty QString.
+    
+    \sa currentCollation(), changeCollation()
+  
 */ 
 QString HbLocaleUtil::localisedCollationName( const QString &collation ) 
 {
@@ -688,19 +644,23 @@ QString HbLocaleUtil::localisedCollationName( const QString &collation )
 }
 
 /*!
-    \brief Changes the system collation.  
-    The collation parameter should correspond with one of the identifiers returned by supportedCollations(). 
-  
-    \attention Symbian specific API
     
-    \param collation identifier of collation to set active
-    \return true if collation change was successful for Symbian and false for other platforms
+    Changes the system collation to the one specified in \a collation.
+    
+    \param collation The collation identifier. This must correspond to an 
+    identifier returned by supportedCollations(), or an 
+    HbLanguageRegionMapping::collationId string.
+    
+    \return \c true if successful, otherwise \c false.
+    
+    \attention Only fully implemented on the Symbian platform. For other 
+    platforms, always returns \c false.
+    
+    \sa localisedCollationName(), currentCollation()
 */ 
 bool HbLocaleUtil::changeCollation( const QString &collation )
 {
 #if defined(Q_OS_SYMBIAN) 
-    TExtendedLocale dummy;
-    QString colDllName = QString( "elocl_col." );
     
     if(mappingList.isEmpty())
     {
@@ -713,16 +673,17 @@ bool HbLocaleUtil::changeCollation( const QString &collation )
         QString name = mapping.collName;
         if(name == collation)
         {
-            dummy.LoadSystemSettings();
-            colDllName += mapping.collationDllId;
-            TPtrC nameptr(colDllName.utf16());
-            TInt err = dummy.LoadLocaleAspect( nameptr );
-            if( err != KErrNone )
+            int retVal = -1;
+            QString dllid = mapping.collationDllId;
+            bool ok;
+            int collCode = dllid.toInt(&ok,10);
+            if(!collCode)
                 return false;
-            dummy.SaveSystemSettings();
-            // cause localeprivate update on next qlocale object
-            QSystemLocale dummy2;
-            return true; 
+            retVal = SysLangUtil::ChangeCollation(collCode);
+            if(retVal != 0)
+                return false;
+            else
+                return true;
         }
     }
     return false;
@@ -733,11 +694,17 @@ bool HbLocaleUtil::changeCollation( const QString &collation )
 }
 
 /*!
-    \brief Return identifier of the current collation.
-
-    \attention Symbian specific API
     
-    \return identifier of the collation for Symbian and empty QString for other platforms
+    Returns the identifier of the current collation. Typically the collation 
+    identifier is an ISO 639 language code, but in some cases, it is a 
+    combination of an ISO 639 language code and an ISO 3166 country code. For 
+    example, for UK English, this returns "en", and for US English, this returns 
+    "en_US".
+
+    \attention Only fully implemented on the Symbian platform. For other 
+    platforms, always returns an empty QString.
+    
+    \sa supportedCollations(), localisedCollationName(), changeCollation(), languageRegionMappings()
 */ 
 QString HbLocaleUtil::currentCollation()
 {
@@ -774,16 +741,22 @@ QString HbLocaleUtil::currentCollation()
 }
 
 /*!
-    \brief Changes the system language, region and collation.  
-    The language parameter should correspond with one of the identifiers returned by supportedLanguages(). 
-    Proper region and collation is selected automatically according the language.  
+
+    Changes the system language, region and collation as specified by \a 
+    language. The region and collation are selected automatically based on the 
+    specified language.
+
+    \param language The language identifier. This must correspond to an 
+    identifier returned by supportedLanguages(), or an 
+    HbLanguageRegionMapping::languageId string.
   
-    \attention Symbian specific API
+    \return \c true if successful, otherwise \c false.
     
-    \param language identifier of language which language, region and collation settings should set active  
+    \attention Only fully implemented on the Symbian platform. For other 
+    platforms, always returns \c false.
     
-    \return Symbian - true if language, region and collation change was successful
-    \return other platforms - false    
+    \sa supportedRegions(), supportedCollations(), languageRegionMappings()
+ 
 */ 
 bool HbLocaleUtil::changeLocale( const QString &language )
 {
@@ -811,5 +784,122 @@ bool HbLocaleUtil::changeLocale( const QString &language )
     Q_UNUSED(language);
 #endif // Q_OS_SYMBIAN
     return false;   
+}
+
+/*!
+    
+    \struct HbLanguageRegionMapping hblocaleutil.h
+    
+    Defines the data structure for language, region and collation identifier 
+    mappings.
+    
+    \sa HbLocaleUtil::languageRegionMappings()
+  
+*/
+
+/*!
+    
+    \var HbLanguageRegionMapping::languageId
+    
+    A language identifier. Typically this is an ISO 639 language code, but in 
+    some cases, it is a combination of an ISO 639 language code and an ISO 3166 
+    country code. For example, for UK English, this returns "en", and for US 
+    English, this returns "en_US".
+  
+*/ 
+
+/*!
+    
+    \var HbLanguageRegionMapping::regionId
+    
+    A region identifier. This is a two-letter ISO 3166 code, for example, "GB" 
+    for United Kingdom.
+  
+*/ 
+
+/*!
+    
+    \var HbLanguageRegionMapping::collationId
+    
+    A collation identifier. Typically this is an ISO 639 language code, but in 
+    some cases, it is a combination of an ISO 639 language code and an ISO 3166 
+    country code. For example, for UK English, this returns "en", and for US 
+    English, this returns "en_US".
+  
+*/ 
+
+/*!
+    
+    Returns a list of language, region and collation identifier mappings. For 
+    example, for UK English, the mapping has "en" for language, "GB" for region 
+    and "en" for collation. For US English, the corresponding values are 
+    "en_US", "US" and "en_US". You can use the optional \a onlySupported 
+    parameter to limit the search only to the languages, regions and collations 
+    supported on the device.
+        
+    If there is a mapping with a language that does not have a corresponding 
+    region, the region is returned as an empty QString. Similarly, if there is a 
+    mapping with a region that does not have a corresponding language and 
+    collation, the language and collation are returned as empty QStrings.
+    
+    \param onlySupported Specify \c true to only return the mappings for 
+    languages, regions and collations that are supported on the device. To 
+    return mappings for all known languages, regions and collations, specify \c 
+    false.
+    
+    For example:
+    \snippet{unittest_hblocaleutil/unittest_hblocaleutil.cpp,2}
+
+    \attention Only fully implemented on the Symbian platform. For other 
+    platforms, always returns an empty list.
+    
+    \sa currentLanguage(), currentRegion(), currentCollation()
+  
+*/ 
+QList<HbLanguageRegionMapping> HbLocaleUtil::languageRegionMappings( bool onlySupported )
+{
+    QList<HbLanguageRegionMapping> mps;
+#if defined(Q_OS_SYMBIAN) 
+    if (mappingList.isEmpty()) {
+        readMappings();
+    }
+   
+    QStringList supportedLanguages;
+    QStringList supportedRegions;
+    if (onlySupported) {
+        supportedLanguages = HbLocaleUtil::supportedLanguages();
+        supportedRegions = HbLocaleUtil::supportedRegions();
+    }
+    
+    for (int i = 0;  i < mappingList.count(); ++i) {
+
+        HbLocaleMapping map = mappingList.at(i);
+
+        HbLanguageRegionMapping mapping;
+        mapping.languageId = map.langName;
+        mapping.regionId = map.regName;
+        mapping.collationId = map.collName;
+
+        if (onlySupported) {
+            bool langSupported = supportedLanguages.contains(map.langName);
+            bool regSupported = supportedRegions.contains(map.regName);
+            if (!langSupported && !regSupported) {
+                continue;
+            }
+            if (!langSupported) {
+                mapping.languageId = "";
+            }
+            if (!regSupported) {
+                mapping.regionId = "";
+            }
+        }
+
+        mps.append(mapping);
+
+    }
+#else
+    Q_UNUSED(onlySupported);
+#endif // Q_OS_SYMBIAN
+    return mps;
 }
 

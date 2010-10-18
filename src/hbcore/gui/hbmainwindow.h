@@ -98,6 +98,7 @@ signals:
 protected:
     void changeEvent(QEvent *event);
     void closeEvent(QCloseEvent *event);
+    void drawBackground(QPainter *painter, const QRectF &rect);
     void keyPressEvent(QKeyEvent *event);
     void keyReleaseEvent(QKeyEvent *event);
     void resizeEvent(QResizeEvent *event);

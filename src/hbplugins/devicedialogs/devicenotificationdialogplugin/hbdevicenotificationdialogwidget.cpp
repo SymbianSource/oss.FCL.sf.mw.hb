@@ -43,7 +43,7 @@ HbDeviceNotificationDialogWidget::HbDeviceNotificationDialogWidget(const QVarian
 {
     TRACE_ENTRY
     mLastError = NoError;
-    mShowEventReceived = false;
+    mCloseEventReceived = false;
     resetProperties();
     constructDialog(parameters);
 
@@ -90,11 +90,6 @@ void HbDeviceNotificationDialogWidget::closeDeviceDialog(bool byClient)
     TRACE_ENTRY
     Q_UNUSED(byClient);
     close();
-    // If show event has been received, close is signalled from hide event. If not,
-    // hide event does not come and close is signalled from here.
-    if (!mShowEventReceived) {
-        emit deviceDialogClosed();
-    }
     TRACE_EXIT
 }
 
@@ -184,18 +179,36 @@ void HbDeviceNotificationDialogWidget::setIconName(QString iconName)
     TRACE_EXIT
 }
 
+void HbDeviceNotificationDialogWidget::setShowLevel(int level)
+{
+    // Show level can only be set on construction
+    Q_UNUSED(level)
+}
+
+int HbDeviceNotificationDialogWidget::showLevel() const
+{
+    return 0;
+}
+
 // Widget is about to hide. Closing effect has ended.
 void HbDeviceNotificationDialogWidget::hideEvent(QHideEvent *event)
 {
     HbNotificationDialog::hideEvent(event);
-    emit deviceDialogClosed();
+    if (mCloseEventReceived) {
+        emit deviceDialogClosed();
+    }
 }
 
-// Widget is about to show
-void HbDeviceNotificationDialogWidget::showEvent(QShowEvent *event)
+// Widget is about to close, close() has been called
+void HbDeviceNotificationDialogWidget::closeEvent(QCloseEvent *event)
 {
-    HbNotificationDialog::showEvent(event);
-    mShowEventReceived = true;
+    HbNotificationDialog::closeEvent(event);
+    mCloseEventReceived = true;
+    // If widget is visible, close is signalled from hide event. If not,
+    // hide event does not come and close is signalled from here.
+    if (!isVisible()) {
+        emit deviceDialogClosed();
+    }
 }
 
 QString HbDeviceNotificationDialogWidget::animationDefinition() const

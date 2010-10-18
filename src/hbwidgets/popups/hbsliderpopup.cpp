@@ -98,7 +98,7 @@ void HbSliderPopupPrivate::init()
     Q_Q( HbSliderPopup);
     mSliderPopupContentWidget = new HbSliderPopupContentWidget( this );
     q->setContentWidget( mSliderPopupContentWidget );
-    setBackgroundItem(HbStyle::P_SliderPopup_background);
+    setBackgroundItem(HbStylePrivate::P_SliderPopup_background);
     HbStyle::setItemName(q->backgroundItem(),QLatin1String("sliderpopup_background"));
 
     q->connect(mSliderPopupContentWidget->slider,SIGNAL(valueChanged(int)),q,SLOT(_q_valueChanged(int)));

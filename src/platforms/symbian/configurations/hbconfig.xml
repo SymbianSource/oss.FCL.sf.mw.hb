@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<build xmlns="http://symbian.com/xml/build"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://symbian.com/xml/build http://symbian.com/xml/build/2_0.xsd">
+
+	<!-- Tools interfaces -->
+
+	<interface name="hb.hbconfig" extends="Symbian.UserFLM" flm="hbconfig.flm">
+		<param name='HB_ROOT' default='../../../../'/>
+		<param name='OPTIONS' default='--qt-mobility --qt-openvg --nomake tutorials'/>
+		<param name='OPTION_QMAKE' default='--qmake-bin=$(EPOCROOT)/epoc32/tools/qmake'/>
+		<param name='OPTION_QMKSPEC' default='--qmake-spec=$(EPOCROOT)/epoc32/tools/qt/mkspecs/symbian-sbsv2'/>
+		<param name='OPTION_QFLAG' default=''/>
+		<param name='HOST_OPTIONS.WIN32' default=''/>
+		<param name='HOST_OPTIONS.LINUX' default='--host-qmake-bin /nokia/apps/symbian/qt/bin/qmake --host-make-bin $(GNUMAKE38)'/>
+		<param name='SBS_PYTHON' default='python'/>
+	</interface>
+
+</build>

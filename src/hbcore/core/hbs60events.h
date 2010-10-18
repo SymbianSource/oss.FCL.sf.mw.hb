@@ -26,12 +26,12 @@
 #ifndef HBS60EVENTS_H
 #define HBS60EVENTS_H
 
-const int KChangeDirection		= 0x20028671;
-const int KChangeOrientation	= 0x20028672;
-const int KChangeDeviceProfile	= 0x20028673;
-const int KChangeTouchAreaVis	= 0x20028674;
-const int KChangeTextItemVis	= 0x20028675;
-const int KChangeIconItemVis	= 0x20028676;
+const int KChangeDirection      = 0x20028671;
+const int KChangeOrientation    = 0x20028672;
+const int KChangeDeviceProfile  = 0x20028673;
+const int KChangeTouchAreaVis   = 0x20028674;
+const int KChangeTextItemVis    = 0x20028675;
+const int KChangeIconItemVis    = 0x20028676;
 const int KChangeFpsCounterVis  = 0x20028677;
 
 #endif // HBS60EVENTS_H

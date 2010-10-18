@@ -31,7 +31,7 @@
 #include <e32base.h>
 #include <badesca.h>
 
-NONSHARABLE_CLASS(HbTextResolverSymbian)
+class HbTextResolverSymbian
 {
 public:
     IMPORT_C static TBool Init(const TDesC& aFilename, const TDesC& aPath);
@@ -40,12 +40,13 @@ public:
     IMPORT_C static HBufC* LoadL(const TDesC& aMessageId, const MDesCArray& aStrings, TInt aPlural = -1);
     IMPORT_C static HBufC* LoadL(const TDesC& aMessageId, TInt aInt, TInt aPlural);     
     IMPORT_C static HBufC* LoadL(const TDesC& aMessageId, const RArray<TInt>& aInts, TInt aPlural = -1);
-    
+
     IMPORT_C static HBufC* LoadLC(const TDesC& aMessageId, TInt aPlural = -1);
     IMPORT_C static HBufC* LoadLC(const TDesC& aMessageId, const TDesC& aString, TInt aPlural = -1);        
     IMPORT_C static HBufC* LoadLC(const TDesC& aMessageId, const MDesCArray& aStrings, TInt aPlural = -1);
     IMPORT_C static HBufC* LoadLC(const TDesC& aMessageId, TInt aInt, TInt aPlural);     
-    IMPORT_C static HBufC* LoadLC(const TDesC& aMessageId, const RArray<TInt>& aInts, TInt aPlural = -1);                  
+    IMPORT_C static HBufC* LoadLC(const TDesC& aMessageId, const RArray<TInt>& aInts, TInt aPlural = -1);
+    IMPORT_C static void Release();
 };
 
 

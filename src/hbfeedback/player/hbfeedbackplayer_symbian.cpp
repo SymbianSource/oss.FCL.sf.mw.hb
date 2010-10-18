@@ -58,7 +58,7 @@ public:
     inline TTacticonType convertTacticonToSymbian(HbFeedback::InstantEffect effect);
     inline TTouchContinuousFeedback convertToSymbian(HbFeedback::ContinuousEffect effect);
     inline TTouchFeedbackType convertToSymbian(HbFeedback::Modalities modalities);
-			
+            
 public:
     MTouchFeedback *iFeedback;
     RTacticon iTacticon;
@@ -184,7 +184,7 @@ TTouchLogicalFeedback HbFeedbackBasePlayerPrivate::convertToSymbian(HbFeedback::
     case HbFeedback::BasicKeypad:
         instantFeedbackSymbian = ETouchFeedbackBasicKeypad;
         break;
-    case HbFeedback::MultitouchActivate:
+    case HbFeedback::AdvancedGestureActivate:
         instantFeedbackSymbian = ETouchFeedbackMultitouchActivate;
         break;
     case HbFeedback::RotateStep:
@@ -300,7 +300,10 @@ HbFeedbackBasePlayer::HbFeedbackBasePlayer() : d(new HbFeedbackBasePlayerPrivate
 
 HbFeedbackBasePlayer::~HbFeedbackBasePlayer() {
 
-    cancelContinuousFeedbacks();
+    // This implementation expects the platform to stop the feedback on application exit.
+    // At this point the winId might not point to an active window, so cancelling
+    // the ongoing continuous feedbacks could lead to application crash.
+    d->ongoingContinuousFeedbacks.clear();
     delete d;
 }
 

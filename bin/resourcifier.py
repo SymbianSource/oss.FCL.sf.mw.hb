@@ -29,6 +29,7 @@
 import os
 import sys
 import fnmatch
+import filecmp
 import optparse
 
 # ============================================================================
@@ -106,7 +107,10 @@ def main():
         outputdir = os.path.dirname(options.output)
         if len(outputdir) and not os.path.exists(outputdir):
             os.makedirs(outputdir)
-        OUTPUT = open(options.output, "w")
+        if os.path.exists(options.output):
+            OUTPUT = open(options.output + ".tmp.qrc", "w")
+        else:
+            OUTPUT = open(options.output, "w")
     if options.include:
         INCLUDE = options.include
     if options.exclude:
@@ -116,7 +120,17 @@ def main():
 
     os.chdir(INPUT)
     resources = index_resources()
-    return write_qrc(OUTPUT, resources)
+    write_qrc(OUTPUT, resources)
+    OUTPUT.close()
+
+    if OUTPUT != sys.stdout and OUTPUT.name != options.output:
+        if filecmp.cmp(OUTPUT.name, options.output, shallow=False):
+            # content identical, discard
+            os.remove(OUTPUT.name)
+        else:
+            # content changed, overwrite
+            os.remove(options.output)
+            os.rename(OUTPUT.name, options.output)
 
 if __name__ == "__main__":
     sys.exit(main())

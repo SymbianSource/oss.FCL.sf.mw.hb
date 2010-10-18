@@ -63,6 +63,7 @@ public:
 
     void lockFocus();
     void unlockFocus();
+    bool isFocusLocked();
 
     // From QInputContext (do not override).
     void widgetDestroyed(QWidget *widget);
@@ -81,14 +82,10 @@ protected:
     virtual void inputLanguageChanged(const HbInputLanguage &newLanguage);
     virtual void secondaryInputLanguageChanged(const HbInputLanguage &newLanguage);
     bool stateChangeInProgress() const;
-
     HbInputLanguage activeLanguage() const;
-
     bool modeAllowedInEditor(HbInputModeType mode) const;
     void inputStateToEditor(const HbInputState &source);
-
     void constructLatinState(HbInputState &result) const;
-
     HbInputMethodDescriptor descriptor() const;
 
 public slots:
@@ -106,7 +103,12 @@ private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputMethod)
     Q_DISABLE_COPY(HbInputMethod)
 
+    Q_PRIVATE_SLOT(d_func(), void _q_refresh())
+    Q_PRIVATE_SLOT(d_func(), void _q_startOrientationSequence())
+    Q_PRIVATE_SLOT(d_func(), void _q_endOrientationSequence())
+
     friend class HbInputModeCachePrivate;
+    friend class HbInputContextProxy;
 };
 
 #endif // HB_INPUT_METHOD_H

@@ -57,6 +57,7 @@ public :
 
     QSize defaultSize() const;
     QSize size();
+    ErrorCode initialize();
     void destroyMaskedData(HbIconMaskedData *data);
 
 private :
@@ -67,7 +68,7 @@ private :
                          Qt::Alignment alignment);
     void updatePainterTransformation(QPainter *painter, const QPointF &pos);
     static VGImage getVgImage(HbIconImpl *impl, QPainter *painter);
-
+    QPixmap createPixmapFromVGImage(VGImage image, const QSize & size);
 
 private:
     TSgDrawableId sgImageId;

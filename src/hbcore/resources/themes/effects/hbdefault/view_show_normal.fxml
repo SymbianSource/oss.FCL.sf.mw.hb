@@ -1,9 +1,9 @@
-<layers>
-	<visual>
-	    <param name="opacity" type="anim">
-	        <duration>0.3</duration>
-	        <keyframe at="0.0">0.0</keyframe>
-	        <keyframe at="1.0">1.0</keyframe>
-	    	</param>
-	</visual>
-</layers>
+<layers>
+	<visual>
+	    <param name="opacity" type="anim">
+	        <duration>0.2</duration>
+	        <keyframe at="0.0">0.0</keyframe>
+	        <keyframe at="1.0">1.0</keyframe>
+	    	</param>
+	</visual>
+</layers>

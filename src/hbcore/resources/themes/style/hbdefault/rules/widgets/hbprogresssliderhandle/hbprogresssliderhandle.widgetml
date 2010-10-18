@@ -2,13 +2,13 @@
 
   <layout name="progresshandle" type="mesh">
     
-    <meshitem src="icon" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="icon" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-    <meshitem src="icon" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="icon" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="handle-icon" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="handle-icon" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="handle-icon" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+    <meshitem src="handle-icon" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     
-    <meshitem src="toucharea" srcEdge="CENTERV" dst="icon" dstEdge="CENTERV" />
-    <meshitem src="toucharea" srcEdge="CENTERH" dst="icon" dstEdge="CENTERH" />
+    <meshitem src="handle-toucharea" srcEdge="CENTERV" dst="handle-icon" dstEdge="CENTERV" />
+    <meshitem src="handle-toucharea" srcEdge="CENTERH" dst="handle-icon" dstEdge="CENTERH" />
   </layout>
 
 </hbwidget>

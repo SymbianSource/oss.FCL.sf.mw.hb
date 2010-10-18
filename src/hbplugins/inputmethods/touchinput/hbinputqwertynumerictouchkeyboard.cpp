@@ -190,7 +190,7 @@ void HbQwertyNumericKeyboardPrivate::updateButtons()
                 if (charKeyCount < 10) {
                     item->setText(numberCharacterBoundToKey((charKeyCount + 1) % 10),
                     HbInputButton::ButtonTextIndexPrimary);  
-                    charKeyCount++;					
+                    charKeyCount++;                 
                 } else {
                     if (key < characters.count()) {
                         item->setText(characters.at(key), HbInputButton::ButtonTextIndexPrimary);
@@ -198,7 +198,7 @@ void HbQwertyNumericKeyboardPrivate::updateButtons()
                         item->setText(QString(), HbInputButton::ButtonTextIndexPrimary);
                     }
                     ++key;
-                }					
+                }                   
             }
         }
         buttonGroup->setButtons(buttons);
@@ -213,7 +213,7 @@ void HbQwertyNumericKeyboardPrivate::getCharacters(QString &characters)
             return;
         }
         QString chars;
-		
+        
         foreach (const HbMappedKey* mappedKey, keyboardMap->keys) {
             chars.append(mappedKey->characters(HbModifierNone));
         }          
@@ -225,8 +225,8 @@ void HbQwertyNumericKeyboardPrivate::getCharacters(QString &characters)
             // Remove digits from it ( digits always come in the first row )
             for (int i=0; i < 10; i++) {
                 allowedChars.remove(numberCharacterBoundToKey(i));
-            }	
-			
+            }   
+            
             foreach (QChar sctChar, allowedChars) {
                 if (!characters.contains(sctChar)) {
                     characters.append(sctChar);

@@ -32,11 +32,11 @@
 #include <hbwidgetfeedback.h>
 #include <hbinstance.h>
 #include <hbnamespace.h>
-
 #include <hbswipegesture.h>
 
 #include "hbtitlebar_p.h"
 #include "hbtitlebar_p_p.h"
+#include "hbstyle_p.h"
 
 #include "hbmainwindow_p.h"
 #include "hbnavigationbutton_p.h"
@@ -78,6 +78,8 @@ void HbTitleBarPrivate::delayedConstruction()
         mIndicatorButton, SLOT(deactivate(const QList<IndicatorClientInfo> &)));
     q->connect(q, SIGNAL(allActivated(const QList<IndicatorClientInfo> &)), 
         mIndicatorButton, SLOT(activateAll(const QList<IndicatorClientInfo> &)));
+    q->connect(q, SIGNAL(updated(const QList<IndicatorClientInfo> &)), 
+        mIndicatorButton, SLOT(update(const QList<IndicatorClientInfo> &)));
     q->connect(mMainWindow, SIGNAL(currentViewChanged(HbView*)), q, SLOT(currentViewChanged(HbView*)));
     q->connect(mDefaultNavigationAction, SIGNAL(triggered()), qApp, SLOT(quit()));  
 }
@@ -85,8 +87,6 @@ void HbTitleBarPrivate::delayedConstruction()
 void HbTitleBarPrivate::init()
 {
     Q_Q(HbTitleBar);
-
-    q->setFlag(QGraphicsItem::ItemIsPanel, true);
 
     // create title pane
     mTitlePane = new HbTitlePane(q);
@@ -100,8 +100,6 @@ void HbTitleBarPrivate::init()
     // the default action's icon should mirror in case of a layout direction change
     icon.setMirroringMode(HbIcon::LayoutDirection);
     mDefaultNavigationAction->setIcon(icon);
-
-    mDefaultNavigationAction->setText("Quit");
     mNavigationButton->setAction(mDefaultNavigationAction);
 
     HbStyle::setItemName(q, "titlebar");
@@ -121,11 +119,9 @@ void HbTitleBarPrivate::initSceneEventFilters(HbView *view)
     if (view->viewFlags() & HbView::ViewTitleBarMinimizable) {
         if(!mTouchAreaItem) {
             // Install sceneEvent filter(s)
-            mTouchAreaItem = q->style()->createPrimitive(HbStyle::P_TitleBar_toucharea, q);
+            mTouchAreaItem = HbStylePrivate::createPrimitive(HbStylePrivate::P_TitleBar_toucharea, q);
             mTouchAreaItem->setAcceptedMouseButtons(Qt::LeftButton);
             mTouchAreaItem->installSceneEventFilter(q);
-            QGraphicsObject *touchAreaItemGraphicsObject = static_cast<QGraphicsObject*>(mTouchAreaItem);
-            touchAreaItemGraphicsObject->grabGesture(Qt::SwipeGesture);
         }
     } else { // Remove scene event filter
         if (mTouchAreaItem) {
@@ -175,6 +171,7 @@ HbTitleBar::HbTitleBar(HbMainWindow *mainWindow, QGraphicsItem *parent /*= 0*/)
     d->mMainWindow = mainWindow;
     d->init();
     setFlag(QGraphicsItem::ItemIsPanel, true);
+    setFlag(QGraphicsItem::ItemHasNoContents, true);
 }
 
 HbTitleBar::HbTitleBar(HbTitleBarPrivate &dd, HbMainWindow *mainWindow,
@@ -185,6 +182,8 @@ HbTitleBar::HbTitleBar(HbTitleBarPrivate &dd, HbMainWindow *mainWindow,
     d->q_ptr = this;
     d->mMainWindow = mainWindow;
     d->init();
+    setFlag(QGraphicsItem::ItemIsPanel, true);
+    setFlag(QGraphicsItem::ItemHasNoContents, true);
 }
 
 /*
@@ -237,9 +236,40 @@ bool HbTitleBar::minimizable() const
 void HbTitleBar::propertiesChanged()
 {
     Q_D(HbTitleBar);
-    if (d->mMainWindow->currentView()) {
-        currentViewChanged(d->mMainWindow->currentView());
+    if (d->mMainWindow && d->mMainWindow->currentView()) {
+        HbView *view = d->mMainWindow->currentView();
+        QTransform transform;
+        // first check if we shouldn't be minimized
+        if (position() == HbTitleBar::Minimized) {
+            if (!(view->viewFlags() & HbView::ViewTitleBarMinimizable)) {
+                setTransform(transform); // this sets titlebar to (0,0)
+            } else if ((view->viewFlags() & HbView::ViewTitleBarMinimizable) &&
+                !(view->viewFlags() & HbView::ViewTitleBarMinimized)) {
+                setTransform(transform); // this sets titlebar to (0,0)
+            }
+        } else if (view->viewFlags() & HbView::ViewTitleBarMinimized) {
+            setTransform(transform); // this sets titlebar to (0,0)
+            QSize screenSize = HbDeviceProfile::profile(this).logicalSize();
+            if (layoutDirection() == Qt::LeftToRight) {
+                translate(screenSize.width(), 0);
+            } else {
+                translate(-screenSize.width(), 0);
+            }
+        }
+
+        // only do repolish if titlebar properties have changed
+        if (d->mPreviousTitleBarProperties != view->viewFlags()) {
+            d->initTitleBarHandle(view);
+            d->initSceneEventFilters(view);
+            d->mPreviousTitleBarProperties = view->viewFlags();
+            d->mTitlePane->updatePrimitives();
+            d->mIndicatorButton->updatePrimitives();
+            d->mNavigationButton->updatePrimitives();
+            repolish();
+        }
+        view->menu()->installEventFilter(d->mTitlePane);
     }
+    d->mTitlePane->repolish();
 }
 
 /*
@@ -284,7 +314,7 @@ void HbTitleBar::gestureSwipeRight()
 {
     Q_D(HbTitleBar);
 
-    if (!minimizable()) {      
+    if (!minimizable()) {
         return;
     }
 
@@ -342,7 +372,7 @@ void HbTitleBar::gestureSwipeLeft()
 void HbTitleBar::effectFinished(const HbEffect::EffectStatus &status)
 {
     Q_D(HbTitleBar);
-    //ungrabMouse();
+
     if (status.reason == Hb::EffectFinished) {
         // change titlebar property accordingly
         if (d->mMainWindow->currentView()) {
@@ -371,41 +401,10 @@ void HbTitleBar::currentViewChanged(HbView *view)
     if (!view) {
         return;
     }
-    QTransform transform;
-    // first check if we shouldn't be minimized
-    if (position() == HbTitleBar::Minimized) {
-        if (!(view->viewFlags() & HbView::ViewTitleBarMinimizable)) {
-            setTransform(transform); // this sets titlebar to (0,0)
-        } else if ((view->viewFlags() & HbView::ViewTitleBarMinimizable) &&
-            !(view->viewFlags() & HbView::ViewTitleBarMinimized)) {
-            setTransform(transform); // this sets titlebar to (0,0)
-        }
-    } else if (view->viewFlags() & HbView::ViewTitleBarMinimized) {
-        setTransform(transform); // this sets titlebar to (0,0)
-        QSize screenSize = HbDeviceProfile::profile(this).logicalSize();
-        if (layoutDirection() == Qt::LeftToRight) {
-            translate(screenSize.width(), 0);
-        } else {
-            translate(-screenSize.width(), 0);
-        }
-    }
+
+    propertiesChanged();
 
     d->mIndicatorButton->currentViewChanged(view);
-
-    // only do repolish if titlebar properties have changed
-    if (d->mPreviousTitleBarProperties != view->viewFlags()) {
-        d->initTitleBarHandle(view);
-        d->initSceneEventFilters(view);
-        d->mPreviousTitleBarProperties = view->viewFlags();
-        d->mTitlePane->updatePrimitives();
-        d->mIndicatorButton->updatePrimitives();
-        d->mNavigationButton->updatePrimitives();
-        repolish();
-    }
-    if (mainWindow() && mainWindow()->currentView()) {
-        mainWindow()->currentView()->menu()->installEventFilter(d->mTitlePane);
-    }
-    d->mTitlePane->repolish();
 }
 
 
@@ -435,7 +434,7 @@ bool HbTitleBar::sceneEventFilter(QGraphicsItem *watched, QEvent *event)
 
     Q_D(HbTitleBar);
     bool filterOutEvent = false;
-    switch(event->type()){    
+    switch (event->type()) {
     case QEvent::GraphicsSceneMousePress:
         HbWidgetFeedback::triggered(this, Hb::InstantPressed);
         event->accept(); //we need to catch the mouse release and move events also
@@ -463,23 +462,29 @@ bool HbTitleBar::sceneEventFilter(QGraphicsItem *watched, QEvent *event)
             HbWidgetFeedback::triggered(this, Hb::InstantReleased);
         }
         filterOutEvent = true;
-        break;    
+        break;
     }
     case QEvent::Gesture: {
-        QGestureEvent *gestureEvent = static_cast<QGestureEvent*>(event);
-        HbSwipeGesture *swipe = qobject_cast<HbSwipeGesture*>(gestureEvent->gesture(Qt::SwipeGesture));
-        if(swipe) {
-            if(swipe->sceneHorizontalDirection() == QSwipeGesture::Right) {
-                gestureSwipeRight();
-            } else if(swipe->sceneHorizontalDirection() == QSwipeGesture::Left) {
-                gestureSwipeLeft();
+            QGestureEvent *gestureEvent = static_cast<QGestureEvent*>(event);
+            HbSwipeGesture *swipe = qobject_cast<HbSwipeGesture*>(gestureEvent->gesture(Qt::SwipeGesture));
+            if (swipe) {
+                switch (swipe->state()) {
+                case (Qt::GestureFinished): {
+                    if(swipe->sceneHorizontalDirection() == QSwipeGesture::Right) {
+                        gestureSwipeRight();
+                    } else if(swipe->sceneHorizontalDirection() == QSwipeGesture::Left) {
+                        gestureSwipeLeft();
+                    }
+                    gestureEvent->accept();
+                    break;
+                }
+                default:
+                    break;
+                }
             }
-            gestureEvent->accept();
-        }
-
-        filterOutEvent = true;
+            filterOutEvent = true;
         break;
-    }   
+    }
     default:
         break;
     }
@@ -492,7 +497,7 @@ bool HbTitleBar::sceneEventFilter(QGraphicsItem *watched, QEvent *event)
 QGraphicsItem *HbTitleBar::primitive(const QString &itemName) const
 {
     Q_D(const HbTitleBar);
-    if (itemName == "") {
+    if (itemName.isEmpty()) {
         return 0;
     } else {
         if (itemName == "title") {

@@ -29,17 +29,22 @@
 #include "hbsliderhandle_p.h"
 #include "hbstyleoptionslider_p.h"
 #include "hbslidertickmarkslabel_p.h"
+#include "hbstyle_p.h"
 #include <hbstyle.h>
 #include <hbinstance.h>
 #include <hbtheme.h>
 #include <hbtooltip.h>
 #include <hbwidgetfeedback.h>
 #include <hbgraphicsscene.h>
+#include <hbtoucharea.h>
+#include <hbslider.h>
 #include <QGraphicsItem>
 #include <QGraphicsSceneMouseEvent>
 #ifdef HB_GESTURE_FW
 #include "hbtapgesture.h"
 #include "hbpangesture.h"
+#include "hbtapandholdgesture.h"
+
 #endif 
 
 #ifdef HB_EFFECTS
@@ -62,7 +67,7 @@ HbSliderControlPrivate::HbSliderControlPrivate( ) :
     groove( 0 ), //slider groove
     progressGroove( 0 ),//progress mask top of groove
     displayCurrValueToolTip( true ), // holds whether to show current value tooltip or not
-    toolTipAlignment( Qt::AlignTop|Qt::AlignRight ), // tooltip alignment
+    toolTipAlignment( Qt::AlignTop ), // tooltip alignment
     groovePressed( false ), // hold whether groove is pressed or not
     setDefault( false ), // holds whther default value for track press is set
     previousValue( 0 ),  // default value for track press
@@ -70,7 +75,9 @@ HbSliderControlPrivate::HbSliderControlPrivate( ) :
     handleMoving( false ),
     grooveTouchArea ( 0 ),
     enableProgressTrack ( true ),
-    userDefinedTooltipAlign ( false )
+    userDefinedTooltipAlign ( false ),
+    tooltipArea(0),
+    tooltipBorderHeight( 0 )
 {
 
     majorLabel.clear();
@@ -98,14 +105,14 @@ void HbSliderControlPrivate::init( )
    
     // creating handle
     handle = createHandle();
-    if(handle) {
+    if (handle) {
         HbStyle::setItemName( handle, "handle" );
     }
 #if defined( QT_KEYPAD_NAVIGATION ) && !defined( Q_OS_SYMBIAN )    
     q->setFocusPolicy( Qt::FocusPolicy( ( qApp->style( ) )->styleHint( QStyle::SH_Button_FocusPolicy ) ) );
 #endif
     groove = createGroove();
-    if(groove) {
+    if (groove) {
         HbStyle::setItemName( groove, "groove" );
     }
 #ifdef HB_GESTURE_FW
@@ -115,19 +122,48 @@ void HbSliderControlPrivate::init( )
     //filled item top of groove
     if ( enableProgressTrack ) {
         progressGroove = createProgressGroove();
-        if(progressGroove) {
+        if (progressGroove) {
             HbStyle::setItemName( progressGroove, "progressgroove");
         }    
     }
+    tooltipArea = new HbTouchArea(q);
     q->connect( hbInstance->theme( ), SIGNAL( changed( ) ), q, SLOT( updateTheme( ) ) );
-    q->connect( q , SIGNAL( actionTriggered( int ) ), q , SLOT( showToolTip( ) ) );
+ //   q->connect( q , SIGNAL( actionTriggered( int ) ), q , SLOT( showToolTip( ) ) );
     q->connect( q , SIGNAL( sliderReleased( ) ), q , SLOT( hideToolTip( ) ) );
 #if defined( QT_KEYPAD_NAVIGATION ) && !defined( Q_OS_SYMBIAN )
     q->setFlags( QGraphicsItem::ItemIsFocusable );
 #endif
 }
 
+int HbSliderControlPrivate::calculateSliderPosition(QPointF relativePos) 
+{
+    Q_Q (HbSliderControl);
+    qreal span = 0;
+    qreal handlePos = 0;
+    QRectF bounds = q->boundingRect( );
+    QRectF handleBounds = handle->boundingRect( );
+    bounds.adjust( 0, 0, -handleBounds.width( ), -handleBounds.height( ) );
+    // calculate handle position and span
+    switch ( q->orientation( ) ) {
+        case Qt::Horizontal:
+            handlePos = relativePos.x( ) - handleBounds.width( ) / 2;
+            span = bounds.width( );
+            break;
+        case Qt::Vertical:
+            handlePos = relativePos.y( ) - handleBounds.height( ) / 2;
+            span = bounds.height( );
+            break;
+        default:
+            break;
+    }
+    HbStyleOptionSlider opt;
+    q->initStyleOption( &opt );
+    int pressValue = QStyle::sliderValueFromPosition( opt.minimum, opt.maximum,
+        static_cast<int>( handlePos ),static_cast<int>( span ),opt.upsideDown );
+    return pressValue;
 
+
+}
 
 /*!
   \internal
@@ -147,8 +183,8 @@ HbSliderHandle *HbSliderControlPrivate::createHandle()
 QGraphicsItem *HbSliderControlPrivate::createGroove()
 {
     Q_Q( HbSliderControl );
-    QGraphicsItem *groove = qgraphicsitem_cast<QGraphicsItem*>( q->style( )->createPrimitive(
-        HbStyle::P_Slider_groove, q ) );
+    QGraphicsItem *groove = qgraphicsitem_cast<QGraphicsItem*>( HbStylePrivate::createPrimitive(
+        HbStylePrivate::P_Slider_groove, q ) );
     return groove;
 }
 /*!
@@ -158,8 +194,8 @@ QGraphicsItem *HbSliderControlPrivate::createGroove()
 QGraphicsItem *HbSliderControlPrivate::createProgressGroove()
 {
     Q_Q( HbSliderControl );
-    QGraphicsItem *proggroove = qgraphicsitem_cast<QGraphicsItem*>( q->style( )->createPrimitive(
-        HbStyle::P_Slider_progressgroove, q ) );//comes on top of groove
+    QGraphicsItem *proggroove = qgraphicsitem_cast<QGraphicsItem*>( HbStylePrivate::createPrimitive(
+        HbStylePrivate::P_Slider_progressgroove, q ) );//comes on top of groove
     return proggroove;
 }
 
@@ -201,7 +237,7 @@ void HbSliderControlPrivate::adjustHandle( )
     handle->forceSetPos( rect.topLeft( ) );
     //progress groove should be adjusted whenever handle position is changed
     if ( progressGroove ) {
-        q->style( )->updatePrimitive( progressGroove, HbStyle::P_Slider_progressgroove, &opt );
+        HbStylePrivate::updatePrimitive( progressGroove, HbStylePrivate::P_Slider_progressgroove, &opt );
     }
 }
 
@@ -301,7 +337,7 @@ HbSliderControl::HbSliderControl( Qt::Orientation orientation, QGraphicsItem *pa
   Protected constructor for initialization from derived ctor.
 */
 HbSliderControl::HbSliderControl(HbSliderControlPrivate &dd,QGraphicsItem *parent)
-	:HbAbstractSliderControl(dd,parent)
+    :HbAbstractSliderControl(dd,parent)
 {
 }
 
@@ -596,9 +632,18 @@ void HbSliderControl::hideToolTip( )
 void HbSliderControl::showToolTip( )
 {
     Q_D( HbSliderControl );
-    if ( isSliderDown( ) && d->displayCurrValueToolTip ) {
-        HbToolTip::showText( toolTip( ) , d->handle->primitive(HbStyle::P_SliderElement_touchhandle) , d->toolTipAlignment );
-    }
+    if ( d->displayCurrValueToolTip ) {
+        QRectF handleRect=d->handle->boundingRect();
+        QRectF tooltipRect = handleRect;
+        tooltipRect.setHeight ( d->tooltipBorderHeight);
+        tooltipRect.moveBottom( d->handle->pos().ry());
+        tooltipRect.moveLeft (d->handle->pos().rx());
+        d->tooltipArea->setGeometry(tooltipRect);
+        //d->tooltipArea->update();*/
+        HbToolTip::showText( toolTip( ) , d->tooltipArea, d->toolTipAlignment );
+       }
+
+
 }
 
 /*!
@@ -637,7 +682,7 @@ void HbSliderControl::mousePressEvent( QGraphicsSceneMouseEvent *event )
         return;
     }
     event->accept( );
-    if( d->onHandle( event->scenePos( ) ) ) {
+    if ( d->onHandle( event->scenePos( ) ) ) {
         HbWidgetFeedback::triggered( this, Hb::InstantPressed, Hb::ModifierSliderHandle );
         setSliderDown( true );
         d->handle->updatePrimitives( );
@@ -646,8 +691,8 @@ void HbSliderControl::mousePressEvent( QGraphicsSceneMouseEvent *event )
     else {
     // effect
 #ifdef HB_EFFECTS
-    if( d->grooveTouchArea->sceneBoundingRect( ).contains( event->scenePos( ) ) ) {
-        if( orientation( ) == Qt::Horizontal ) {   
+    if ( d->grooveTouchArea->sceneBoundingRect( ).contains( event->scenePos( ) ) ) {
+        if ( orientation( ) == Qt::Horizontal ) {   
         // effect for horizontal track press
             HbEffectInternal::add( HB_SLIDERCONTROL_TYPE,"slider_h_trackpress", "h_trackpress" );
             HbEffect::start( d->groove, HB_SLIDERCONTROL_TYPE, "h_trackrpress" );
@@ -681,7 +726,7 @@ void HbSliderControl::mousePressEvent( QGraphicsSceneMouseEvent *event )
         int pressValue = QStyle::sliderValueFromPosition( opt.minimum, opt.maximum,
             static_cast<int>( handlePos ),static_cast<int>( span ),opt.upsideDown );
         //update the groove and touch item
-        style( )->updatePrimitive( d->groove, HbStyle::P_Slider_groove, &opt );  
+        HbStylePrivate::updatePrimitive( d->groove, HbStylePrivate::P_Slider_groove, &opt );  
         // if default is set then do not increment or decrement slider value
         // just set default value to slider
         if ( d->setDefault ) {
@@ -742,7 +787,7 @@ void HbSliderControl::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
         d->groovePressed = false;
         initStyleOption( &opt );    
         // update primitive from press to normal
-        style( )->updatePrimitive( d->groove, HbStyle::P_Slider_groove, &opt );
+        HbStylePrivate::updatePrimitive( d->groove, HbStylePrivate::P_Slider_groove, &opt );
     }
     if ( event->buttons( ) ) {
         event->ignore( );
@@ -780,16 +825,45 @@ void HbSliderControl::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
 void HbSliderControl::gestureEvent(QGestureEvent *event)
 {
     Q_D(HbSliderControl);
-    if(HbTapGesture *tap = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
-            if( d->onHandle( event->mapToGraphicsScene(tap->position( ) ) ) ){
+    if ( HbTapAndHoldGesture *tapandHold = qobject_cast<HbTapAndHoldGesture *> ( event->gesture( Qt::TapAndHoldGesture ) ) ) {
+        if (tapandHold->state() == Qt::GestureStarted) {
+            QPointF relativePos = mapFromScene( event->mapToGraphicsScene(tapandHold->position( ) ) );
+            int pressValue = d->calculateSliderPosition( relativePos );
+            setToolTip(QString::number( pressValue ) );
+            QRectF handleRect=d->handle->boundingRect();
+            QRectF tooltipRect =  handleRect;
+            QRectF touchPointRect=handleRect;
+            if (orientation() == Qt::Horizontal) {
+                touchPointRect.moveCenter(QPointF( boundingRect().width()/2,boundingRect( ).height()/2 ) );
+                touchPointRect.moveLeft(relativePos.rx() - touchPointRect.width( )/2);
+
+            } else {
+                touchPointRect.moveCenter(QPointF( boundingRect().width()/2,boundingRect( ).height()/2 ) );
+                touchPointRect.moveTop( relativePos.ry() - touchPointRect.height()/2 );
+            }
+            tooltipRect.setHeight ( d->tooltipBorderHeight);
+            tooltipRect.moveBottom( touchPointRect.top() );
+            tooltipRect.moveLeft (touchPointRect.left( ) );
+            d->tooltipArea->setGeometry(tooltipRect);
+            d->tooltipArea->setGeometry(tooltipRect);
+            d->tooltipArea->update();
+            if ( d->displayCurrValueToolTip ) {
+                HbToolTip::showText( toolTip( ) , d->tooltipArea, d->toolTipAlignment );
+            }
+
+            return;
+        }
+    }
+    if ( HbTapGesture *tap = qobject_cast<HbTapGesture *> (event->gesture( Qt::TapGesture ) )) {
+        if ( d->onHandle( event->mapToGraphicsScene(tap->position( ) ) ) ) {
                 event->ignore();
                 return;
-            }
-        switch(tap->state()) {
+        }
+        switch( tap->state( ) ) {
         case Qt::GestureStarted: {
             QRectF eventRect = d->grooveTouchArea->sceneBoundingRect( );
             if ( !d->trackHandlingEnable  || maximum( ) == minimum( ) || 
-                !eventRect.contains( event->mapToGraphicsScene(tap->position( ) ) ) ){
+                !eventRect.contains( event->mapToGraphicsScene(tap->position( ) ) ) ) {
                 event->ignore( );
                 return;
             }
@@ -802,12 +876,11 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
             event->accept( );
         // effect
 #ifdef HB_EFFECTS
-            if( orientation( ) == Qt::Horizontal ) {   
+            if ( orientation( ) == Qt::Horizontal ) {   
             // effect for horizontal track press
                 HbEffectInternal::add( HB_SLIDERCONTROL_TYPE,"slider_h_trackpress", "h_trackpress" );
                 HbEffect::start( d->groove, HB_SLIDERCONTROL_TYPE, "h_trackrpress" );
-            }
-            else {
+            } else {
                 HbEffectInternal::add( HB_SLIDERCONTROL_TYPE,"slider_v_trackpress", "v_trackpress" );
                 HbEffect::start( d->groove, HB_SLIDERCONTROL_TYPE, "v_trackpress" );
             }  
@@ -816,7 +889,7 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
             HbStyleOptionSlider opt;
             d->groovePressed = true;
             initStyleOption( &opt );
-            style( )->updatePrimitive( d->groove, HbStyle::P_Slider_groove, &opt );  
+            HbStylePrivate::updatePrimitive( d->groove, HbStylePrivate::P_Slider_groove, &opt );  
             HbWidgetFeedback::triggered( this, Hb::InstantPressed );
         }
         break;
@@ -825,32 +898,8 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
                 event->ignore( );
                 return;
             }
-            qreal handlePos = 0;
-            qreal span = 0;
-            QRectF bounds = boundingRect( );
-            QRectF handleBounds = d->handle->boundingRect( );
-            bounds.adjust( 0, 0, -handleBounds.width( ), -handleBounds.height( ) );
             QPointF relativePos = mapFromScene( event->mapToGraphicsScene(tap->position( ) ) );
-            // calculate handle position and span
-            switch ( orientation( ) ) {
-                case Qt::Horizontal:
-                    handlePos = relativePos.x( ) - handleBounds.width( ) / 2;
-                    span = bounds.width( );
-                    break;
-                case Qt::Vertical:
-                    handlePos = relativePos.y( ) - handleBounds.height( ) / 2;
-                    span = bounds.height( );
-                    break;
-                default:
-                    break;
-            }
-            HbStyleOptionSlider opt;
-            initStyleOption( &opt );
-
-            int pressValue = QStyle::sliderValueFromPosition( opt.minimum, opt.maximum,
-                static_cast<int>( handlePos ),static_cast<int>( span ),opt.upsideDown );
-
-
+            int pressValue = d->calculateSliderPosition (relativePos);
             // if default is set then don't increment or decrement slider value
             // just set default value to slider
             setSliderPosition( pressValue );
@@ -859,7 +908,7 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
             HbWidgetFeedback::triggered( this, Hb::InstantReleased );
             if ( d->groovePressed ) {
 #ifdef HB_EFFECTS    
-                if( orientation( ) == Qt::Horizontal ) {   
+                if ( orientation( ) == Qt::Horizontal ) {   
                     HbEffectInternal::add( HB_SLIDERCONTROL_TYPE,"slider_h_trackrelease", "h_trackrelease" );
                     HbEffect::start( d->groove, HB_SLIDERCONTROL_TYPE, "h_trackrelease" );
                 }  else {
@@ -871,7 +920,7 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
                 d->groovePressed = false;
                 initStyleOption( &opt );    
                 // update primitive from press to normal
-                style( )->updatePrimitive( d->groove, HbStyle::P_Slider_groove, &opt );
+                HbStylePrivate::updatePrimitive( d->groove, HbStylePrivate::P_Slider_groove, &opt );
             }
          }
          break;
@@ -879,7 +928,7 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
         case Qt::GestureCanceled: {
             if ( d->groovePressed ) {
 #ifdef HB_EFFECTS    
-                if( orientation( ) == Qt::Horizontal ) {   
+                if ( orientation( ) == Qt::Horizontal ) {   
                     HbEffectInternal::add( HB_SLIDERCONTROL_TYPE,"slider_h_trackrelease", "h_trackrelease" );
                     HbEffect::start( d->groove, HB_SLIDERCONTROL_TYPE, "h_trackrelease" );
                 }  else {
@@ -891,7 +940,7 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
                 d->groovePressed = false;
                 initStyleOption( &opt );    
                 // update primitive from press to normal
-                style( )->updatePrimitive( d->groove, HbStyle::P_Slider_groove, &opt );
+                HbStylePrivate::updatePrimitive( d->groove, HbStylePrivate::P_Slider_groove, &opt );
             }
         }
         break;
@@ -900,52 +949,64 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
             break;
         }
     }
-    if (HbPanGesture *panGesture = qobject_cast<HbPanGesture*>(event->gesture(Qt::PanGesture))) {
-        switch(panGesture->state( )) {
+    if ( HbPanGesture *panGesture = qobject_cast<HbPanGesture*> (event->gesture(Qt::PanGesture) ) ) {
+        switch(panGesture->state( ) ) {
             case Qt::GestureStarted: 
             case Qt::GestureUpdated:{
                 QPointF startPoint = event->mapToGraphicsScene(panGesture->offset()+panGesture->startPos( ) );
-				//if the position is on thumb , then start moving the thumb
-                if( ( d->onHandle( startPoint) && d->grooveTouchArea->sceneBoundingRect( ).contains( startPoint))||isSliderDown( ) ) {
-                    qreal handlePos = 0;
-                    qreal span = 0;
-                    QRectF bounds = boundingRect( );
-                    QRectF handleBounds = d->handle->boundingRect( );
-                    bounds.adjust( 0, 0, -handleBounds.width( ), -handleBounds.height( ) );
-                    QPointF relativePos = mapFromScene( event->mapToGraphicsScene(panGesture->startPos( ) + panGesture->offset()) );
-                    // calculate handle position and span
-                    switch ( orientation( ) ) {
-                        case Qt::Horizontal:
-                            handlePos = relativePos.x( ) - handleBounds.width( ) / 2;
-                            span = bounds.width( );
-                            break;
-                        case Qt::Vertical:
-                            handlePos = relativePos.y( ) - handleBounds.height( ) / 2;
-                            span = bounds.height( );
-                            break;
-                        default:
-                            break;
-                    }
-                    HbStyleOptionSlider opt;
-                    initStyleOption( &opt );
-
-                    int pressValue = QStyle::sliderValueFromPosition( opt.minimum, opt.maximum,
-                        static_cast<int>( handlePos ),static_cast<int>( span ),opt.upsideDown ); 
+                //if the position is on thumb , then start moving the thumb
+                if ( ( d->onHandle( startPoint) && d->grooveTouchArea->sceneBoundingRect( ).contains( startPoint) )||isSliderDown( ) ) {
+                    QPointF relativePos = mapFromScene( event->mapToGraphicsScene(panGesture->startPos( ) + panGesture->offset() ) );
+                    int pressValue = d->calculateSliderPosition (relativePos);
                     setRepeatAction( SliderNoAction,static_cast<int>( pressValue ) );
                     setSliderDown( true );
                     setSliderPosition( pressValue );
+                    setToolTip( QString::number( pressValue ) );
                     showToolTip( );
                     d->groovePressed = false;
                     updatePrimitives();
                     d->handleMoving = true ;
                     break;
-                } else if(d->grooveTouchArea->sceneBoundingRect().contains(startPoint) ){
-                    HbStyleOptionSlider opt;
+                } else if (d->grooveTouchArea->sceneBoundingRect().contains(startPoint) ) {
+                    QPointF relativePos = mapFromScene( event->mapToGraphicsScene(panGesture->startPos( ) + panGesture->offset() ) );
+                    int pressValue = d->calculateSliderPosition (relativePos);
+                    setToolTip( QString::number( pressValue ) );
+                    QRectF handleRect=d->handle->boundingRect();
+                    QRectF tooltipRect =  handleRect;
+                    QRectF touchPointRect=handleRect;
+                    if (orientation() == Qt::Horizontal) {
+                        touchPointRect.moveCenter(QPointF( boundingRect().width()/2,boundingRect( ).height()/2 ) );
+                        touchPointRect.moveLeft(relativePos.rx() - touchPointRect.width( )/2);
+                    } else {
+                        touchPointRect.moveCenter(QPointF( boundingRect().width()/2,boundingRect( ).height()/2 ) );
+                        touchPointRect.moveTop( relativePos.ry() - touchPointRect.height()/2 );
+                    }
+                    tooltipRect.setHeight ( d->tooltipBorderHeight);
+                    tooltipRect.moveBottom( touchPointRect.top() );
+                    tooltipRect.moveLeft (touchPointRect.left( ) );
+                    d->tooltipArea->setGeometry(tooltipRect);
+                    d->tooltipArea->setGeometry(tooltipRect);
+                    d->tooltipArea->update();
+                    if ( d->displayCurrValueToolTip ) {
+                        HbToolTip::showText( toolTip( ) , d->tooltipArea, d->toolTipAlignment );
+                    }
                     d->groovePressed = true;
+                    HbStyleOptionSlider opt;
                     initStyleOption( &opt );
-                    style( )->updatePrimitive( d->groove, HbStyle::P_Slider_groove, &opt );  
-                    HbWidgetFeedback::triggered( this, Hb::InstantPressed );
+                    HbStylePrivate::updatePrimitive( d->groove, HbStylePrivate::P_Slider_groove, &opt );  
                     event->ignore();
+                    QPointF diffOffset = panGesture->offset() - panGesture->lastOffset();
+                    if (orientation() == Qt::Horizontal) {
+                        if (qAbs(diffOffset.x() ) < qAbs(diffOffset.y())) {
+                            HbAbstractSliderControl::gestureEvent(event);
+
+                        }
+                    } else {
+                        if (qAbs(diffOffset.y() ) < qAbs(diffOffset.x())) {
+                            HbAbstractSliderControl::gestureEvent(event);
+                        }
+                    }
+
                     break;
                 } else {
                     setSliderDown( false );
@@ -961,13 +1022,24 @@ void HbSliderControl::gestureEvent(QGestureEvent *event)
             break;
             case Qt::GestureFinished:
             case Qt::GestureCanceled: {
+                QPointF startPoint = event->mapToGraphicsScene(panGesture->offset()+panGesture->startPos( ) );
                 setSliderDown( false );
                 d->groovePressed = false;
                 updatePrimitives( );
                 d->handle->updatePrimitives();
-                d->handleMoving = false;
-				int pressValue = sliderPosition();
-                setRepeatAction( SliderNoAction,static_cast<int>( pressValue ) );
+                if( d->handleMoving ) {
+                    HbWidgetFeedback::triggered(this, Hb::InstantReleased, Hb::ModifierSliderHandle);
+                    d->handleMoving = false;
+                }
+                if (d->grooveTouchArea->sceneBoundingRect().contains(startPoint) ) {
+                    QPointF relativePos = mapFromScene( event->mapToGraphicsScene(panGesture->startPos( ) + panGesture->offset() ) );
+                    int pressValue = d->calculateSliderPosition (relativePos);
+                    setRepeatAction( SliderNoAction,static_cast<int>( pressValue ) );
+                    setSliderPosition( pressValue );
+                    setToolTip( QString::number( pressValue ) );
+                    showToolTip( );
+                    HbWidgetFeedback::triggered( this, Hb::InstantReleased );
+                }
                 event->ignore();
                 HbAbstractSliderControl::gestureEvent(event);
             }
@@ -988,21 +1060,21 @@ bool HbSliderControl::sceneEventFilter(QGraphicsItem *obj,QEvent *event)
         if (!isEnabled() ) {
             return false;
         }
-	    if (event->type() == QEvent::Gesture){
+        if (event->type() == QEvent::Gesture){
             gestureEvent( (QGestureEvent *) (event));
             return true;
         }
     }
     else if ( obj == d->handle) {
         event->ignore();
-	    if (event->type() == QEvent::Gesture){
+        if (event->type() == QEvent::Gesture){
             QGestureEvent *gestureEvent = static_cast<QGestureEvent *> (event);
             foreach(QGesture *g, gestureEvent->gestures()) {
                 gestureEvent->ignore(g);
             }
         }
     }
-	return false;
+    return false;
 }
 
 
@@ -1023,10 +1095,7 @@ void HbSliderControl::resizeEvent( QGraphicsSceneResizeEvent *event )
 {
     Q_D( HbSliderControl );
     QGraphicsWidget::resizeEvent( event );
-    // for Bug Fix::Ticks are not getting updated after 
-    // element is added to slider
     updatePrimitives( );
-    repolish();
     d->adjustHandle( );  
 }
 /*!
@@ -1036,11 +1105,14 @@ void HbSliderControl::resizeEvent( QGraphicsSceneResizeEvent *event )
 void HbSliderControl::polish( HbStyleParameters& params )
 {
     Q_D( HbSliderControl );
+    params.addParameter("tooltip-border-height");
     HbStyleOptionSlider option;
     initStyleOption( &option );
     HbAbstractSliderControl::polish( params );
     d->adjustHandle( );
     updatePrimitives( );
+    d->tooltipBorderHeight = params.value("tooltip-border-height").toReal();
+
 }
 
 /*!
@@ -1130,26 +1202,26 @@ void HbSliderControl::setHandleItem(QGraphicsItem *item)
 QGraphicsItem* HbSliderControl::handleItem( ) const
 {
     Q_D( const HbSliderControl );
-	if(d->handle) {
-		return d->handle->handleItem();
-	}
-	return NULL;
+    if(d->handle) {
+        return d->handle->handleItem();
+    }
+    return NULL;
 }
 
 void HbSliderControl::setHandleVisible(bool isVisible)
 {
     Q_D( HbSliderControl );
-	if(isVisible) {
-		d->handle->setVisible(true);
-	} else {
-		d->handle->setVisible(false);
-	}
+    if(isVisible) {
+        d->handle->setVisible(true);
+    } else {
+        d->handle->setVisible(false);
+    }
 }
 
 bool HbSliderControl::handleVisible( ) const
 {
     Q_D( const HbSliderControl );
-	return d->handle->isVisible();
+    return d->handle->isVisible();
 }
  
 /*!
@@ -1161,17 +1233,6 @@ void HbSliderControl::sliderChange( SliderChange  change)
     HbAbstractSliderControl::sliderChange( change );
     d->adjustHandle( );
     if ( change == SliderOrientationChange ) {
-        //Layout is not mirrored in vertical orientation with absolute ticks
-        if(d->orientation ==Qt::Horizontal) { 
-            if (!d->userDefinedTooltipAlign) {
-                d->toolTipAlignment = ( Qt::AlignTop|Qt::AlignHCenter );
-            }
-        } else {
-            if (!d->userDefinedTooltipAlign) {
-                // Bug in tooltip, cannot align it with top right
-                d->toolTipAlignment = ( Qt::AlignTop|Qt::AlignHCenter );
-            }
-        }
         repolish( );
     }
 }
@@ -1184,11 +1245,11 @@ QGraphicsItem * HbSliderControl::primitive( HbStyle::Primitive primitive ) const
 {
     Q_D( const HbSliderControl );
     switch( primitive ){
-        case HbStyle::P_Slider_groove:
+        case HbStylePrivate::P_Slider_groove:
             return ( d->groove );
-        case HbStyle::P_Slider_thumb:
+        case HbStylePrivate::P_Slider_thumb:
             return ( d->handle );
-        case HbStyle::P_Slider_progressgroove:
+        case HbStylePrivate::P_Slider_progressgroove:
             return ( d->progressGroove );
         default:return( NULL );
     }
@@ -1214,8 +1275,6 @@ QVariant HbSliderControl::itemChange( GraphicsItemChange change, const QVariant 
                     d->handle->updatePrimitives( );
                 }
                 d->groovePressed = false;
-            } else {
-                repolish();
             }
         break;
         case ItemSceneHasChanged: {
@@ -1257,11 +1316,11 @@ void HbSliderControl::updatePrimitives( )
         opt.state &= ~QStyle::State_Enabled;
     }
     if ( d->groove ) {
-        style( )->updatePrimitive( d->groove, HbStyle::P_Slider_groove, &opt );
+        HbStylePrivate::updatePrimitive( d->groove, HbStylePrivate::P_Slider_groove, &opt );
     }
 
     if( d->progressGroove ) {
-            style( )->updatePrimitive( d->progressGroove, HbStyle::P_Slider_progressgroove, &opt );
+            HbStylePrivate::updatePrimitive( d->progressGroove, HbStylePrivate::P_Slider_progressgroove, &opt );
     }
 
 }
@@ -1322,8 +1381,8 @@ void HbSliderControl::enableTrackEventHandling( bool enable )
     }
     if ( enable ) {
         //creating groove touch area
-        d->grooveTouchArea =  qgraphicsitem_cast<QGraphicsItem*>( style( )->createPrimitive(
-            HbStyle::P_SliderElement_touchgroove, this ) );
+        d->grooveTouchArea =  qgraphicsitem_cast<QGraphicsItem*>( HbStylePrivate::createPrimitive(
+            HbStylePrivate::P_SliderElement_touchgroove, this ) );
         if ( d->grooveTouchArea ) {
             HbStyle::setItemName( d->grooveTouchArea, "groovetoucharea" );
         }
@@ -1332,7 +1391,9 @@ void HbSliderControl::enableTrackEventHandling( bool enable )
 #ifdef HB_GESTURE_FW
             ungrabGesture(Qt::TapGesture);
             ungrabGesture(Qt::PanGesture);
+            ungrabGesture(Qt::TapAndHoldGesture);
             touchArea->grabGesture(Qt::TapGesture);
+            touchArea->grabGesture(Qt::TapAndHoldGesture);
             touchArea->grabGesture(Qt::PanGesture);
 #endif 
         }

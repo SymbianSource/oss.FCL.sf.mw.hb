@@ -30,7 +30,6 @@
 #include "hbxmlloaderabstractactions_p.h"
 
 #include <hbglobal.h>
-#include <hbdeviceprofile.h>
 
 #include <QGraphicsWidget>
 #include <QGraphicsLayout>
@@ -49,6 +48,7 @@
 
 class HbXmlLoaderAbstractPrivate;
 struct HbXmlLengthValue;
+class HbMainWindow;
 
 class HB_CORE_PRIVATE_EXPORT HbXmlLoaderBaseActions : public HbXmlLoaderAbstractActions
 {
@@ -77,7 +77,7 @@ class HB_CORE_PRIVATE_EXPORT HbXmlLoaderBaseActions : public HbXmlLoaderAbstract
         QGraphicsWidget* findWidget(const QString &name);
         QObject* findObject(const QString &name);
 
-	public:
+    public:
 
         virtual bool pushDocument(const QString& context);
         virtual bool pop(const HbXml::ElementType type);
@@ -96,7 +96,7 @@ class HB_CORE_PRIVATE_EXPORT HbXmlLoaderBaseActions : public HbXmlLoaderAbstract
         bool toPixels(const HbXmlLengthValue &lengthVal, qreal& result) const;
         QString translate(const QString &value, const QString &comment);
         Hb::Edge getAnchorOppositeEdge( Hb::Edge edge ) const;
-		
+        
     protected:
         QString mContext;
 
@@ -107,9 +107,7 @@ class HB_CORE_PRIVATE_EXPORT HbXmlLoaderBaseActions : public HbXmlLoaderAbstract
     private:
         Q_DISABLE_COPY(HbXmlLoaderBaseActions)
     public:
-#ifndef HB_BIN_CSS
-        HbDeviceProfile mCurrentProfile;
-#endif
+        const HbMainWindow* mMainWindow;
 };
 
 #endif // HBXMLLOADERBASEACTIONS_P_H

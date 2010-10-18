@@ -1,192 +1,46 @@
-#Button
-
-qtg_fr_btn_normal
-qtg_fr_btn_pressed
-qtg_fr_btn_latched
-qtg_fr_btn_highlight
-qtg_fr_btn_latched_highlight
-qtg_fr_btn_disabled
-
-#Carousel
-
-qtg_fr_strip_v
-qtg_fr_crsl_h
-qtg_fr_crsl_highlight
-qtg_fr_crsl_preview
-
-#Editor
-
-qtg_fr_editor
-
-#Find pane
-
-qtg_fr_find
-
-#Form
-
-qtg_fr_form_value
 
 #Grid
 
-qtg_fr_grid_normal
-qtg_fr_grid_highlight
-qtg_fr_grid_pressed
-
-#List
-
-qtg_fr_list_normal
-qtg_fr_list_highlight
-qtg_fr_list_pressed
-qtg_fr_list_parent_normal
-qtg_fr_convlist_sent_normal
-qtg_fr_convlist_sent_highlight
-qtg_fr_convlist_sent_pressed
-qtg_fr_convlist_received_normal
-qtg_fr_convlist_received_highlight
-qtg_fr_convlist_received_pressed
-
-#Background
-
-#Navigational text
-
-qtg_indi_navi_prev
-qtg_indi_navi_next
-
-#Navi pane
-
-qtg_graf_navipane_bg_prt
-qtg_graf_navipane_bg_lsc
-qtg_fr_navipane_mask
-
-#Popup
-
-qtg_fr_popup_list_normal
-qtg_fr_popup_list_pressed
-qtg_fr_popup_list_highlight
-qtg_fr_popup_list_parent_normal
 qtg_fr_popup_grid_normal
-qtg_fr_popup_grid_pressed
 qtg_fr_popup_grid_highlight
-qtg_indi_popup_sub
-qtg_graf_dimming_image
-qtg_fr_popup_shadow
-qtg_fr_popup
-qtg_fr_popup_secondary
-qtg_fr_popup_heading_divider
-qtg_fr_popup_preview
-qtg_fr_popup_preview
+qtg_fr_popup_grid_pressed
+qtg_fr_popup_grid_latched
+qtg_fr_popup_trans_grid_normal
+
 
 #Progress bar
 
-qtg_fr_progbar_frame
-qtg_fr_progbar_filled
-qtg_graf_progbar_wait
-qtg_fr_progbar_mask
+qtg_fr_progbar_v_frame
+qtg_fr_progbar_v_filled
+qtg_graf_progbar_v_wait
+qtg_fr_progbar_v_mask
 
-#Progressive slider
-
-qtg_fr_progslider_frame
-qtg_fr_progslider_pressed
-qtg_fr_progslider_loaded
-qtg_fr_progslider_played
-qtg_graf_progslider_handle_normal
-qtg_graf_progslider_handle_pressed
-qtg_graf_progslider_rated
-qtg_graf_progslider_unrated
-
-#Query
 
 #Slider
 
-qtg_fr_slider_v_frame
+qtg_fr_slider_v_frame_normal
+qtg_fr_slider_v_frame_pressed
 qtg_fr_slider_v_filled
-qtg_graf_slider_v_handle_normal
-qtg_graf_slider_v_tick_minor
-qtg_graf_slider_v_tick_major
-qtg_fr_slider_h_frame
-qtg_fr_slider_h_filled
-qtg_graf_slider_h_handle_normal
-qtg_graf_slider_h_tick_minor
-qtg_graf_slider_h_tick_major
-qtg_indi_slider_vol_up
-qtg_indi_slider_vol_down
-qtg_indi_slider_muted
-qtg_indi_slider_unmuted
-qtg_indi_slider_zoom_in
-qtg_indi_slider_zoom_out
 
-#Tabs
-
-qtg_fr_tab_active
-qtg_fr_tab_passive_normal
-qtg_fr_tab_passive_pressed
-qtg_fr_tab_mask
 
 #Toolbar
 
-qtg_fr_tb_h_normal
-qtg_fr_tb_h_pressed
-qtg_fr_tb_h_latched
-qtg_fr_tb_h_disabled
 qtg_fr_tb_v_normal
+qtg_fr_tb_v_highlight
 qtg_fr_tb_v_pressed
 qtg_fr_tb_v_latched
 qtg_fr_tb_v_disabled
+qtg_fr_tb_trans_v_normal
+qtg_fr_tb_trans_v_highlight
+qtg_fr_tb_trans_v_pressed
+qtg_fr_tb_trans_v_latched
+qtg_fr_tb_trans_v_disabled
 
-#Toolbar extension
-
-qtg_fr_tb_ext
 
 #Scrollbar
 
-qtg_fr_scroll_v_handle
-qtg_fr_scroll_v_frame
-qtg_fr_scroll_h_handle
-qtg_fr_scroll_h_frame
+qtg_fr_scroll_v_active_handle_normal
+qtg_fr_scroll_v_active_frame_normal
+qtg_fr_scroll_v_active_handle_pressed
+qtg_fr_scroll_v_active_frame_pressed
 
-#Softkeys
-
-#Soft notifications
-
-#Status pane
-
-qtg_fr_status_normal
-qtg_fr_status_pressed
-qtg_fr_status_latched
-qtg_indi_status_options
-
-
-
-
-
-# --------------------------------------------------------------------------
-# OLD GRAPHICS NAMES, TO BE REMOVED ONCE THE FILENAMES HAVE BEEN CHANGED !!!
-# --------------------------------------------------------------------------
-
-qt_fr_button_normal
-qt_fr_button_pressed
-qsn_fr_button_highlight
-qsn_fr_button_inactive
-qsn_fr_button_normal
-qsn_fr_button_pressed
-qt_fr_text_query
-options_higlight
-options_bg
-hb_slider_popup_bg
-qgn_graf_popup_trans
-qt_prog_bar_loaded
-qt_prog_bar_played
-qt_prog_bar_handle
-qt_prog_bar_rated
-qt_prog_bar_unrated
-qt_tab_selected
-qt_tab_unselected
-qt_tb_prt
-qt_tb_prt_left_pressed
-qt_tb_lsc
-qt_tb_lsc_pressed
-qsn_cp_scroll_handle_bottom
-qsn_cp_scroll_bg_bottom
-qsn_cp_scroll_horizontal_handle_bottom
-qsn_cp_scroll_horizontal_bg_bottom
-drop_arrow

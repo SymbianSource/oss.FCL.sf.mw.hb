@@ -86,6 +86,7 @@ namespace HbXml {
         ActionCreateStackedLayout,
         ActionAddStackedLayoutItem,
         ActionCreateNullLayout,
+        ActionSetBackground,
         ActionEnd
     };
 
@@ -101,22 +102,7 @@ class HbWidget;
 
 struct HB_CORE_PRIVATE_EXPORT HbXmlLengthValue
 {
-    enum Type {
-        None = 0,
-        PlainNumber,
-        Pixel,
-        Unit,
-        Millimeter,
-        Variable,
-        Expression
-    };
-
-    HbXmlLengthValue() : mValue(0), mString(QString()), mType(None) {};
-    HbXmlLengthValue(qreal value, Type type) : mValue(value), mString(QString()), mType(type) {};
-
-    qreal mValue;
-    QString mString;
-    Type mType;
+    QList<int> mValues;
 };
 
 HB_CORE_PRIVATE_EXPORT QDataStream &operator<<(QDataStream &, const HbXmlLengthValue &);
@@ -188,7 +174,7 @@ public:
         ATTR_VERTICALPOLICY,
         ATTR_HORIZONTALSTRETCH,
         ATTR_VERTICALSTRETCH,
-		ATTR_COMMENT,
+        ATTR_COMMENT,
         ATTR_WIDGET,
         ATTR_VERSION,
         ATTR_FONTSPECROLE,
@@ -303,6 +289,8 @@ public:
         SL_STACKITEM, 
         SL_ITEMNAME, 
         SL_INDEX,
+
+        TYPE_BACKGROUND, 
 
         NUMBER_OF_LEXEMS // Keep this last!
     };

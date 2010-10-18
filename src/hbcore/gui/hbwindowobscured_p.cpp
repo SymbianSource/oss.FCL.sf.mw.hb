@@ -26,6 +26,7 @@
 #include <qdebug.h>
 
 #include "hbmainwindow.h"
+#include "hbmainwindow_p.h"
 #include "hbwindowobscured_p.h"
 #include "hbinstance.h"
 #include "hbevent.h"
@@ -77,7 +78,7 @@ bool HbWindowObscured::eventFilter(void *message, long *result)
     //Call the previous event filter if there is one, else return false with no filtering.
     return prevEventFilter ? prevEventFilter(message, result) : false;
 }
-#elif defined(Q_WS_S60) //eventfilter implementation for symbian.
+#elif defined(Q_OS_SYMBIAN) //eventfilter implementation for symbian.
 bool HbWindowObscured::eventFilter(void *message, long *result)
 {
     QSymbianEvent *symEvent = static_cast<QSymbianEvent *>(message);
@@ -108,10 +109,12 @@ bool HbWindowObscured::eventFilter(void *message, long *result)
         }
         }
     }
-    //Call the previous event filter if there is one, else return false with no filtering.
-    return prevEventFilter ? prevEventFilter(message, result) : false;
+    // If there was an event filter set previously then call it. Otherwise let the common
+    // helper function decide what to do (true = eat event, false = let through).
+    return prevEventFilter ? prevEventFilter(message, result)
+        : HbMainWindowPrivate::shouldStopEvent(message, result);
 }
-#else //defined(Q_WS_S60)
+#else //defined(Q_OS_SYMBIAN)
 //Generic evenfilter for non-supported platform i.e windows. Do nothing.
 bool HbWindowObscured::eventFilter(void *, long *)
 {

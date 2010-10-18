@@ -86,6 +86,14 @@ class HB_AUTOTEST_EXPORT HbAbstractEditPrivate: public HbWidgetPrivate {
     typedef HbValidator::ChangeSource CursorChange;
 
 public:
+
+    enum CursorType {
+        CursorTypeBlinking,
+        CursorTypeStill,
+        CursorTypeNone,
+    };
+
+public:
     HbAbstractEditPrivate ();
     virtual ~HbAbstractEditPrivate ();
 
@@ -107,7 +115,11 @@ public:
     void repaintOldAndNewSelection(const QTextCursor &oldSelection);
     void updateCurrentCharFormat();
     QRectF cursorRectPlusUnicodeDirectionMarkers(int position) const;
-    void setBlinkingCursorEnabled(bool enable);
+    void updateCursorType();
+    void updateCursorType(bool hasInputFocus);
+    void setCursorType(CursorType type);
+    // To be used by derived classes to set cursor color
+    void setCursorColor(const QColor& color);
     void repaintCursor();
     void setTextInteractionFlags(Qt::TextInteractionFlags flags);
     void cursorChanged(CursorChange origin);
@@ -117,9 +129,9 @@ public:
     QRectF cursorRect(const QTextCursor &cursor) const;
     QRectF cursorRect() const;
     QRectF selectionRect(const QTextCursor &cursor) const;
-    QRectF selectionRect() const;
     QRectF rectForPositionInCanvasCoords(int position, QTextLine::Edge edge) const;
     QRectF viewPortRect() const;
+    QPointF constrainHitTestPoint(const QPointF& point);
     QValidator::State validateContent(int position, int charsRemoved, int charsAdded);
     void initValidator();
     bool undo();
@@ -130,8 +142,9 @@ public:
     bool canFormat() const;
     virtual bool isCursorVisible() const;
 
+    void gestureEvent(QGestureEvent* event, HbWidget* widget = 0);
     void longTapGesture(const QPointF &point);
-    void tapGesture(const QPointF &point);
+    void tapGesture(const QPointF &point, bool delayMenu);
     void gestureReceived();
 
     void sendInputPanelEvent(QEvent::Type type);
@@ -144,7 +157,7 @@ public:
     bool hasAcceptableInput() const;
     void sendMouseEventToInputContext(const QPointF &tapPos) const;
     virtual void updateEditingSize();
-    void drawSelectionEdges(QPainter *painter, QAbstractTextDocumentLayout::PaintContext);
+    void drawCursor(QPainter *painter, QAbstractTextDocumentLayout::PaintContext);
     HbSmileyEngine* smileyEngineInstance() const;
 
     virtual void drawContentBackground(QPainter *painter,
@@ -157,12 +170,13 @@ public:
     void _q_updateBlock(QTextBlock block);
     void _q_contentsChanged();
     void _q_contentsChange(int position, int charsRemoved, int charsAdded);
-    void _q_selectionChanged();
+    void _q_selectionChanged(const QTextCursor& oldSelection, const QTextCursor& newSelection);
     void _q_scrollStarted();
     void _q_scrollEnded();
     static Qt::Alignment alignmentFromString(const QString &text);
 
     void validateAndCorrect();
+    QSizeF calculatePreferredDocSize() const;
 
     QTextDocument *doc;
     QTextDocument *placeholderDoc;
@@ -184,6 +198,9 @@ public:
 
     QTextCharFormat lastCharFormat;
     QBasicTimer cursorBlinkTimer;
+    QBasicTimer doubleTapTimer;
+    int tapCounter;
+    bool showContextMenu;
 
     int preeditCursor;
     bool preeditCursorVisible; // used to hide the cursor in the preedit area
@@ -196,6 +213,7 @@ public:
     bool hadSelectionOnMousePress;
 
     HbSelectionControl *selectionControl;
+    bool enableSelectionControl;
 
     bool acceptSignalContentsChange;
     bool acceptSignalContentsChanged;
@@ -212,6 +230,10 @@ public:
     QTextCursor nextCharCursor;
 
     bool updatePrimitivesInProgress;
+    bool enableMagnifier;
+    CursorType cursorType;
+    QColor cursorColor;
+
 
 private:
     static HbAbstractEditPrivate *d_ptr(HbAbstractEdit *edit) {

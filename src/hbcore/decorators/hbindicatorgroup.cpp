@@ -29,6 +29,7 @@
 
 #include "hbiconitem.h"
 #include "hbiconanimator.h"
+#include "hbstyle_p.h"
 
 #if defined(Q_OS_SYMBIAN)
 #include "hbindicatorsym_p.h"
@@ -153,13 +154,13 @@ void HbIndicatorGroupPrivate::startAddingEffect()
     if (mIndicatorAdded) {
         // get the original positions for the first time
         if (mOriginalPos.count() == 0) {
-            for (int i = 0; i < mIcons.size(); ++i) {
+            for (int i = 0; i < indicatorIconCount; ++i) {
                 mOriginalPos.append(mIcons[i]->pos());
             }
         }
         // Move positions one to left
         if (mIndicatorType == HbIndicatorGroup::NotificationType) {
-            for (int i = mIcons.size() - 1; i > 0; --i) {
+            for (int i = indicatorIconCount - 1; i > 0; --i) {
                 mIcons[i]->setPos(mIcons[i - 1]->pos());
              }
         }
@@ -188,14 +189,14 @@ void HbIndicatorGroupPrivate::startRemovingEffect()
         if (index >= 0) {
             HbEffect::start(mIcons[index], "indicator", "disappear", q, "disappearEffectFinnished");
             if (mIndicatorType == HbIndicatorGroup::NotificationType) {
-                 for (int i = mIcons.size() - 1; i > index; --i) {
+                 for (int i = indicatorIconCount - 1; i > index; --i) {
                     mIcons[i]->setPos(mIcons[i - 1]->pos());
                  }
-                for (int i = index + 1; i < mIcons.size(); ++i) {
+                for (int i = index + 1; i < indicatorIconCount; ++i) {
                     HbEffect::start(mIcons[i], "indicator", "move_left");
                 }
             } else {
-                for (int i = index + 1; i < mIcons.size(); ++i) {
+                for (int i = index + 1; i < indicatorIconCount; ++i) {
                     HbEffect::start(mIcons[i], "indicator", "move_right");
                 }
             }
@@ -210,8 +211,10 @@ int HbIndicatorGroupPrivate::findIndicatorIcon(const QString &iconPath) const
 {
     int index = -1;
 
-    for (int i = 0; i < mIcons.size(); ++i) {
-        if (static_cast<HbIconItem*>(mIcons[i])->iconName() == iconPath) {
+    HbIconItem *iconItem = 0;
+    for (int i = 0; i < indicatorIconCount; ++i) {
+        iconItem = qgraphicsitem_cast<HbIconItem *>(mIcons[i]);
+        if (iconItem && iconItem->iconName() == iconPath) {
             index = i;
             break;
         }
@@ -254,8 +257,9 @@ void HbIndicatorGroup::delayedConstruction()
 void HbIndicatorGroup::currentViewChanged(HbView *view)
 {
     Q_D(HbIndicatorGroup);
-    for (int i = 0; i < d->mIcons.size(); ++i) {
-        HbIconItem *iconItem = qgraphicsitem_cast<HbIconItem *>(d->mIcons.at(i));
+    HbIconItem *iconItem = 0;
+    for (int i = 0; i < indicatorIconCount; ++i) {
+        iconItem = qgraphicsitem_cast<HbIconItem *>(d->mIcons[i]);
         if (iconItem) {
             iconItem->animator().setOwnerView(view);
         }
@@ -265,10 +269,10 @@ void HbIndicatorGroup::currentViewChanged(HbView *view)
 void HbIndicatorGroup::createPrimitives()
 {
     Q_D(HbIndicatorGroup);
-    d->mIcons.append(style()->createPrimitive(HbStyle::P_IndicatorGroup_icon1, this));
-    d->mIcons.append(style()->createPrimitive(HbStyle::P_IndicatorGroup_icon2, this));
-    d->mIcons.append(style()->createPrimitive(HbStyle::P_IndicatorGroup_icon3, this));
-    d->mIcons.append(style()->createPrimitive(HbStyle::P_IndicatorGroup_icon4, this));
+    d->mIcons[0] = HbStylePrivate::createPrimitive(HbStylePrivate::P_IndicatorGroup_icon1, this);
+    d->mIcons[1] = HbStylePrivate::createPrimitive(HbStylePrivate::P_IndicatorGroup_icon2, this);
+    d->mIcons[2] = HbStylePrivate::createPrimitive(HbStylePrivate::P_IndicatorGroup_icon3, this);
+    d->mIcons[3] = HbStylePrivate::createPrimitive(HbStylePrivate::P_IndicatorGroup_icon4, this);
 }
 
 void HbIndicatorGroup::updatePrimitives()
@@ -278,13 +282,13 @@ void HbIndicatorGroup::updatePrimitives()
     initStyleOption(&option);
     int index(0);
     index = d->setIconName(option, index);
-    style()->updatePrimitive(d->mIcons[0], HbStyle::P_IndicatorGroup_icon1, &option);
+    HbStylePrivate::updatePrimitive(d->mIcons[0], HbStylePrivate::P_IndicatorGroup_icon1, &option);
     index = d->setIconName(option, index);
-    style()->updatePrimitive(d->mIcons[1], HbStyle::P_IndicatorGroup_icon2, &option);
+    HbStylePrivate::updatePrimitive(d->mIcons[1], HbStylePrivate::P_IndicatorGroup_icon2, &option);
     index = d->setIconName(option, index);
-    style()->updatePrimitive(d->mIcons[2], HbStyle::P_IndicatorGroup_icon3, &option);
+    HbStylePrivate::updatePrimitive(d->mIcons[2], HbStylePrivate::P_IndicatorGroup_icon3, &option);
     index = d->setIconName(option, index);
-    style()->updatePrimitive(d->mIcons[3], HbStyle::P_IndicatorGroup_icon4, &option);
+    HbStylePrivate::updatePrimitive(d->mIcons[3], HbStylePrivate::P_IndicatorGroup_icon4, &option);
 
     if (d->mIndicatorAdded) {
         d->startAddingEffect();
@@ -338,7 +342,7 @@ void HbIndicatorGroup::moveEffectFinnished(const HbEffect::EffectStatus &status)
     if (status.reason == Hb::EffectFinished || status.reason == Hb::EffectCancelled
         || status.reason == Hb::EffectNotStarted) {
         // Reset the positions and transformations
-        for (int i = 0; i < d->mIcons.size(); ++i) {
+        for (int i = 0; i < indicatorIconCount; ++i) {
             d->mIcons[i]->resetTransform();
             d->mIcons[i]->setPos(d->mOriginalPos[i]);
         }
@@ -350,8 +354,8 @@ void HbIndicatorGroup::disappearEffectFinnished(const HbEffect::EffectStatus &st
     Q_D(HbIndicatorGroup);
     if (status.reason == Hb::EffectFinished || status.reason == Hb::EffectCancelled
         || status.reason == Hb::EffectNotStarted) {
-            // Reset the positions and transformations and opacity
-        for (int i = 0; i < d->mIcons.size(); ++i) {
+        // Reset the positions and transformations and opacity
+        for (int i = 0; i < indicatorIconCount; ++i) {
             d->mIcons[i]->resetTransform();
             d->mIcons[i]->setOpacity(1.0);
             d->mIcons[i]->setPos(d->mOriginalPos[i]);

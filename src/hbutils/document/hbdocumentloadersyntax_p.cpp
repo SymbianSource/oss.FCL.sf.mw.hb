@@ -39,7 +39,7 @@
 
 // Document loader version number
 #define VERSION_MAJOR 1
-#define VERSION_MINOR 2
+#define VERSION_MINOR 3
 
 #define MIN_SUPPORTED_VERSION_MAJOR 0
 #define MIN_SUPPORTED_VERSION_MINOR 1
@@ -1119,6 +1119,22 @@ bool HbDocumentLoaderSyntax::processVariable()
         if (!result) {
             qWarning() << "Invalid tooltip, line " << mReader.lineNumber();
         }
+    } else if ( type == lexemValue( TYPE_BACKGROUND ) ) {
+        const QString name = attribute( ATTR_NAME );
+        const QString type = attribute( ATTR_TYPE );
+
+        result = true;
+
+        HbFrameDrawer::FrameType frameType(HbFrameDrawer::Undefined);
+        if (!type.isEmpty()) {
+            result = convertFrameType(type, frameType);
+        }
+        if (result) {
+            result = mActions->setBackground(name, frameType);
+        }
+        if (!result) {
+            qWarning() << "Invalid background, line " << mReader.lineNumber();
+        }
     }
 
     return result;
@@ -1352,9 +1368,9 @@ bool HbDocumentLoaderSyntax::createVariable( HbXmlVariable& variable )
 }
 
 bool HbDocumentLoaderSyntax::convertSizeHintType(
-        const QString &type,
-        Qt::SizeHint &resultHint,
-        bool &resultFixed)
+    const QString &type,
+    Qt::SizeHint &resultHint,
+    bool &resultFixed)
 {
     bool ok = true;
     resultFixed = false;
@@ -1373,6 +1389,26 @@ bool HbDocumentLoaderSyntax::convertSizeHintType(
     }
     return ok;
 }
+
+bool HbDocumentLoaderSyntax::convertFrameType(
+    const QString &type,
+    HbFrameDrawer::FrameType &resultType)
+{
+    bool ok = true;
+    if (type == QLatin1String("OnePiece")) {
+        resultType = HbFrameDrawer::OnePiece;
+    } else if (type == QLatin1String("ThreePiecesHorizontal")) {
+        resultType = HbFrameDrawer::ThreePiecesHorizontal;
+    } else if (type == QLatin1String("ThreePiecesVertical")) {
+        resultType = HbFrameDrawer::ThreePiecesVertical;
+    } else if (type == QLatin1String("NinePieces")) {
+        resultType = HbFrameDrawer::NinePieces;
+    } else {
+        ok = false;
+    }
+    return ok;
+}
+
 
 QString HbDocumentLoaderSyntax::version()
 {

@@ -64,22 +64,26 @@ void HbTypefaceInfoPrivate::initialize()
 
     mTypefaceVector = HbThemeClient::global()->typefaceInfo();
 
-    if( !mTypefaceVector ) {
+    if ( !mTypefaceVector ) {
         HbTypefaceInfoDatabase *heapDatabase = HbTypefaceInfoDatabase::instance( HbMemoryManager::HeapMemory );
-        mTypefaceVector = HbMemoryUtils::getAddress<HbTypefaceInfoVector>(HbMemoryManager::HeapMemory,
+        
+        if ( heapDatabase ){    
+            mTypefaceVector = HbMemoryUtils::getAddress<HbTypefaceInfoVector>(HbMemoryManager::HeapMemory,
                                                 heapDatabase->typefaceInfoVectorOffset());
-        if( heapDatabase && mTypefaceVector ) {
-#ifdef HBTYPEFACEINFO_DEBUG_ENABLE
-            qDebug() << "Read " << mTypefaceVector->size() << " typefaces in heap mode";
-#endif // HBTYPEFACEINFO_DEBUG_ENABLE
         }
+
+#ifdef HBTYPEFACEINFO_DEBUG_ENABLE        
+        if ( heapDatabase && mTypefaceVector ) {
+            qDebug() << "Read " << mTypefaceVector->size() << " typefaces in heap mode";
+        }
+#endif // HBTYPEFACEINFO_DEBUG_ENABLE
     } else {
 #ifdef HBTYPEFACEINFO_DEBUG_ENABLE
         qDebug() << "HbTypefaceInfoPrivate, server connection works! Read " << mTypefaceVector->size() << " typefaces";
 #endif // HBTYPEFACEINFO_DEBUG_ENABLE
     }
 
-    if( !mTypefaceVector ) {
+    if ( !mTypefaceVector ) {
         qWarning() << "HbTypefaceInfoPrivate, unable to allocate typeface vector";
         return;
     }
@@ -93,7 +97,7 @@ HbTypefaceInfo::HbTypefaceInfo( QObject *parent )
     : QObject( parent ),
     d( new HbTypefaceInfoPrivate )
 {
-	d->initialize();
+    d->initialize();
 }
 
 
@@ -110,7 +114,7 @@ bool HbTypefaceInfoPrivate::containsRole(HbFontSpec::Role role, int &index) cons
     }
     for( int i = 0; i < mTypefaceVector->size(); i++ ) {
         if (mTypefaceVector->at(i).mRoleEnum == role && 
-			mTypefaceVector->at(i).mIsAlias == false) {
+            mTypefaceVector->at(i).mIsAlias == false) {
             index = i;
             return true;
         }
@@ -135,97 +139,97 @@ bool HbTypefaceInfoPrivate::containsFamily(const QString &typefaceFamily, int &i
 }
 bool HbTypefaceInfo::containsFamily(const QString &typefaceFamily) const
 {
-	int dummy;
-	return d->containsFamily(typefaceFamily, dummy);
+    int dummy;
+    return d->containsFamily(typefaceFamily, dummy);
 }
 bool HbTypefaceInfo::tryGetFamilyFromAliasName( 
-	const QString &aliasFamily, 
-	QString &typefaceFamily,
-	int &weight) const
+    const QString &aliasFamily, 
+    QString &typefaceFamily,
+    int &weight) const
 {
     for (int i = 0; i < d->mTypefaceVector->size(); i++) {
         if (d->mTypefaceVector->at(i).mIsAlias == true &&
             !aliasFamily.compare(d->mTypefaceVector->at(i).mAliasedFamily, Qt::CaseInsensitive)) {
             typefaceFamily = d->mTypefaceVector->at(i).mFamily ;
-			weight = d->mTypefaceVector->at(i).mIsBold ? QFont::Bold : QFont::Normal;
-			return true;
+            weight = d->mTypefaceVector->at(i).mIsBold ? QFont::Bold : QFont::Normal;
+            return true;
         }
     }
-	return false;
+    return false;
 }
 int HbTypefaceInfo::getWeight(const QString &typefaceFamily) const
 {
-	int index, weight;
-	if (d->containsFamily( typefaceFamily, index)) {
-		weight = d->mTypefaceVector->at(index).mIsBold ? QFont::Bold : QFont::Normal;
-	}
-	else {
-		weight = QFont::Normal;
-	}
-	return weight;
+    int index, weight;
+    if (d->containsFamily( typefaceFamily, index)) {
+        weight = d->mTypefaceVector->at(index).mIsBold ? QFont::Bold : QFont::Normal;
+    }
+    else {
+        weight = QFont::Normal;
+    }
+    return weight;
 }
 void HbTypefaceInfo::roleToTypeface(HbFontSpec::Role role, QString& typefaceFamily, int& weight) const
 {
     int index;
 
-	bool validRole = d->containsRole( role, index );
-	if (!validRole) {
-		role = HbFontSpec::Undefined;
-		validRole = d->containsRole( role, index );
-	if( !validRole ) {
-		    qWarning( "HbTypefaceInfo: cannot find corresponding font role %d, line %d", role, __LINE__ );
-	    return;
-		}
-	}
+    bool validRole = d->containsRole( role, index );
+    if (!validRole) {
+        role = HbFontSpec::Undefined;
+        validRole = d->containsRole( role, index );
+    if( !validRole ) {
+            qWarning( "HbTypefaceInfo: cannot find corresponding font role %d, line %d", role, __LINE__ );
+        return;
+        }
+    }
 
-	typefaceFamily = d->mTypefaceVector->at( index ).mFamily;
-	weight = d->mTypefaceVector->at( index ).mIsBold ? QFont::Bold : QFont::Normal;
+    typefaceFamily = d->mTypefaceVector->at( index ).mFamily;
+    weight = d->mTypefaceVector->at( index ).mIsBold ? QFont::Bold : QFont::Normal;
 
-	return;
+    return;
 }
 
 int HbTypefaceInfo::textHeightToSizeInPixels(
-	const QString& typefaceFamily,
-	int weight,
-	qreal textHeight) const
+    const QString& typefaceFamily,
+    int weight,
+    qreal textHeight) const
 {
-	Q_UNUSED(weight);
-	int index;
-	int heightIndex;
+    Q_UNUSED(weight);
+    int index;
+    int heightIndex;
 
-	if (! d->containsFamily( typefaceFamily, index )) {
-		// need to generate on server size, not supported yet
-	    qWarning( "HbTypefaceInfo:textHeightToSizeInPixels no font family %s, line %d", typefaceFamily.toLatin1().data(),  __LINE__ );
-	    return 1;
-	}
+    if (! d->containsFamily( typefaceFamily, index )) {
+        // need to generate on server size, not supported yet
+        qWarning( "HbTypefaceInfo:textHeightToSizeInPixels no font family %s, line %d", typefaceFamily.toLatin1().data(),  __LINE__ );
+        return 1;
+    }
 
-	HbTypefaceInfoItem *item = &( d->mTypefaceVector->at( index ) );
+    HbTypefaceInfoItem *item = &( d->mTypefaceVector->at( index ) );
 
-	int size(-1);
+    int size(-1);
 
-	int flooredPaneHeight = qRound(textHeight-0.5);
-	if ( item->tableContainsHeight( flooredPaneHeight, heightIndex ) ) {
-		size = item->mDownSizeTable.at( heightIndex ).pixelSize;
-	} else if ( textHeight < item->mLowestExtent ) { // Assumed that downsize info goes quite low, below really usable fonts
-		size = qRound( textHeight );
-	} else if ( textHeight < item->mHighestExtent ) { // interpolate. May fail and leave size unset.
-	    int indexLowerB = -1;
-	    int indexUpperB = -1;
-	    int lowerBValue = 0xffffff;
-	    int upperBValue = 0xffffff;
-	    for( int i = 0; i < item->mDownSizeTable.size(); i++ ) {
-	        int current = item->mDownSizeTable.at( i ).textHeight;
-	        if( ( current < lowerBValue ) && ( current >= flooredPaneHeight ) ) {
-	            lowerBValue = current;
-	            indexLowerB = i;
-	        }
+    int flooredPaneHeight = qRound(textHeight-0.5);
+    if ( item->tableContainsHeight( flooredPaneHeight, heightIndex ) ) {
+        size = item->mDownSizeTable.at( heightIndex ).pixelSize;
+    } else if ( textHeight < item->mLowestExtent ) { // Assumed that downsize info goes quite low, below really usable fonts
+        size = qRound( textHeight );
+    } else if ( textHeight < item->mHighestExtent ) { // interpolate. May fail and leave size unset.
+        int indexLowerB = -1;
+        int indexUpperB = -1;
+        int lowerBValue = 0xffffff;
+        int upperBValue = 0xffffff;
+        for( int i = 0; i < item->mDownSizeTable.size(); i++ ) {
+            int current = item->mDownSizeTable.at( i ).textHeight;
+            if( ( current < lowerBValue ) && ( current >= flooredPaneHeight ) ) {
+                lowerBValue = current;
+                indexLowerB = i;
+            }
             if( ( current < upperBValue ) && ( current > flooredPaneHeight ) ) {
                 upperBValue = current;
                 indexUpperB = i;
             }
-	    }
+        }
 
-	    if( ( indexUpperB != -1 ) && ( indexLowerB != -1 ) ) {
+        if( ( indexUpperB != -1 ) && ( indexLowerB != -1 ) ) {
             int k1 = lowerBValue;
             int v1 = item->mDownSizeTable.at( indexLowerB ).pixelSize;
             int k2 = upperBValue;
@@ -234,27 +238,27 @@ int HbTypefaceInfo::textHeightToSizeInPixels(
             if (diff > 0) {
                 size = qRound(v1 + (flooredPaneHeight - k1)*(v2 - v1)/diff);
             }
-	    }
-	}
-	// Come here for text heights that are too large for the table, or for failure of interpolation
-	if (size == -1) {
-	    int highestExtentIndex;
-	    if( ! item->tableContainsHeight( item->mHighestExtent, highestExtentIndex ) ) {
-	        qWarning( "HbTypefaceInfo:textHeightToSizeInPixels something wrong with downsize table, line %d", __LINE__ );
-	        return 1;
-	    }
+        }
+    }
+    // Come here for text heights that are too large for the table, or for failure of interpolation
+    if (size == -1) {
+        int highestExtentIndex;
+        if( ! item->tableContainsHeight( item->mHighestExtent, highestExtentIndex ) ) {
+            qWarning( "HbTypefaceInfo:textHeightToSizeInPixels something wrong with downsize table, line %d", __LINE__ );
+            return 1;
+        }
 
-		size = qRound( textHeight
-			* item->mDownSizeTable.at( highestExtentIndex ).pixelSize
-			/ item->mHighestExtent);
-	}
+        size = qRound( textHeight
+            * item->mDownSizeTable.at( highestExtentIndex ).pixelSize
+            / item->mHighestExtent);
+    }
 
     // If the caller intends non-zero size, and zero would be returned by downsizing, then return 1.
     // This avoids QFont's special treatment of zero size.
     if(textHeight > 0 && size <= 0) {
         size = 1;
     }
-	return size;
+    return size;
 }
 
 #include "hbtypefaceinfo.moc"

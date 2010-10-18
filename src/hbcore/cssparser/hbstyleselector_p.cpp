@@ -32,8 +32,6 @@
 #include <QMetaProperty>
 #include <QMetaEnum>
 
-#define WIDGET(x) (static_cast<QGraphicsWidget *>(x.ptr))
-
 HbStyleSelector::HbStyleSelector() 
 { 
 }
@@ -45,7 +43,7 @@ int HbStyleSelector::nodeNameEquals(NodePtr node, const HbString& name) const
     }
 
     const bool checkNs = name.contains(QLatin1Char('-'));
-    const QMetaObject *metaObject = WIDGET(node)->metaObject();
+    const QMetaObject *metaObject = (static_cast<QGraphicsWidget *>(node))->metaObject();
     int level(-1);
     do {
         if ( level >= 0 ) {
@@ -78,14 +76,14 @@ bool HbStyleSelector::attributeMatches(NodePtr node, const HbCss::AttributeSelec
     AttributeValue aVal;
     aVal.mEmptyValue = false;
 
-    QGraphicsWidget *widget = WIDGET(node);
+    QGraphicsWidget *widget = static_cast<QGraphicsWidget *>(node);
 
     QHash<uint, AttributeValue> &cache = mAttributeCache[widget];
     QHash<uint, AttributeValue>::const_iterator cacheIt = cache.constFind(attr.nameHash);
     if (cacheIt != cache.constEnd()) {
         aVal = cacheIt.value();
     } else {
-        const QMetaObject *metaObject = WIDGET(node)->metaObject();
+        const QMetaObject *metaObject = widget->metaObject();
 
         QVariant value = widget->property(attr.name.toLatin1());
         if (!value.isValid()) {
@@ -144,24 +142,24 @@ bool HbStyleSelector::hasAttributes(NodePtr) const
 
 QStringList HbStyleSelector::nodeIds(NodePtr node) const
 { 
-    return isNullNode(node) ? QStringList() : QStringList(WIDGET(node)->objectName()); 
+    return isNullNode(node) ? QStringList() : QStringList((static_cast<QGraphicsWidget *>(node))->objectName()); 
 }
 
 bool HbStyleSelector::isNullNode(NodePtr node) const
 { 
-    return node.ptr == 0; 
+    return node == 0; 
 }
 
 HbStyleSelector::NodePtr HbStyleSelector::parentNode(NodePtr node) const
 { 
     NodePtr n; 
-    n.ptr = isNullNode(node) ? 0 : WIDGET(node)->parentWidget(); 
+    n = isNullNode(node) ? 0 : (static_cast<QGraphicsWidget *>(node))->parentWidget(); 
     return n; 
 }
 HbStyleSelector::NodePtr HbStyleSelector::previousSiblingNode(NodePtr) const
 { 
     NodePtr n; 
-    n.ptr = 0; 
+    n = 0; 
     return n; 
 }
 
@@ -171,6 +169,6 @@ void HbStyleSelector::initNode(NodePtr) const
 
 void HbStyleSelector::cleanupNode(NodePtr node) const
 {
-    mAttributeCache.remove(WIDGET(node));
+    mAttributeCache.remove(static_cast<QGraphicsWidget *>(node));
 }
 

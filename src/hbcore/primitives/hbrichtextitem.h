@@ -37,15 +37,15 @@ class HB_CORE_EXPORT HbRichTextItem: public HbWidgetBase
     Q_OBJECT
 
 public:
-    explicit HbRichTextItem(QGraphicsItem *parent = 0);
-    explicit HbRichTextItem(const QString &html, QGraphicsItem *parent = 0);
+    explicit HbRichTextItem(QGraphicsItem *parent=0);
+    explicit HbRichTextItem(const QString &html, QGraphicsItem *parent=0);
     virtual ~HbRichTextItem();
 
     void setText(const QString &text);
     QString text() const;
 
     QColor textDefaultColor() const;
-    void setTextDefaultColor(const QColor &color );
+    void setTextDefaultColor(const QColor &color);
     
     void setAlignment(Qt::Alignment);
     Qt::Alignment alignment() const;
@@ -56,23 +56,23 @@ public:
     void setTextVisible(bool isVisible=true);
     bool isTextVisible() const;
 
-    void setTextClip(bool cliping=true);
+    void setTextClip(bool clipping=true);
     bool isTextClip() const;
 
     enum { Type = Hb::ItemType_RichTextItem };
     int type() const { return Type; }
 
-    void setGeometry( const QRectF & rect );
+    void setGeometry(const QRectF &rect);
     QRectF boundingRect () const;
 
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget=0);
 
 protected:
-    HbRichTextItem(HbRichTextItemPrivate &dd, QGraphicsItem *parent );
+    HbRichTextItem(HbRichTextItemPrivate &dd, QGraphicsItem *parent);
 
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const;
-    void resizeEvent ( QGraphicsSceneResizeEvent * event );
-    void changeEvent( QEvent *event) ;
+    void resizeEvent(QGraphicsSceneResizeEvent *event);
+    void changeEvent(QEvent *event) ;
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbRichTextItem)

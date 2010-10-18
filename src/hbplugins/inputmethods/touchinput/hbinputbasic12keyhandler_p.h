@@ -47,6 +47,6 @@ public:
     int mDownKey;
     HbInputFocusObject *mCurrentlyFocused;
     bool mLongPressHappened;
-	bool mShiftKeyDoubleTapped;
+    bool mShiftKeyDoubleTapped;
 };
 

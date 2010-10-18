@@ -118,6 +118,13 @@
     This role specifies the type of the model item. If no type is specified StandardItem type is
     used.
 */
+
+/*! \var Hb::ItemDataRole Hb::IndexFeedbackRole
+    Context of this role is an index about model item when scrolling takes place by dragging scrollbar.
+
+    \sa HbIndexFeedback
+*/
+
 /*! \var Hb::ItemDataRole Hb::UserRole
     The first role that can be used for application-specific purposes.
 */
@@ -133,6 +140,9 @@
 */
 /*! \var Hb::ModelItemType Hb::ParentItem
     This is the parent item type. Parent item is an item that has or can have child items.
+*/
+/*! \var Hb::ModelItemType Hb::SeparatorItem
+    This is the separator item type. Separator is used as boundary between separate items or group of items.
 */
 /*! \var Hb::ModelItemType Hb::UserItem
     The first item type that can be used for application-specific purposes.
@@ -161,12 +171,6 @@
     Indicates whether widget and its children (classes derived from HbWidgetBase) are inside popup.
 */
 
-/*! \deprecated
-
-    \var Hb::WidgetAttribute Hb::InputMethodNeutral
-    Indicates that the widget does not want to change the state of the input method.
-    In practice this means that virtual keyboard is not closed if focus is changed from editor to this widget.
-*/
 
 /*!  \var Hb::WidgetAttribute Hb::Widget
 
@@ -256,19 +260,47 @@
 
 /*! \var Hb::ApplicationFlag Hb::NoSplash
 
-  Disables the splash screen that is shown during HbApplication construction.
+  Disables the splash screen that is shown during HbApplication construction. Note that
+  the splash screen can still be launched manually using HbSplashScreen::start().
 */
 
 /*! \var Hb::ApplicationFlag Hb::SplashFixedVertical
 
   Indicates that the application will force its orientation to vertical. As a result the
   splash screen will also be forced to vertical orientation.
+
+  \sa HbSplashScreen::FixedVertical
 */
 
 /*! \var Hb::ApplicationFlag Hb::SplashFixedHorizontal
 
   Indicates that the application will force its orientation to horizontal. As a result the
   splash screen will also be forced to horizontal orientation.
+
+  \sa HbSplashScreen::FixedHorizontal
+*/
+
+/*! \var Hb::ApplicationFlag Hb::ForceQtSplash
+
+  Forces the usage of QWidget-based splash screens, even on platforms where a more
+  optimal, non-Qt dependent implementation would be available. Use this when it must be
+  guaranteed that the splash screen will use the same graphics system as Qt (e.g. because
+  the application forces 'raster'). The downside is a decrease in performance and user
+  experience, because in this case the splash can only be shown after constructing
+  QApplication.
+
+  \sa HbSplashScreen::ForceQt
+*/
+
+/*! \var Hb::ApplicationFlag Hb::ShowSpashWhenStartingToBackground
+
+  Does not suppress the splash when the application is started to background.
+  Normally HbSplashScreen::start() will do nothing if the process command line
+  indicates that the application is started to background (by specifying the
+  corresponding flags in the system startup list entry or by starting to
+  background as a service). This flag disables the check.
+
+  \sa HbSplashScreen::ShowWhenStartingToBackground
 */
 
 /*!
@@ -338,6 +370,24 @@
   The alternative effects can be overridden using HbEffect::add() just like the normal ones.
 
   This flag automatically implies ViewSwitchSequential. (the default effect is parallel, the alternative is sequential)
+*/
+
+/*!
+  \var Hb::ViewSwitchFlag Hb::ViewSwitchCachedFullScreen
+
+  Similar to Hb::ViewSwitchFullScreen with the following differences: It will
+  use a screenshot of the source view instead of the live content and it also
+  supports parallel effects, i.e. this flag does not automatically imply
+  Hb::ViewSwitchSequential.
+
+  Use this flag only when switching between inconsistent views, i.e. when one
+  view has the normal statusbar and titlebar while the other is fullscreen, or
+  when one view has a toolbar while the other does not.
+
+  By default effects between such views would not look very fluid due to the
+  relayouting that needs to be done due to the difference in the decorator
+  visibilities. This flag makes it possible to use the standard view switch
+  effects also in such cases on the expense of a minor performance hit.
 */
 
 /*!
@@ -479,9 +529,20 @@
 */
 
 /*! \var Hb::InstantRotated90Degrees
-        Sent every time the multitouch area passes 90 degrees of rotation.
+        Sent every time a rotate gesture area passes 90 degrees of rotation.
    \image html interaction_rotated90degrees.png
 */
+
+/*! \var Hb::InstantSelectionChanged
+        Sent went a selectable widget (like a check box) changes its selection state.
+*/
+
+/*! \var Hb::InstantAdvancedGestureActivated
+        Sent when a touch gesture involving more then one finger can be performed.
+        For example a second touch point is detected and a pinch gesture can be performed.
+*/
+
+
 
 /*! \var Hb::InstantInstantUser
         User-defined interaction event type.
@@ -601,6 +662,11 @@
     The background image is scaled to cover most of the available area. The
     aspect ratio is kept (without expanding) so the image may not occupy the
     entire available area. The image is centered in the available area.
+
+    Note that if the background does not fill the entire screen then there must
+    be a background brush set for the scene (or transparency needs to be
+    enabled), otherwise drawing problems will occur (due to certain areas not
+    being painted at all).
  */
 
 /*!
@@ -614,6 +680,11 @@
 
     Keeps the original size of the image, no up or downscaling occurs. The image
     is centered in the available area.
+
+    Note that if the background does not fill the entire screen then there must
+    be a background brush set for the scene (or transparency needs to be
+    enabled), otherwise drawing problems will occur (due to certain areas not
+    being painted at all).
  */
 
 /*!
@@ -633,5 +704,10 @@
     temporarily prevent the background from showing. If you need to hide the
     background item permanently then pass Hb::WindowFlagNoBackground to the
     HbMainWindow constructor because that is more efficient.
-*/
+
+    Note that if there is no background brush set and the application does not
+    enable transparency properly then setting this flag will lead to drawing
+    problems because the screen will not be updated properly (because nobobdy
+    paints the background).
+ */
 

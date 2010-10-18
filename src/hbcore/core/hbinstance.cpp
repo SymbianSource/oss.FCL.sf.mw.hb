@@ -39,12 +39,10 @@
 #include <hbfeedbackmanager.h>
 
 // for testability plugin
-#ifdef HB_TESTABILITY
 #include <QtPlugin>
 #include <QPluginLoader>
 #include <QLibraryInfo>
 #include "hbtestabilityinterface_p.h"
-#endif //HB_TESTABILITY
 // end testability
 
 #ifdef HB_SETTINGS_WINDOW
@@ -58,6 +56,16 @@
 
 #ifdef HB_CSS_INSPECTOR
 #include "hbcssinspector_p.h"
+#endif
+
+#ifdef HB_TEXT_MEASUREMENT_UTILITY
+#include <QTimer>
+#include "hbtextmeasurementutility_r.h"
+#endif
+
+
+#ifdef HB_TEXT_MEASUREMENT_UTILITY
+static const int LOCALIZATION_MEASUREMENT_DELAY = 500; // Delay in milliseconds.
 #endif
 
 /*!
@@ -106,17 +114,21 @@ HbInstancePrivate::HbInstancePrivate() :
     mStyle(0),
     mTheme(HbTheme::instance()),
     mOrientation(Qt::Vertical),
-    mLibraryPaths(0)
+    mLibraryPaths(0),
+    mDropHiddenIconData(false)
 #ifdef Q_OS_SYMBIAN
-    , testabilityEnabled(false),
-    mSts(0)
+    , testabilityEnabled(false)
+    , mSts(0)
 #endif //Q_OS_SYMBIAN
     , mLocaleChangeNotifier(0)
+#ifdef HB_TEXT_MEASUREMENT_UTILITY
+    , mLocalizationMetricsProfile(0), 
+    mLocalizationMeasurementPending(false)
+#endif
 {
     // initialization of dynamics parts of feedback manager
     HbFeedbackManager::instance();
 
-#ifdef HB_TESTABILITY
     testabilityInterface = 0;
 
 #ifdef Q_OS_SYMBIAN
@@ -125,15 +137,13 @@ HbInstancePrivate::HbInstancePrivate() :
         TInt value = 0;
         err = mRepo->Get(HbTestabilityKey, value);
         if (err == KErrNone && value == 1) {
-            testabilityEnabled = ETrue;
+            testabilityEnabled = true;
         }
     }
 #endif //Q_OS_SYMBIAN        
-#endif //HB_TESTABILITY
 
     connect(mTheme, SIGNAL(changeFinished()), this, SLOT(updateScenes()));
 
-#ifdef HB_TESTABILITY
     // Activate testability plugin if exists
     QObject *plugin = 0;
 
@@ -151,7 +161,6 @@ HbInstancePrivate::HbInstancePrivate() :
     testabilityPlugin = QLibraryInfo::location(QLibraryInfo::PluginsPath) + QObject::tr("/") + testabilityPlugin + testabilityPluginPostfix;
 
 #ifdef Q_OS_SYMBIAN
-
     //TEMPORARY workaround:
     //there is a defect in s60 qt port so that it does not search for plugins
     //from all possible drives, so check for existence before loading the plugin
@@ -182,6 +191,7 @@ HbInstancePrivate::HbInstancePrivate() :
     }
     //if the file is in neither then let failure occur similarly as with other platforms
 #else
+    // No enabled-disabled check on other platforms, try to load the plug-in always.
     QPluginLoader loader(testabilityPlugin.toLatin1().data());
     plugin = loader.instance();
 #endif //Q_OS_SYMBIAN        
@@ -192,7 +202,8 @@ HbInstancePrivate::HbInstancePrivate() :
             testabilityInterface->Initialize();
         }
     }
-#endif //end testability
+//end testability
+
     mLocaleChangeNotifier = q_check_ptr(new HbLocaleChangeNotifier());
 
 #ifdef HB_GESTURE_FW
@@ -222,7 +233,6 @@ HbInstancePrivate::~HbInstancePrivate()
     delete mLocaleChangeNotifier;
     mLocaleChangeNotifier = 0;
 
-#ifdef HB_TESTABILITY
     //remove the testability plugin if it exists
     //makes sure that all resources used by the plugin
     //are free when the application exists
@@ -230,17 +240,16 @@ HbInstancePrivate::~HbInstancePrivate()
         delete testabilityInterface;
         testabilityInterface = 0;
     }
-#endif //HB_TESTABILITY
 
 #ifdef Q_OS_SYMBIAN
     if (mRepo) {
         delete mRepo;
         mRepo = 0;
     }
-    
+
     if (mSts) {
         CSystemToneService::Delete(mSts);
-        mSts=0;
+        mSts = 0;
     }
 
 #endif //Q_OS_SYMBIAN
@@ -256,11 +265,15 @@ void HbInstancePrivate::addWindow(HbMainWindow *window)
 #ifdef HB_SETTINGS_WINDOW
     QShortcut *shortcut = new QShortcut(QKeySequence("Ctrl+Alt+Shift+S"), window);
     connect(shortcut, SIGNAL(activated()), this, SLOT(showHideSettingsWindow()));
-    HbSettingsWindow::instance()->refresh();
+    if (HbSettingsWindow::exists()) {
+        HbSettingsWindow::instance()->refresh();
+    }
 #ifdef HB_CSS_INSPECTOR
     QShortcut *cssShortcut = new QShortcut(QKeySequence("Ctrl+Alt+Shift+C"), window);
     connect(cssShortcut, SIGNAL(activated()), this, SLOT(showHideCssWindow()));
-    HbCssInspectorWindow::instance()->refresh();
+    if (HbCssInspectorWindow::exists()) {
+        HbCssInspectorWindow::instance()->refresh();
+    }
 #endif
 #endif
     emit windowAdded(window);
@@ -273,19 +286,19 @@ void HbInstancePrivate::addWindow(HbMainWindow *window)
 /*!
 \internal
 */
-CSystemToneService* HbInstancePrivate::systemTone()
+CSystemToneService *HbInstancePrivate::systemTone()
 {
-	#ifdef Q_OS_SYMBIAN
-	
-	if(mSts == 0) {
-		mSts = CSystemToneService::Create();
-	}
-	return mSts;
-	
-	#else
-		return  0;
-	#endif
-	
+#ifdef Q_OS_SYMBIAN
+
+    if (mSts == 0) {
+        mSts = CSystemToneService::Create();
+    }
+    return mSts;
+
+#else
+    return  0;
+#endif
+
 }
 
 bool HbInstancePrivate::removeWindow(HbMainWindow *window)
@@ -293,11 +306,15 @@ bool HbInstancePrivate::removeWindow(HbMainWindow *window)
     bool result = mWindows.removeOne(window);
 #ifdef HB_SETTINGS_WINDOW
     if (result && mWindows.isEmpty()) {
-        HbSettingsWindow::instance()->close();
+        if (HbSettingsWindow::exists()) {
+            HbSettingsWindow::instance()->close();
+        }
 #ifdef HB_CSS_INSPECTOR
-        HbCssInspectorWindow::instance()->close();
+        if (HbCssInspectorWindow::exists()) {
+            HbCssInspectorWindow::instance()->close();
+        }
 #endif
-    } else {
+    } else if (HbSettingsWindow::exists()) {
         HbSettingsWindow::instance()->refresh();
     }
 #endif
@@ -407,6 +424,44 @@ void HbInstancePrivate::initLibraryPaths()
         mLibraryPaths->append(applicationCanonicalPath);
 #endif
     }
+}
+
+void HbInstancePrivate::startLocalizationMeasurement() 
+{
+#ifdef HB_TEXT_MEASUREMENT_UTILITY
+    if ( !mLocalizationMeasurementPending ) {
+        mLocalizationMeasurementPending = true;
+        QTimer::singleShot(LOCALIZATION_MEASUREMENT_DELAY, this, SLOT(doLocalizationMeasurements()));
+    }
+#endif
+    return;
+}
+
+void HbInstancePrivate::doLocalizationMeasurements()
+{
+#ifdef HB_TEXT_MEASUREMENT_UTILITY     
+    QList<HbMainWindow*> mainWindows;
+    mainWindows = hbInstance->allMainWindows();
+
+    HbTextMeasurementUtility *measureUtility = HbTextMeasurementUtility::instance();
+
+    // NOTE: Localization text measurements are done only for one main window.
+    // In case of multiple main window support this code needs to be modified.
+    HbDeviceProfile profile = HbDeviceProfile::profile(mainWindows.first());
+    if (profile.name() != mLocalizationMetricsProfile.name()) {
+        measureUtility->reset();
+        mLocalizationMetricsProfile = profile;
+    }
+
+    QFileInfo info(QCoreApplication::applicationFilePath());
+    measureUtility->readReport(profile, info.baseName());
+    measureUtility->measureItems();
+    measureUtility->writeReport(profile, info.baseName());
+
+    mLocalizationMeasurementPending = false;
+#endif // HB_TEXT_MEASUREMENT_UTILITY
+
+    return;
 }
 
 /*!
@@ -556,6 +611,38 @@ QStringList HbInstance::libraryPaths() const
 {
     const_cast<HbInstancePrivate *>(d)->initLibraryPaths();
     return *d->mLibraryPaths;
+}
+
+/*!
+  When enabled, the icons shown by HbIconItem and HbFrameItem primitives are
+  automatically unloaded when the primitives become hidden from the graphics
+  view's point of view.
+
+  The data is not lost, the icons will be reloaded when the primitive is painted
+  next time.
+
+  This is disabled by default and enabling it causes a heavy performance hit in
+  many cases.
+
+  It should only be enabled by applications with extreme graphics memory needs,
+  i.e. in cases where storing the graphics for invisible widgets and standard UI
+  decorators is not acceptable and the application wants to make sure that it
+  does not keep such graphics referenced on themeserver side.
+
+  When using SgImage this does not ensure that the graphics data is really
+  dropped from GPU or any other cache of the themeserver. It just ensures that
+  an unload request is made for such icons, i.e. the reference count is
+  decreased whenever the widget that renders them becomes hidden.
+
+  For icons backed by a QPixmap (typical on desktop platforms) clearing the icon
+  data results in destroying the underlying pixmap, thus freeing all possible
+  system/gpu memory used by the icon.
+
+  This setting has no effect on icons constructed from QIcon.
+ */
+void HbInstance::enableUnloadingHiddenIconData(bool enable)
+{
+    d->mDropHiddenIconData = enable;
 }
 
 // end of file

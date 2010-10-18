@@ -65,19 +65,21 @@ bool HbMainWindowOrientation::isEnabled() const
 #ifndef Q_OS_SYMBIAN
 void HbMainWindowOrientation::forceSensorOrientationValue(Qt::Orientation orientation)
 {
-    QSettings mSettings("Nokia", "HbStartUpDeskTopSensors");
+    QSettings settings("Nokia", "Hb");
+    settings.beginGroup("Sensors");
     mSensorListener->setSensorOrientation(orientation);
 
     switch (orientation) {
     case Qt::Vertical:
-        mSettings.setValue("Orientation", 2);
+        settings.setValue("Orientation", 2);
         break;
     case Qt::Horizontal:
-        mSettings.setValue("Orientation", 1);
+        settings.setValue("Orientation", 1);
         break;
     default:
         break;
     }
+    settings.endGroup();
 }
 #endif
 
@@ -152,16 +154,22 @@ void HbMainWindowOrientation::sensorOrientationChanged(Qt::Orientation newOrient
     notifyOrientationChange(true, false);
 }
 
-void HbMainWindowOrientation::sensorStatusChanged(bool status, bool notify)
+void HbMainWindowOrientation::sensorStatusChanged(bool status, bool resetOrientation)
 {
+    // Sensors are enabled
     if (status) {
         foreach(HbMainWindow * window, mWindowList) {
             if (!mFixedOrientation && !HbMainWindowPrivate::d_ptr(window)->mUserOrientationSwitch) {
                 HbMainWindowPrivate::d_ptr(window)->mAutomaticOrientationSwitch = true;
             }
         }
+    // Sensors are disabled and orientation should be reset to default. This is the case
+    // when sensors are disabled via cenrep (device settings). Sleep mode does not reset the
+    // orientation.
+    } else if (resetOrientation) {
+        mOrientation = mDefaultOrientation;
     }
-    notifyOrientationChange(false, notify);
+    notifyOrientationChange(false, true);
 }
 
 // Notifies orientation change only if
@@ -180,11 +188,19 @@ void HbMainWindowOrientation::notifyOrientationChange(bool animate, bool notifyW
         }
         if ((isEnabled() || notifyWhenDisabled)
                 && HbMainWindowPrivate::d_ptr(window)->mAutomaticOrientationSwitch) {
+            // For background applications do not use animated orientation change
+            bool useAnimation = false;
+            // Application is in foreground, use animation if requested
             if (mForeground){
-                HbMainWindowPrivate::d_ptr(window)->setTransformedOrientation(newOrientation, animate);
+                useAnimation = animate;
             } else {
-                HbMainWindowPrivate::d_ptr(window)->setTransformedOrientation(newOrientation, false);
+                // Application is in background but has window surface - use animation if requested
+                // This is the case for example with device dialogs
+                if (window->windowSurface()) {
+                    useAnimation = animate;
+                }
             }
+            HbMainWindowPrivate::d_ptr(window)->setTransformedOrientation(newOrientation, useAnimation);
         }
     }
 }

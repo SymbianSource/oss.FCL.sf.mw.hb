@@ -28,10 +28,14 @@
 #include "hbwidget_p.h"
 #include <hblistview.h>
 #include <hbwidgetfeedback.h>
+#include <hbinputvirtualkeyboard.h>
 
 #include <hbtapgesture.h>
 #include <hbpangesture.h>
 #include <QGestureEvent>
+#include <QGraphicsSceneMouseEvent>
+
+#include <hbeffect.h>
 
 class HbComboDropDownPrivate : public HbWidgetPrivate
 {
@@ -44,23 +48,22 @@ HbComboDropDown::HbComboDropDown( HbComboBoxPrivate *comboBoxPrivate, QGraphicsI
      backgroundPressed( false )
 {
     Q_D(HbComboDropDown);
-    d->setBackgroundItem(HbStyle::P_ComboBoxPopup_background);
+    d->setBackgroundItem(HbStylePrivate::P_ComboBoxPopup_background);
     #if QT_VERSION >= 0x040600
     //this is to keep the focus in the previous widget.
     setFlag( QGraphicsItem::ItemIsPanel, true );
     setActive( false );
+    setAcceptTouchEvents( true );
     #endif
 }
 
 HbComboDropDown::~HbComboDropDown( )
 {
-
 }
 
 void HbComboDropDown::createList( )
 {
    mList = new HbListView( this );
-   mList->setLongPressEnabled( false );
    HbComboListViewItem *protoType = new HbComboListViewItem( this );
    mList->setItemPrototype( protoType );
    HbStyle::setItemName( mList, "list" );
@@ -80,34 +83,62 @@ void HbComboDropDown::keypadClosed( )
     comboPrivate->vkbClosed( );
 }
 
+#ifdef HB_EFFECTS
+void HbComboDropDown::dismissEffectFinished( HbEffect::EffectStatus status )
+{
+    Q_UNUSED( status );
+
+    setVisible( false );
+}
+#endif
+
 bool HbComboDropDown::eventFilter( QObject *obj, QEvent *event )
 {
     Q_UNUSED( obj );
     bool accepted = false;
 
-    if ( isVisible( ) && !vkbOpened ) {
+    if ( isVisible( ) ) {
         switch( event->type( ) )
         {
-        case QEvent::GraphicsSceneMousePress:
-        case QEvent::GraphicsSceneMouseDoubleClick:
-            {
-                if( !( this->isUnderMouse( ) ) ) {
-                    HbWidgetFeedback::triggered( this, Hb::InstantPopupClosed );
-                    setVisible( false );
-                    comboPrivate->q_ptr->setProperty("state","normal");
-                    backgroundPressed = true;
-                    accepted = true;
-                }
-            }
-            break;
         case QEvent::Gesture:
             {
-                if( !this->isUnderMouse( ) ) {
-                    //if its a pan gesture then don't accept the event so that list can be scrolled
-                    //even if mouse is outside drop down area. Also tap might finish outside the
-                    //dropdown area
-                    if( QGestureEvent *gestureEvent = static_cast<QGestureEvent *>( event ) ) {                        
-                        HbTapGesture *tapGesture = qobject_cast<HbTapGesture *>(gestureEvent->gesture(Qt::TapGesture));
+                if( QGestureEvent *gestureEvent = static_cast<QGestureEvent *>( event ) ) {                        
+                    HbTapGesture *tapGesture = qobject_cast<HbTapGesture *>(gestureEvent->gesture(Qt::TapGesture));
+                    if( tapGesture && tapGesture->state() == Qt::GestureStarted ) {
+                        QRectF dropDownSceneRect = mapToScene(boundingRect( )).boundingRect();
+                        if(!dropDownSceneRect.contains(tapGesture->sceneStartPos())) {
+                            if( !vkbOpened ) {                                      
+                                HbWidgetFeedback::triggered( this, Hb::InstantPopupClosed );
+                                comboPrivate->showDismissEffect( );
+                                comboPrivate->q_ptr->setProperty("state","normal");
+                                backgroundPressed = true;
+                                accepted = true;
+                            } else {
+                                //if vkb is opened then dismiss drop down only if click happened outside drop down and
+                                //vkb area
+                                if( comboPrivate->mEditable ) {
+                                    HbEditorInterface editorInterface( comboPrivate->q_ptr );
+                                    HbVkbHost *host = editorInterface.vkbHost( );
+                                    if( host ) {
+                                        //get the scene rect of vkb
+                                        QGraphicsWidget *vkbWidget = host->activeKeypad( )->asGraphicsWidget( );
+                                        QRectF tmp = host->applicationArea( );
+                                        QRectF vkbArea = vkbWidget->mapToScene( tmp ).boundingRect( );
+                                        if( !vkbArea.contains( tapGesture->sceneStartPos() ) ) {
+                                            comboPrivate->showDismissEffect( );
+                                            HbWidgetFeedback::triggered( this, Hb::InstantPopupClosed );
+                                            comboPrivate->q_ptr->setProperty( "state", "normal" );
+                                            backgroundPressed = true;
+                                            accepted = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        //if its a pan gesture then don't accept the event so that list can be scrolled
+                        //even if mouse is outside drop down area. Also tap might finish outside the
+                        //dropdown area
                         if( !qobject_cast<HbPanGesture *>( 
                                 gestureEvent->gesture( Qt::PanGesture ) ) &&
                             !(tapGesture && tapGesture->state() != Qt::GestureStarted)) {
@@ -117,11 +148,48 @@ bool HbComboDropDown::eventFilter( QObject *obj, QEvent *event )
                 }
             }
             break;
+        case QEvent::GraphicsSceneMousePress:
+            //dont accept the mouse press event if vkb is pressed, so that vkb can take events
+            if( vkbOpened ) {
+                if( comboPrivate->mEditable ) {
+                    HbEditorInterface editorInterface( comboPrivate->q_ptr );
+                    HbVkbHost *host = editorInterface.vkbHost( );
+                    if( host ) {
+                        //get the scene rect of vkb
+                        QGraphicsWidget *vkbWidget = host->activeKeypad( )->asGraphicsWidget( );
+                        QRectF tmp = host->applicationArea( );
+                        QRectF vkbArea = vkbWidget->mapToScene( tmp ).boundingRect( );
+
+                        QGraphicsSceneMouseEvent *mouseEvent =  
+                            static_cast< QGraphicsSceneMouseEvent * >( event ); 
+                        if( vkbArea.contains( mouseEvent->scenePos( ) ) ) {
+                            break;
+                        }
+                    }
+                }
+            }
+        case QEvent::TouchBegin:
+            accepted = true;
+            break;
         default:
             break;
         }
     }
     return accepted;
+}
+
+QVariant HbComboDropDown::itemChange( GraphicsItemChange change, const QVariant & value )
+{
+    switch( change ) {
+        case QGraphicsItem::ItemVisibleHasChanged:
+            if( !value.toBool( ) ) {
+                comboPrivate->resetGeometryChangeFlag( );
+            }
+            break;
+        default:
+            break;
+    }
+    return HbWidget::itemChange( change, value );
 }
 
 #include "moc_hbcombodropdown_p.cpp"

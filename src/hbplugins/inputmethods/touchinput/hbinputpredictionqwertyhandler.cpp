@@ -115,30 +115,29 @@ bool HbInputPredictionQwertyHandlerPrivate::buttonReleased(const QKeyEvent *even
                 else {
                     currentTextCase = HbTextCaseAutomatic;
                 }
-                break;				
-            case HbTextCaseUpper:	
-                currentTextCase = HbTextCaseLower;				
+                break;              
+            case HbTextCaseUpper:   
+                currentTextCase = HbTextCaseLower;              
                 break;
             case HbTextCaseAutomatic:
-                currentTextCase = HbTextCaseUpper;				                
+                currentTextCase = HbTextCaseUpper;                              
                 break;
             default:
                 break;
             }
             HbInputState state = mInputMethod->inputState();
-            state.setTextCase(currentTextCase);			
+            state.setTextCase(currentTextCase);         
             mInputMethod->activateState(state);
         }
         break;
     case HbInputButton::ButtonKeyCodeSymbol: { // Ctrl/Chr
     case HbInputButton::ButtonKeyCodeAlphabet:
         mInputMethod->switchSpecialCharacterTable();
-        q->HbInputPredictionHandler::actionHandler(HbInputModeHandler::HbInputModeActionSetKeypad);
-        }		
+        }       
         break;
     case HbInputButton::ButtonKeyCodeSettings:
         mInputMethod->closeExactWordPopup();
-		break;
+        break;
     default: {
             HbTextCase currentTextCase = focusObject->editorInterface().textCase();
             Qt::KeyboardModifiers modifiers = Qt::NoModifier;
@@ -289,7 +288,7 @@ void HbInputPredictionQwertyHandler::exactWordSelected()
 }
 
 void HbInputPredictionQwertyHandler::sctCharacterSelected(QString character)
-{	
+{   
     HbInputPredictionHandler::sctCharacterSelected(character);
 }
 
@@ -328,7 +327,7 @@ void HbInputPredictionQwertyHandlerPrivate::deleteOneCharacter()
         mCanContinuePrediction = true;
 
         int tailLength =  mInputMethod->focusObject()->preEditString().length() - mEngine->inputLength();
-        if(tailLength <= 0 && true == mExactPopupLaunched) {
+        if( true == mExactPopupLaunched ) {
             mEngine->deleteKeyPress();
             mEngine->updateCandidates(mBestGuessLocation);
         }
@@ -359,7 +358,7 @@ void HbInputPredictionQwertyHandlerPrivate::deleteOneCharacter()
         // once the word is committed, we can not bring it back to inline edit.
         // so if the engine does not have any data, we just send backspace event to the editor.
         Q_Q(HbInputPredictionQwertyHandler);
-        QKeyEvent event = QKeyEvent(QEvent::KeyPress, Qt::Key_Backspace, Qt::NoModifier);		
+        QKeyEvent event = QKeyEvent(QEvent::KeyPress, Qt::Key_Backspace, Qt::NoModifier);       
         q->sendAndUpdate(event);
         event = QKeyEvent(QEvent::KeyRelease, Qt::Key_Backspace, Qt::NoModifier);
         q->sendAndUpdate(event);
@@ -435,7 +434,7 @@ void HbInputPredictionQwertyHandlerPrivate::updateEditor()
                     list.append(QInputMethodEvent::Attribute(QInputMethodEvent::TextFormat, 0, QInputMethodEvent::TextFormat, gray));
                 } else {
                     list.append(QInputMethodEvent::Attribute(QInputMethodEvent::TextFormat, mEngine->inputLength(), taillength, gray));
-                }				
+                }               
                 list.append(QInputMethodEvent::Attribute(QInputMethodEvent::Cursor, mEngine->inputLength(), 0, 0));
                 // the best guess word is sent to the editor
                 QInputMethodEvent event(bestGuessWord, list);
@@ -472,8 +471,7 @@ void HbInputPredictionQwertyHandlerPrivate::commitSecondaryWord()
 void HbInputPredictionQwertyHandlerPrivate::showExactWordPopupIfNeeded()
 {
     Q_Q(HbInputPredictionHandler);
-    if (mShowTooltip && mCandidates->count() > mPrimaryCandidateIndex && mCandidates->at(0).mid(0, mEngine->inputLength()) \
-        != mCandidates->at(mPrimaryCandidateIndex).mid(0, mEngine->inputLength())) {                
+    if (mShowTooltip && mCandidates && mCandidates->count() > mSecondaryCandidateIndex && mPrimaryCandidateIndex != mSecondaryCandidateIndex) {                
         q->processExactWord(mCandidates->at(mSecondaryCandidateIndex));
     } else {
         QString empty;

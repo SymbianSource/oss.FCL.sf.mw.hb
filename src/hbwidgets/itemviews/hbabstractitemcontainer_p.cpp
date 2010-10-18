@@ -84,6 +84,8 @@ void HbAbstractItemContainerPrivate::init()
 {
     Q_Q(HbAbstractItemContainer);
     q->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+
+    q->setFlag(QGraphicsItem::ItemHasNoContents, true);
 }
 
 /*!
@@ -138,6 +140,8 @@ bool HbAbstractItemContainerPrivate::visible(HbAbstractViewItem* item, const QRe
 {
     if (item) {
         QRectF itemRect(itemBoundingRect(item));
+        // 0.5 tolerance otherwise it fail - for instance if pos.y = -5.68434e-14 then item will be not fullyVisible
+        itemRect.adjust(0.5, 0.5, -0.5, -0.5);
         if (fullyVisible) {
             if (viewRect.contains(itemRect)) {
                 return true;
@@ -416,6 +420,8 @@ void HbAbstractItemContainerPrivate::deleteItem(HbAbstractViewItem *item, bool a
     mItems.removeOne(item);
     q->itemRemoved(item, animate);
 
+    emit q->itemAboutToBeDeleted(item);
+
 #ifndef HB_EFFECTS
     delete item;
 #else
@@ -530,7 +536,7 @@ HbAbstractItemContainer::HbAbstractItemContainer(QGraphicsItem *parent) :
 {
     Q_D(HbAbstractItemContainer);
 
-	d->q_ptr = this;
+    d->q_ptr = this;
     d->init();
 }
 
@@ -601,6 +607,9 @@ void HbAbstractItemContainer::removeItems()
     d->mItems.clear();
     d->mItemStateList.clear();
     d->mItemStates.clear();
+
+    emit itemAboutToBeDeleted(0);
+
 }
 
 /*!
@@ -717,8 +726,8 @@ void HbAbstractItemContainer::setModelIndexes(const QModelIndex &startIndex)
     }
 
     // if items have been added/removed in the middle of the buffer, there might be items 
-	// that can be reused at the end of the buffer. The following block will scan for 
-	// those items and move them in correct position 
+    // that can be reused at the end of the buffer. The following block will scan for 
+    // those items and move them in correct position 
     int lastUsedItem = -1;
     for (int indexCounter = 0; indexCounter < indexList.count(); ++indexCounter) {
         HbAbstractViewItem *item = d->mItems.at(indexCounter);

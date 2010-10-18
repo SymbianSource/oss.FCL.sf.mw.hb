@@ -29,12 +29,13 @@
 #include "hbmenu_p.h"
 #include "hbaction.h"
 #include "hbstyle.h"
-#include "hbstyleoptionmenuitem_p.h"
-#include "hbframeitem.h"
-#include "hbtextitem.h"
+#include "hbiconitem.h"
 #include "hbevent.h"
 #include "hbcolorscheme.h"
 #include "hbwidgetfeedback.h"
+#include "hbstyleiconprimitivedata.h"
+#include "hbstyleframeprimitivedata.h"
+#include "hbstyletextprimitivedata.h"
 #include "hbtapgesture.h"
 #include "hbnamespace_p.h"
 
@@ -44,6 +45,32 @@
 #endif
 
 Q_DECLARE_METATYPE (QAction*)
+
+namespace {
+    const char* FRAME_ITEM_NAME = "frame";
+    const char* TEXT_ITEM_NAME = "text";
+    const char* SUBMENU_INDICATOR_ITEM_NAME = "submenu-indicator";
+    const char* CHECK_INDICATOR_ITEM_NAME = "check-indicator";
+    const char* SEPARATOR_ITEM_NAME = "separator";
+};
+
+/* macros */
+
+// intended to be called from within the updatePrimitive slot.
+#define UPDATE_PRIMITIVE( item, styleType ) \
+    if (item) { \
+        styleType _data; \
+        initPrimitiveData(&_data, item); \
+        style()->updatePrimitive(item, &_data, this); \
+    } \
+    
+// intended to be called from within the private _q_updateItem slot.
+#define PRIVATE_UPDATE_ITEM( check, styleType, item) \
+    if (check) { \
+        styleType _data; \
+        q->initPrimitiveData(&_data, item); \
+        q->style()->updatePrimitive(item, &_data, q); \
+    } \
 
 /*!
     \class HbMenuItem
@@ -79,14 +106,16 @@ Q_DECLARE_METATYPE (QAction*)
         HbWidgetPrivate(),
         action(0),
         menu(0),
-        textItem(0),
-        arrowItem(0),
-        checkItem(0),
-        separatorItem(0),
-        mFocusItem(0),
+        mTextItem(0),
+        mArrowItem(0),
+        mCheckItem(0),
+        mSeparatorItem(0),
         mFrame(0),
-        mChecked(false),
-        mRecycled(false)
+        mIndicateFocus(false),
+        mRecycled(false),
+        mCheckChanged(false),
+        mTextChanged(false),
+        mOldCheckState(false)
 {
 }
 
@@ -94,97 +123,147 @@ HbMenuItemPrivate::~HbMenuItemPrivate()
 {
 }
 
-bool HbMenuItemPrivate::createPrimitives(HbStyleOptionMenuItem const &option)
+/*
+    Just Creates the primitives.
+*/
+void HbMenuItemPrivate::createPrimitives()
 {
     Q_Q(HbMenuItem);
-    bool repolishNeeded(false);
 
-    HbAction *hbAction = qobject_cast<HbAction* >(action);
+    HbAction *hbAction = qobject_cast<HbAction*>(action);
 
     if (!mFrame && action && !action->isSeparator()) {
-        mFrame = q->style()->createPrimitive(HbStyle::P_MenuItem_frame, q);
-        q->style()->updatePrimitive(mFrame, HbStyle::P_MenuItem_frame, &option);
+        mFrame = q->style()->createPrimitive(HbStyle::PT_FrameItem, FRAME_ITEM_NAME, q);
         mFrame->setAcceptedMouseButtons(Qt::NoButton);
         mFrame->setZValue(-4.0);
-        HbStyle::setItemName(mFrame, "frame");
-        repolishNeeded = true;
     }
 
     if (action) {
-        if (!textItem) {
-            textItem = q->style()->createPrimitive(HbStyle::P_MenuItem_text, q);
-            textItem->setAcceptedMouseButtons(Qt::NoButton);
-            repolishNeeded = true;
+        // construct the textItem if needed.
+        if (!mTextItem) {
+            mTextItem = q->style()->createPrimitive(HbStyle::PT_TextItem, TEXT_ITEM_NAME, q);
+            mTextItem->setAcceptedMouseButtons(Qt::NoButton);
         }
-    } else if (textItem){
-        delete textItem;
-        textItem = 0;
-        repolishNeeded = true;
+    } else if (mTextItem) {
+        delete mTextItem;
+        mTextItem = 0;
     }
 
     if (hbAction && hbAction->menu() && !action->isSeparator()) {
-        if (!arrowItem) {
-            arrowItem = q->style()->createPrimitive(HbStyle::P_MenuItem_submenuindicator, q);
-            q->style()->updatePrimitive(arrowItem, HbStyle::P_MenuItem_submenuindicator, &option);
-            arrowItem->setAcceptedMouseButtons(Qt::NoButton);
-            repolishNeeded = true;
+        if (!mArrowItem) {
+            mArrowItem = q->style()->createPrimitive(HbStyle::PT_IconItem, SUBMENU_INDICATOR_ITEM_NAME, q);
+            mArrowItem->setAcceptedMouseButtons(Qt::NoButton);
         }
-    } else if (arrowItem){
-        delete arrowItem;
-        arrowItem = 0;
-        repolishNeeded = true;
+    } else if (mArrowItem){
+        delete mArrowItem;
+        mArrowItem = 0;
     }
 
     if (action && action->isCheckable() && !action->isSeparator()) {
-        if (!checkItem) {
-            checkItem = q->style()->createPrimitive(HbStyle::P_MenuItem_checkindicator, q);
-            checkItem->setAcceptedMouseButtons(Qt::NoButton);
-            repolishNeeded = true;
+        if (!mCheckItem) {
+            mCheckItem = q->style()->createPrimitive(HbStyle::PT_IconItem, CHECK_INDICATOR_ITEM_NAME, q);
+            mCheckItem->setAcceptedMouseButtons(Qt::NoButton);
         }
-    } else if (checkItem) {
-        delete checkItem;
-        checkItem = 0;
-        repolishNeeded = true;
+    } else if (mCheckItem) {
+        delete mCheckItem;
+        mCheckItem = 0;
     }
 
     if (action && action->isSeparator()) {
-        if (!separatorItem) {
-            separatorItem = q->style()->createPrimitive(HbStyle::P_MenuItem_separator, q);
-            separatorItem->setAcceptedMouseButtons(Qt::NoButton);
-            q->style()->updatePrimitive(separatorItem, HbStyle::P_MenuItem_separator, &option);
-            repolishNeeded = true;
+        if (!mSeparatorItem) {
+            mSeparatorItem = q->style()->createPrimitive(HbStyle::PT_IconItem, SEPARATOR_ITEM_NAME, q);
+            mSeparatorItem->setAcceptedMouseButtons(Qt::NoButton);
+            HbIconItem *separator = qgraphicsitem_cast<HbIconItem*>(mSeparatorItem);
+            if (separator) {
+                separator->setAspectRatioMode(Qt::IgnoreAspectRatio);
+                separator->setAlignment(Qt::AlignCenter);
+                separator->setIconName(QLatin1String("qtg_graf_popup_separator"));
+            }
         }
-    } else if (separatorItem){
-        delete separatorItem;
-        separatorItem = 0;
-        repolishNeeded = true;
+    } else if (mSeparatorItem) {
+        delete mSeparatorItem;
+        mSeparatorItem = 0;
     }
-    return repolishNeeded;
+}
+
+/* 
+    Deletes any existing primitives, then calls createPrimitives.
+*/
+void HbMenuItemPrivate::recreatePrimitives()
+{
+    delete mFrame; 
+    mFrame = 0;
+
+    delete mTextItem; 
+    mTextItem = 0;
+
+    delete mArrowItem;
+    mArrowItem = 0;
+
+    delete mCheckItem;
+    mCheckItem = 0;
+
+    delete mSeparatorItem;
+    mSeparatorItem = 0;
+
+    createPrimitives();
 }
 
 void HbMenuItemPrivate::_q_updateItem(bool forcedUpdate)
 {
     Q_Q(HbMenuItem);
-    if (!action)
-        return;
-    HbStyleOptionMenuItem option;
-    q->initStyleOption(&option);
-    bool isRepolishNeeded = createPrimitives(option);
-    HbTextItem *item = qgraphicsitem_cast<HbTextItem *>(textItem);
-    if (item && item->text() != action->text()) {
-        item->setText(action->text());
+
+    if (action) {
+        if (forcedUpdate) {
+            q->repolish();
+        }
+
+        if (forcedUpdate || evaluateRecreateNecessary()) {
+            q->recreatePrimitives();
+            q->updatePrimitives();
+        } else {
+            PRIVATE_UPDATE_ITEM( mTextChanged, HbStyleTextPrimitiveData, mTextItem)
+            PRIVATE_UPDATE_ITEM( mCheckChanged, HbStyleIconPrimitiveData, mCheckItem)
+        }
+
+        if (action->isEnabled() != q->isEnabled() || forcedUpdate) {
+            q->setEnabled(action->isEnabled());
+        }
     }
-    if (checkItem && (mChecked != option.checked || forcedUpdate)) {
-        q->style()->updatePrimitive(checkItem, HbStyle::P_MenuItem_checkindicator, &option);
-        mChecked = option.checked;
-    }
-    if (action->isEnabled() != q->isEnabled() || forcedUpdate) {
-        q->setEnabled(action->isEnabled());
+}
+
+
+/*
+    Determines if the action corresponding to the item
+    has changed enough that we need to recreate and update
+    all the primitives.
+
+    This function also sets flags for if the check-state
+    text, and icon have changed.
+*/
+bool HbMenuItemPrivate::evaluateRecreateNecessary()
+{
+    bool retVal = false;
+
+    if (action) {
+        if (!action->text().isNull() && !mTextItem) {
+            retVal = true;
+        } else if (action->text() != mOldText) {
+            mTextChanged = true;
+        }
+
+        if (!retVal && (action->isCheckable() && !mCheckItem)) {
+            retVal = true;
+        } else if (action->isChecked() != mOldCheckState) {
+            mCheckChanged = true;
+        }
+
+        if (!retVal && action->isSeparator() && !mSeparatorItem) {
+            retVal = true;
+        }
     }
 
-    if ((isRepolishNeeded && polished) || forcedUpdate) {
-        q->repolish();
-    }
+    return retVal;
 }
 
 /*!
@@ -230,24 +309,81 @@ HbMenu* HbMenuItem::menu() const
 
 /*!
     \reimp
- */
-void HbMenuItem::initStyleOption(HbStyleOptionMenuItem *option) const
-{
-    Q_D(const HbMenuItem);
-    HbWidget::initStyleOption(option);
+    
+    Called when the widget needs to initialize its primitives' data.
 
-    Q_ASSERT(option);
-    if (d->action) {
-        option->text = d->action->text();
-        option->separator = d->action->isSeparator();
-        option->checkable = d->action->isCheckable();
-        option->checked = d->action->isChecked();
-        option->arrow = false;
-        HbAction *hbAction = qobject_cast<HbAction *>(d->action);
-        if (hbAction) {
-            option->arrow = hbAction->menu();
+    Reimplemented from HbWidgetBase.  
+*/
+void HbMenuItem::initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive)
+{
+    Q_D( HbMenuItem );
+
+    HbWidget::initPrimitiveData(primitiveData, primitive);
+
+    QString itemName = HbStyle::itemName(primitive);
+
+    if (itemName == SUBMENU_INDICATOR_ITEM_NAME) {
+        // submenu indicator
+        HbStyleIconPrimitiveData *data =
+            hbstyleprimitivedata_cast<HbStyleIconPrimitiveData*>(primitiveData);
+        if (data) {
+            data->iconName = QLatin1String("qtg_mono_options_menu");
         }
-    }
+
+    } else if (itemName == CHECK_INDICATOR_ITEM_NAME && d->action) {
+        // check indicator
+        HbStyleIconPrimitiveData *data = 
+            hbstyleprimitivedata_cast<HbStyleIconPrimitiveData*>(primitiveData);
+        if (data) {
+            d->mOldCheckState = d->action->isChecked();
+            if (d->mOldCheckState) {
+                data->iconName = QLatin1String("qtg_small_tick");
+            } else {
+                data->iconName = QLatin1String("");
+            }
+        }
+
+    } else if (itemName == TEXT_ITEM_NAME && d->action) {
+        // text
+        HbStyleTextPrimitiveData *data =
+            hbstyleprimitivedata_cast<HbStyleTextPrimitiveData*>(primitiveData);
+        if (data) {
+            d->mOldText = d->action->text();
+            data->text = d->mOldText;
+        }
+
+    } else if (itemName == FRAME_ITEM_NAME) {
+        // frame
+        HbStyleFramePrimitiveData *data = 
+            hbstyleprimitivedata_cast<HbStyleFramePrimitiveData*>(primitiveData);
+        if (data) {
+            data->frameType = HbFrameDrawer::NinePieces;
+            if (d->mIndicateFocus) {
+                data->frameGraphicsName = QLatin1String("qtg_fr_popup_list_pressed");
+            } else {
+                data->frameGraphicsName = QLatin1String("qtg_fr_popup_list_normal");
+            }
+        }
+    } 
+}
+
+/*!
+    \reimp
+
+    updates primitives.
+
+    Reimplemented from HbWidgetBase.
+*/
+void HbMenuItem::updatePrimitives()
+{
+    Q_D( HbMenuItem );
+    HbWidget::updatePrimitives();
+
+    UPDATE_PRIMITIVE( d->mTextItem, HbStyleTextPrimitiveData )
+    UPDATE_PRIMITIVE( d->mArrowItem, HbStyleIconPrimitiveData )
+    UPDATE_PRIMITIVE( d->mCheckItem, HbStyleIconPrimitiveData )
+    UPDATE_PRIMITIVE( d->mSeparatorItem, HbStyleIconPrimitiveData )
+    UPDATE_PRIMITIVE( d->mFrame, HbStyleFramePrimitiveData )
 }
 
 
@@ -256,6 +392,11 @@ void HbMenuItem::initStyleOption(HbStyleOptionMenuItem *option) const
  */
 void HbMenuItem::changeEvent(QEvent *event)
 {
+ if (event->type() == QEvent::FontChange ||
+     event->type() == QEvent::PaletteChange ||
+     event->type() == QEvent::ParentChange ||
+     event->type() == QEvent::StyleChange)
+     return;
     HbWidget::changeEvent(event);
     if (event->type() == QEvent::LayoutDirectionChange) {
         Q_D(HbMenuItem);
@@ -270,28 +411,27 @@ void HbMenuItem::changeEvent(QEvent *event)
 #ifdef HB_GESTURE_FW
 void HbMenuItem::gestureEvent(QGestureEvent *event)
 {
-    //Q_D(HbMenuItem);
     if(HbTapGesture *gesture = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
         if (gesture->state() == Qt::GestureStarted) {
-            if (scene())
+            if (scene()) {
                 scene()->setProperty(HbPrivate::OverridingGesture.latin1(),Qt::TapGesture);
+            }
             gesture->setProperty(HbPrivate::ThresholdRect.latin1(), mapRectToScene(boundingRect()).toRect());
-
-            // Tactile feedback                        
             HbWidgetFeedback::triggered(this, Hb::InstantPressed);
-
             pressStateChanged(true);
             event->accept();
         } else if (gesture->state() == Qt::GestureFinished) {
-            if (scene())
+            if (scene()) {
                 scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+            }
             HbWidgetFeedback::triggered(this, Hb::InstantReleased);
             pressStateChanged(false);
             event->accept();            
             HbMenuPrivate::d_ptr(menu())->_q_triggerAction(this);
         } else if (gesture->state() == Qt::GestureCanceled) {
-            if (scene())
+            if (scene()) {
                 scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
+            }
             pressStateChanged(false);
         }
     }
@@ -308,25 +448,18 @@ void HbMenuItem::setAction(QAction *action)
     if (d->action && actionChanged){
         disconnect(d->action, SIGNAL(changed()), this, SLOT(_q_updateItem()));
     }
+
     if (actionChanged) {
         d->action = action;
         d->_q_updateItem();
         connect(d->action, SIGNAL(changed()), this, SLOT(_q_updateItem()));
-    }
-    else if (!actionChanged && d->mRecycled){
+    } else if (d->mRecycled){
         d->_q_updateItem(true);
         connect(d->action, SIGNAL(changed()), this, SLOT(_q_updateItem()));
         d->mRecycled = false;
     }
-
 }
 
-/*!
-    This is for convienience.This functionality can be internal to menu item
-    also and cal be done by following changed() signal emitted from action.But this gives more precise
-    control for menu container.This is called when action has been made invisible and
-    container recycles the item.
-*/
 void HbMenuItem::recycleItem()
 {
     Q_D(HbMenuItem);
@@ -339,19 +472,21 @@ void HbMenuItem::recycleItem()
 bool HbMenuItem::checkboxExists()
 {
     Q_D(HbMenuItem);
-    return (d->checkItem != 0);
+    return d->action && d->action->isCheckable();
 }
 
 bool HbMenuItem::submenuExists()
 {
     Q_D(HbMenuItem);
-    return (d->arrowItem != 0);
+    HbAction *hbAction = qobject_cast<HbAction*>(d->action);
+    return hbAction && hbAction->menu();
+
 }
 
 bool HbMenuItem::separatorExists()
 {
     Q_D(HbMenuItem);
-    return (d->separatorItem != 0);
+    return d->action && d->action->isSeparator();
 }
 
 /*!
@@ -375,23 +510,48 @@ void HbMenuItem::pressStateChanged(bool value)
 {
     Q_D(HbMenuItem);
 
-    if (value) {
-        if (!d->mFocusItem) {
-            d->mFocusItem = style()->createPrimitive(HbStyle::P_MenuItem_focus, this);
-        }
-        HbStyleOptionMenuItem option;
-        initStyleOption(&option);
-        style()->updatePrimitive(d->mFocusItem, HbStyle::P_MenuItem_focus,&option);
-        HbStyle::setItemName(d->mFocusItem,"focus-indicator");
-        d->mFocusItem->setZValue(-1.0);
-        HbFrameItem *focusItem = qgraphicsitem_cast<HbFrameItem*>(d->mFocusItem);
-        if(focusItem){
-            focusItem->setGeometry(boundingRect());
-        }
-    }  else if (d->mFocusItem){
-        delete d->mFocusItem;
-        d->mFocusItem = 0;
+    bool tempVal = this->isEnabled() ? value : false;
+
+    if (tempVal != d->mIndicateFocus) {
+        d->mIndicateFocus = tempVal;
+        updatePrimitives();
     }
+}
+
+/*!
+    \reimp
+ */
+QVariant HbMenuItem::itemChange(GraphicsItemChange change, const QVariant &value)
+{
+    Q_D(HbMenuItem);
+    // Remove highlighting on a menuitem when the menu disappears.
+    if (change == QGraphicsItem::ItemVisibleHasChanged && !value.toBool()) {
+        pressStateChanged(false);
+    } else if (change == QGraphicsItem::ItemVisibleChange) {
+        if (value.toBool()) {
+            if (d->polished && !testAttribute(Qt::WA_Resized)) {
+                adjustSize();
+                setAttribute(Qt::WA_Resized, false);
+            }
+            return QGraphicsItem::itemChange(change, value);
+        }
+    }
+
+    return HbWidget::itemChange(change, value);
+}
+
+/*
+    \reimp
+
+    Called to recreate primitives
+*/
+void HbMenuItem::recreatePrimitives()
+{
+    Q_D( HbMenuItem );
+
+    d->recreatePrimitives();
+
+    HbWidget::recreatePrimitives();
 }
 
 #include "moc_hbmenuitem_p.cpp"

@@ -23,17 +23,19 @@
 **
 ****************************************************************************/
 
-#include "hbgestures_p.h"
-#include "hbtapgesturelogic_p.h"
 #include "hbtapgesture.h"
-#include "hbtapgesture_p.h"
-#include "hbnamespace_p.h"
+#include "hbtapgesturelogic_p.h"
+#include "hbgestures_p.h"
 
+#include "hbnamespace_p.h"
 #include <hbdeviceprofile.h>
+
 #include <QEvent>
 #include <QMouseEvent>
 #include <QGesture>
 #include <QDebug>
+
+#include <qmath.h>
 
 //#define GESTURE_DEBUG
 #ifndef GESTURE_DEBUG
@@ -80,6 +82,10 @@ void HbTapGestureLogic::resetGesture(HbTapGesture *gesture)
     gesture->setProperty(HbPrivate::ThresholdRect.latin1(), QVariant());
     gesture->setProperty(HbPrivate::VerticallyRestricted.latin1(), QVariant());
     gesture->setProperty(HbPrivate::HorizontallyRestricted.latin1(), QVariant());
+    if (gesture->d_ptr->mTimerId)
+        gesture->killTimer(gesture->d_ptr->mTimerId);
+    gesture->d_ptr->mTimerId = 0;
+    gesture->d_ptr->mTapStyleHint = HbTapGesture::Tap;
 }
 
 /*!
@@ -156,12 +162,12 @@ QGestureRecognizer::Result HbTapGestureLogic::handleMouseMove(
             thresholdRect.adjust(-mTapRadius, -mTapRadius, mTapRadius, mTapRadius);
 
             if (gesture->property(HbPrivate::VerticallyRestricted.latin1()).toBool()) {
-                thresholdRect.setTop(gesture->sceneStartPos().y() - mTapRadius);
-                thresholdRect.setBottom(gesture->sceneStartPos().y() + mTapRadius);
+                thresholdRect.setTop(qFloor(gesture->sceneStartPos().y() - mTapRadius));
+                thresholdRect.setBottom(qCeil(gesture->sceneStartPos().y() + mTapRadius));
             }
             if (gesture->property(HbPrivate::HorizontallyRestricted.latin1()).toBool()){
-                thresholdRect.setLeft(gesture->sceneStartPos().x() - mTapRadius);
-                thresholdRect.setRight(gesture->sceneStartPos().x() + mTapRadius);
+                thresholdRect.setLeft(qFloor(gesture->sceneStartPos().x() - mTapRadius));
+                thresholdRect.setRight(qCeil(gesture->sceneStartPos().x() + mTapRadius));
             }
 
             if (!thresholdRect.contains(gesture->scenePosition().toPoint())) {
@@ -245,6 +251,16 @@ QGestureRecognizer::Result HbTapGestureLogic::recognize(
         DEBUG() << "WARNING: Ignoring tap gesture because of invalid arguments from gesture fw.";
         return QGestureRecognizer::Ignore;
     }
+    switch(event->type())
+    {
+    case QEvent::TouchBegin:
+    case QEvent::TouchUpdate:
+    case QEvent::TouchEnd:
+        if (!watched->isWidgetType())
+            return QGestureRecognizer::Ignore;
+    default:
+        break;
+    }
 
     switch(event->type())
     {
@@ -262,12 +278,37 @@ QGestureRecognizer::Result HbTapGestureLogic::recognize(
         return handleTimerEvent(gestureState, gesture, watched);
 
     case QEvent::TouchBegin:
+            if (gestureState == Qt::NoGesture) {
+                QTouchEvent *te = static_cast<QTouchEvent *>(event);
+                if (te->touchPoints().count() == 1) {
+                    QPointF screenPos = te->touchPoints().first().screenPos();
+                    gesture->setPosition(screenPos);
+                    gesture->setHotSpot(screenPos);
+                    gesture->setStartPos(screenPos);
+                    gesture->setScenePosition(HbGestureUtils::mapToScene(watched, screenPos));
+                    gesture->setSceneStartPos(HbGestureUtils::mapToScene(watched, screenPos));
+                    mTapRadius = (int)(HbDefaultTapRadius * HbDeviceProfile::current().ppmValue());
+
+                    HbTapGesturePrivate* d_ptr = gesture->d_func();
+                    d_ptr->mTapStyleHint = HbTapGesture::Tap;
+                    if ( d_ptr->mTimerId ) gesture->killTimer(d_ptr->mTimerId);
+                    d_ptr->mTimerId = gesture->startTimer(HbTapAndHoldTimeout);
+
+                    return QGestureRecognizer::TriggerGesture;
+                }
+            }
+            break;
     case QEvent::TouchUpdate:        
         if(toTouchEvent(event)->touchPoints().count() > 1 && gestureState != Qt::NoGesture) {
             // Cancel tap on multiple fingers
             return QGestureRecognizer::CancelGesture;
         }
-
+        break;
+    case QEvent::TouchEnd:
+        if (gestureState != Qt::NoGesture) {
+            return QGestureRecognizer::FinishGesture;
+        }
+        break;
     default: break;
     }
 

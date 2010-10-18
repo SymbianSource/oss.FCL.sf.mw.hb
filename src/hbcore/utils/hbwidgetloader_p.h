@@ -52,17 +52,9 @@ public:
         Hb::Edge srcEdge;
         Hb::Edge dstEdge;
         
-        HbXmlLengthValue::Type minType;
-        float minVal;
-        HbString minText;
-
-        HbXmlLengthValue::Type prefType;
-        float prefVal;
-        HbString prefText;
-
-        HbXmlLengthValue::Type maxType;
-        float maxVal;
-        HbString maxText;
+        HbVector<int> minVal;
+        HbVector<int> prefVal;
+        HbVector<int> maxVal;
 
         int sizepolicy;
         int direction;
@@ -70,7 +62,7 @@ public:
         HbString anchorId;
 
         AnchorItem(HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
-            : srcId(type), dstId(type), minText(type), prefText(type), maxText(type), anchorId(type) {}
+            : srcId(type), dstId(type), minVal(type), prefVal(type), maxVal(type), anchorId(type) {}
     };
 
     struct LayoutDefinition {

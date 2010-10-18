@@ -26,7 +26,6 @@
 #ifndef HBGESTURERECOGNIZERS_P_H
 #define HBGESTURERECOGNIZERS_P_H
 
-#include "hbgestures_p.h"
 #include "hbpangesturelogic_p.h"
 #include "hbtapgesturelogic_p.h"
 #include "hbtapandholdgesturelogic_p.h"

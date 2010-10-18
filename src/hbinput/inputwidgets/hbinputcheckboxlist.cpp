@@ -116,10 +116,13 @@ HbWidget *HbInputCheckBoxList::createCustomWidget()
     d->mListWidget = new HbListWidget();
     d->mListWidget->setSelectionMode(HbAbstractItemView::MultiSelection);
     d->mListWidget->contentWidget()->setContentsMargins(10, 10, 10, 10);
+
+    QString objectName = modelItem->contentWidgetData(QString("objectName")).toString();
+    d->mListWidget->setObjectName(objectName);
     
     // get listwidget's widget private ptr
     HbWidgetPrivate *priv = static_cast<HbWidgetPrivate*>(HbWidgetBasePrivate::d_ptr(d->mListWidget));
-    priv->setBackgroundItem(HbStyle::P_DataItem_background);
+    priv->setBackgroundItem(HbStylePrivate::P_DataItem_background);
     d->mListWidget->setScrollDirections(0);
 
     QStringList items = modelItem->contentWidgetData(QString("items")).toStringList();
@@ -131,14 +134,12 @@ HbWidget *HbInputCheckBoxList::createCustomWidget()
 
     QList<QVariant> selectedValues = modelItem->contentWidgetData(QString("selectedItems")).toList();
     for (int i = 0; i < d->mListWidget->count(); ++i) {
+        HbAbstractViewItem *viewItem = d->mListWidget->viewItem(i);
+        viewItem->setObjectName(objectName + "_" + items.at(i));
         if (selectedValues.at(i).toBool()) {
-            HbAbstractViewItem *viewItem = d->mListWidget->viewItem(i);
             d->mListWidget->setCurrentIndex(viewItem->modelIndex(), QItemSelectionModel::Select);
         }
     }
-
-    QString objectName = modelItem->contentWidgetData(QString("objectName")).toString();
-    d->mListWidget->setObjectName(objectName);
 
     connect(d->mListWidget, SIGNAL(activated(const QModelIndex &)), this, SLOT(itemActivated(const QModelIndex &)));
 

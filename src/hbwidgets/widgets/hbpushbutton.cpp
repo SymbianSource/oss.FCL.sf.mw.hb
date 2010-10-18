@@ -48,69 +48,116 @@
 /*!
     @beta
     @hbwidgets
+
     \class HbPushButton
 
-    \brief The HbPushButton widget provides a button with command.
+    \brief The HbPushButton class provides a push button widget, which enables the
+    user to perform a command.
     
-    \image html hbpushbutton.png A pushbutton with text ,icon and tooltip provided . 
+    A push button widget enables a user to perform an important command. 
+    A push button has a rectangular shape and typically there is a text 
+    describing its command, an icon, and a tooltip shown on the button as in the 
+    following picture.
     
-    A push button enable users to perform important commands easily.
-    A push button has a rectangular shape and typically displays a text label describing its command.
-    Push Button can appear in any container except toolbars where ToolButton HbToolButton is used and palettes.
-    A simple push button can be created as shown in the example below.
+    \image html hbpushbutton.png A push button with a text, an icon, and a tooltip. 
+    
+    You can set the text and the icon of a push button with HbPushButton() 
+    constructors and change them later with setText() and setIcon(). A push 
+    button also can have an additional text which you can set with 
+    setAdditionalText(). You can set the alignment of the text and additional text 
+    with setTextAlignment() and setAdditionalTextAlignment(). The default value 
+    for the alignment of the text and additional text is the horizontally and vertically 
+    centered alignment. The push button layouts with \a stretched value \c true 
+    and \c false (default) are the following:
+    
+    - Icon and text:
+      - \a stretched = \c true:  The icon and the text are horizontally aligned.
+          \image html buttonIconTextH.png A stretched push button with an icon and a text.
+      - \a stretched = \c false: The icon and the text are vertically aligned.
+          \image html buttonIconTextV.png A non-stretched push button with an icon and a text.
+    - Icon, text and additional text:
+      - \a stretched = \c true:  The icon and both texts are horizontally aligned in one 
+      line.
+          \image html buttonIconTextAdditionalTextH.png A stretched push button with an icon, a text and an additional text.
+      - \a stretched = \c false: Both texts are vertically aligned and an icon is 
+      horizontally aligned in relation to the texts.
+          \image html buttonIconTextAdditionalTextV.png A non-stretched push button with an icon, a text and an additional text.
+    - Text and additional text
+      - \a stretched = \c true:  Not applicable.
+      - \a stretched = \c false: Both texts are vertically aligned. You can use this 
+      layout for a dialer or a virtual keypad button, for example.          
+          \image html buttonTextAdditional.png A non-stretched push button with a text and an additional text.
+          
+    Note that a push button does not have a stretched layout by default.
+
+    A toggle button is a special type of a push button. The push button becomes 
+    a 'toggle button' -type push button, a 'toggle button' for short, if you set 
+    the \c Checkable property value of a push button to \c true. A toggle button 
+    can be in \c normal, \c highlighted , \c disabled, or \c latched state (see 
+    state descriptions below). Normally you use a toggle button as an on-off 
+    button that varies between \c normal (off) and \c latched (on) states as the 
+    user presses the toggle button.
+
+    A push button can have the following states:
+    - normal: the push button does not have focus (i.e. it is not highlighted) 
+    but the user can press it down.
+    - highlighted: the push button has focus.
+    - pressed: the push button is pressed down.
+    - latched: the push button stays pressed down even though the user does not 
+    press it.
+    - disabled: the user cannot press down the push button.
+
+    A push button emits the pressed(), released(), clicked() and toggled() 
+    signals which are inherited from HbAbstractButton as well as 
+    HbPushButton::longPress() signal when a push button is pressed for a long 
+    time. You can use a push button in any container except toolbars with 
+    HbToolButton objects and palettes.
+    
+    
+    \section _usecases_hbpushbutton Using the HbPushButton class
+    
+    \subsection _uc_hbpushbutton_001 Creating a push button.
+    
+    The following code snippet creates a simple push button.
+    
     \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,16}
-
-    A Push buttons display a textual label. Pushbutton also
-    can have icon.These can be set using the constructors and changed later using setText(),setIcon( ).
-    In addition to this a push button also displays additional text label.
-    Additional text can be set using setAdditionalText().
-    Aligning of icon , text and additional text can be changed using setStretched()true/false property.
-    Default with setStretched()=false it will place icon and text vertically.
-
-    \image html buttonIconTextV.png A pushbutton with icon ,text.
-
-    and along with additional text will place icon horizontally to both texts ,where both text comes vertically aligned.    
     
-    \image html buttonIconTextAdditionalTextV.png A pushbutton with icon ,text and additional text.
-
-    For setStretched()=true, it will stretch layout to have icon and text horizontally,side by side.
-
-    \image html buttonIconTextH.png A pushbutton with icon ,text.
-
-    and along with additional text will place all of them to Horizontally in one line .
+    \subsection _uc_hbpushbutton_002 Adding buttons to the layout.
     
-    \image html buttonIconTextAdditionalTextH.png A pushbutton with custom icon ,text and additional text.
+    The push button is derived from HbWidget so it can be added to any 
+    QGraphicsLayout object for defining the layout. The following code snippet 
+    adds a button with "Stop" text and an another button with an image and "Play" 
+    text to a QGraphicsLinearLayout object. Note that QGraphicsLinearLayout 
+    inherits QGraphicsLayout.
 
-    Pushbutton can have both text and additoinal text placed vertically,this can be used in case Dialer button or 
-    Virtual key pad buttons with stretched = false.Pushbutton doesn't supports both text in one line 
-    stretched = true is not valid.
-    Pushbutton will not have stretch layout by default.
-       
-    \image html buttonTextAdditional.png A pushbutton with additional text and text.
-
-    Pushbutton can have different states like normal, pressed, disabled, latched and focused.
-    A push button emits the signal clicked() when it is activated by tapping it.
-    Push buttons also provide less commonly used signals, for example, pressed() and
-    released() and emits longPress() on long press.
-
-    Alignment of the text within the text and additionaltext items can be set using 
-    setTextAlignment() and setAdditionalText(), default text alignment is Qt::AlignHCenter | Qt::AlignVCenter
-
-    The push button is derived from HbWidget so it can be added to any QGraphicsLayout
-    instance for layouting.
     \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,17}
 
-    Push button can also be used as toggle button , following is code snippet
-     \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,30}
+    \subsection _uc_hbpushbutton_003 Using a push button as a toggle button.
+    
+    The following code snippet creates a push button which is used as a toggle 
+    button. The button has a text, an icon, a tooltip, and its \c Checkable 
+    property value is set to \c true.
 
-    and onOffButton as 
-     \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,29}
+    \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,30}
 
-    Push button will come up with additional text following is code snippet.
-    1. Push button with icon , text and additionalText
+    \subsection _uc_hbpushbutton_004 Using a push button as an on-off button.
+    
+    The following code snippet creates a push button which is used as an on-off 
+    button. The button has an icon, a text, and a tooltip.
+
+    \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,29}
+
+    \subsection _uc_hbpushbutton_005 Creating a push button with an icon, a text, and an additional text.
+    
+    The following code snippet creates a push button with with an icon, a text 
+    and, an additional text.
+
      \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,35}
 
-    2. Pushbutton with additionalText and text.
+    \subsection _uc_hbpushbutton_006 Creating a push button with a text and an additional text.
+    
+    The following code snippet creates a push button with a text, and an additional text.
+
      \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,36}
 
     \sa HbAbstractButton , HbToolButton
@@ -118,13 +165,15 @@
     
 
 /*!
-    \reimp
+    
     \fn int HbPushButton::type() const
  */
 
 /*!
     \fn void HbPushButton::longPress( QPointF )
-    This signal is emitted in case of longpress.
+    
+    This signal is emitted when the user presses the push button for a long 
+    time.
  */
 
 HbPushButtonPrivate::HbPushButtonPrivate() :
@@ -166,11 +215,11 @@ void HbPushButtonPrivate::createPrimitives()
     Q_Q(HbPushButton);
 
     if ( !frameItem ) {
-        frameItem = q->style()->createPrimitive( HbStyle::P_PushButton_background, q );
+        frameItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_PushButton_background, q );
     }
     if ( !text.isNull() ) {
         if ( !textItem ) {
-            textItem = q->style()->createPrimitive( HbStyle::P_PushButton_text, q );
+            textItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_PushButton_text, q );
         }
     } else {
         if( textItem ){
@@ -180,7 +229,7 @@ void HbPushButtonPrivate::createPrimitives()
     }
     if ( !additionalText.isNull() ) {
         if ( !additionalTextItem ) {
-            additionalTextItem = q->style()->createPrimitive( HbStyle::P_PushButton_additionaltext, q );
+            additionalTextItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_PushButton_additionaltext, q );
         }
     } else {
         if( additionalTextItem ){
@@ -191,7 +240,7 @@ void HbPushButtonPrivate::createPrimitives()
 
     if ( !icon.isNull() ) {
         if ( !iconItem ) {
-            iconItem = q->style()->createPrimitive( HbStyle::P_PushButton_icon, q);
+            iconItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_PushButton_icon, q);
         }
     } else {
         if( iconItem ) {
@@ -201,20 +250,13 @@ void HbPushButtonPrivate::createPrimitives()
     }
 
     if( !touchArea ) {
-        touchArea = q->style()->createPrimitive( HbStyle::P_PushButton_toucharea, q );
+        touchArea = HbStylePrivate::createPrimitive( HbStylePrivate::P_PushButton_toucharea, q );
         if(QGraphicsObject *ta = qgraphicsitem_cast<QGraphicsObject*>(touchArea)) {
             ta->grabGesture(Qt::TapGesture);
             q->ungrabGesture(Qt::TapGesture);
         } else {
             q->grabGesture(Qt::TapGesture);
         }
-    }
-
-    if( !focusItem ) {
-        focusItem = q->style()->createPrimitive(HbStyle::P_PushButton_focus, q);
-        //focus primitive is will not be visible by default, 
-        //only in case of keyboard focus events it will be Visible.
-        focusItem->setVisible( false );
     }
 }
 
@@ -235,8 +277,7 @@ void HbPushButtonPrivate::initialize()
 }
 
 /*!
-    @beta
-    Constructs a new HbPushButton with \a parent.
+    Constructs a push button with \a parent.
  */
 HbPushButton::HbPushButton( QGraphicsItem *parent )
     : HbAbstractButton( *new HbPushButtonPrivate, parent )
@@ -249,8 +290,7 @@ HbPushButton::HbPushButton( QGraphicsItem *parent )
 }
 
 /*!
-    @beta
-    Constructs a new HbPushButton with \a text and \a parent.
+    Constructs a push button with \a text and \a parent.
  */
 HbPushButton::HbPushButton( const QString &text, QGraphicsItem *parent )
     : HbAbstractButton( *new HbPushButtonPrivate, parent )
@@ -265,8 +305,7 @@ HbPushButton::HbPushButton( const QString &text, QGraphicsItem *parent )
 }
 
 /*!
-    @beta
-    Constructs a new HbPushButton with \a icon, \a text and \a parent.
+    Constructs a push button with \a icon, \a text, and \a parent.
  */
 HbPushButton::HbPushButton( const HbIcon &icon, const QString &text, QGraphicsItem *parent )
     : HbAbstractButton( *new HbPushButtonPrivate, parent )
@@ -281,7 +320,7 @@ HbPushButton::HbPushButton( const HbIcon &icon, const QString &text, QGraphicsIt
 }
 
 /*!
-    Destructs the push button.
+    Destructor.
  */
 HbPushButton::~HbPushButton( )
 {
@@ -289,10 +328,8 @@ HbPushButton::~HbPushButton( )
 }
 
 /*!
-    @beta
-    Sets the \a background of the button.
-
-    \note The background can contain different images for pressed and released states.
+    Sets the \a background shown on a push button. The background of a push 
+    button can have different images for pressed and released states.
 
     \sa background()
  */
@@ -304,13 +341,12 @@ void  HbPushButton::setBackground( const HbIcon &background )
         d->backgroundFrameDrawer = 0;
         HbStyleOptionPushButton buttonOption;
         initStyleOption( &buttonOption );
-        style()->updatePrimitive( d->frameItem, HbStyle::P_PushButton_background, &buttonOption );
+        HbStylePrivate::updatePrimitive( d->frameItem, HbStylePrivate::P_PushButton_background, &buttonOption );
     }
 }
 
 /*!
-    @beta
-    Returns the background of the button.
+    Returns the background shown on a push button.
 
     \sa setBackground()
  */
@@ -321,11 +357,10 @@ HbIcon HbPushButton::background( ) const
 }
 
 /*!
-    @beta
-    Sets the \a framebackground of the button.
-
-    \note The background can contain different types of frame drawers(Nine piece,
-    three piece or single).Ownership is transferred to the Pushbutton
+    Sets the \a frame background shown on a push button. The frame background 
+    of a push button can have the following types of frame drawers: 9-piece, 3-
+    piece horizontal, 3-piece vertical, and single. The ownership is transferred 
+    to the push button.
 
     \sa frameBackground()
  */
@@ -337,13 +372,12 @@ void  HbPushButton::setFrameBackground( HbFrameDrawer *backgroundFrameDrawer )
         d->background = HbIcon( );
         HbStyleOptionPushButton buttonOption;
         initStyleOption( &buttonOption );
-        style( )->updatePrimitive( d->frameItem, HbStyle::P_PushButton_background, &buttonOption );
+        HbStylePrivate::updatePrimitive( d->frameItem, HbStylePrivate::P_PushButton_background, &buttonOption );
     }
 }
 
 /*!
-    @beta
-    Returns the background of the button.
+    Returns the background shown on a push button.
 
     \sa setBackground()
  */
@@ -355,8 +389,7 @@ HbFrameDrawer *HbPushButton::frameBackground( ) const
 
 
 /*!
-    @beta
-    Sets the \a text shown on the button.
+    Sets the \a text shown on a push button.
 
     \sa text()
  */
@@ -371,7 +404,7 @@ void HbPushButton::setText( const QString &text )
         if( d->textItem ) {
             HbStyleOptionPushButton buttonOption;
             initStyleOption( &buttonOption );
-            style( )->updatePrimitive( d->textItem, HbStyle::P_PushButton_text, &buttonOption);
+            HbStylePrivate::updatePrimitive( d->textItem, HbStylePrivate::P_PushButton_text, &buttonOption);
             if ( isEnabled() ) {
                 setProperty("state", "normal");
             }
@@ -384,8 +417,7 @@ void HbPushButton::setText( const QString &text )
 
 
 /*!
-    @beta
-    Returns the text shown on the button.
+    Returns the text shown on a push button.
 
     \sa setText()
  */
@@ -397,14 +429,18 @@ QString HbPushButton::text( ) const
 
 
 /*!
-    @beta
-    Sets the \a additional text shown on the button.
-    Additional text is only shown in case 
-    1. with icon and text in Qt::Horizontal alignment.
-    2. with additionalText and text in Qt::Vertical alignment.
+    Sets the additional text shown on a push button, defined by \a 
+    additionalText. Additional text is only shown on the button in the following 
+    cases: 
+    
+    - Icon, text, and additional text are horizontally aligned in one line.
+    - Text and additional text are vertically aligned and icon is horizontally 
+    aligned in relation to the texts.
+    - Text and additional text are vertically aligned.
 
     \sa additionalText()
  */
+ 
 void HbPushButton::setAdditionalText( const QString &additionalText )
 {
     Q_D( HbPushButton );
@@ -416,7 +452,7 @@ void HbPushButton::setAdditionalText( const QString &additionalText )
         if( d->additionalTextItem ) {
             HbStyleOptionPushButton buttonOption;
             initStyleOption( &buttonOption );
-            style( )->updatePrimitive( d->additionalTextItem, HbStyle::P_PushButton_additionaltext, &buttonOption);
+            HbStylePrivate::updatePrimitive( d->additionalTextItem, HbStylePrivate::P_PushButton_additionaltext, &buttonOption);
             if ( isEnabled() ) {
                 setProperty("state", "normal");
             }
@@ -428,8 +464,7 @@ void HbPushButton::setAdditionalText( const QString &additionalText )
 }
 
 /*!
-    @beta
-    Returns the additional text shown on the button.
+    Returns the additional text shown on a push button.
 
     \sa setAdditionalText()
  */
@@ -440,10 +475,9 @@ QString HbPushButton::additionalText( ) const
 }
 
 /*!
-    @beta
-    Sets the \a icon shown on the button.
-
-    \note The icon can contain images for different modes.
+    
+    Sets the \a icon shown on a push button. Each icon mode can have a 
+    different image.
 
     \sa icon()
  */
@@ -460,7 +494,7 @@ void HbPushButton::setIcon( const HbIcon &icon )
         if( d->iconItem ) {
             HbStyleOptionPushButton buttonOption;
             initStyleOption( &buttonOption );
-            style()->updatePrimitive( d->iconItem, HbStyle::P_PushButton_icon, &buttonOption );
+            HbStylePrivate::updatePrimitive( d->iconItem, HbStylePrivate::P_PushButton_icon, &buttonOption );
             if ( isEnabled() ) {
                 setProperty("state", "normal");
             } 
@@ -473,8 +507,8 @@ void HbPushButton::setIcon( const HbIcon &icon )
 }
 
 /*!
-    @beta
-    Returns the icon shown on the button.
+    Returns the icon shown on a push button.
+    
     \sa setIcon()
  */
 
@@ -485,21 +519,21 @@ HbIcon HbPushButton::icon( ) const
 }
 
 /*!
-    @beta
-    Set the text alignment for primarytext  and additional text.
-    The default alignment is Qt::AlignHCenter | Qt::AlignVCenter.
+    Sets the alignment for the text. The default alignment is 
+    horizontally and vertically aligned.
+    
     \sa textAlignment()
 */
 void HbPushButton::setTextAlignment( Qt::Alignment alignment )
 {
     Q_D( HbPushButton ); 
 
-    //HbWidgetBase* textItem = static_cast<HbWidgetBase*>(d->textItem);		
+    //HbWidgetBase* textItem = static_cast<HbWidgetBase*>(d->textItem);     
     if( !d->textItem ) {
         //need to create text item if user call alignment api before setText.
-        d->textItem = style( )->createPrimitive( HbStyle::P_PushButton_text, this);
+        d->textItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_PushButton_text, this);
     }
-    //HbWidgetBasePrivate *textItem_p = HbWidgetBasePrivate::d_ptr(textItem);	
+    //HbWidgetBasePrivate *textItem_p = HbWidgetBasePrivate::d_ptr(textItem);   
     // check for textitem and api protection flag
     if( alignment != d->textAlignment ){
         //take the alignment 
@@ -509,15 +543,15 @@ void HbPushButton::setTextAlignment( Qt::Alignment alignment )
         d->hasTextAlignment = true;
         HbStyleOptionPushButton buttonOption;            
         initStyleOption( &buttonOption );
-        style()->updatePrimitive( 
-        d->textItem, HbStyle::P_PushButton_text, &buttonOption );
+        HbStylePrivate::updatePrimitive( 
+        d->textItem, HbStylePrivate::P_PushButton_text, &buttonOption );
     }
     d->hasTextAlignment = true;
 }
 
 /*!
-    @beta
-    Returns the text alignment for primary text and additional text
+    Returns the text alignment for the text.
+    
     \sa setTextAlignment()
 */
 Qt::Alignment HbPushButton::textAlignment( ) const
@@ -528,19 +562,19 @@ Qt::Alignment HbPushButton::textAlignment( ) const
 
 
 /*!
-    @beta
-    Set the text alignment for additional text.
-    The default alignment is Qt::AlignHCenter | Qt::AlignVCenter.
+    Sets the \a alignment for the additional text. The default alignment is 
+    horizontally and vertically centered alignment.
+
     \sa additionalTextAlignment()
 */
 void HbPushButton::setAdditionalTextAlignment( Qt::Alignment alignment )
 {
     Q_D( HbPushButton ); 
 
-    //HbWidgetBase* additionalTextItem = static_cast<HbWidgetBase*>(d->additionalTextItem);	
+    //HbWidgetBase* additionalTextItem = static_cast<HbWidgetBase*>(d->additionalTextItem); 
     if(!d->additionalTextItem) {
         //need to create text item if user call alignment api before setAdditionalText.
-        d->additionalTextItem = style( )->createPrimitive( HbStyle::P_PushButton_additionaltext, this);
+        d->additionalTextItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_PushButton_additionaltext, this);
     }
     // check for textitem and api protection flag
     if( alignment != d->additionalTextAlignment ) {
@@ -551,14 +585,14 @@ void HbPushButton::setAdditionalTextAlignment( Qt::Alignment alignment )
         d->hasAdditionalTextAlignment = true;
         HbStyleOptionPushButton buttonOption;            
         initStyleOption( &buttonOption );
-        style( )->updatePrimitive( 
-        d->additionalTextItem, HbStyle::P_PushButton_additionaltext, &buttonOption );
+        HbStylePrivate::updatePrimitive( 
+        d->additionalTextItem, HbStylePrivate::P_PushButton_additionaltext, &buttonOption );
     }
 }
 
 /*!
-    @beta
-    Returns the text alignment for additional text
+    Returns the text alignment for the additional text.
+    
     \sa setAdditionalTextAlignment()
 */
 Qt::Alignment HbPushButton::additionalTextAlignment( ) const
@@ -568,16 +602,20 @@ Qt::Alignment HbPushButton::additionalTextAlignment( ) const
 }
 
 /*!
-    @beta
-    Sets the stretched layout for button by default it set to true. setStretched true/false.
-    For the case icon and text with value false will appear icon and text vertically aligned.
-    and with value true will appear icon and text horizontally aligned.
-    For the case icon , text and additional text with value false will appear like 
-    both text will be vertically aligned and icon will be horizontally.
-    and with value true icon , text and additionaltext will come horizontally aligned in one line
-    For the case text and additonaltext(dialer button case ) only value false is applicable and both texts will 
-    appeare vertically 
-
+   Sets the alignment of an icon, a text and an additional text for stretched and non-
+   stretched layouts of a push button.  The push button layouts with \a 
+   stretched value \c true and \c false (default) are the following:
+   
+    - Icon and text:
+      - \c true:  Icon and text are horizontally aligned.
+      - \c false: Icon and text are vertically aligned.
+    - Icon, text and additional text:
+      - \c true:  Icon and both texts are horizontally aligned in one line.
+      - \c false: Both texts are vertically aligned and icon is horizontally aligned.
+    - Text and additonal text (a dialer push button case):
+      - \c true:  Not applicable.
+      - \c false: Both texts are vertically aligned.
+    
     \sa isStretched()
 */
 void HbPushButton::setStretched( bool stretched )
@@ -590,8 +628,9 @@ void HbPushButton::setStretched( bool stretched )
 }
 
 /*!
-    @beta
-    Returns the whether button has streteched layout or not.
+    Returns \c true if the push button has streteched layout, otherwise returns 
+    \c false.
+    
     \sa setStretched ()
 */
 bool HbPushButton::isStretched() const
@@ -602,27 +641,26 @@ bool HbPushButton::isStretched() const
 
 /*!
 
-    \deprecated HbPushButton::primitive(HbStyle::Primitive)
-        is deprecated.
+    \deprecated HbPushButton::primitive(HbStyle::Primitive) is deprecated.
 
-    \reimp
+    
  */
 QGraphicsItem *HbPushButton::primitive( HbStyle::Primitive primitive ) const
 {
     Q_D( const HbPushButton );
 
     switch ( primitive ) {
-        case HbStyle::P_PushButton_background:
+        case HbStylePrivate::P_PushButton_background:
             return d->frameItem;
-        case HbStyle::P_PushButton_icon:
+        case HbStylePrivate::P_PushButton_icon:
             return d->iconItem;
-        case HbStyle::P_PushButton_text:
+        case HbStylePrivate::P_PushButton_text:
             return d->textItem;
-        case HbStyle::P_PushButton_toucharea:
+        case HbStylePrivate::P_PushButton_toucharea:
             return d->touchArea;
-        case HbStyle::P_PushButton_additionaltext:
+        case HbStylePrivate::P_PushButton_additionaltext:
             return d->additionalTextItem;
-        case HbStyle::P_PushButton_focus:
+        case HbStylePrivate::P_PushButton_focus:
             return d->focusItem;
         default:
             return 0;
@@ -630,58 +668,85 @@ QGraphicsItem *HbPushButton::primitive( HbStyle::Primitive primitive ) const
 }
 
 /*!
-    \reimp
+    
  */
 void HbPushButton::recreatePrimitives()
 {
    Q_D( HbPushButton );
    HbWidget::recreatePrimitives();
-
-   delete d->frameItem;
-   d->frameItem = 0;
-   delete d->iconItem;
-   d->iconItem = 0;
-   delete d->textItem;
-   d->textItem = 0;
-   delete d->touchArea;
-   d->touchArea = 0;
-   delete d->additionalTextItem;
-   d->additionalTextItem = 0;
-   delete d->focusItem;
-   d->focusItem = 0;
-   
+   if ( d->frameItem ) {
+       delete d->frameItem;
+       d->frameItem = 0;
+   }
+   if ( d->iconItem ) {
+       delete d->iconItem;
+       d->iconItem = 0;
+   }
+   if ( d->textItem ) {
+       delete d->textItem ;
+       d->textItem = 0;
+   }
+   if ( d->touchArea ) {
+       delete d->touchArea ;
+       d->touchArea = 0;
+   }
+   if ( d->additionalTextItem ) {
+       delete d->additionalTextItem ;
+       d->additionalTextItem = 0;
+   }
+   if ( d->focusItem ) {
+       delete d->focusItem ;
+       d->focusItem = 0;
+   }
    d->createPrimitives( );
    setFrameBackground( 0 );
 }
+
 /*!
-    \reimp
+    
  */
 void HbPushButton::updatePrimitives()
 {
     Q_D( HbPushButton );
     HbWidget::updatePrimitives( );
-
     HbStyleOptionPushButton buttonOption;
     initStyleOption(&buttonOption);
+    //update the button color property information 
+    if ( d->checkable ) { 
+        if ( d->checked ) {
+            setProperty( "state", "latched" );
+        }
+        else {
+            setProperty( "state", "normal" );
+        }
+    }
+    else{
+        if ( d->down ) {
+            setProperty( "state", "pressed" );
+        }
+        else {
+            setProperty( "state", "normal" );
+        }
+    }
     if ( d->textItem ) {
-        style()->updatePrimitive( d->textItem, HbStyle::P_PushButton_text, &buttonOption );
+        HbStylePrivate::updatePrimitive( d->textItem, HbStylePrivate::P_PushButton_text, &buttonOption );
     }
     if ( d->touchArea ) {
-        style()->updatePrimitive( d->touchArea, HbStyle::P_PushButton_toucharea, &buttonOption );
+        HbStylePrivate::updatePrimitive( d->touchArea, HbStylePrivate::P_PushButton_toucharea, &buttonOption );
     }
     if( d->additionalTextItem ) {
-        style()->updatePrimitive(
-            d->additionalTextItem,HbStyle::P_PushButton_additionaltext,&buttonOption );
+        HbStylePrivate::updatePrimitive(
+            d->additionalTextItem,HbStylePrivate::P_PushButton_additionaltext,&buttonOption );
     }
     if ( d->iconItem) {
-        style()->updatePrimitive( d->iconItem, HbStyle::P_PushButton_icon, &buttonOption );
+        HbStylePrivate::updatePrimitive( d->iconItem, HbStylePrivate::P_PushButton_icon, &buttonOption );
     }
     if ( d->frameItem ) {
-        style()->updatePrimitive( d->frameItem, HbStyle::P_PushButton_background, &buttonOption );
+        HbStylePrivate::updatePrimitive( d->frameItem, HbStylePrivate::P_PushButton_background, &buttonOption );
     }
     // update will happen only for keyevents when focusItem will be visible.
     if( d->focusItem && hasFocus() && d->focusItem->isVisible() ) {
-        style()->updatePrimitive( d->focusItem,HbStyle::P_PushButton_focus, &buttonOption );
+        HbStylePrivate::updatePrimitive( d->focusItem,HbStylePrivate::P_PushButton_focus, &buttonOption );
     }
 }
 
@@ -693,11 +758,13 @@ HbPushButton::HbPushButton(HbPushButtonPrivate &dd, QGraphicsItem *parent) :
 {
 }
 
-/*!
-    \reimp
-    Initializes \a option with the values from this HbPushButton. 
-    This method is useful for subclasses when they need a HbStyleOptionPushButton,
-    but don't want to fill in all the information themselves.
+/*! 
+
+    Initializes the style option push button defined by \a option with the push 
+    button values. This method is useful for setting the style option push button 
+    values of the subclasses.
+    
+    \param option Style option push button to be initialized.
  */
 void HbPushButton::initStyleOption( HbStyleOptionPushButton *option ) const
 {
@@ -723,7 +790,7 @@ void HbPushButton::initStyleOption( HbStyleOptionPushButton *option ) const
 }
 
 /*!
-    \reimp
+
  */
 void HbPushButton::keyPressEvent(QKeyEvent *event)
 {
@@ -759,7 +826,7 @@ void HbPushButton::keyPressEvent(QKeyEvent *event)
 
 
 /*!
-    \reimp
+
  */
 void HbPushButton::keyReleaseEvent(QKeyEvent *event)
 {
@@ -791,7 +858,7 @@ void HbPushButton::keyReleaseEvent(QKeyEvent *event)
 }
 
 /*!
-    \reimp
+
  */
 void HbPushButton::mousePressEvent( QGraphicsSceneMouseEvent *event )
 {
@@ -801,7 +868,7 @@ void HbPushButton::mousePressEvent( QGraphicsSceneMouseEvent *event )
     HbStyleOptionPushButton buttonOption;
     initStyleOption( &buttonOption );
     if( d->frameItem ) {
-        style()->updatePrimitive( d->frameItem, HbStyle::P_PushButton_background, &buttonOption );
+        HbStylePrivate::updatePrimitive( d->frameItem, HbStylePrivate::P_PushButton_background, &buttonOption );
     }
 #ifdef HB_EFFECTS
     if ( hitButton(event->pos()) ) {
@@ -816,7 +883,7 @@ void HbPushButton::mousePressEvent( QGraphicsSceneMouseEvent *event )
 
 #ifndef HB_GESTURE_FW
 /*!
-    \reimp
+    
  */
 void HbPushButton::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
 {
@@ -825,7 +892,7 @@ void HbPushButton::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
     HbStyleOptionPushButton buttonOption;
     initStyleOption( &buttonOption );     
     if( d->frameItem ) {
-        style()->updatePrimitive( d->frameItem, HbStyle::P_PushButton_background, &buttonOption );
+        HbStylePrivate::updatePrimitive( d->frameItem, HbStylePrivate::P_PushButton_background, &buttonOption );
     }
 #ifdef HB_EFFECTS
     if ( hitButton(event->pos()) ) {
@@ -836,7 +903,7 @@ void HbPushButton::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
 }
 
 /*!
-    \reimp
+
  */
 void HbPushButton::mouseMoveEvent( QGraphicsSceneMouseEvent *event )
 {
@@ -845,7 +912,7 @@ void HbPushButton::mouseMoveEvent( QGraphicsSceneMouseEvent *event )
     HbStyleOptionPushButton buttonOption;
     initStyleOption( &buttonOption );
     if( d->frameItem ) {
-        style()->updatePrimitive( d->frameItem, HbStyle::P_PushButton_background, &buttonOption );
+        HbStylePrivate::updatePrimitive( d->frameItem, HbStylePrivate::P_PushButton_background, &buttonOption );
     }
     if (d->down) {
         setProperty( "state", "pressed" );
@@ -857,6 +924,7 @@ void HbPushButton::mouseMoveEvent( QGraphicsSceneMouseEvent *event )
 
 
 #ifdef HB_GESTURE_FW
+
 void HbPushButton::gestureEvent( QGestureEvent *event )
 {
     Q_D(HbPushButton);
@@ -868,11 +936,11 @@ void HbPushButton::gestureEvent( QGestureEvent *event )
 #ifdef HB_EFFECTS
                     HbEffect::start( this, HB_PUSHBUTTON_TYPE, "pressed" );
 #endif
-                    if( d->checkable && !d->checked) {
+                   /* if( d->checkable && !d->checked) {
                         setProperty( "state", "latched" );
                     }else if(!d->checkable) {
                         setProperty( "state", "pressed" );
-                    }
+                    }*/
                 }
                 break;
             case Qt::GestureUpdated:
@@ -890,11 +958,11 @@ void HbPushButton::gestureEvent( QGestureEvent *event )
                     HbEffect::start( this, HB_PUSHBUTTON_TYPE, "released" );
 #endif
                 }
-                if( d->checkable && !d->checked) {
+                /*if( d->checkable && !d->checked) {
                     setProperty( "state", "latched" );
                 }else {
                     setProperty( "state", "normal" );
-                }
+                }*/
                 break;
             default:
                 break;
@@ -906,14 +974,15 @@ void HbPushButton::gestureEvent( QGestureEvent *event )
 
 
 /*!
-    \reimp
+    
  */
 void HbPushButton::resizeEvent( QGraphicsSceneResizeEvent *event )
 {
     HbAbstractButton::resizeEvent( event );
 }
+
 /*!
-  reimp
+
 
 */
 void HbPushButton::polish( HbStyleParameters &params )
@@ -928,29 +997,29 @@ void HbPushButton::polish( HbStyleParameters &params )
 
 
 /*!
-    \reimp
+
  */
 void HbPushButton::focusInEvent( QFocusEvent *event )
 {
     Q_D( HbPushButton );
     if( ( event->reason() == Qt::TabFocusReason || event->reason() == Qt::BacktabFocusReason ) 
         && ( d->navigationKeyPress ) ) {
-        if( d->focusItem ) {
+        if( !d->focusItem ) {
+            d->focusItem = HbStylePrivate::createPrimitive(HbStylePrivate::P_PushButton_focus, this);
+        } else {
             d->focusItem->setVisible( true );
             if( hasFocus() ) {
                 HbStyleOptionPushButton buttonOption;
                 initStyleOption( &buttonOption );
-                style()->updatePrimitive( d->focusItem,HbStyle::P_PushButton_focus, &buttonOption );
-            }
-        } else {
-            d->focusItem = style()->createPrimitive(HbStyle::P_PushButton_focus, this);
+                HbStylePrivate::updatePrimitive( d->focusItem,HbStylePrivate::P_PushButton_focus, &buttonOption );
+            }            
         }
     }
     HbAbstractButton::focusInEvent( event );
 }
 
 /*!
-    \reimp
+
  */
 void HbPushButton::focusOutEvent( QFocusEvent *event )
 {
@@ -962,7 +1031,7 @@ void HbPushButton::focusOutEvent( QFocusEvent *event )
 }
 
 /*!
-    \reimp
+
  */
 QVariant HbPushButton::itemChange(GraphicsItemChange change, const QVariant &value)
 {
@@ -983,7 +1052,7 @@ QVariant HbPushButton::itemChange(GraphicsItemChange change, const QVariant &val
 }
 
 /*!
-  Overloaded hit detection to include touch area
+  Overloaded hit detection to include touch area.
  */
 bool HbPushButton::hitButton( const QPointF &pos ) const
 {

@@ -27,11 +27,11 @@
 #define HB_INPUT_SMILEYPICKER_H
 
 #include <hbinputdef.h>
-#include <hbdialog.h>
+#include <hbinputpopupbase.h>
 
 class HbInputSmileyPickerPrivate;
 
-class HB_INPUT_EXPORT HbInputSmileyPicker : public HbDialog
+class HB_INPUT_EXPORT HbInputSmileyPicker : public HbInputPopupBase
 {
     Q_OBJECT
 public:

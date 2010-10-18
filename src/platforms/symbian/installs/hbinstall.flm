@@ -1,0 +1,35 @@
+# /****************************************************************************
+# **
+# ** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+# ** Contact: Nokia Corporation (developer.feedback@nokia.com)
+# **
+# ****************************************************************************/
+
+# FLM to do post install actions for hb.
+
+HBDIR:=$(EXTENSION_ROOT)/$(HB_ROOT)
+
+GUARD:=done_$(call sanitise,$(HBDIR)/src/hbcore/resources/themes/hbdefault.cssbin)
+ifeq ($($(GUARD)),)
+$(GUARD):=1
+
+define hbinstall
+
+FINAL:: $(HBDIR)/src/hbcore/resources/themes/hbdefault.cssbin
+
+$(HBDIR)/src/hbcore/resources/themes/hbdefault.cssbin: $(HBDIR)/hb.pro TARGET
+	$(call startrule,hbinstall) \
+	cd $(HBDIR) && \
+	export EPOCROOT="$(EPOCROOT)" && \
+	export QT_SIS_TARGET=release-armv5 && \
+	$(GNUMAKE38) install
+	$(call endrule,hbinstall)
+
+endef
+
+$(eval $(hbinstall))
+
+# Covenience headers etc. this should be a call to make distclean on the $(HBDIR)
+$(eval $(call GenerateStandardCleanTarget, $(HBDIR)/.qmake.cache))
+endif
+

@@ -52,10 +52,10 @@ const HbWsiniParser::ParserEntry HbWsiniParser::mParseTable[] =
 void HbWsiniParser::parseModes(QMap<int, HbScreenMode> &modes, const QString &wsIniFile)
 {
     HbWsiniParser parser(modes);
-#if defined(Q_WS_S60)
+#if defined(Q_OS_SYMBIAN)
     Q_UNUSED(wsIniFile);
     parser.parseFile("z:\\system\\data\\wsini.ini");
-#else //!Q_WS_S60
+#else //!Q_OS_SYMBIAN
     // For unit testing
     if (!wsIniFile.isEmpty()) {
         parser.parseFile(wsIniFile);
@@ -65,7 +65,7 @@ void HbWsiniParser::parseModes(QMap<int, HbScreenMode> &modes, const QString &ws
         parser.parseFile("c:/hb/data/wsini.ini");
 #endif //Q_OS_WIN32
     }
-#endif //!Q_WS_S60
+#endif
 }
 
 HbWsiniParser::HbWsiniParser(QMap<int, HbScreenMode> &modes)

@@ -32,6 +32,8 @@
 #include "hbevent.h"
 #include "hbtoolbar_p.h"
 #include "hbglobal_p.h"
+#include "hbstyletextprimitivedata.h"
+#include "hbstyleframeprimitivedata.h"
 
 #include <QPainter>
 #include <QGraphicsSceneMouseEvent>
@@ -43,76 +45,162 @@
 #include <QDebug>
 #include <QApplication> // krazy:exclude=qclasses
 
-#include <hbfeedbackmanager.h>
-
 #ifdef HB_EFFECTS
 #include "hbeffectinternal_p.h"
-#define HB_POPUP_ITEM_TYPE "HB_POPUP"
 #endif
 
 /*!
     @beta
     @hbcore
     \class HbDialog
-    \brief HbDialog is a base class for different dialogs in Hb library.
+    \brief The HbDialog class is a concrete class for simple application dialogs
+     and a base class for a variety of convenience application dialog and popup classes.
+    
+    An application dialog is a popup that opens in response to application events.
+    Popup dialogs float above the top layer of the application view, usually overlapping 
+    the area reserved for the application content. An application can use a dialog to 
+    provide information, give warnings, and ask the user to answer a question or 
+    select an option. Avoid overusing dialogs because they can interrupt the user's 
+    workflow. When dialogs appear too frequently, users tend to dismiss them without 
+    reading them properly, just to get them out of the way.
+        
+    %HbDialog is a concrete class that you can use directly in your applications. 
+    However, there are a variety of convenience classes that derive from it, 
+    so check whether there is one that meets your needs. You can create a custom
+    dialog by deriving a class from %HbDialog and adding a custom widget to it.
 
-    \image html hbpopup.png "A dialog with a header widget, a list as a content widget, and two action buttons."
+    \image html hbpopup.png "A dialog with a heading widget, a list content widget, and two action buttons"
 
-    HbDialog is a concrete class. The content for a custom dialog is
-    implemented in a separate widget, which is set to the dialog with
-    method setContentWidget().
+    You can add three types of content to an %HbDialog object. If you do not add any
+    content, an %HbDialog object is simply a bordered rectangle. The three types of
+    content are:
 
+    - <b>A heading widget</b>. This is shown at the top of the dialog and is typically
+      a simple HbLabel object that describes the purpose of the dialog. To add a heading 
+      widget, call setHeadingWidget().
+    
+    - <b>A content widget</b>. Positioned below the heading, this contains the main 
+      dialog content. To add a content widget, call setContentWidget(). 
 
-    An example of how to create a simple modal dialog and show it.
+    - \b Actions. These are generic command (HbAction) objects, which you add to the 
+      dialog by calling the QGraphicsWidget::addAction() family of functions. The actions 
+      appear as buttons on a toolbar at the bottom of the dialog. (The toolbar appears when 
+      you add the first action to the dialog.) When the user taps one of these buttons, it 
+      dismisses the dialog and the action's \link HbAction::triggered() triggered()\endlink 
+      signal is emitted. Connect this signal to the slot that will perform the command. 
+
+    %HbDialog is derived from HbPopup, which provides generic features for all popup 
+    classes. These features include properties that control the dialog's dismiss policy, 
+    background fade policy, timeout, frame background type, and whether it is modal.
+    
+    Unlike a non-modal dialog, a modal dialog stops the user interacting with anything outside
+    of the dialog until it closes. You set and get the modality by calling setModal() 
+    and isModal(), respectively. Typically modal dialogs use the fade background feature, 
+    whereas non-modal dialogs do not. How you open a dialog depends on whether it is
+    modal: if the dialog is modal use one of the open() overloads and otherwise use 
+    \link QGraphicsItem::show() show()\endlink. Make sure you use the appropriate method, 
+    because this ensures the correct touch event handling.
+
+    \note Services that generate device-wide and system-wide messages use the HbDeviceDialog 
+          class and not HbDialog.
+
+    \section _usecases_hbdialog Using the HbDialog class
+    
+    \subsection _uc_001_hbdialog Creating and showing a simple modal dialog
+    
+    This example demonstrates how to create a simple modal dialog and show it. Notice
+    that we show a modal dialog by calling one of the open() overloads.
     \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,13}
 
-    An example of how to handle dialog signals from previous example.
+    \subsection _uc_002_hbdialog Handling dialog signals
+
+    This example continues the previous one, which connects the dialog's 
+    finished(HbAction*) signal to the following slot in the call to 
+    open(QObject *,const char*) on the final line. This example shows how this slot
+    handles the finished(HbAction*) signal.
+    
     \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,53}
 
-    An example of how to handle if finished(int) is connected instead of finished(HbAction*) in above example.
-    \snippet{ultimatecodesnipped/ultimatecodesnippet.cpp,55}
+    \subsection _uc_003_hbdialog Handling dialog signals: alternative method
 
-    An example of how to create a non-modal dialog and show it.
+    This example demonstrates an alternative way of handling dialog signals.
+    This example assumes that the finished(int) overload is connected instead of 
+    finished(HbAction*); for example, by using open(QObject *, const char *), like
+    this:
+    
+    \code
+    dialog->open(this, SLOT(dialogClosed(int)));
+    \endcode
+    
+    The finished(int) signal is emitted by calling accept() and reject() or done().
+    
+    Here is an example of a function that handles finished(int):
+    \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,58}
+
+    \subsection _uc_004_hbdialog Creating and showing a non-modal dialog
+
+    This final example shows how to create a non-modal dialog and show it.
+    Notice that we display a non-modal dialog by calling \link QGraphicsItem::show() 
+    show()\endlink.
     \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,26}
 
+    \sa HbPopup, HbDeviceDialog, HbInputDialog, HbMessageBox, HbProgressDialog, 
+        HbNotificationDialog, HbColorDialog, HbSelectionDialog, HbVolumeSliderPopup, 
+        HbZoomSliderPopup
 */
+
+/*!
+    \enum HbDialog::DialogCode
+    Indicates whether the dialog was accepted or rejected.
+    
+    \sa finished(int), done()
+    
+ */
+
+/*!
+    \var HbDialog::Rejected
+    Indicates that the user selected the Cancel action (or equivalent).
+ */
+
+/*!
+    \var HbDialog::Accepted
+    Indicates that the user selected the OK action (or equivalent).
+ */
 
 /*!
     \fn void HbDialog::finished( int code )
 
-    This signal is emitted when the dialog is closed.
-    This will have the HbDialog::DialogCode as the parameter code.
+    This signal is emitted when the dialog closes. \a code is an 
+    HbDialog::DialogCode value.
 
     \sa done(), accept(), reject()
 */
 /*!
     \fn void HbDialog::finished( HbAction *action )
 
-    This signal is emitted when an action has been triggered in a dialog.
-    The parameter will be the triggered action.
+    This signal is emitted when an action is triggered in a dialog.
+    The parameter is the action that was triggered.
   */
 /*!
     \fn void HbDialog::accepted( )
 
-    This signal is emitted when the dialog is closed and the user
-    has accepted the dialog. which implies that either action has triggered
-    or through function call the accept method is called, causing this signal.
+    This signal is emitted by a call to accept() or to \link done() 
+    done(HbDialog::Accepted)\endlink. Typically this means that the user 
+    has selected the OK button (or equivalent).
 
     \sa done(), accept(), reject()
 */
 /*!
     \fn void HbDialog::rejected( )
-
-    This signal is emitted when the dialog is closed and the user
-    has rejected the dialog. which implies that either action triggered
-    or through function call the reject method is called, causing this signal.
+    
+    This signal is emitted by a call to reject() or to \link done() 
+    done(HbDialog::Rejected)\endlink. Typically this means that the user 
+    has selected the Cancel action (or equivalent).
 
     \sa done(), accept(), reject()
 */
 
-
 /*!
-    \reimp
     \fn int HbDialog::type() const
  */
 
@@ -122,7 +210,9 @@ HbDialogPrivate::HbDialogPrivate( ) :
     primaryAction(0),
     secondaryAction(0),
     closingAction(0),
-    toolBar(0)
+    toolBar(0),
+    dismissOnAction(true),
+    headingFrameItem(0)
 {
 }
 
@@ -130,7 +220,7 @@ HbDialogPrivate::~HbDialogPrivate()
 {
 }
 
-/*!
+/*
   Relayouts the popup. If expandSize is true it the new calculated size of the popup
   cannot be smaller than the current size.
 */
@@ -153,7 +243,35 @@ void HbDialogPrivate::doLayout()
     q->updateGeometry();
 }
 
-/*!
+void HbDialogPrivate::createHeadingBackground()
+{
+    Q_Q(HbDialog);
+    if (headingFrameItem) {
+        delete headingFrameItem;
+        headingFrameItem = 0;
+    }
+    headingFrameItem = q->style()->createPrimitive(HbStyle::PT_FrameItem, "background", q);
+    HbStyleFramePrimitiveData data;
+    q->initPrimitiveData(&data, headingFrameItem);
+    data.fillWholeRect = true;
+    data.frameType = HbFrameDrawer::ThreePiecesHorizontal;
+    if (mFullScreen) {
+        data.frameGraphicsName = QLatin1String("qtg_fr_fullscreen_heading");
+    } else {
+        data.frameGraphicsName = QLatin1String("qtg_fr_popup_heading");
+    }
+    q->style()->updatePrimitive(headingFrameItem, &data, q);
+    headingFrameItem->update();
+}
+
+void HbDialogPrivate::_q_actionTriggered() {
+    Q_Q(HbDialog);
+    if (dismissOnAction) {
+        q->close();
+    }
+}
+
+/*
  Utility function removes the spaces from string if any
 */
 void HbDialogPrivate::removeSpaces(QString& string)
@@ -167,17 +285,42 @@ void HbDialogPrivate::removeSpaces(QString& string)
     }
 }
 
+void HbDialogPrivate::setFullScreen(bool enable)
+{
+    //If the dialog is in fullscreen, normal toolbar graphics will be used
+    if (enable) {
+        if (toolBar) {
+            HbToolBarPrivate::d_ptr(toolBar)->updateDialogToolbar(false);
+        }
+    } else {
+        if (toolBar){
+            HbToolBarPrivate::d_ptr(toolBar)->updateDialogToolbar(true);
+        }
+    }
+    HbPopupPrivate::setFullScreen(enable);
+    //If heading is available, update fullscreen heading graphics
+    if (!headingText.isEmpty() || headingWidget) {
+        createHeadingBackground();
+    }
+}
+
 /*!
- Constructs a dialog with given  \a parent graphics item.\n
- Note: dialogs with \a parent set as 0 are behaving as real popups. 
- This is actually the intended use. \sa HbPopup::HbPopup
+    Constructs a dialog with the given \a parent. For a popup dialog (which 
+    means that it opens above all other objects, at the highest z-order), 
+    set \a parent to 0. This is the primary intended use of this class.
+
+    If \a parent is non-zero, the dialog is embedded in the parent QGraphicsItem. 
+    The properties provided by HbPopup are then ignored and the aboutToClose() signal is 
+    not emitted.
+
+    \sa HbPopup::HbPopup()
 */
 HbDialog::HbDialog(QGraphicsItem *parent) :
     HbPopup(*new HbDialogPrivate, parent)
 {
     Q_D(HbDialog);
     d->q_ptr = this;
-    d->timeout = HbPopupPrivate::timeoutValue(HbPopup::NoTimeout);
+    d->pendingTimeout = HbPopup::NoTimeout;
 }
 
 /*!
@@ -188,19 +331,20 @@ HbDialog::HbDialog(HbDialogPrivate &dd, QGraphicsItem *parent) :
 {
     Q_D(HbDialog);
     d->q_ptr = this;
-    d->timeout = HbPopupPrivate::timeoutValue(HbPopup::NoTimeout);
+    d->pendingTimeout = HbPopup::NoTimeout;
 }
 
 /*!
- Destroys the popup.
+    Destructor.
 */
 HbDialog::~HbDialog()
 {
 }
 
 /*!
- Returns the widget which is being added to the heading area
- \sa setHeadingWidget()
+    Returns the heading widget, if one has been added to the dialog; otherwise this
+    function returns null.
+    \sa setHeadingWidget()
 */
 QGraphicsWidget * HbDialog::headingWidget() const
 {
@@ -209,9 +353,11 @@ QGraphicsWidget * HbDialog::headingWidget() const
 }
 
 /*!
- Adds \a widget to the heading area. Ownership of the widget is transferred
- to popup. If \a headingWidget is 0 the heading widget is removed.
- \sa headingWidget()
+    Adds \a headingWidget to the heading area of the dialog. This transfers ownership 
+    of the heading widget to the dialog. 
+    
+    To remove a heading widget from a dialog, set \a headingWidget to 0.
+    \sa headingWidget()
 */
 void HbDialog::setHeadingWidget(QGraphicsWidget *headingWidget)
 {
@@ -221,20 +367,84 @@ void HbDialog::setHeadingWidget(QGraphicsWidget *headingWidget)
     if (d->headingWidget)
         delete d->headingWidget;
     d->headingWidget = headingWidget;
+    d->headingText = QString();
     if (headingWidget) {
         setProperty("heading_layout", true);
-        headingWidget->setParentItem(this);
+        d->headingWidget->setParentItem(this);
+        d->headingWidget->setZValue(zValue()+1);
         HbStyle::setItemName(headingWidget,"heading");
     } else {
         setProperty("heading_layout", false);
+    }
+
+    if (headingWidget) {
+        d->createHeadingBackground();
+    } else {
+        if (d->headingFrameItem) {
+            delete d->headingFrameItem;
+            d->headingFrameItem = 0;
+        }
     }
     repolish();
 }
 
 /*!
- Returns the content widget property of the popup.
- HbDialog only draws a bordered rect, the rest is drawn by the content widget.
- \sa setContentWidget()
+    Returns the heading text, if one has been added to the dialog; otherwise this
+    function returns empty string.
+    \sa setHeadingText()
+*/
+QString HbDialog::headingText() const
+{
+    Q_D(const HbDialog);
+    return d->headingText;
+}
+
+/*!
+    Sets \a heading as the title of the dialog.
+
+    To remove the title from the dialog, set an empty string as \a heading.
+    \sa headingText()
+*/
+void HbDialog::setHeadingText(const QString &heading)
+{
+    Q_D(HbDialog);
+    if (d->headingWidget) {
+        delete d->headingWidget;
+        d->headingWidget = 0;
+    }
+
+    d->headingText = heading;
+
+    if (!heading.isEmpty()) {
+        d->headingWidget = qobject_cast<QGraphicsWidget *>(style()->createPrimitive(HbStyle::PT_TextItem, "heading", this));
+        d->headingWidget->setZValue(zValue()+1);
+        HbStyleTextPrimitiveData data;
+        initPrimitiveData(&data, d->headingWidget);
+        data.text = heading;
+        style()->updatePrimitive(d->headingWidget, &data, this);
+        d->headingWidget->update();
+
+        d->createHeadingBackground();
+
+        setProperty("heading_layout", true);
+    } else {
+        setProperty("heading_layout", false);
+        if (d->headingFrameItem) {
+            delete d->headingFrameItem;
+            d->headingFrameItem = 0;
+        }
+    }
+    repolish();
+}
+
+/*!
+    Returns the content widget, if one has been added to the dialog; otherwise this 
+    function returns null.
+    
+    The content widget provides the main content for the dialog. Without a content
+    widget (and a heading widget and some actions), an HbDialog object is simply a 
+    bordered rectangle.
+    \sa setContentWidget()
 */
 QGraphicsWidget *HbDialog::contentWidget() const
 {
@@ -243,11 +453,12 @@ QGraphicsWidget *HbDialog::contentWidget() const
 }
 
 /*!
- Sets the content widget property of the popup.
- HbDialog only draws a bordered rect, the rest is drawn by the content widget.
- Ownership of the widget is transferred
- to popup. If \a contentWidget is 0 the content widget is removed.
- \sa contentWidget()
+    Adds \a contentWidget to the dialog. This transfers ownership of the content 
+    widget to the dialog. 
+    
+    To remove a content widget from a dialog, set \a headingWidget to 0.
+    
+    \sa contentWidget()
 */
 void HbDialog::setContentWidget(QGraphicsWidget *contentWidget)
 {
@@ -257,20 +468,23 @@ void HbDialog::setContentWidget(QGraphicsWidget *contentWidget)
         return;
     if (d->contentWidget)
         delete d->contentWidget;
-    prepareGeometryChange(); // needed to paint screen properly
     d->contentWidget = contentWidget;
     if (contentWidget) {
         contentWidget->setParentItem(this);
+        if (contentWidget->inherits("HbAbstractItemView")) {
+            setProperty("list_content", true);
+        } else {
+            setProperty("list_content", false);
+        }
         HbStyle::setItemName(contentWidget,"content");
     }
     repolish();    
 }
 
 /*!
- \deprecated HbDialog::primaryAction() const
-       is deprecated.
- It returns the primary action added to the control area
- \sa setPrimaryAction()
+    \deprecated This function is deprecated. 
+    
+    Returns the action added by calling setPrimaryAction().
 */
 HbAction* HbDialog::primaryAction() const
 {
@@ -280,17 +494,42 @@ HbAction* HbDialog::primaryAction() const
 }
 
 /*!
- \deprecated HbDialog::setPrimaryAction(HbAction*)
-           is deprecated. Please use QGraphicsWidget::addAction() family of functions instead.
- It adds the given action to the control area.
- It is added to the left side of the control area if the layout direction of the application
- is left-to-right and in the vice-versa if the layout direction of the application
- is right-to-left.
- \sa primaryAction()
+    Returns the \c dismissOnAction property, which controls whether the dialog closes 
+    when one of its actions is triggered.
+    \sa setDismissOnAction()
+*/
+bool HbDialog::dismissOnAction() const
+{
+    Q_D(const HbDialog);
+    return d->dismissOnAction;
+}
+
+/*!
+    Sets the \c dismissOnAction property, which controls whether the dialog closes 
+    when one of its actions is triggered.
+    \sa dismissOnAction()
+*/
+void HbDialog::setDismissOnAction( bool dismissOnAction ) 
+{
+    Q_D(HbDialog);
+    d->dismissOnAction = dismissOnAction;
+}
+
+/*!
+    \deprecated This function is deprecated. Add actions by calling one of
+    the QGraphicsWidget::addAction() family of functions instead.
+    
+    Adds \a action to the left side of the dialog's toolbar if the layout is left 
+    to right and to the right side of the toolbar if the layout is right to left.
+    
+    \sa primaryAction()
 */
 void HbDialog::setPrimaryAction(HbAction *action)
 {
     HB_DEPRECATED("HbDialog::setPrimaryAction(HbAction *action) is deprecated. Use QGraphicsWidget action api instead");
+    /* HbDialog::setPrimaryAction deprecation action coloring - begin */
+    action->setProperty("invalid_addition", true);
+    /* HbDialog::setPrimaryAction deprecation action coloring - end */
     Q_D(HbDialog);
     if (d->primaryAction && action != d->primaryAction) {
         removeAction(d->primaryAction);
@@ -304,10 +543,9 @@ void HbDialog::setPrimaryAction(HbAction *action)
 }
 
 /*!
- \deprecated HbDialog::secondaryAction() const
-            is deprecated.
- It returns the secondary action added to the control area
- \sa setSecondaryAction()
+    \deprecated This function is deprecated.
+
+     Returns the action added by calling setSecondaryAction().
 */
 HbAction* HbDialog::secondaryAction() const
 {
@@ -317,17 +555,20 @@ HbAction* HbDialog::secondaryAction() const
 }
 
 /*!
- \deprecated HbDialog::setSecondaryAction(HbAction*)
-           is deprecated. Please use QGraphicsWidget::addAction() family of functions instead.
- It adds the given action to the control area.
- It is added to the right side of the control area if the layout direction of the application
- is left-to-right and in the vice-versa if the layout direction of the application
- is right-to-left.
- \sa secondaryAction()
+    \deprecated This function is deprecated. Add actions by calling one of
+    the QGraphicsWidget::addAction() family of functions instead.
+    
+    Adds \a action to the right side of the dialog's toolbar if the layout is left 
+    to right and to the left side of the toolbar if the layout is right to left.
+
+     \sa secondaryAction()
 */
 void HbDialog::setSecondaryAction(HbAction *action)
 {
     HB_DEPRECATED("HbDialog::setSecondaryAction(HbAction *action) is deprecated. Use QGraphicsWidget action api instead");
+    /* HbDialog::setPrimaryAction deprecation action coloring - begin */
+    action->setProperty("invalid_addition", true);
+    /* HbDialog::setPrimaryAction deprecation action coloring - end */
     Q_D(HbDialog);
     if (d->secondaryAction && action != d->secondaryAction) {
         removeAction(d->secondaryAction);
@@ -337,25 +578,35 @@ void HbDialog::setSecondaryAction(HbAction *action)
 }
 
 /*!
-    This is a slot which shows the dialog and returns immediately.
-
-    \sa open(QObject*,const char*)
+    Displays the dialog and returns immediately.
+    
+    Use this function to open \b modal dialogs. To open \b non-modal dialogs, 
+    call \link QGraphicsItem::show() show()\endlink. 
+    
+    \overload
+    
+    \sa open(QObject*, const char*), HbPopup::isModal()
 */
 void HbDialog::open()
 {
     open(0,0);
 }
 /*!
+    Displays the dialog, connects the finished(HbAction*) or finished(int) signal to a 
+    receiver object's slot, and returns immediately. Disambiguation between the two 
+    signals is done at runtime. The signal is disconnected from the slot when the dialog 
+    closes.
 
- Shows the dialog as modal dialog returning immediately.  
-
- Connects finished(HbAction*) or finished(int) signal to the slot specified by \a receiver and
- \a member. The signal will be disconnected from the slot when the
- popup is closed. disambiguation between which method to connect to is done at runtime.
-
- For non modal popups, use show().  
+    Use this function to open \b modal dialogs. To open \b non-modal dialogs, 
+    call \link QGraphicsItem::show() show()\endlink. 
+    
+    \overload
+    
+    \param receiver The object that is to receive the signal. 
+    \param member The slot on the receiver to which the signal is to connect. 
+    
+    \sa HbPopup::isModal()
 */
-
 void HbDialog::open( QObject* receiver, const char* member )
 {
     Q_D(HbDialog);
@@ -375,17 +626,22 @@ void HbDialog::open( QObject* receiver, const char* member )
         d->receiverToDisconnectOnClose = 0;
         d->memberToDisconnectOnClose.clear();
     }
+    d->showingInProgress = true;
     show();
 }
 /*!
-  Closes the dialog and emits finished ,accepted and rejected signals appropriately.
+     Closes the dialog and emits the \link finished(int) finished(HbDialog::DialogCode)
+     \endlink signal and either the accepted() or rejected() signal, depending on the 
+     value of \a code.
 
-  If the dialog is accepted the code is HbDialog::Accepted, if it is rejected code
-  is HbDialog::Rejected.
-  As with HbWidget::close(), done() deletes the dialog if the
-  Qt::WA_DeleteOnClose flag is set. 
+     Like \link QGraphicsWidget::close() close()\endlink, this function deletes the 
+     dialog if the Qt::WA_DeleteOnClose flag is set.
+     
+     \param code Pass HbDialog::Accepted to indicate that the user clicked the OK
+            button (or equivalent) and HbDialog::Rejected to indicate that the user 
+            clicked the Cancel button (or equivalent).
 
-  \sa accept(), reject()
+     \sa accept(), reject()
 */
 void HbDialog::done( int code )
 {  
@@ -410,18 +666,52 @@ void HbDialog::done( int code )
     }
 }
 /*!
-  Hides the modal dialog and emits finished(HbDialog::Accepted),accepted() and finished(HbAction*) signals.
+    Closes the dialog and emits the \link finished(int) finished(HbDialog::Accepted)\endlink,
+    accepted(), and finished(HbAction*) signals. Typically, you call this function when the 
+    user selects the OK action (or equivalent).
+    
+    Like \link QGraphicsWidget::close() close()\endlink, this function deletes the 
+    dialog if the Qt::WA_DeleteOnClose flag is set.
+     
+    \b Example:
+    \code
+    // Create the OK action.
+    mOkAction = new HbAction("OK");
+    
+    // Connect its triggered signal to the dialog's accept() slot.
+    connect(mOkAction, SIGNAL(triggered()), this, SLOT(accept()));
+    
+    // Add the action to the dialog.
+    addAction(mOkAction);
+    \endcode
 
-  \sa reject(), done()
+    \sa reject(), done()
 */
 void HbDialog::accept()
 {
     done(Accepted);
 }
 /*!
-  Hides the modal dialog and emits finished(HbDialog::Rejected),rejected() and finished(HbAction*) signals.
+    Closes the dialog and emits the \link finished(int) finished(HbDialog::Rejected)\endlink,
+    rejected(), and finished(HbAction*) signals. Typically, you call this function when 
+    the user selects the Cancel action (or equivalent).
+    
+    Like \link QGraphicsWidget::close() close()\endlink, this function deletes the 
+    dialog if the Qt::WA_DeleteOnClose flag is set.
+    
+    \b Example:
+    \code
+    // Create the Cancel action.
+    mCancelAction = new HbAction("Cancel");
+    
+    // Connect its triggered signal to the dialog's reject() slot.
+    connect(mCancelAction, SIGNAL(triggered()), this, SLOT(reject()));
+    
+    // Add the action to the dialog.
+    addAction(mCancelAction);
+    \endcode
 
-  \sa accept(), done()
+    \sa accept(), done()
 */
 void HbDialog::reject()
 {
@@ -429,7 +719,7 @@ void HbDialog::reject()
 }
 
 /*!
- \reimp
+ 
 */
 //
 // Sets the focus to its content widget.
@@ -443,7 +733,7 @@ void HbDialog::focusInEvent(QFocusEvent *event)
 }
 
 /*!
-    \reimp
+    
  */
 void HbDialog::closeEvent ( QCloseEvent * event )
 {
@@ -469,7 +759,7 @@ void HbDialog::closeEvent ( QCloseEvent * event )
 }
 
 /*!
-    \reimp
+    
  */
 void HbDialog::changeEvent(QEvent *event)
 {
@@ -483,7 +773,7 @@ void HbDialog::changeEvent(QEvent *event)
 }
 
 /*!
-    \reimp
+    
  */
 bool HbDialog::event(QEvent *event)
 {
@@ -492,21 +782,23 @@ bool HbDialog::event(QEvent *event)
         event->accept();
 
     if (event->type() == QEvent::ActionAdded) {
-        if (!d->toolBar) {
-            // TODO: HbToolBar private interface should make it possible to choose
-            // different graphics for tool buttons.            
+        if (!d->toolBar) {            
             d->toolBar = new HbToolBar();
+            d->toolBar->setFlag(QGraphicsItem::ItemIsPanel, false);
             d->toolBar->setParentItem(this);
             HbStyle::setItemName(d->toolBar ,"controls");
             setProperty("controls_layout", true);
             d->toolBar->setOrientation(Qt::Horizontal);
-            HbToolBarPrivate::d_ptr(d->toolBar)->mDialogToolBar = true;
+            // Choose different graphics for tool buttons.
+            if (!d->mFullScreen) {
+                HbToolBarPrivate::d_ptr(d->toolBar)->mDialogToolBar = true;
+            }
             repolish();
         }
         QActionEvent *actionEvent = static_cast<QActionEvent *>(event);
         d->toolBar->insertAction (actionEvent->before(), actionEvent->action());
         if (!parentItem()) { // only for popup without parent
-            connect(actionEvent->action(), SIGNAL(triggered()), this, SLOT(close()));
+            connect(actionEvent->action(), SIGNAL(triggered()), this, SLOT(_q_actionTriggered()));
         }
         d->doLayout();
         return true;
@@ -547,7 +839,7 @@ bool HbDialog::event(QEvent *event)
 }
 
 /*!
-    \reimp
+    Reimplemented from QGraphicsWidget.
 */
 QSizeF HbDialog::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
 {

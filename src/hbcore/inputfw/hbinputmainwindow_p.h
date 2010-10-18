@@ -23,63 +23,37 @@
 **
 ****************************************************************************/
 
-#include <QPointer>
-
 #include "hbmainwindow.h"
-#include "hbwidget.h"
 
 #ifndef HB_INPUT_MAINWINDOW
 #define HB_INPUT_MAINWINDOW
 
-class HbProxyWindow;
+class HbInputMainWindowPrivate;
 
-class HbInputMainWindow : public HbMainWindow
+class HB_CORE_PRIVATE_EXPORT HbInputMainWindow : public HbMainWindow
 {
     Q_OBJECT
+
 public:
     static HbInputMainWindow *instance();
     void showInputWindow();
     void hideInputWindow();
+    void lockFocus();
+    void unlockFocus();    
 private:
     HbInputMainWindow();
     virtual ~HbInputMainWindow();
 
+protected:
     bool event(QEvent *e);
     bool eventFilter(QObject *obj, QEvent *event);
 
 public slots:
-    void saveFocusWidget(QWidget * /*Old*/, QWidget *newFocus);
+    void saveFocusWidget(QWidget * oldFocus, QWidget *newFocus);
     void updateRegion(QRegion region);
 
 private:
-    QPointer<QWidget> mLastFocusedWidget;
-    QRegion mMask;
-    bool mSpellQueryLaunched;
-    QPointer<HbProxyWindow > mProxyWindow;
-};
-
-class HbProxyWindow: public QWidget
-{
-public:
-    HbProxyWindow()
-    {
-        setGeometry(0,0,0,0);
-    }
-    void setWindow(QWidget* window)
-    {
-        this->window = window;
-        if (window) {
-            window->setParent(this);
-        }
-    }
-    ~HbProxyWindow()
-    {
-        if (window) {
-            window->setParent(0);
-        }
-    }
-private:
-    QPointer<QWidget> window;
+    HbInputMainWindowPrivate *const d_ptr;
 };
 
 #endif //HB_INPUT_MAINWINDOW

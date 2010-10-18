@@ -45,11 +45,13 @@ public:
         SharedMemory = 0,
         HeapMemory
     };
-    virtual int alloc( int size ) = 0;
-    virtual int realloc( int oldOffset, int newSize ) = 0;
-    virtual void free( int offset ) = 0;
+    virtual qptrdiff alloc( int size ) = 0;
+    virtual qptrdiff realloc( qptrdiff oldOffset, int newSize ) = 0;
+    virtual void free( qptrdiff offset ) = 0;
     virtual void * base() = 0;
-    virtual bool isWritable() = 0;
+    
+    inline bool isWritable() const HB_ALWAYS_INLINE { return writable; }
+    
     virtual ~HbMemoryManager() { }
 #ifdef HB_PERF_MEM
     virtual unsigned int memoryConsumed() 
@@ -57,9 +59,58 @@ public:
         return 0;
     }
 #endif
-    static HbMemoryManager * instance( MemoryType type );
+    static inline HbMemoryManager * instance( MemoryType type ) HB_ALWAYS_INLINE;
     static void releaseInstance( MemoryType type );
+
+protected:
+    explicit HbMemoryManager(bool readWrite) : writable(readWrite) { }
+    virtual bool initialize() = 0;
+
+    bool writable;
+    
+private:
+    static void createSharedMemoryManager();
+    static void createHeapMemoryManager();
+    
+    static HbMemoryManager *sharedMemoryManager;
+    static HbMemoryManager *heapMemoryManager;
 };
+
+
+// Inlined instance functions
+
+#ifndef HB_BIN_CSS
+inline HbMemoryManager * HbMemoryManager::instance( MemoryType type )
+{
+    switch(type) {
+        case SharedMemory :
+            if(!sharedMemoryManager)
+                createSharedMemoryManager();
+            return sharedMemoryManager;
+            
+        case HeapMemory :
+            if(!heapMemoryManager)
+                createHeapMemoryManager();
+            return heapMemoryManager;
+
+        default:
+            return 0;
+    }
+}
+#else
+
+inline HbMemoryManager * HbMemoryManager::instance( MemoryType type )
+{
+    Q_UNUSED(type)
+    
+    if(!sharedMemoryManager)
+        createSharedMemoryManager();
+    
+    return sharedMemoryManager;
+}
+
+#endif // HB_BIN_CSS
+
 
 #endif // HBMEMORYMANAGER_P_H
 

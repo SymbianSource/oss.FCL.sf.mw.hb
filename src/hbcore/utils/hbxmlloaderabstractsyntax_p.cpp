@@ -24,6 +24,7 @@
 ****************************************************************************/
 
 #include "hbxmlloaderabstractsyntax_p.h"
+#include "hbexpressionparser_p.h"
 
 #include <QColor>
 #include <QDataStream>
@@ -174,59 +175,28 @@ static const char *knownLexems[HbXmlLoaderAbstractSyntax::NUMBER_OF_LEXEMS] = {
 
     "stackitem",        // SL_STACKITEM
     "itemname",         // SL_ITEMNAME
-    "index"             // SL_INDEX
+    "index",            // SL_INDEX
+
+    "background"        // TYPE_BACKGROUND
 };
 
 QDataStream &operator<<(QDataStream &stream, const HbXmlLengthValue &value)
 {
-    quint8 type = value.mType;
-    stream << type;
-    switch ( value.mType ) {
-        case HbXmlLengthValue::None:
-            break;
-        case HbXmlLengthValue::PlainNumber:
-        case HbXmlLengthValue::Pixel:
-        case HbXmlLengthValue::Unit:
-        case HbXmlLengthValue::Millimeter:
-            {
-            double f_value = (double)value.mValue; //krazy:exclude=typedefs
-            stream << f_value;
-            break;
-            }
-        case HbXmlLengthValue::Variable:
-        case HbXmlLengthValue::Expression:
-            stream << value.mString;
-            break;
-        default:
-            break;
+    stream << (qint16)value.mValues.count();
+    for (int i=0; i<value.mValues.count(); i++) {
+        stream << (quint32)value.mValues.at(i);
     }
     return stream;
 }
 
 QDataStream &operator>>(QDataStream &stream, HbXmlLengthValue &value)
 {
-    quint8 type;
-    stream >> type;
-    value.mType = (HbXmlLengthValue::Type)type;
-    switch ( value.mType ) {
-        case HbXmlLengthValue::None:
-            break;
-        case HbXmlLengthValue::PlainNumber:
-        case HbXmlLengthValue::Pixel:
-        case HbXmlLengthValue::Unit:
-        case HbXmlLengthValue::Millimeter:
-            {
-            double f_value; //krazy:exclude=typedefs
-            stream >> f_value;
-            value.mValue = f_value;
-            break;
-            }
-        case HbXmlLengthValue::Variable:
-        case HbXmlLengthValue::Expression:
-            stream >> value.mString;
-            break;
-        default:
-            break;
+    qint16 count(0);
+    quint32 temp(0);
+    stream >> count;
+    for (int i=0; i<count; i++) {
+        stream >> temp;
+        value.mValues.append(temp);
     }
     return stream;
 }
@@ -593,36 +563,7 @@ bool HbXmlLoaderAbstractSyntax::toReal(const QString &value, qreal& result) cons
 
 bool HbXmlLoaderAbstractSyntax::toLengthValue(const QString &value, HbXmlLengthValue& lengthVal) const
 {
-    bool retVal(true);
-    QString val = value;
-    val.reserve(val.length());
-    HbXmlLengthValue::Type type = HbXmlLengthValue::PlainNumber;
-    if ( val.endsWith(lexemValue(UNIT_UNIT), Qt::CaseInsensitive) ) {
-        type = HbXmlLengthValue::Unit;
-    } else if ( val.endsWith(lexemValue(UNIT_PIXEL), Qt::CaseInsensitive) ) {
-        type = HbXmlLengthValue::Pixel;
-    } else if ( val.endsWith(lexemValue(UNIT_MILLIMETER), Qt::CaseInsensitive) ) {
-        type = HbXmlLengthValue::Millimeter;
-    } else if ( (val.startsWith( lexemValue(UNIT_VAR_START) ) ||
-                val.startsWith( lexemValue(UNIT_VAR_NEG_START) ) ) && val.endsWith( lexemValue(UNIT_VAR_END) ) ) {
-        type = HbXmlLengthValue::Variable;
-    } else if ( (val.startsWith( lexemValue(UNIT_EXPR_START) ) ||
-                val.startsWith( lexemValue(UNIT_EXPR_NEG_START) )) && val.endsWith( lexemValue(UNIT_EXPR_END) ) ) {
-        type = HbXmlLengthValue::Expression;
-    }
-    lengthVal.mType = type;
-    if ( type == HbXmlLengthValue::Variable || type == HbXmlLengthValue::Expression ) {
-        lengthVal.mString = value;
-        lengthVal.mValue = 0;
-    } else {
-        lengthVal.mString = QString();
-        if (type != HbXmlLengthValue::PlainNumber) {
-            // Assuming all unit identifiers have two characters
-            val.chop(2);
-        }
-        retVal = toReal( val, lengthVal.mValue );
-    }
-    return retVal;
+    return HbExpressionParser::parse(value, lengthVal.mValues);
 }
 
 const char *HbXmlLoaderAbstractSyntax::lexemValue(DocumentLexems lex) const

@@ -22,6 +22,12 @@ HbMenuItem[!separator_exists]::text
 	text-height: var(hb-param-text-height-primary);	
 	text-line-count-min:1;
 	text-line-count-max:1;
+	text-wrap-mode:no-wrap;
+}
+
+HbMenu[menuType="2"] HbMenuItem[!separator_exists]::text
+{
+        text-height: var(hb-param-text-height-secondary);
 }
 
 HbMenuItem[separator_exists]::text

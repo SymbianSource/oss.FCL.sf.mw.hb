@@ -26,9 +26,22 @@
 #ifndef HBGESTURES_P_H
 #define HBGESTURES_P_H
 
+#include "hbtapgesture.h"
+#include "hbpointrecorder_p.h"
+
+#include "hbglobal.h"
+
 #include <QPointF>
 #include <QObject>
 #include <QGraphicsView>
+
+#if QT_VERSION >= 0x040700
+#include <QElapsedTimer>
+#define ELAPSED_TIMER QElapsedTimer
+#else
+#include <QTime>
+#define ELAPSED_TIMER QTime
+#endif
 
 const qreal HbDefaultPanThreshold = 1.0; // mm
 const qreal HbPanVelocityUpdateThreshold = 3.3; // mm
@@ -41,10 +54,7 @@ const qreal HbSwipeMinSpeed = 0.06; // mm / ms
 const int HbVelocitySampleTime = 80; // ms
 const int HbVelocityStopTime = 70; // ms
 
-const int HbTapAndHoldTriggerTimeout = 150; // ms
-const int HbTapAndHoldTimeout = 500; // ms
-
-
+const int HbTapAndHoldTimeout = 800; // ms
 class HbGestureUtils
 {
 public:
@@ -65,6 +75,86 @@ public:
 
         return QPointF();
     }       
+};
+
+class HB_CORE_PRIVATE_EXPORT HbPanGesturePrivate
+{
+public:
+    QPointF mStartPos;
+
+    QPointF mSceneStartPos;
+    QPointF mSceneLastOffset;
+    QPointF mSceneOffset;
+
+    // for the recognizer
+    QPointF mDeltaSinceLastTimeStamp;
+    QPointF mSceneDeltaSinceLastTimeStamp;
+    qint64 mLastTimeStamp;
+
+    HbPointRecorder mAxisX;
+    HbPointRecorder mAxisY;
+    HbPointRecorder mSceneAxisX;
+    HbPointRecorder mSceneAxisY;
+
+    qreal mThresholdSquare;
+
+    bool mIgnoreMouseEvents;
+    int mFollowedTouchPointId;
+
+    ELAPSED_TIMER mTime;
+};
+
+class HB_CORE_PRIVATE_EXPORT HbPinchGesturePrivate
+{
+public:
+    bool mIsNewSequence;
+
+    qreal mSceneTotalRotationAngle;
+    qreal mSceneLastRotationAngle;
+    qreal mSceneRotationAngle;
+
+    QPointF mSceneStartCenterPoint;
+    QPointF mSceneLastCenterPoint;
+    QPointF mSceneCenterPoint;
+};
+
+class HB_CORE_PRIVATE_EXPORT HbSwipeGesturePrivate
+{
+public:
+    QPointF mStartPos;
+    QPointF mSceneStartPos;
+
+    qint64 mStartTime;
+
+    qreal mSceneSwipeAngle;
+
+    HbPointRecorder mAxisX;
+    HbPointRecorder mAxisY;
+
+    ELAPSED_TIMER mTime;
+};
+
+
+class HB_CORE_PRIVATE_EXPORT HbTapAndHoldGesturePrivate
+{
+public:
+    HbTapAndHoldGesturePrivate() : mTimerID(0) {}
+
+    QPointF mScenePos;
+    int mRunningTime;
+    int mTimerID;
+};
+
+class HB_CORE_PRIVATE_EXPORT HbTapGesturePrivate
+{
+public:
+    HbTapGesturePrivate() : mTimerId(0) {}
+
+    QPointF mStartPos;
+    QPointF mSceneStartPos;
+    QPointF mScenePosition;
+    HbTapGesture::TapStyleHint mTapStyleHint;
+    int mTimerId;
 };
 
 #endif // HBGESTURES_P_H

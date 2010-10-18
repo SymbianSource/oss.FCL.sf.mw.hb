@@ -35,6 +35,7 @@
 #include <QDir>
 
 #include "hbinputmodecache_p.h"
+#include "hbinputmethod.h"
 #include "hbinputfilter.h"
 
 #ifdef Q_OS_SYMBIAN
@@ -46,12 +47,12 @@
 
 #ifndef Q_OS_UNIX
 #define HBI_BASE_WRITABLE_PATH QString("c:\\Hb\\lib")
-#endif
+#endif // Q_OS_UNIX
 
-#endif
+#endif //Q_OS_SYMBIAN
 
 /*!
-@alpha
+@stable
 @hbcore
 \class HbInputSettingProxy
 \brief A singleton class providing access to system wide input related settings.
@@ -140,71 +141,43 @@ void HbSettingProxyInputMethodDescriptor::setData(const QByteArray &data)
     }
 }
 
-// Special character classifier class for bookkeeping
-// of how popular a SC is.
-class HbScClassifier
-{
-public:
-    HbScClassifier(QChar aChar = 0, int aCount = 0)
-        : mChar(aChar), mCount(aCount) {
-    }
-
-    void operator=(const HbScClassifier &aOther) {
-        mChar = aOther.mChar;
-        mCount = aOther.mCount;
-    }
-
-public:
-    QChar mChar;
-    int mCount;
-};
-
 HbInputSettingProxyPrivate::HbInputSettingProxyPrivate()
 {
-    iSharedMemory = new QSharedMemory(KInputSettingProxyKey);
+    mSharedMemory = new QSharedMemory(HbInputSettingsSharedMemoryKey);
 
-    if (!iSharedMemory->attach()) {
-        if (iSharedMemory->error() != QSharedMemory::NotFound) {
-            qDebug("HbInputSettingProxy: QSharedMemory::attached returned error %d", iSharedMemory->error());
+    if (!mSharedMemory->attach()) {
+        if (mSharedMemory->error() != QSharedMemory::NotFound) {
+            qDebug("HbInputSettingProxy: QSharedMemory::attach returned error %d", mSharedMemory->error());
             return;
         }
 
-        if (!iSharedMemory->create(sizeof(HbSettingProxyInternalData))) {
+        if (!mSharedMemory->create(sizeof(HbSettingProxyInternalData))) {
             qDebug("HbInputSettingProxy : Unable to create shared memory block!");
             return;
         }
 
         initializeDataArea();
     }
-
-    lock();
-
-    HbSettingProxyInternalData *prData = proxyData();
-    if (prData) {
-        ++prData->iReferences;
+#ifdef Q_OS_UNIX
+#ifndef Q_OS_SYMBIAN
+    else if (proxyData()->version != HbProxyDataRequiredVersion) {
+        // In unix systems, the shared memory may be left dangling with an outdated version
+        // In that case, update all the values with defaults to make sure 
+        initializeDataArea();
     }
-
-    unlock();
-
-    // This is needed because qApp doesn't not exist anymore when singleton destructs.
-    iSaveFile = dataFileNameAndPath();
+#endif // Q_OS_SYMBIAN
+#endif // Q_OS_UNIX
 }
 
 HbInputSettingProxyPrivate::~HbInputSettingProxyPrivate()
 {
-    // NOTE: iSharedMemory is not deleted on purpose. See HbInputSettingProxy::shutdown.
+    // NOTE: mSharedMemory is not deleted on purpose. See HbInputSettingProxy::shutdown.
 }
 
 void HbInputSettingProxyPrivate::shutdownDataArea()
 {
     lock();
-    HbSettingProxyInternalData *prData = proxyData();
-    if (prData) {
-        prData->iReferences--;
-        if (prData->iReferences <= 0) {
-            save();
-        }
-    }
+    save(proxyData());
     unlock();
 }
 
@@ -221,97 +194,78 @@ QString HbInputSettingProxyPrivate::dataFileNameAndPath()
 void HbInputSettingProxyPrivate::initializeDataArea()
 {
     lock();
-    bool wasLoaded = load();
-
-    HbSettingProxyInternalData *prData = proxyData();
-    if (prData) {
-        prData->iReferences = 0;
-        prData->iOrientationChangeCompleted = true;
-        // Default values, real ones should be set by calling initializeOrientation()
-        prData->iScreenOrientation = Qt::Vertical;
-
-        if (!wasLoaded) {
-            // There was no permanent storage version, so initialize to defaults.
-            prData->iVersion = HbProxyDataRequiredVersion;
-            prData->iGlobalPrimaryInputLanguage = HbInputLanguage(QLocale::English, QLocale::UnitedKingdom);
-            prData->iGlobalSecondaryInputLanguage = QLocale::Language(0);
-            prData->iActiveKeyboard = HbKeyboardVirtual12Key;
-            prData->iTouchKeyboard = HbKeyboardVirtual12Key;
-            prData->iHwKeyboard = HbKeyboardQwerty;
-            prData->iPredictiveInputState = (HbKeyboardSettingFlags)HbKeyboardSetting12key | HbKeyboardSettingQwerty;
-            prData->iDigitType = HbDigitTypeLatin;
-            prData->iQwertyTextCasing = true;
-            prData->iQwertyCharacterPreview = true;
-            prData->iRegionalCorrectionStatus = true;
-            prData->iKeypressTimeout = 1000;
-            prData->iAutocompletion = (HbKeyboardSettingFlags)(HbKeyboardSetting12key | HbKeyboardSettingQwerty);
-            prData->iTypingCorrectionLevel = HbTypingCorrectionLevelHigh;
-            prData->iPrimaryCandidateMode = HbPrimaryCandidateModeBestPrediction;
-            prData->iPreferredMethodHorizontal = HbInputMethodDescriptor();
-            prData->iPreferredMethodHorizontal.setData(QByteArray());
-            prData->iPreferredMethodVertical = HbInputMethodDescriptor();
-            prData->iPreferredMethodVertical.setData(QByteArray());
+    bool wasLoaded = load(proxyData());
+    if (!wasLoaded) {
+        HbSettingProxyInternalData *prData = proxyData();
+        if (prData) {
+            writeDefaultValuesToData(prData);
         }
     }
     unlock();
 }
 
-bool HbInputSettingProxyPrivate::load()
+void HbInputSettingProxyPrivate::writeDefaultValuesToData(HbSettingProxyInternalData* data)
 {
+    data->version = HbProxyDataRequiredVersion;
+    data->globalPrimaryInputLanguage = HbInputLanguage(QLocale::English, QLocale::UnitedKingdom);
+    data->globalSecondaryInputLanguage = QLocale::Language(0);
+    data->predictiveInputState = (HbKeyboardSettingFlags)HbKeyboardSetting12key | HbKeyboardSettingQwerty;
+    data->digitType = HbDigitTypeLatin;
+    data->qwertyTextCasing = true;
+    data->qwertyCharacterPreview = true;
+    data->regionalCorrectionStatus = true;
+    data->flipStatus = false;
+    data->keypressTimeout = 1000;
+    data->autocompletion = (HbKeyboardSettingFlags)(HbKeyboardSetting12key | HbKeyboardSettingQwerty);
+    data->typingCorrectionLevel = HbTypingCorrectionLevelHigh;
+    data->primaryCandidateMode = HbPrimaryCandidateModeBestPrediction;
+    data->preferredMethodHorizontal = HbInputMethodDescriptor();
+    data->preferredMethodHorizontal.setData(QByteArray());
+    data->preferredMethodVertical = HbInputMethodDescriptor();
+    data->preferredMethodVertical.setData(QByteArray());
+    data->hwrSpeed = HbHwrSpeedNormal;
+    data->cangjieMode = HbCangjieNormal;
+}
+
+bool HbInputSettingProxyPrivate::load(HbSettingProxyInternalData *data)
+{
+    if (!data) {
+        return false;
+    }
     QFile file(dataFileNameAndPath());
     if (!file.open(QIODevice::ReadOnly)) {
         return false;
     }
 
     QByteArray rawData = file.read(sizeof(HbSettingProxyInternalData));
+    file.close();
+
     if (rawData.size() == sizeof(HbSettingProxyInternalData)) {
         HbSettingProxyInternalData *ldData = (HbSettingProxyInternalData *)rawData.constData();
         if (ldData) {
-            if (ldData->iVersion == HbProxyDataRequiredVersion) {
-
-                HbSettingProxyInternalData *prData = proxyData();
-                memcpy((void *)prData, (void *)ldData, sizeof(HbSettingProxyInternalData));
-                prData->iActiveKeyboard = ldData->iActiveKeyboard;
-
-                // Temporarily like this, will be moved as part of shared data later...
-                int numItems = 0;
-                file.read((char *)&numItems, sizeof(int));
-                iTopScs.clear();
-                for (int jj = 0; jj < numItems; jj++) {
-                    HbScClassifier tmpItem;
-                    file.read((char *)&tmpItem, sizeof(HbScClassifier));
-                    iTopScs.append(tmpItem);
-                }
-
-                file.close();
+            if (ldData->version == HbProxyDataRequiredVersion) {
+                memcpy((void *)data, (void *)ldData, sizeof(HbSettingProxyInternalData));
                 return true;
             }
         }
     }
-
-    file.close();
+    // The data size was incorrect or the version number was wrong
     return false;
 }
 
-void HbInputSettingProxyPrivate::save()
+void HbInputSettingProxyPrivate::save(HbSettingProxyInternalData *data)
 {
-    // Make sure that the path exists
-    QDir settingDir;
-    settingDir.mkpath(dataFilePath());
+    if (data) {
+        // Make sure that the path exists
+        QDir settingDir;
+        settingDir.mkpath(dataFilePath());
 
-    HbSettingProxyInternalData *prData = proxyData();
-    if (prData) {
-        QFile file(iSaveFile);
+        QFile file(dataFileNameAndPath());
         if (!file.open(QIODevice::WriteOnly)) {
             return;
         }
 
-        file.write((const char *)prData, sizeof(HbSettingProxyInternalData));
-
-        // Temporarily like this, will be moved to shared data later...
-        int numItems = iTopScs.count();
-        file.write((const char *)&numItems, sizeof(int));
-        file.write((const char *)iTopScs.constData(), numItems * sizeof(HbScClassifier));
+        file.write((const char *)data, sizeof(HbSettingProxyInternalData));
         file.close();
     }
 }
@@ -337,43 +291,7 @@ void HbInputSettingProxyPrivate::stringToProxyDataElement(QChar *string, const Q
 
 HbSettingProxyInternalData *HbInputSettingProxyPrivate::proxyData() const
 {
-    return static_cast<HbSettingProxyInternalData *>(iSharedMemory->data());
-}
-
-void HbInputSettingProxyPrivate::flipToggle()
-{
-    setFlipStatus(!flipStatus());
-}
-
-bool HbInputSettingProxyPrivate::flipStatus()
-{
-    HbSettingProxyInternalData *prData = proxyData();
-    return prData->iFlipStatus;
-}
-
-void HbInputSettingProxyPrivate::setFlipStatus(bool flipStatus)
-{
-    HbSettingProxyInternalData *prData = proxyData();
-    prData->iFlipStatus = flipStatus;
-
-    handleDeviceSpecificOriantationAndFlipChange();
-}
-
-void HbInputSettingProxyPrivate::handleDeviceSpecificOriantationAndFlipChange()
-{
-    HbKeyboardType  keyboard = HbKeyboardNone;
-
-    if (HbInputSettingProxy::instance()->screenOrientation() == Qt::Vertical) {
-        keyboard = HbKeyboardVirtual12Key;
-    } else {
-        if (flipStatus()) {
-            keyboard = HbKeyboardQwerty;
-        } else {
-            keyboard = HbKeyboardVirtualQwerty;
-        }
-    }
-
-    HbInputSettingProxy::instance()->setActiveKeyboard(keyboard);
+    return static_cast<HbSettingProxyInternalData *>(mSharedMemory->data());
 }
 
 /// @endcond
@@ -413,8 +331,8 @@ void HbInputSettingProxy::shutdown()
     Q_D(HbInputSettingProxy);
 
     d->shutdownDataArea();
-    delete d->iSharedMemory;
-    d->iSharedMemory = 0;
+    delete d->mSharedMemory;
+    d->mSharedMemory = 0;
 }
 
 /*!
@@ -422,10 +340,14 @@ Toggles prediction mode
 */
 void HbInputSettingProxy::togglePrediction()
 {
-    if (activeKeyboard() & HbQwertyKeyboardMask) {
-        setPredictiveInputStatus(HbKeyboardSettingQwerty, !predictiveInputStatus(HbKeyboardSettingQwerty));
-    } else {
-        setPredictiveInputStatus(HbKeyboardSetting12key, !predictiveInputStatus(HbKeyboardSetting12key));
+    HbInputMethod *im = HbInputMethod::activeInputMethod();
+    if (im) {
+        HbInputState state = im->inputState();
+        if (state.keyboard() & HbQwertyKeyboardMask) {
+            setPredictiveInputStatus(HbKeyboardSettingQwerty, !predictiveInputStatus(HbKeyboardSettingQwerty));
+        } else {
+            setPredictiveInputStatus(HbKeyboardSetting12key, !predictiveInputStatus(HbKeyboardSetting12key));
+        }
     }
 }
 
@@ -449,9 +371,6 @@ void HbInputSettingProxy::connectObservingObject(QObject *aObserver)
     if (aObserver) {
         connect(this, SIGNAL(globalInputLanguageChanged(const HbInputLanguage &)), aObserver, SLOT(globalInputLanguageChanged(const HbInputLanguage &)));
         connect(this, SIGNAL(globalSecondaryInputLanguageChanged(const HbInputLanguage &)), aObserver, SLOT(globalSecondaryInputLanguageChanged(const HbInputLanguage &)));
-        connect(this, SIGNAL(activeKeyboardChanged(HbKeyboardType)), aObserver, SLOT(activeKeyboardChanged(HbKeyboardType)));
-        connect(this, SIGNAL(orientationAboutToChange()), aObserver, SLOT(orientationAboutToChange()));
-        connect(this, SIGNAL(orientationChanged(Qt::Orientation)), aObserver, SLOT(orientationChanged(Qt::Orientation)));
     }
 }
 
@@ -465,9 +384,6 @@ void HbInputSettingProxy::disconnectObservingObject(QObject *aObserver)
     if (aObserver) {
         disconnect(this, SIGNAL(globalInputLanguageChanged(const HbInputLanguage &)), aObserver, SLOT(globalInputLanguageChanged(const HbInputLanguage &)));
         disconnect(this, SIGNAL(globalSecondaryInputLanguageChanged(const HbInputLanguage &)), aObserver, SLOT(globalSecondaryInputLanguageChanged(const HbInputLanguage &)));
-        disconnect(this, SIGNAL(activeKeyboardChanged(HbKeyboardType)), aObserver, SLOT(activeKeyboardChanged(HbKeyboardType)));
-        disconnect(this, SIGNAL(orientationAboutToChange()), aObserver, SLOT(orientationAboutToChange()));
-        disconnect(this, SIGNAL(orientationChanged(Qt::Orientation)), aObserver, SLOT(orientationChanged(Qt::Orientation)));
     }
 }
 
@@ -486,7 +402,7 @@ HbInputLanguage HbInputSettingProxy::globalInputLanguage() const
     d->lock();
     HbSettingProxyInternalData *prData = d->proxyData();
     if (prData) {
-        res = prData->iGlobalPrimaryInputLanguage;
+        res = prData->globalPrimaryInputLanguage;
     }
     d->unlock();
 
@@ -507,7 +423,7 @@ HbInputLanguage HbInputSettingProxy::globalSecondaryInputLanguage() const
     d->lock();
     HbSettingProxyInternalData *prData = d->proxyData();
     if (prData) {
-        res = prData->iGlobalSecondaryInputLanguage;
+        res = prData->globalSecondaryInputLanguage;
     }
     d->unlock();
 
@@ -524,59 +440,99 @@ void HbInputSettingProxy::availableHwKeyboard(QList<HbKeyboardType>& aListOfAvai
 }
 
 /*!
-Returns active hardware keyboard type.
-
-\sa setActiveHwKeyboard
-\sa activeTouchKeyboard
+Stores speed attribute for handwriting recognition.
 */
-HbKeyboardType HbInputSettingProxy::activeHwKeyboard() const
+void HbInputSettingProxy::setHwrWritingSpeed(HbHwrWritingSpeed speed)
+{
+    Q_D(HbInputSettingProxy);
+    HbSettingProxyInternalData *prData = d->proxyData();
+    if (prData) {
+        bool notify = false;
+        d->lock();
+        if (prData->hwrSpeed != speed) {
+            prData->hwrSpeed = speed;
+            notify = true;
+        }
+        d->unlock();
+        if (notify) {
+            emit hwrWritingSpeedChanged(speed);
+        }
+    }
+}
+
+/*!
+Returns handwriting recignition speed attribute.
+*/
+HbHwrWritingSpeed HbInputSettingProxy::hwrWritingSpeed() const
 {
     Q_D(const HbInputSettingProxy);
-    HbKeyboardType res = HbKeyboardNone;
+    HbHwrWritingSpeed res = HbHwrSpeedNormal;
 
     HbSettingProxyInternalData *prData = d->proxyData();
     if (prData) {
-        res = prData->iHwKeyboard;
+        res = prData->hwrSpeed;
     }
 
     return res;
 }
 
 /*!
-Returns active touch keyboard type.
-
-\sa setActiveTouchKeyboard
-\sa activeHwKeyboard
+Strores detail mode for Chinese CangJie input mode.
 */
-HbKeyboardType HbInputSettingProxy::activeTouchKeyboard() const
+void HbInputSettingProxy::setDetailedCangjieMode(HbCangjieDetailMode cangjieDetail)
+{
+    Q_D(HbInputSettingProxy);
+    HbSettingProxyInternalData *prData = d->proxyData();
+    if (prData) {
+        bool notify = false;
+        d->lock();
+        if (prData->cangjieMode != cangjieDetail) {
+            prData->cangjieMode = cangjieDetail;
+            notify = true;
+        }
+        d->unlock();
+        if (notify) {
+            emit detailedCangjieModeChanged(cangjieDetail);
+        }
+    }
+}
+
+/*!
+Returns detail mode for Chinese CangJie input mode.
+*/
+HbCangjieDetailMode HbInputSettingProxy::detailedCangjieMode() const
 {
     Q_D(const HbInputSettingProxy);
-    HbKeyboardType res = HbKeyboardNone;
+    HbCangjieDetailMode res = HbCangjieNormal;
 
     HbSettingProxyInternalData *prData = d->proxyData();
     if (prData) {
-        res = prData->iTouchKeyboard;
+        res = prData->cangjieMode;
     }
 
     return res;
 }
 
 /*!
-Returns active keyboard type.
-
-\sa setActiveKeyboard
+Returns active keyboard for given screen oriention.
 */
-HbKeyboardType HbInputSettingProxy::activeKeyboard() const
+HbKeyboardType HbInputSettingProxy::activeKeyboard(Qt::Orientation orientation) const
 {
     Q_D(const HbInputSettingProxy);
-    HbKeyboardType res = HbKeyboardNone;
 
-    HbSettingProxyInternalData *prData = d->proxyData();
-    if (prData) {
-        res = prData->iActiveKeyboard;
+    if (orientation == Qt::Horizontal) {
+        HbSettingProxyInternalData *prData = d->proxyData();
+        if (prData) {
+            d->lock();
+            if (prData->flipStatus == true) {
+                return HbKeyboardHardwareLandcape;
+            }
+            d->unlock();
+        }
+        return HbKeyboardTouchLandscape;
+    } else {
+        return HbKeyboardTouchPortrait;
     }
-
-    return res;
 }
 
 /*!
@@ -595,35 +551,9 @@ HbInputMethodDescriptor HbInputSettingProxy::preferredInputMethod(Qt::Orientatio
     if (prData) {
         d->lock();
         if (orientation == Qt::Horizontal) {
-            result = prData->iPreferredMethodHorizontal.descriptor();
+            result = prData->preferredMethodHorizontal.descriptor();
         } else {
-            result = prData->iPreferredMethodVertical.descriptor();
-        }
-        d->unlock();
-    }
-
-    return result;
-}
-
-/*!
-Returns the preferred input method for current screen orientation. Initially this value is empty
-and the framework will resolve the default handler.
-
-\sa setPreferredInputMethod
-*/
-HbInputMethodDescriptor HbInputSettingProxy::preferredInputMethod() const
-{
-    Q_D(const HbInputSettingProxy);
-
-    HbInputMethodDescriptor result;
-
-    HbSettingProxyInternalData *prData = d->proxyData();
-    if (prData) {
-        d->lock();
-        if (prData->iScreenOrientation == Qt::Horizontal) {
-            result = prData->iPreferredMethodHorizontal.descriptor();
-        } else {
-            result = prData->iPreferredMethodVertical.descriptor();
+            result = prData->preferredMethodVertical.descriptor();
         }
         d->unlock();
     }
@@ -646,9 +576,9 @@ QByteArray HbInputSettingProxy::preferredInputMethodCustomData(Qt::Orientation o
     if (prData) {
         d->lock();
         if (orientation == Qt::Horizontal) {
-            result = prData->iPreferredMethodHorizontal.data();
+            result = prData->preferredMethodHorizontal.data();
         } else {
-            result = prData->iPreferredMethodVertical.data();
+            result = prData->preferredMethodVertical.data();
         }
         d->unlock();
     }
@@ -672,11 +602,11 @@ void HbInputSettingProxy::setPreferredInputMethod(Qt::Orientation orientation, c
     if (prData) {
         d->lock();
         if (orientation == Qt::Horizontal) {
-            prData->iPreferredMethodHorizontal = inputMethod;
-            prData->iPreferredMethodHorizontal.setData(customData);
+            prData->preferredMethodHorizontal = inputMethod;
+            prData->preferredMethodHorizontal.setData(customData);
         } else {
-            prData->iPreferredMethodVertical = inputMethod;
-            prData->iPreferredMethodVertical.setData(customData);
+            prData->preferredMethodVertical = inputMethod;
+            prData->preferredMethodVertical.setData(customData);
         }
         d->unlock();
     }
@@ -694,8 +624,8 @@ void HbInputSettingProxy::setGlobalInputLanguage(const HbInputLanguage &language
     if (prData) {
         bool notify = false;
         d->lock();
-        if (prData->iGlobalPrimaryInputLanguage != language) {
-            prData->iGlobalPrimaryInputLanguage = language;
+        if (prData->globalPrimaryInputLanguage != language) {
+            prData->globalPrimaryInputLanguage = language;
             notify = true;
         }
         d->unlock();
@@ -717,91 +647,13 @@ void HbInputSettingProxy::setGlobalSecondaryInputLanguage(const HbInputLanguage 
     if (prData) {
         bool notify = false;
         d->lock();
-        if (prData->iGlobalSecondaryInputLanguage != language) {
-            prData->iGlobalSecondaryInputLanguage = language;
+        if (prData->globalSecondaryInputLanguage != language) {
+            prData->globalSecondaryInputLanguage = language;
             notify = true;
         }
         d->unlock();
         if (notify) {
             emit globalSecondaryInputLanguageChanged(language);
-        }
-    }
-}
-
-/*!
-Sets active hardware keyboard type. Will emit signal activeHwKeyboardChanged if keyboard is changed.
-
-\sa activeHwKeyboard
-\sa activeTouchKeyboard
-\sa setActiveTouchKeyboard
-\sa setActiveHwKeyboard
-*/
-void HbInputSettingProxy::setActiveHwKeyboard(HbKeyboardType keyboard)
-{
-    Q_D(HbInputSettingProxy);
-    HbSettingProxyInternalData *prData = d->proxyData();
-    if (prData) {
-        bool notify = false;
-        d->lock();
-        if (prData->iHwKeyboard != keyboard) {
-            prData->iHwKeyboard = keyboard;
-            notify = true;
-        }
-        d->unlock();
-        if (notify) {
-            emit activeHwKeyboardChanged(keyboard);
-        }
-    }
-}
-
-/*!
-Sets active touch keyboard type. Will emit signal activeTouchKeyboardChanged keyboard is changed.
-
-\sa activeTouchKeyboard
-\sa activeHwKeyboard
-\sa setActiveTouchKeyboard
-\sa setActiveHwKeyboard
-*/
-void HbInputSettingProxy::setActiveTouchKeyboard(HbKeyboardType keyboard)
-{
-    Q_D(HbInputSettingProxy);
-    HbSettingProxyInternalData *prData = d->proxyData();
-    if (prData) {
-        bool notify = false;
-        d->lock();
-        if (prData->iTouchKeyboard != keyboard) {
-            prData->iTouchKeyboard = keyboard;
-            notify = true;
-        }
-        d->unlock();
-        if (notify) {
-            emit activeTouchKeyboardChanged(keyboard);
-        }
-    }
-}
-
-/*!
-Sets active keyboard type. Will emit signal activeKeyboardChanged if keyboard is changed.
-
-\sa activeKeyboard
-\sa activeHwKeyboard
-\sa setactiveKeyboard
-\sa setActiveHwKeyboard
-*/
-void HbInputSettingProxy::setActiveKeyboard(HbKeyboardType keyboard)
-{
-    Q_D(HbInputSettingProxy);
-    HbSettingProxyInternalData *prData = d->proxyData();
-    if (prData) {
-        bool notify = false;
-        d->lock();
-        if (prData->iActiveKeyboard != keyboard) {
-            prData->iActiveKeyboard = keyboard;
-            notify = true;
-        }
-        d->unlock();
-        if (notify) {
-            emit activeKeyboardChanged(keyboard);
         }
     }
 }
@@ -820,7 +672,7 @@ bool HbInputSettingProxy::predictiveInputStatus(HbKeyboardSettingFlags keyboardT
 
     HbSettingProxyInternalData *prData = d->proxyData();
     if (prData) {
-        res = prData->iPredictiveInputState & keyboardType;
+        res = prData->predictiveInputState & keyboardType;
     }
 
     return res;
@@ -839,14 +691,14 @@ void HbInputSettingProxy::setPredictiveInputStatus(HbKeyboardSettingFlags keyboa
         bool notify = false;
         d->lock();
 
-        HbKeyboardSettingFlags newValue = prData->iPredictiveInputState;
+        HbKeyboardSettingFlags newValue = prData->predictiveInputState;
         if (newStatus) {
             newValue |= keyboardType;
         } else {
             newValue &= ~keyboardType;
         }
-        if (prData->iPredictiveInputState != newValue) {
-            prData->iPredictiveInputState = newValue;
+        if (prData->predictiveInputState != newValue) {
+            prData->predictiveInputState = newValue;
             notify = true;
         }
         d->unlock();
@@ -869,11 +721,15 @@ bool HbInputSettingProxy::predictiveInputStatusForActiveKeyboard() const
 
     HbSettingProxyInternalData *prData = d->proxyData();
     if (prData) {
-        if (activeKeyboard() & HbQwertyKeyboardMask) {
-            res = prData->iPredictiveInputState & HbKeyboardSettingQwerty;
-        } else {
-            res = prData->iPredictiveInputState & HbKeyboardSetting12key;
-        }
+        HbInputMethod *im = HbInputMethod::activeInputMethod();
+        if (im) {
+            HbInputState state = im->inputState();
+            if (state.keyboard() & HbQwertyKeyboardMask) {
+                res = prData->predictiveInputState & HbKeyboardSettingQwerty;
+            } else {
+                res = prData->predictiveInputState & HbKeyboardSetting12key;
+            }
+         }
     }
 
     return res;
@@ -886,10 +742,14 @@ Sets the status of predictive text input feature for active keyboard.
 */
 void HbInputSettingProxy::setPredictiveInputStatusForActiveKeyboard(bool newStatus)
 {
-    if (activeKeyboard() & HbQwertyKeyboardMask) {
-        setPredictiveInputStatus(HbKeyboardSettingQwerty, newStatus);
-    } else {
-        setPredictiveInputStatus(HbKeyboardSetting12key, newStatus);
+    HbInputMethod *im = HbInputMethod::activeInputMethod();
+    if (im) {
+        HbInputState state = im->inputState();
+        if (state.keyboard() & HbQwertyKeyboardMask) {
+            setPredictiveInputStatus(HbKeyboardSettingQwerty, newStatus);
+        } else {
+            setPredictiveInputStatus(HbKeyboardSetting12key, newStatus);
+        }
     }
 }
 
@@ -916,7 +776,9 @@ QString HbInputSettingProxy::writablePath()
 }
 
 /*!
-Returns path to input method plugin folder.
+Returns paths to input method plugin folders.
+
+All the paths will not necessarily exist in the filesystem.
 */
 QStringList HbInputSettingProxy::inputMethodPluginPaths()
 {
@@ -935,24 +797,21 @@ QStringList HbInputSettingProxy::inputMethodPluginPaths()
 }
 
 /*!
-Returns list of paths to all possible keymap plugin locations.
+Returns list of paths to all possible keymap locations.
+
+All the paths will not necessarily exist in the filesystem.
 */
 QStringList HbInputSettingProxy::keymapPluginPaths()
 {
     QStringList result;
-    QFileInfoList list = QDir::drives();
-
 #ifdef Q_OS_SYMBIAN
+    QFileInfoList list = QDir::drives();
     for (int counter = 0; counter < list.count(); counter ++) {
         result.append(list.at(counter).absoluteFilePath() + QString("/resource/keymaps"));
     }
 #else
     result.append(HB_RESOURCES_DIR + (QDir::separator() + QString("keymaps")));
-    for (int counter = 0; counter < list.count(); counter ++) {
-        result.append(list.at(counter).absoluteFilePath() + QString("resource/keymaps"));
-    }
 #endif
-    result.sort();
     //Append the default resource at the end
     result.append(":/keymaps");
     return QStringList(result);
@@ -985,6 +844,8 @@ QString HbInputSettingProxy::dictionaryPath()
 
 /*!
 Returns list of paths where prediction engine plugins will be searched.
+
+All the paths will not necessarily exist in the filesystem.
 */
 QStringList HbInputSettingProxy::predictionEnginePaths()
 {
@@ -1023,7 +884,7 @@ HbInputDigitType HbInputSettingProxy::globalDigitType() const
 
     HbSettingProxyInternalData *prData = d->proxyData();
     if (prData) {
-        res = prData->iDigitType;
+        res = prData->digitType;
     }
 
     return res;
@@ -1040,8 +901,8 @@ void HbInputSettingProxy::setGlobalDigitType(HbInputDigitType digitType)
     HbSettingProxyInternalData *prData = d->proxyData();
     if (prData) {
         d->lock();
-        if (prData->iDigitType != digitType) {
-            prData->iDigitType = digitType;
+        if (prData->digitType != digitType) {
+            prData->digitType = digitType;
         }
         d->unlock();
     }
@@ -1059,7 +920,7 @@ bool HbInputSettingProxy::automaticTextCasingForQwerty()
 
     HbSettingProxyInternalData *prData = d->proxyData();
     if (prData) {
-        res = prData->iQwertyTextCasing;
+        res = prData->qwertyTextCasing;
     }
 
     return res;
@@ -1077,8 +938,8 @@ void HbInputSettingProxy::setAutomaticTextCasingForQwerty(bool status)
     if (prData) {
         bool notify = false;
         d->lock();
-        if (prData->iQwertyTextCasing != status) {
-            prData->iQwertyTextCasing = status;
+        if (prData->qwertyTextCasing != status) {
+            prData->qwertyTextCasing = status;
             notify = true;
         }
         d->unlock();
@@ -1101,8 +962,8 @@ void HbInputSettingProxy::setCharacterPreviewForQwerty(bool previewEnabled)
     if (prData) {
         bool notify = false;
         d->lock();
-        if (prData->iQwertyCharacterPreview != previewEnabled) {
-            prData->iQwertyCharacterPreview = previewEnabled;
+        if (prData->qwertyCharacterPreview != previewEnabled) {
+            prData->qwertyCharacterPreview = previewEnabled;
             notify = true;
         }
         d->unlock();
@@ -1126,142 +987,10 @@ bool HbInputSettingProxy::isCharacterPreviewForQwertyEnabled()
 
     HbSettingProxyInternalData *prData = d->proxyData();
     if (prData) {
-        res = prData->iQwertyCharacterPreview;
+        res = prData->qwertyCharacterPreview;
     }
 
     return res;
-}
-
-/*!
-\deprecated HbInputSettingProxy::activeCustomInputMethod() const
-    is deprecated. Use preferredInputMethod instead.
-Returns active custom input method. The pluginNameAndPath field is empty if no custom input methid is active.
-
-\sa setActiveCustomInputMethod
-*/
-HbInputMethodDescriptor HbInputSettingProxy::activeCustomInputMethod() const
-{
-    return HbInputMethodDescriptor();
-}
-
-/*!
-\deprecated HbInputSettingProxy::setActiveCustomInputMethod(const HbInputMethodDescriptor&)
-    is deprecated. Use setPreferredInputMethod instead.
-\sa activeCustomInputMethod
-*/
-void HbInputSettingProxy::setActiveCustomInputMethod(const HbInputMethodDescriptor &inputMethod)
-{
-    Q_UNUSED(inputMethod)
-}
-
-/*!
-Returns the current screen orientation in settings
-*/
-Qt::Orientation HbInputSettingProxy::screenOrientation()
-{
-    Q_D(HbInputSettingProxy);
-
-    Qt::Orientation orientation = Qt::Vertical;
-    HbSettingProxyInternalData *prData = d->proxyData();
-    if (prData) {
-        orientation = prData->iScreenOrientation;
-    }
-    return orientation;
-}
-
-/*!
-Sets the current screen orientation in settings. This completes orientation change
-started with notifyScreenOrientationChange. Nothing is done, If
- notifyScreenOrientationChange has not been called before calling this.
-*/
-void HbInputSettingProxy::setScreenOrientation(Qt::Orientation screenOrientation)
-{
-    Q_D(HbInputSettingProxy);
-
-    HbSettingProxyInternalData *prData = d->proxyData();
-    if (prData) {
-        d->lock();
-        if (prData->iOrientationChangeCompleted) {
-            d->unlock();
-            return;
-        }
-        prData->iScreenOrientation = screenOrientation;
-        d->unlock();
-
-        // notify everyone that the orientation has changed.
-        d->handleDeviceSpecificOriantationAndFlipChange();
-        emit orientationChanged(screenOrientation);
-
-        // set orientation change operation completed.
-        d->lock();
-        prData->iOrientationChangeCompleted = true;
-        d->unlock();
-    }
-}
-
-/*!
-Starts screen orientation change sequence. Emits orientationAboutToChange signal
-and set internal orientation change flag to true. Whoever calls this
-method, must also complete the orientation change sequence by calling setScreenOrientation.
-Generally this mechanims is connected to operating system level screen orientation attribute
-begind the scenes and there is no need to call this directly from application or input
-method.
-*/
-void HbInputSettingProxy::notifyScreenOrientationChange()
-{
-    Q_D(HbInputSettingProxy);
-
-    HbSettingProxyInternalData *prData = d->proxyData();
-    if (prData) {
-        bool notify = false;
-        d->lock();
-        if (prData->iOrientationChangeCompleted) {
-            prData->iOrientationChangeCompleted = false;
-            notify = true;
-        }
-        d->unlock();
-        if (notify) {
-            emit orientationAboutToChange();
-        }
-    }
-    
-}
-
-/*!
-Returns true if the orientation change is completed
-*/
-bool HbInputSettingProxy::orientationChangeCompleted() const
-{
-    Q_D(const HbInputSettingProxy);
-
-    bool completed = true;
-    HbSettingProxyInternalData *prData = d->proxyData();
-    if (prData) {
-        completed = prData->iOrientationChangeCompleted;
-    }
-    return completed;
-}
-
-/*!
-Method for initializing orientation state of the input framework. Needed only on
-framework level, should not be called by applications.
-*/
-void HbInputSettingProxy::initializeOrientation(Qt::Orientation screenOrientation)
-{
-    Q_D(HbInputSettingProxy);
-
-    // call handleDeviceSpecificOriantationAndFlipChange method
-    HbSettingProxyInternalData *prData = d->proxyData();
-    if (prData) {
-        d->lock();
-        prData->iScreenOrientation = screenOrientation;
-        if (screenOrientation == Qt::Vertical) {
-            prData->iActiveKeyboard = HbKeyboardVirtual12Key;
-        } else {
-            prData->iActiveKeyboard = HbKeyboardVirtualQwerty;
-        }
-        d->unlock();
-    }
 }
 
 /*!
@@ -1275,7 +1004,7 @@ bool HbInputSettingProxy::regionalCorrectionEnabled()
     bool res = false;
     HbSettingProxyInternalData *prData = d->proxyData();
     if (prData) {
-        res = prData->iRegionalCorrectionStatus;
+        res = prData->regionalCorrectionStatus;
     }
     return res;
 }
@@ -1292,8 +1021,8 @@ void HbInputSettingProxy::enableRegionalCorrection(bool newStatus)
     if (prData) {
         bool notify = false;
         d->lock();
-        if (prData->iRegionalCorrectionStatus != newStatus) {
-            prData->iRegionalCorrectionStatus = newStatus;
+        if (prData->regionalCorrectionStatus != newStatus) {
+            prData->regionalCorrectionStatus = newStatus;
             notify = true;
         }
         d->unlock();
@@ -1315,8 +1044,8 @@ void HbInputSettingProxy::setKeypressTimeout(int timeout)
     if (prData) {
         bool notify = false;
         d->lock();
-        if (prData->iKeypressTimeout != timeout) {
-            prData->iKeypressTimeout = timeout;
+        if (prData->keypressTimeout != timeout) {
+            prData->keypressTimeout = timeout;
             notify = true;
         }
         d->unlock();
@@ -1337,7 +1066,7 @@ int HbInputSettingProxy::keypressTimeout() const
     int res = 0;
     HbSettingProxyInternalData *prData = d->proxyData();
     if (prData) {
-        res = prData->iKeypressTimeout;
+        res = prData->keypressTimeout;
     }
     return res;
 }
@@ -1354,14 +1083,14 @@ void HbInputSettingProxy::setAutocompletionStatus(HbKeyboardSettingFlags keyboar
     if (prData) {
         bool notify = false;
         d->lock();
-        HbKeyboardSettingFlags newValue = prData->iAutocompletion;
+        HbKeyboardSettingFlags newValue = prData->autocompletion;
         if (state) {
             newValue |= keyboardType;
         } else {
             newValue &= ~keyboardType;
         }
-        if (prData->iAutocompletion != newValue) {
-            prData->iAutocompletion = newValue;
+        if (prData->autocompletion != newValue) {
+            prData->autocompletion = newValue;
             notify = true;
         }
         d->unlock();
@@ -1383,7 +1112,7 @@ bool HbInputSettingProxy::isAutocompletionEnabled(HbKeyboardSettingFlags keyboar
     bool res = false;
     HbSettingProxyInternalData *prData = d->proxyData();
     if (prData) {
-        res = prData->iAutocompletion & keyboardType;
+        res = prData->autocompletion & keyboardType;
     }
     return res;
 }
@@ -1400,8 +1129,8 @@ void HbInputSettingProxy::setTypingCorrectionLevel(HbTypingCorrectionLevel level
     if (prData) {
         bool notify = false;
         d->lock();
-        if (prData->iTypingCorrectionLevel != level) {
-            prData->iTypingCorrectionLevel = level;
+        if (prData->typingCorrectionLevel != level) {
+            prData->typingCorrectionLevel = level;
             notify = true;
         }
         d->unlock();
@@ -1423,7 +1152,7 @@ HbTypingCorrectionLevel HbInputSettingProxy::typingCorrectionLevel() const
     HbTypingCorrectionLevel res = HbTypingCorrectionLevelHigh;
     HbSettingProxyInternalData *prData = d->proxyData();
     if (prData) {
-        res = prData->iTypingCorrectionLevel;
+        res = prData->typingCorrectionLevel;
     }
     return res;
 }
@@ -1440,8 +1169,8 @@ void HbInputSettingProxy::setPrimaryCandidateMode(HbPrimaryCandidateMode mode)
     if (prData) {
         bool notify = false;
         d->lock();
-        if (prData->iPrimaryCandidateMode != mode) {
-            prData->iPrimaryCandidateMode = mode;
+        if (prData->primaryCandidateMode != mode) {
+            prData->primaryCandidateMode = mode;
             notify = true;
         }
         d->unlock();
@@ -1462,9 +1191,58 @@ HbPrimaryCandidateMode HbInputSettingProxy::primaryCandidateMode() const
     HbPrimaryCandidateMode res = HbPrimaryCandidateModeExactTyping;
     HbSettingProxyInternalData *prData = d->proxyData();
     if (prData) {
-        res = prData->iPrimaryCandidateMode;
+        res = prData->primaryCandidateMode;
     }
     return res;
+}
+
+/*!
+Set the variable to true if the default keypad is western for chinese input method
+
+\sa useWesternDefaultKeypadForChinese
+*/
+void HbInputSettingProxy::setWesternDefaultKeypadForChinese(bool set)
+{
+    Q_D(const HbInputSettingProxy);
+
+    HbSettingProxyInternalData *prData = d->proxyData();
+    if (prData) {
+        bool notify = false;
+        d->lock();
+        if(prData->useWesternDefaultKeypadForChinese != set) {
+            prData->useWesternDefaultKeypadForChinese = set;
+            notify = true;
+        }
+        d->unlock();
+        if(notify) {
+            emit chineseDefaultKeypadChanged(prData->useWesternDefaultKeypadForChinese);
+        }
+    }
+}
+
+/*!
+Get whether the default keypad is western for chinese input method
+
+\sa setWesternDefaultKeypadForChinese
+*/
+bool HbInputSettingProxy::useWesternDefaultKeypadForChinese() const
+{
+    Q_D(const HbInputSettingProxy);
+    bool res = false;
+    HbSettingProxyInternalData *prData = d->proxyData();
+    if (prData) {
+        res = prData->useWesternDefaultKeypadForChinese;
+    }
+    return res;
+}
+
+/*!
+\deprecated HbInputSettingProxy::setActiveKeyboard(HbKeyboardType)
+    is deprecated.
+*/
+void HbInputSettingProxy::setActiveKeyboard(HbKeyboardType keyboard)
+{
+    Q_UNUSED(keyboard);
 }
 
 // End of file

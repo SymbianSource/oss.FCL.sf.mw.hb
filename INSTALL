@@ -1,0 +1,95 @@
+===========================================================================
+Dependencies
+===========================================================================
+ 
+To build the UI Extensions for Mobile package, you need:
+ - Qt 4.6 or newer.
+ - Python 2.3 or newer. We recommend 2.6.
+ 
+===========================================================================
+How to Build
+===========================================================================
+ 
+---------------------------------------------------------------------------
+Linux
+---------------------------------------------------------------------------
+ 
+Run "python configure.py" on the main level of the UI Extensions for Mobile
+directory. Optional parameters include: 
+  "--prefix <path>" specifies the installation path. If omitted, defaults 
+    to "/usr/local/hb".
+  "--qmake-bin <path>" can be used to specify which QMake should be used.
+ 
+Run "make" to compile the libraries.
+ 
+Run "make install" to install the resulting binaries and the .prf file.
+ 
+---------------------------------------------------------------------------
+Maemo
+---------------------------------------------------------------------------
+ 
+We assume that you have a working Maemo 5 SDK with Qt 4.6 installed.
+ 
+Make sure following UI Extensions for Mobile dependencies are installed:
+    libqt4-maemo5-core libqt4-maemo5-dbus libqt4-maemo5-dev
+    libqt4-maemo5-maemo5 libqt4-maemo5-multimedia libqt4-maemo5-opengl
+    libqt4-maemo5-phonon libqt4-maemo5-script libqt4-maemo5-svg
+    libqt4-maemo5-test libqt4-maemo5-xml
+ 
+Run "python configure.py" on the main level of the UI Extensions for Mobile
+directory. Optional parameters include: 
+  "--prefix <path>" specifies the installation path. If omitted, defaults 
+    to "/usr/local/hb".
+  "--qmake-bin <path>" can be used to specify which QMake should be used.
+ 
+Run "make" to compile the libraries.
+ 
+Copy the binaries (libraries, your apps and the plugins) to your device.
+You can check ".qmake.cache" to see where UI Extensions for Mobile 
+expects to find these binaries - the typical locations are:
+    Libraries: /home/maemo/MyDocs/<hb-src-dir>/lib
+    Plugins: /home/maemo/MyDocs/<hb-src-dir>/plugins
+    Apps: /home/maemo/MyDocs/<hb-src-dir>/bin
+ 
+---------------------------------------------------------------------------
+Symbian
+---------------------------------------------------------------------------
+ 
+In the main directory of UI Extensions for Mobile, run the configuration
+script with the desired options. For example:
+  "python configure.py --qmake-bin=\epoc32\tools\qmake \
+    --qmake-spec=\epoc32\tools\qt\mkspecs\symbian-sbsv2
+ 
+Hint: the configuration options used for platform builds are available
+in src\platforms\symbian\configurations\bld.inf.
+ 
+To compile the libraries, either use the makefile:
+  "make release-armv5"
+or run SBS (or ABLD) directly:
+  "sbs -c armv5_urel"
+ 
+Finally, copy hb_install.prf to the right location:
+  "make install"
+ 
+---------------------------------------------------------------------------
+Windows
+---------------------------------------------------------------------------
+ 
+You need to have either MinGW or MSVC++ installed properly. Some Qt
+distributions might even install MinGW for you.
+ 
+Run "python configure.py" on the main level of the UI Extensions for Mobile
+directory. Optional parameters include: 
+  "--prefix <path>" specifies the installation path. If omitted, defaults
+    to "C:\hb".
+  "--qmake-bin <path>" can be used to specify which QMake should be used.
+ 
+If you are using MinGW, run "mingw32-make" to compile the libraries and
+"mingw32-make install" to install the resulting binaries.
+ 
+If you are using MSVC++, run "nmake" to compile the libraries and
+"nmake install" to install the resulting binaries.
+ 
+Add "C:\hb\bin" to your path with "SET PATH=%PATH%;C:\hb\bin".
+ 
+===========================================================================

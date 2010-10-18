@@ -57,12 +57,13 @@ HbListWidgetItem *HbListModel::item(int row) const
 
 void HbListModel::insert(int row, HbListWidgetItem *item)
 {
-    item->d->mModel = this;
     //Do not accept duplicate inserts.
     //Occurs e.g if user of HbListWidgetitem creates HbListWidgetItem and gives a parent
     //(HbListWidget) but still calls HbListWidget::addItem()
     if (!item || items.contains(item) )
         return;
+
+    item->d->mModel = this;
 
     if (row < 0)
         row = 0;

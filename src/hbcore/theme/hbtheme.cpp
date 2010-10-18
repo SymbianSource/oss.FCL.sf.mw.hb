@@ -132,7 +132,7 @@ HbThemePrivate::HbThemePrivate()
     // Condition added to check if the client itself is server.
     if(THEME_SERVER_NAME != HbMemoryUtils::getCleanAppName()) {
         if(!HbThemeClient::global()->connectToServer()) {
-            qWarning() << "ThemeClient unable to connect to server in HbThemePrivate::HbThemePrivate.";
+            hbWarning() << "ThemeClient unable to connect to server in HbThemePrivate::HbThemePrivate.";
         }
     }
 #endif
@@ -189,6 +189,11 @@ void HbThemePrivate::handleThemeChange(const QString &str)
 */
 void HbThemePrivate::updateTheme(const QStringList &updatedFiles)
 {
+#ifndef Q_OS_SYMBIAN
+    // Reload themeindex files
+    HbThemeUtils::loadHeapThemeIndexes();
+#endif
+
     // Reload effects
     HbEffectInternal::reloadFxmlFiles();
 

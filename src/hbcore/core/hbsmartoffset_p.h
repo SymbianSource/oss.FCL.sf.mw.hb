@@ -33,15 +33,15 @@
 class HB_CORE_PRIVATE_EXPORT HbSmartOffset
 {
 public:
-    explicit HbSmartOffset(int offset = -1, HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
+    explicit HbSmartOffset(qptrdiff offset = -1, HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
         :mOffset(offset),
          mType(type)
     {
     }
-    inline int get() const { return mOffset;} 
-    inline int release()
+    inline qptrdiff  get() const { return mOffset;}
+    inline qptrdiff  release()
     {
-        int temp = mOffset;
+        qptrdiff  temp = mOffset;
         mOffset = -1;
         return temp;
     }
@@ -50,11 +50,10 @@ public:
         if (mOffset != -1) {
             HbMemoryManager * manager = HbMemoryManager::instance(mType);
             manager->free(mOffset);
-            qDebug() << "HbSmartOffset::~HbSmartOffset() offset = " << mOffset;
         }
     }
 private:
-    int mOffset;
+    qptrdiff  mOffset;
     HbMemoryManager::MemoryType mType;
 };
 

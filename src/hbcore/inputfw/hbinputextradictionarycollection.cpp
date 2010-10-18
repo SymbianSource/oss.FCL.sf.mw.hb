@@ -28,7 +28,7 @@
 #include "hbinputextradictionaryfactory.h"
 
 /*!
-@proto
+@stable
 @hbcore
 \class HbExtraDictionaryCollection
 \brief Virtual collection of extra user dictionaries.

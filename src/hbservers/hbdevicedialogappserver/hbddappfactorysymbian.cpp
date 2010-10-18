@@ -31,6 +31,8 @@
 #include <qs60mainappui.h>
 #include <QSymbianEvent>
 
+/// \cond
+
 // In order to override CCoeAppUi::FrameworkCallsRendezvous() Application/Document/AppUi needs to be
 // derived from.
 
@@ -66,19 +68,9 @@ HbDeviceDialogServerApp::HbDeviceDialogServerApp(QApplication::QS60MainApplicati
 {
 }
 
-// Event filter to block exit
-bool HbDeviceDialogServerApp::symbianEventFilter(const QSymbianEvent *event)
-{
-    if (event->type() == QSymbianEvent::CommandEvent) {
-        int command = event->command();
-        if (command == EAknSoftkeyExit || command == EEikCmdExit) {
-            return true; // block exit commands
-        }
-    }
-    return false;
-}
-
 // Block application quit() slot
 void HbDeviceDialogServerApp::quit()
 {
 }
+
+/// \endcond

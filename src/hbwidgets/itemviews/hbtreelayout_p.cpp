@@ -315,9 +315,9 @@ qreal HbTreeLayout::smallestItemHeight() const
 }
 
 /*!
-	\reimp
-	
-	Invalidates smallest item height cache.
+    \reimp
+    
+    Invalidates smallest item height cache.
 */
 void HbTreeLayout::invalidate()
 {

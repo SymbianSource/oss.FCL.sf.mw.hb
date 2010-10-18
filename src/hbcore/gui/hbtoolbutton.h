@@ -32,22 +32,15 @@
 
 class HbAction;
 class HbToolButtonPrivate;
+
 class HbStyleOptionToolButton;
 
 class HB_CORE_EXPORT HbToolButton : public HbAbstractButton
 {
     Q_OBJECT
     Q_PROPERTY( HbIcon background READ background WRITE setBackground )
-    Q_PROPERTY( ToolButtonStyle toolButtonStyle READ toolButtonStyle WRITE setToolButtonStyle )
-    Q_ENUMS(ToolButtonStyle)
 
 public:
-    enum ToolButtonStyle {
-        ToolButtonIcon        = 0x1,
-        ToolButtonText        = 0x2,
-        ToolButtonTextAndIcon = 0x3
-    };
-
     explicit HbToolButton( QGraphicsItem *parent = 0 );
     explicit HbToolButton( HbAction *action, QGraphicsItem *parent = 0 );
     virtual ~HbToolButton();
@@ -58,10 +51,6 @@ public:
     HbIcon background() const;
     void setBackground( const HbIcon &background );
 
-    ToolButtonStyle toolButtonStyle() const;
-    void setToolButtonStyle( ToolButtonStyle style );
-
-    QGraphicsItem *primitive( HbStyle::Primitive primitive ) const;
 
     enum { Type = Hb::ItemType_ToolButton };
     int type() const { return Type; }
@@ -73,14 +62,17 @@ signals:
     void triggered( HbAction *action );
 
 protected:
-    HbToolButton( HbToolButtonPrivate &dd, QGraphicsItem *parent );
+    friend class HbToolBar;
 
-    void initStyleOption( HbStyleOptionToolButton *option );
+    HbToolButton( HbToolButtonPrivate &dd, QGraphicsItem *parent );
     void resizeEvent( QGraphicsSceneResizeEvent *event );
     void nextCheckState();
+    void checkStateSet();
     bool event( QEvent *event );
     void polish(HbStyleParameters &params);
     bool sceneEvent(QEvent *event);
+    void initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive);
+
 
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbToolButton )

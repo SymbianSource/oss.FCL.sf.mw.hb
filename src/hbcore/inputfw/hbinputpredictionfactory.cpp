@@ -37,12 +37,13 @@
 #include "hbinputpredictionengine.h"
 
 /*!
-@alpha
+@stable
 @hbcore
 \class HbPredictionFactory
-\brief A factory class for prediction engine abstractation layer.
+\brief The HbPredictionFactory class is a factory class for the prediction engine abstraction layer.
 
-A singleton factory class, which knows how to list and instantiate available input engine implementations.
+HbPredictionFactory is a singleton factory class that lists and instantiates
+the available input engine implementations.
 
 \sa HbPredictionBase
 \sa HbPredictionEngine
@@ -203,7 +204,7 @@ HbPredictionEngine *HbPredictionFactoryPrivate::createInstance(int index)
 /// @endcond
 
 /*!
-Returns reference to singleton object.
+Returns a reference to the singleton object.
 */
 HbPredictionFactory *HbPredictionFactory::instance()
 {
@@ -212,7 +213,7 @@ HbPredictionFactory *HbPredictionFactory::instance()
 }
 
 /*!
-Constructs the object.
+Constructor.
 */
 HbPredictionFactory::HbPredictionFactory()
 {
@@ -221,17 +222,17 @@ HbPredictionFactory::HbPredictionFactory()
 }
 
 /*!
-Destructs the object.
+Destructor.
 */
 HbPredictionFactory::~HbPredictionFactory()
 {
 }
 
 /*!
-Returns prediction engine capable of handling given language. Returns 0 if
-not found. Engine is instantiated and cached. This method returns
-the first suitable prediction engine it finds for given
-language. There may be also others available.
+Returns a prediction engine that is capable of handling the given \a language.
+Returns 0 if not found. The engine is instantiated and cached. This function returns
+the first suitable prediction engine it finds for the given language. There may also be
+other suitable engines available.
 
 \sa allPredictionEnginesForLanguage
 \sa allPredictionEngines
@@ -243,7 +244,7 @@ HbPredictionEngine *HbPredictionFactory::predictionEngineForLanguage(const HbInp
 }
 
 /*!
-Clears engine cache and frees all the resources.
+Clears the engine cache and frees all the resources.
 
 \sa initialize
 */
@@ -253,6 +254,9 @@ void HbPredictionFactory::clearEngineData()
     d->clearEngineData();
 }
 
+/*!
+Shuts down the prediction factory.
+*/
 void HbPredictionFactory::shutDown()
 {
     delete d;
@@ -261,8 +265,8 @@ void HbPredictionFactory::shutDown()
 
 
 /*!
-Initializes and fills cache. This is done automatically when a factory instance is
-created. Can be called again to refresh the list.
+Initializes and fills the cache. This is done automatically when a factory instance is
+created. The function can be called again to refresh the list.
 
 \sa clearEngineData
 */
@@ -276,8 +280,9 @@ void HbPredictionFactory::initialize()
 }
 
 /*!
-Returns all available prediction engines for given language. The returned list contains handles
-which can then be used for instantiating listed engines.
+Returns all available prediction engines for the given \a language.
+The returned list contains handles that can then be used for instantiating
+the listed engines.
 
 \sa createEngine
 \sa allPredictionEngines
@@ -303,7 +308,7 @@ QList<int> HbPredictionFactory::allPredictionEnginesForLanguage(const HbInputLan
 
 /*!
 Returns all available prediction engines. The returned list contains handles
-which can then be used for instantiating returned engines.
+that can then be used for instantiating the listed engines.
 
 \sa createEngine
 \sa allPredictionEnginesForLanguage
@@ -324,7 +329,7 @@ QList<int> HbPredictionFactory::allPredictionEngines()
 }
 
 /*!
-Creates and caches an instance of given language.
+Creates and caches an instance of the engine for a language using its handle.
 
 \sa allPredictionEnginesForLanguage
 \sa allPredictionEngines
@@ -343,8 +348,8 @@ HbPredictionEngine *HbPredictionFactory::createEngine(int handle)
 }
 
 /*!
-Creates and caches an instance of known prediction engine. Parameter vendorIdString is matched
-to HbPredictionPlugin::VendorId() string.
+Creates and caches an instance of a known prediction engine. Parameter \a vendorIdString is matched
+to the HbPredictionPlugin::VendorId() string.
 
 \sa allPredictionEnginesForLanguage
 \sa allPredictionEngines

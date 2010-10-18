@@ -29,6 +29,7 @@
 #include <hbinputkeymap.h>
 #include <hbinpututils.h>
 #include <hbframedrawer.h>
+#include <hbinputsettingproxy.h>
 
 #include "hbinput12keytouchkeyboard.h"
 #include "hbinput12keytouchkeyboard_p.h"
@@ -41,6 +42,7 @@ const qreal HbKeyboardWidthInUnits = 53.8;
 
 const int HbFirstRowIndex = 0;
 const int HbSecondRowIndex = 2;
+const int HbNumberIndex = 4;
 const int HbVirtual12KeyNumberOfRows = 4;
 const int HbVirtual12KeyNumberOfColumns = 4;
 const int HbButtonKeyCodeTable[HbVirtual12KeyNumberOfRows * HbVirtual12KeyNumberOfColumns] =
@@ -196,13 +198,28 @@ void Hb12KeyTouchKeyboardPrivate::updateButtons()
                 if (mMode == EModeNumeric) {
                     QChar numChr;
                     const HbKeyboardMap *labelMap = mKeymap->keyboard(HbKeyboardVirtual12KeyLabels);
-                    const HbKeyboardMap *keyMap = mKeymap->keyboard(HbKeyboardVirtual12Key);
-                    if (labelMap && key < labelMap->keys.count()) {
-                        numChr = labelMap->keys.at(key)->keycode;
+                    const HbKeyboardMap *keyboardMap; 
+                    if (mOwner->focusObject() && mOwner->focusObject()->editorInterface().editorClass() == HbInputEditorClassEmail) {
+                        keyboardMap = mKeymap->keyboard(HbKeyboardVirtual12KeyEmail);
+                        if (!keyboardMap) {
+                            keyboardMap = mKeymap->keyboard(HbKeyboardVirtual12Key);
+                        }
+                    } else if (mOwner->focusObject() && mOwner->focusObject()->editorInterface().editorClass() == HbInputEditorClassUrl) {
+                        keyboardMap = mKeymap->keyboard(HbKeyboardVirtual12KeyUrl);
+                        if (!keyboardMap) {
+                            keyboardMap = mKeymap->keyboard(HbKeyboardVirtual12Key);
+                        }
+                    } else {
+                        keyboardMap = mKeymap->keyboard(HbKeyboardVirtual12Key);
+                    }
+
+                    if (labelMap && key < labelMap->keys.count() &&
+                        !(mOwner->focusObject() && mOwner->focusObject()->editorInterface().isNumericEditor())) {
+                        numChr = keyLabel(labelMap->keys.at(key)->chars, HbNumberIndex).at(0);
                     }
 
                     // Fallback to normal keymappings if key labels are not present
-                    if (keyMap && key < keyMap->keys.count() && numChr.isNull()) {
+                    if (keyboardMap && key < keyboardMap->keys.count() && numChr.isNull()) {
                         numChr = numberCharacterBoundToKey(key);
                     }
 
@@ -217,17 +234,34 @@ void Hb12KeyTouchKeyboardPrivate::updateButtons()
                     QString secondRow;
                     QChar numChr;
                     const HbKeyboardMap *labelMap = mKeymap->keyboard(HbKeyboardVirtual12KeyLabels);
-                    const HbKeyboardMap *keyMap = mKeymap->keyboard(HbKeyboardVirtual12Key);
+                    const HbKeyboardMap *keyboardMap;
+                    
+                    if (mOwner->focusObject() && mOwner->focusObject()->editorInterface().editorClass() == HbInputEditorClassEmail) {
+                        keyboardMap = mKeymap->keyboard(HbKeyboardVirtual12KeyEmail);
+                        if (!keyboardMap) {
+                            keyboardMap = mKeymap->keyboard(HbKeyboardVirtual12Key);
+                        }
+                    } else if (mOwner->focusObject() && mOwner->focusObject()->editorInterface().editorClass() == HbInputEditorClassUrl) {
+                        keyboardMap = mKeymap->keyboard(HbKeyboardVirtual12KeyUrl);
+                        if (!keyboardMap) {
+                            keyboardMap = mKeymap->keyboard(HbKeyboardVirtual12Key);
+                        }
+                    } else {
+                        keyboardMap = mKeymap->keyboard(HbKeyboardVirtual12Key);
+                    }
+
                     if (labelMap && key < labelMap->keys.count()) {
                         firstRow = keyLabel(labelMap->keys.at(key)->chars, HbFirstRowIndex | mModifiers);
                         secondRow = keyLabel(labelMap->keys.at(key)->chars, HbSecondRowIndex | mModifiers);
-                        numChr = labelMap->keys.at(key)->keycode;
+                        if (!(mOwner->focusObject() && mOwner->focusObject()->editorInterface().isNumericEditor())) {
+                            numChr = keyLabel(labelMap->keys.at(key)->chars, HbNumberIndex).at(0);
+                        }
                     }
 
                     // Fallback to normal keymappings if key labels are not present
-                    if (keyMap && key < keyMap->keys.count()) {
+                    if (keyboardMap && key < keyboardMap->keys.count()) {
                         if (firstRow.isEmpty()) {
-                            firstRow = keyMap->keys.at(key)->characters(mModifiers);
+                            firstRow = keyboardMap->keys.at(key)->characters(mModifiers);
                             if (mOwner->focusObject()) {
                                 QString allowedData;
                                 mOwner->focusObject()->filterStringWithEditorFilter(firstRow, allowedData);
@@ -263,13 +297,29 @@ void Hb12KeyTouchKeyboardPrivate::updateButtons()
                 }
             } else if (keyCode(i) == HbInputButton::ButtonKeyCodeAsterisk) {
                 if (mMode == EModeNumeric) {
-                    item->setText(QString("*"), HbInputButton::ButtonTextIndexPrimary);
-                    item->setText(QString(""), HbInputButton::ButtonTextIndexSecondaryFirstRow);
-                } else if (mMode == EModeAbc) {
-                    item->setText(QString("*"), HbInputButton::ButtonTextIndexPrimary);
+                    item->setText(QString(""), HbInputButton::ButtonTextIndexPrimary);
                     item->setText(QString("+"), HbInputButton::ButtonTextIndexSecondaryFirstRow);
+                    item->setText(QString("*"), HbInputButton::ButtonTextIndexSecondarySecondRow);
+                } else if (mMode == EModeAbc) {
+                    if (HbInputSettingProxy::instance()->globalInputLanguage().language() == QLocale::Chinese) {
+                        QString str = QString(QChar(0x7B26));
+                        str.append(QString(QChar(0x53F7)));
+                        item->setText(QString(), HbInputButton::ButtonTextIndexSecondaryFirstRow);
+                        item->setText(str, HbInputButton::ButtonTextIndexPrimary);
+                    } else {
+                        item->setText(QString("*"), HbInputButton::ButtonTextIndexPrimary);
+                        item->setText(QString("+"), HbInputButton::ButtonTextIndexSecondaryFirstRow);
+                        item->setText(QString(""), HbInputButton::ButtonTextIndexSecondarySecondRow);
+                    }
                 }
-            }
+            } else if (keyCode(i) == HbInputButton::ButtonKeyCodeSymbol) {
+                if (HbInputSettingProxy::instance()->globalInputLanguage().language() == QLocale::Chinese) {
+                    item->setText(QString(QChar(0x4E2D)), HbInputButton::ButtonTextIndexPrimary);
+                    item->setIcon(HbIcon(), HbInputButton::ButtonIconIndexPrimary);
+                } else {
+                    item->setIcon(HbIcon(HbInputButtonIconSymbol2), HbInputButton::ButtonIconIndexPrimary);
+                }
+            } 
         }
         buttonGroup->setButtons(buttons);
     }
@@ -277,7 +327,9 @@ void Hb12KeyTouchKeyboardPrivate::updateButtons()
 
 QString Hb12KeyTouchKeyboardPrivate::keyLabel(const QStringList &labels, int index)
 {
-    if (index == HbFirstRowIndex && labels.count() >= 2) {
+    if (index == HbNumberIndex && labels.count() >= 1) {
+        return labels.at(0);
+    } else if (index == HbFirstRowIndex && labels.count() >= 2) {
         return labels.at(1);
     } else if (index == (HbFirstRowIndex | HbModifierShiftPressed) && labels.count() >= 3) {
         return labels.at(2);
@@ -336,6 +388,17 @@ Returns keyboard type.
 */
 HbKeyboardType Hb12KeyTouchKeyboard::keyboardType() const
 {
+    Q_D(const Hb12KeyTouchKeyboard);
+
+    if (d->mOwner->focusObject()) {
+        if (d->mOwner->focusObject()->editorInterface().editorClass() == HbInputEditorClassEmail &&
+            d->mKeymap && d->mKeymap->keyboard(HbKeyboardVirtual12KeyEmail)) {
+            return HbKeyboardVirtual12KeyEmail;
+        } else if (d->mOwner->focusObject()->editorInterface().editorClass() == HbInputEditorClassUrl &&
+                   d->mKeymap && d->mKeymap->keyboard(HbKeyboardVirtual12KeyUrl)) {
+            return HbKeyboardVirtual12KeyUrl;
+        }
+    }
     return HbKeyboardVirtual12Key;
 }
 

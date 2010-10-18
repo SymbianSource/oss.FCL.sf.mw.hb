@@ -46,6 +46,8 @@ PUBLIC_HEADERS += $$PWD/hbwidgetbase.h
 PUBLIC_HEADERS += $$PWD/hbsplashscreen.h
 PUBLIC_HEADERS += $$PWD/hblongpressvisualizer.h
 
+RESTRICTED_HEADERS += $$PWD/hbglobalstatusbar_r.h
+
 PRIVATE_HEADERS += $$PWD/hbabstractbutton_p.h
 PRIVATE_HEADERS += $$PWD/hbactionmanager_p.h
 PRIVATE_HEADERS += $$PWD/hbactionmanagerxmlparser_p.h
@@ -87,6 +89,8 @@ PRIVATE_HEADERS += $$PWD/hbsplashdefs_p.h
 PRIVATE_HEADERS += $$PWD/hbsplashscreen_generic_p.h
 PRIVATE_HEADERS += $$PWD/hblongpressvisualizer_p.h
 PRIVATE_HEADERS += $$PWD/hbwindowobscured_p.h
+PRIVATE_HEADERS += $$PWD/hbscreenshotitem_p.h
+contains(DEFINES, HB_EFFECTS_OPENVG): PRIVATE_HEADERS += $$PWD/hbsplashscreen_symbian_vg_p.h
 
 SOURCES += $$PWD/hbabstractbutton.cpp
 SOURCES += $$PWD/hbactionmanager.cpp
@@ -127,6 +131,8 @@ SOURCES += $$PWD/hbcontentwidget.cpp
 SOURCES += $$PWD/hbscreen.cpp
 SOURCES += $$PWD/hblongpressvisualizer.cpp
 SOURCES += $$PWD/hbwindowobscured_p.cpp
+SOURCES += $$PWD/hbscreenshotitem.cpp
+SOURCES += $$PWD/hbglobalstatusbar.cpp
 
 symbian:SOURCES += $$PWD/hbdevicefadecontrolsym.cpp
 else:SOURCES += $$PWD/hbdevicefadecontrolwin.cpp

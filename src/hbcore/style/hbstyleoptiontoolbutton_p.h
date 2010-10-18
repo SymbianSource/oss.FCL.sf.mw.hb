@@ -26,6 +26,7 @@
 #ifndef HBSTYLEOPTIONTOOLBUTTON_H
 #define HBSTYLEOPTIONTOOLBUTTON_H
 
+
 #include <hbstyleoption_p.h>
 #include <hbicon.h>
 

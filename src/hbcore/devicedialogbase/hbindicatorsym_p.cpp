@@ -407,7 +407,7 @@ int HbIndicatorPrivate::sendActivateMessage(const QString &indicatorType,
     TBool listening = (activate && q_ptr->receivers(SIGNAL(userActivated(QString, QVariantMap))) > 0);
     
     if (!iInitialized) {
-						 	
+                            
         TRAPD( error, initializeL(listening) );
 
         if ( error != KErrNone ){
@@ -416,7 +416,7 @@ int HbIndicatorPrivate::sendActivateMessage(const QString &indicatorType,
             return false;
         }
     } else if (listening) {
-		Start();
+        Start();
     }
     QByteArray array;
     QDataStream stream( &array, QIODevice::WriteOnly );

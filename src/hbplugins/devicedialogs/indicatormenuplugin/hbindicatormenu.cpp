@@ -185,7 +185,7 @@ void HbIndicatorMenu::showEvent(QShowEvent *event)
 
     HbIndicatorMenuContent *menuContent =
         qobject_cast<HbIndicatorMenuContent*>(contentWidget());
-    menuContent->handleAboutToShow();
+    menuContent->handleAboutToShow(mainWnd);
 
     HbDialog::showEvent(event);
     mShowEventReceived = true;
@@ -209,8 +209,6 @@ void HbIndicatorMenu::doMenuLayout()
 
 void HbIndicatorMenu::userActivity()
 {
-    //Q_D(HbDialog);
-    //d->timeoutTimeLine->setCurrentTime(0);
 }
 
 void HbIndicatorMenu::userActivityStarted()

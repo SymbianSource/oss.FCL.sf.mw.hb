@@ -135,7 +135,7 @@ QString HbEffectDropShadow::name() const
 void HbEffectDropShadow::updateFilterEffect()
 {
     // Only update the graphics effect if the effect is running
-    if (group()->isRunning()) {
+    if (mVgOutline && group()->isRunning()) {
         QPointF outline = mVgOutline->outline();
         QPointF offset = mVgOutline->offset();
 

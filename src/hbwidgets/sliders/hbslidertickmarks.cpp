@@ -45,17 +45,12 @@
 #endif
 
 
-
-
-
-
 class HbSliderTickmarksPrivate : public HbWidgetPrivate
 {
     Q_DECLARE_PUBLIC( HbSliderTickmarks )
 
 public:
     HbSliderTickmarksPrivate();
-    HbStyleOptionSlider sliderOption;
     QList<QGraphicsWidget *> tickmarkmajorIcons;
     QList<QGraphicsWidget *> tickmarkminorIcons;
     HbSlider *slider;
@@ -68,16 +63,17 @@ public:
 };
 
 
- HbSliderTickmarksPrivate::HbSliderTickmarksPrivate() :HbWidgetPrivate(){
-    tickmarkmajorIcons.clear();
-    tickmarkminorIcons.clear();
-    slider = 0;
-    tickPosition = Hb::NoSliderTicks;
-    majorTickWidth = 0;
-    minorTickWidth = 0;
-    majorTickHeight = 0;
-    minorTickHeight = 0;
-    sliderOrientation = Qt::Vertical;
+HbSliderTickmarksPrivate::HbSliderTickmarksPrivate() :
+    HbWidgetPrivate(), 
+    slider(0),
+    tickPosition(Hb::NoSliderTicks),
+    majorTickWidth(0),
+    minorTickWidth(0),
+    majorTickHeight(0),
+    minorTickHeight(0),
+    sliderOrientation(Qt::Vertical)
+ 
+{
 }
 
 void  HbSliderTickmarks::createTicks(  )
@@ -91,7 +87,7 @@ void  HbSliderTickmarks::createTicks(  )
         int totalMajorTicks = ((maximum-minimum)/majorTickInterval)+1;
         int majorIconListLength =  d->tickmarkmajorIcons.length();
         for (int i=majorIconListLength;i<totalMajorTicks;i++) {
-            QGraphicsItem *iconItem =style()->createPrimitive(HbStyle::P_SliderTickMark_majoricon, this);
+            QGraphicsItem *iconItem =HbStylePrivate::createPrimitive(HbStylePrivate::P_SliderTickMark_majoricon, this);
             Q_ASSERT(iconItem->isWidget());
             d->tickmarkmajorIcons.append(static_cast<QGraphicsWidget *>(iconItem));//add newly defind primitive
         }
@@ -113,7 +109,7 @@ void  HbSliderTickmarks::createTicks(  )
         }
         int minorIconListLength =  d->tickmarkminorIcons.length();
         for (int i=minorIconListLength;i<totalMinorTicks;i++) {
-            QGraphicsItem *iconItem = style()->createPrimitive(HbStyle::P_SliderTickMark_minoricon, this);
+            QGraphicsItem *iconItem = HbStylePrivate::createPrimitive(HbStylePrivate::P_SliderTickMark_minoricon, this);
             Q_ASSERT(iconItem->isWidget());
             d->tickmarkminorIcons.append(static_cast<QGraphicsWidget *>(iconItem));//add newly defind primitive
         }
@@ -137,7 +133,7 @@ void HbSliderTickmarks::resizeEvent(QGraphicsSceneResizeEvent *event)
 {
     Q_UNUSED (event);
     HbWidget::resizeEvent( event );
-    repolish();
+    updateTicks();
 }
 
 
@@ -149,12 +145,12 @@ void HbSliderTickmarks::resizeEvent(QGraphicsSceneResizeEvent *event)
 /*!
     constructor
 */
-HbSliderTickmarks::HbSliderTickmarks( QGraphicsItem *parent )
+HbSliderTickmarks::HbSliderTickmarks(HbSlider *parent)
     : HbWidget( *new HbSliderTickmarksPrivate, parent )
 {
     Q_D( HbSliderTickmarks );
     d->q_ptr = this;
-    d->slider=dynamic_cast<HbSlider*>( parentItem() );
+    d->slider = parent;
     createTicks();
     d->sliderOrientation = d->slider->orientation( );
 }
@@ -181,7 +177,7 @@ void HbSliderTickmarks::updateTicks( )
     qreal span = 0;
     bool rtlLayout = (((d->slider->orientation()!=Qt::Vertical)&&
         (HbApplication::layoutDirection() == Qt::LeftToRight))?false:true);
-    HbSliderPrivate *sliderPrivate = dynamic_cast<HbSliderPrivate*>(HbSliderPrivate::d_ptr(d->slider));
+    HbSliderPrivate *sliderPrivate = HbSliderPrivate::d_ptr(d->slider);
     QSizeF handleSize(0.0,0.0);
     if( sliderPrivate) {
         handleSize = sliderPrivate->getHandleSize( );
@@ -203,7 +199,7 @@ void HbSliderTickmarks::updateTicks( )
              HbStyleOptionSlider opt;
              initStyleOption(&opt);
              opt.orientation = d->slider->orientation();
-             style()->updatePrimitive(iconItem,HbStyle::P_SliderTickMark_majoricon,&opt);
+             HbStylePrivate::updatePrimitive(iconItem,HbStylePrivate::P_SliderTickMark_majoricon,&opt);
             int pos = QStyle::sliderPositionFromValue( minimum, maximum,
                 minimum+majorTickInterval*i,static_cast<int>( span ), rtlLayout );
 
@@ -232,7 +228,7 @@ void HbSliderTickmarks::updateTicks( )
             HbStyleOptionSlider opt;
             initStyleOption(&opt);
             opt.orientation = d->slider->orientation();
-            style()->updatePrimitive(iconItem,HbStyle::P_SliderTickMark_minoricon,&opt);
+            HbStylePrivate::updatePrimitive(iconItem,HbStylePrivate::P_SliderTickMark_minoricon,&opt);
             int pos = QStyle::sliderPositionFromValue( minimum, maximum,
                 minimum+minorTickInterval*i,static_cast<int>( span ), rtlLayout );
             qreal correctedPosX = 0;
@@ -247,7 +243,7 @@ void HbSliderTickmarks::updateTicks( )
             iconItem->update();
         }
     }
-	update(boundingRect());
+    update(boundingRect());
  }
 
 /* !
@@ -287,18 +283,18 @@ void HbSliderTickmarks::polish( HbStyleParameters& params )
     Q_D (HbSliderTickmarks);
     if (d->majorTickHeight == 0 || d->sliderOrientation!= d->slider->orientation() ) {
         d->sliderOrientation = d->slider->orientation();
-	    params.addParameter("fixed-width-major");
-	    params.addParameter("fixed-height-major");
-	    params.addParameter("fixed-width-minor");
-	    params.addParameter("fixed-height-minor");
-	    HbWidget::polish(params);
-	    d->majorTickWidth = params.value("fixed-width-major").toReal();
-	    d->majorTickHeight = params.value("fixed-height-major").toReal();
-	    d->minorTickWidth = params.value("fixed-width-minor").toReal();
-	    d->minorTickHeight = params.value("fixed-height-minor").toReal();
+        params.addParameter("fixed-width-major");
+        params.addParameter("fixed-height-major");
+        params.addParameter("fixed-width-minor");
+        params.addParameter("fixed-height-minor");
+        HbWidget::polish(params);
+        d->majorTickWidth = params.value("fixed-width-major").toReal();
+        d->majorTickHeight = params.value("fixed-height-major").toReal();
+        d->minorTickWidth = params.value("fixed-width-minor").toReal();
+        d->minorTickHeight = params.value("fixed-height-minor").toReal();
     } else  {
-	    HbWidget::polish(params);
-        updateTicks();
+        HbWidget::polish(params);
+        //updateTicks();
     }
 }
 

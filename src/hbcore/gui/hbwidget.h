@@ -75,6 +75,7 @@ public:
         FocusHighlightResidual
     };
 
+
     explicit HbWidget(QGraphicsItem *parent = 0, Qt::WindowFlags wFlags = 0);
     virtual ~HbWidget();
     virtual bool event(QEvent *e);
@@ -84,8 +85,6 @@ public:
 
     enum { Type = Hb::ItemType_Widget };
     int type() const { return Type; }
-
-    int pluginBaseId() const;
 
     HbMainWindow *mainWindow() const;
 
@@ -113,11 +112,11 @@ public:
     void setFocusMode(HbWidget::FocusMode);
     HbWidget::FocusMode focusMode() const;
 
-    void setFocusHighlight(HbStyle::Primitive type, HbWidget::FocusHighlight focusHighlight);
-    HbStyle::Primitive focusHighlight(HbWidget::FocusHighlight focusHighlight);
-
     void setBackgroundItem(QGraphicsItem *item, int zValue = -1);
     QGraphicsItem *backgroundItem() const;
+
+    void setFocusHighlightItem(QGraphicsItem *item, HbWidget::FocusHighlight focusHighlight, int zValue = -1);
+    QGraphicsItem *focusHighlightItem(HbWidget::FocusHighlight focusHighlight) const;
 
 public slots:
     virtual void recreatePrimitives();
@@ -135,9 +134,6 @@ protected:
     virtual void polishEvent();
     virtual void polish(HbStyleParameters &params);
     void repolish();
-
-    void setPluginBaseId(int baseId);
-
     bool sceneEventFilter (QGraphicsItem *watched, QEvent *event);
 
 protected:

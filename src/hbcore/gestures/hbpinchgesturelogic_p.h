@@ -30,8 +30,8 @@
 
 #include <QEvent>
 #include <QGestureRecognizer>
+#include <QPointF>
 
-class QPoint;
 class HbPinchGesture;
 
 class HB_CORE_PRIVATE_EXPORT HbPinchGestureLogic

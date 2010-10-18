@@ -60,12 +60,14 @@ public:
     void setHandleIcon(const QString& handlePath );
     QString handleIcon() const;
 
-    QGraphicsItem* primitive(HbStyle::Primitive primitive) const; 
+    QGraphicsItem *primitive(const QString &itemName) const;
 
 signals:
     void sliderPressed();
     void sliderReleased();
     void sliderMoved(int value);
+    void trackPressed();
+    void trackReleased();
 
 public slots :
     void setSliderValue(int value);
@@ -75,11 +77,14 @@ protected:
     HbProgressSlider(HbProgressSliderPrivate &dd,QGraphicsItem *parent = 0);
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
-    void showEvent( QShowEvent * event );
+    void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
+    void gestureEvent(QGestureEvent *event);
+    void showEvent( QShowEvent *event );
 
     QVariant itemChange(GraphicsItemChange change,const QVariant & value);
     bool sceneEventFilter(QGraphicsItem *obj,QEvent *event);
     void initStyleOption( HbStyleOptionProgressSlider *option ) const;
+    void initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive);
 
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbProgressSlider)

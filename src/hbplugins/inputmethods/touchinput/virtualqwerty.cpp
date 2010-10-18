@@ -35,7 +35,6 @@
 #include <hbinputcandidatelist.h>
 #include <hbinputsettingproxy.h>
 #include <hbinpututils.h>
-#include <hbinputvirtualrocker.h>
 #include <hbinputsctkeyboard.h>
 #include <hbinputeditorinterface.h>
 #include <hbinputdef.h>
@@ -51,6 +50,9 @@
 #include "hbinputqwertynumerictouchkeyboard.h"
 
 const int HbVirtualQwerty4x10MaxKeysCount = 32;
+const qreal HbExactPopupHeightFactor = 0.15;
+const qreal HbDeltaWidth = 12.0;
+const qreal HbEditorExtraMargin = 5.0;
 
 HbVirtualQwerty::HbVirtualQwerty() : mCurrentKeypad(0),
                                      mQwertyAlphaKeypad(0),
@@ -61,7 +63,6 @@ HbVirtualQwerty::HbVirtualQwerty() : mCurrentKeypad(0),
                                      mKeymap(0),
                                      mExactWordPopup(0),
                                      mCandidatePopup(0),
-                                     mOrientationAboutToChange(false),
                                      mShiftKeyState(0),
                                      mVkbHost(0)
 {
@@ -86,12 +87,12 @@ void HbVirtualQwerty::initializeModeHandlers()
     connect(this, SIGNAL(autoCompletionPopupClosed(QString, int)), mBasicModeHandler, SLOT(autoCompletionPopupClosed(QString, int)));
 
     connect(HbInputSettingProxy::instance(), SIGNAL(predictiveInputStateChanged(HbKeyboardSettingFlags,bool)), this, SLOT(predictiveInputStateChanged(HbKeyboardSettingFlags,bool)));
-	connect(HbInputSettingProxy::instance(), SIGNAL(primaryCandidateModeChanged(HbPrimaryCandidateMode)), this, SLOT(primaryCandidateModeChanged(HbPrimaryCandidateMode)));
+    connect(HbInputSettingProxy::instance(), SIGNAL(primaryCandidateModeChanged(HbPrimaryCandidateMode)), this, SLOT(primaryCandidateModeChanged(HbPrimaryCandidateMode)));
     connect(HbInputSettingProxy::instance(), SIGNAL(autocompletionStateChanged(HbKeyboardSettingFlags,bool)), this, SLOT(autocompletionStateChanged(HbKeyboardSettingFlags,bool)));
     connect(HbInputSettingProxy::instance(), SIGNAL(typingCorrectionLevelChanged(HbTypingCorrectionLevel)), this, SLOT(typingCorrectionLevelChanged(HbTypingCorrectionLevel)));
     mPredictionModeHandler->setPrimaryCandidateMode(HbInputSettingProxy::instance()->primaryCandidateMode());
     mPredictionModeHandler->setAutocompletionStatus(HbInputSettingProxy::instance()->isAutocompletionEnabled(HbKeyboardSettingQwerty));
-    mPredictionModeHandler->setTypingCorrectionLevel(HbInputSettingProxy::instance()->typingCorrectionLevel());
+  
 }
 
 // ---------------------------------------------------------------------------
@@ -146,6 +147,8 @@ QString HbVirtualQwerty::language()
 void HbVirtualQwerty::reset()
 {
     mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionReset);
+    // close candidate popup if visible
+    closeCandidatePopup();
 }
 
 void HbVirtualQwerty::focusReceived()
@@ -186,8 +189,16 @@ void HbVirtualQwerty::focusReceived()
 
     HbInputVkbWidget* keypadToOpen = 0;
     if (currentInputType == EModeAbc) {
-        mQwertyAlphaKeypad = constructKeyboard(EModeAbc);
-        keypadToOpen = mQwertyAlphaKeypad;
+        // See if the editor prefers numeric mode when focused. 
+        Qt::InputMethodHints hints = focusObject()->inputMethodHints();
+        if(hints & Qt::ImhPreferNumbers) {
+            createSctKeypad();
+            keypadToOpen = mSctKeypad;            
+        }
+        else {
+            mQwertyAlphaKeypad = constructKeyboard(EModeAbc);
+            keypadToOpen = mQwertyAlphaKeypad;            
+        }
     } else if(currentInputType == EModeNumeric) {
         if(!mQwertyNumericKeypad) {
             mQwertyNumericKeypad = static_cast<HbQwertyNumericKeyboard*>(constructKeyboard(EModeNumeric));
@@ -212,6 +223,9 @@ void HbVirtualQwerty::focusReceived()
     if (focusObject()) {
         disconnect(&(focusObject()->editorInterface()), SIGNAL(cursorPositionChanged(int, int)), mActiveModeHandler, SLOT(cursorPositionChanged(int, int)));
         connect(&(focusObject()->editorInterface()), SIGNAL(cursorPositionChanged(int, int)), mActiveModeHandler, SLOT(cursorPositionChanged(int, int)));
+        
+        disconnect(focusObject(), SIGNAL(aboutToChangeOrientation()), this, SLOT(orientationAboutToChange()));
+        connect(focusObject(), SIGNAL(aboutToChangeOrientation()), this, SLOT(orientationAboutToChange()));
     }
     HbInputAbstractMethod::focusReceived();
 }
@@ -232,21 +246,20 @@ void HbVirtualQwerty::focusLost(bool focusSwitch)
             closeKeypad();
         }
     }
+    HbInputAbstractMethod::focusLost();
 }
 
 void HbVirtualQwerty::closeKeypad()
 {
     if (mVkbHost && mVkbHost->keypadStatus() != HbVkbHost::HbVkbStatusClosed) {
-        mVkbHost->closeKeypad();
+        mVkbHost->closeKeypad(!stateChangeInProgress());
         // set mCurrentKeypad to null.
         mCurrentKeypad = 0;
-        if (mCandidatePopup) {
-            mCandidatePopup->hide();
-        }
+        closeCandidatePopup();
     }
 }
 
-void HbVirtualQwerty::openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimizedMode )
+void HbVirtualQwerty::openKeypad(HbInputVkbWidget *keypadToOpen)
 {
     // if null is sent, just return.
     if(!keypadToOpen || !focusObject()) {
@@ -265,10 +278,9 @@ void HbVirtualQwerty::openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimize
             disableAnimation = true;
         }
     }
+
     // Close candidate popup if open
-    if (mCandidatePopup) {
-        mCandidatePopup->hide();
-    }
+    closeCandidatePopup();
 
     QObject::disconnect(mCurrentKeypad,SIGNAL(aboutToActivateCustomAction(HbAction*)),
         this,SLOT(aboutToActivateCustomAction(HbAction*)));
@@ -276,22 +288,27 @@ void HbVirtualQwerty::openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimize
         this,SLOT(aboutToActivateCustomAction(HbAction*)));
 
     // assign new keypad to be opened to varable mCurrentKeypad
-    mCurrentKeypad =  keypadToOpen;
-    activeKeyboardChanged(currentKeyboardType());
-
-
+    mCurrentKeypad =  keypadToOpen; 
     if (mVkbHost && mVkbHost->keypadStatus() != HbVkbHost::HbVkbStatusOpened) {
         connect(mVkbHost, SIGNAL(keypadClosed()), this, SLOT(keypadClosed()));
-        if (inMinimizedMode) {
-            mVkbHost->openMinimizedKeypad(mCurrentKeypad, this);
-        } else {
-            mVkbHost->openKeypad(mCurrentKeypad, this, !disableAnimation);
-        }
+
+        mVkbHost->openKeypad(mCurrentKeypad, this, !disableAnimation);
 
         if (focusObject()) {
             connect(&(focusObject()->editorInterface()), SIGNAL(cursorPositionChanged(int, int)),
                     mVkbHost, SLOT(ensureCursorVisibility()));
         }
+    }
+
+    if(mActiveModeHandler) {
+        mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionSetKeypad);
+    }
+
+    if(mCurrentKeypad && mCurrentKeypad == mQwertyAlphaKeypad) {
+        mPredictionModeHandler->setTypingCorrectionLevel(HbInputSettingProxy::instance()->typingCorrectionLevel());
+    }
+    else {
+        mPredictionModeHandler->setTypingCorrectionLevel(HbTypingCorrectionLevelLow);
     }
 }
 
@@ -323,6 +340,7 @@ HbInputVkbWidget* HbVirtualQwerty::constructKeyboard(HbKeypadMode currentInputTy
             keyboard = mQwerty10x4Keypad;
         }
         connect(keyboard, SIGNAL(smileySelected(QString)), this, SLOT(smileySelected(QString)));
+        connect(keyboard, SIGNAL(settingsListClosed()), this, SLOT(restorePreviousState()));
         //FLICKDISABLED connect(keyboard, SIGNAL(flickEvent(HbInputVkbWidget::FlickDirection)), this, SLOT(flickEvent(HbInputVkbWidget::FlickDirection)));
     } else {
         keyboard = new HbQwertyNumericKeyboard(this, mKeymap);
@@ -332,7 +350,6 @@ HbInputVkbWidget* HbVirtualQwerty::constructKeyboard(HbKeypadMode currentInputTy
     connect(keyboard, SIGNAL(rockerDirection(int, HbInputVirtualRocker::RockerSelectionMode)),
         this, SLOT(rockerDirection(int, HbInputVirtualRocker::RockerSelectionMode)));
     connect(keyboard, SIGNAL(mouseMovedOutOfButton()), this, SLOT(mouseMovedOutOfButton()));
-    keyboard->setRockerVisible(true);
 
     return keyboard;
 }
@@ -344,23 +361,15 @@ void HbVirtualQwerty::mouseHandler(int x, QMouseEvent* event)
 
 void HbVirtualQwerty::keypadClosed()
 {
-    mOrientationAboutToChange = false;
-    
-    if (mVkbHost->keypadStatus() == HbVkbHost::HbVkbStatusMinimized) {
-        closeExactWordPopup();
-    }	
 }
 
 void HbVirtualQwerty::keypadCloseEventDetected(HbInputVkbWidget::HbVkbCloseMethod vkbCloseMethod)
 {
     Q_UNUSED(vkbCloseMethod);
     if (isActiveMethod()) {
-        if (mVkbHost && mVkbHost->keypadStatus() != HbVkbHost::HbVkbStatusMinimized) {
-            // We need to commit the inline word when we minimize the keypad
+        if (mVkbHost) {
             mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionCommit);
-            if (mCandidatePopup) {
-                mCandidatePopup->hide();
-            }
+            closeCandidatePopup();
 
             // Close input.
             QInputContext* ic = qApp->inputContext();
@@ -376,7 +385,7 @@ void HbVirtualQwerty::keypadCloseEventDetected(HbInputVkbWidget::HbVkbCloseMetho
 void HbVirtualQwerty::inputLanguageChanged(const HbInputLanguage &aNewLanguage)
 {
     mPredictionModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionCommit);
-	if (mExactWordPopup && mExactWordPopup->isVisible())
+    if (mExactWordPopup && mExactWordPopup->isVisible())
         closeExactWordPopup();
     // move keypad off screen
     if (mCurrentKeypad){
@@ -411,12 +420,22 @@ void HbVirtualQwerty::inputStateActivated(const HbInputState& newState)
             mQwertyAlphaKeypad->setMode(EModeAbc, HbModifierNone);
         }
     }
-
+    // need to make sure that the prediction mode handler has the input state's language set 
+    // it is the global input language by default
+    if(mPredictionModeHandler && newState.language().language() != HbInputSettingProxy::instance()->globalInputLanguage().language()) {
+        HbInputLanguage inputStateLang = newState.language();
+        mPredictionModeHandler->setLanguage(inputStateLang);
+    }
     HbInputModeHandler *previousModeHandler = mActiveModeHandler;
     if (newState.inputMode() == HbInputModeNumeric) {
         mActiveModeHandler = mNumericModeHandler;
     }  else if (newState.inputMode() == HbInputModeDefault && usePrediction()) {
         mActiveModeHandler = mPredictionModeHandler;
+        // by passing HbInputModeActionFocusRecieved we will be setting the candidate list and keypad
+        mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionFocusRecieved);
+        /* The below line should be added in orientationChanged Slot, however currently it is not working correctly
+         hence this fix is temporarily added here */
+        mPredictionModeHandler->setAutocompletionStatus(HbInputSettingProxy::instance()->isAutocompletionEnabled(HbKeyboardSettingQwerty));
     } else if (newState.inputMode() == HbInputModeDefault) {
         mActiveModeHandler = mBasicModeHandler;
         // Auto completer setup needs following line.
@@ -496,6 +515,8 @@ void HbVirtualQwerty::switchSpecialCharacterTable()
 void HbVirtualQwerty::secondaryInputLanguageChanged(const HbInputLanguage &newLanguage)
 {
     Q_UNUSED(newLanguage);
+    // inform mode handler about the language change.
+    mPredictionModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionCommit);
     mPredictionModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionSecondaryLanguageChanged);
 }
 
@@ -503,15 +524,7 @@ int HbVirtualQwerty::displaySpecialCharacterTable(QObject* aReceiver)
 {
     Q_UNUSED(aReceiver);
 
-    if (!mSctKeypad) {
-        mSctKeypad = new HbSctKeyboard(this, mKeymap);
-        connect(mSctKeypad, SIGNAL(smileySelected(QString)), this, SLOT(smileySelected(QString)));
-        connect(mSctKeypad, SIGNAL(keypadCloseEventDetected(HbInputVkbWidget::HbVkbCloseMethod)), this, SLOT(keypadCloseEventDetected(HbInputVkbWidget::HbVkbCloseMethod)));
-        connect(mSctKeypad, SIGNAL(rockerDirection(int, HbInputVirtualRocker::RockerSelectionMode)),
-            this, SLOT(rockerDirection(int, HbInputVirtualRocker::RockerSelectionMode)));
-        mSctKeypad->setRockerVisible(true);
-    }
-    mSctKeypad->setMode(EModeAbc, HbModifierNone);
+    createSctKeypad();
     //open the keypad
     openKeypad(mSctKeypad);
 
@@ -530,13 +543,21 @@ void HbVirtualQwerty::selectSpecialCharacterTableMode()
 }
 
 /*!
-Slot used by mode handlers to close the autocompletion popup.
+Closes the candidate popup if visible.
 */
-void HbVirtualQwerty::closeAutoCompletionPopup()
+void HbVirtualQwerty::closeCandidatePopup()
 {
     if (mCandidatePopup && mCandidatePopup->isVisible()) {
         mCandidatePopup->hide();
     }
+}
+
+/*!
+Slot used by mode handlers to close the autocompletion popup.
+*/
+void HbVirtualQwerty::closeAutoCompletionPopup()
+{
+    closeCandidatePopup();
 }
 
 /*!
@@ -546,7 +567,7 @@ void HbVirtualQwerty::launchAutoCompletionPopup(const QStringList& candidates)
 {
     if (!mCandidatePopup) {
         mCandidatePopup = new HbCandidateList(this);
-        connect(mCandidatePopup, SIGNAL(candidatePopupCancelled()), this, SLOT(candidatePopupCancelled()));
+        connect(mCandidatePopup, SIGNAL(candidatePopupCancelled()), this, SLOT(restorePreviousState()));
         connect(mCandidatePopup, SIGNAL(candidateSelected(int,const QString&)), this, SLOT(candidatePopupClosed(int, const QString&)));
     }
 
@@ -559,8 +580,8 @@ void HbVirtualQwerty::launchAutoCompletionPopup(const QStringList& candidates)
             mCandidatePopup->setBackgroundFaded(false);
             mCandidatePopup->show();
         }
-    } else if (mCandidatePopup->isVisible()) {
-        mCandidatePopup->hide();
+    } else {
+        closeCandidatePopup();
     }
 }
 
@@ -589,7 +610,7 @@ void HbVirtualQwerty::launchCandidatePopup(const QStringList &candidates)
     closeExactWordPopup();
     if (!mCandidatePopup) {
         mCandidatePopup = new HbCandidateList(this);
-        connect(mCandidatePopup, SIGNAL(candidatePopupCancelled()), this, SLOT(candidatePopupCancelled()));
+        connect(mCandidatePopup, SIGNAL(candidatePopupCancelled()), this, SLOT(restorePreviousState()));
         connect(mCandidatePopup, SIGNAL(candidateSelected(int,const QString&)), this, SLOT(candidatePopupClosed(int, const QString&)));
     }
     mCandidatePopup->populateList(candidates);
@@ -629,57 +650,6 @@ if it is already open.
 */
 void HbVirtualQwerty::orientationAboutToChange()
 {
-    HbInputMethod::orientationAboutToChange();
-
-    if (isActiveMethod()) {
-        mOrientationAboutToChange = true;
-        // We need to commit the inline word before orientation change.
-        mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionCommit);
-        closeKeypad();
-    }
-}
-
-/*!
-Slot used by virtual rocker to move cursor.
-*/
-void HbVirtualQwerty::rockerDirection(int aDirection, HbInputVirtualRocker::RockerSelectionMode aSelectionMode)
-{
-    Qt::KeyboardModifiers modifiers = 0;
-    if (aSelectionMode == HbInputVirtualRocker::RockerSelectionModeOn) {
-        modifiers = Qt::ShiftModifier;
-    }
-    // commit any character/word which is in inline edit.
-    mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionCommit);
-    HbInputLanguage inputlang = HbInputSettingProxy::instance()->globalInputLanguage();
-
-    switch (aDirection) {
-    case HbInputVirtualRocker::HbRockerDirectionLeft:
-        if(inputlang.isRightToLeftLanguage()) {
-            focusObject()->cursorRight(modifiers);
-        } else {
-            focusObject()->cursorLeft(modifiers);
-        }
-        break;
-    case HbInputVirtualRocker::HbRockerDirectionRight:
-        if(inputlang.isRightToLeftLanguage()) {
-            focusObject()->cursorLeft(modifiers);
-        } else {
-            focusObject()->cursorRight(modifiers);
-        }
-        break;
-    case HbInputVirtualRocker::HbRockerDirectionUp: {
-        QKeyEvent keyEvent(QEvent::KeyPress, Qt::Key_Up, modifiers);
-        focusObject()->sendEvent(keyEvent);
-        }
-        break;
-    case HbInputVirtualRocker::HbRockerDirectionDown: {
-        QKeyEvent keyEvent(QEvent::KeyPress, Qt::Key_Down, modifiers);
-        focusObject()->sendEvent(keyEvent);
-        }
-        break;
-    default:
-        break;
-    }
 }
 
 /*!
@@ -700,12 +670,12 @@ void HbVirtualQwerty::predictiveInputStateChanged(HbKeyboardSettingFlags keyboar
 
 void HbVirtualQwerty::primaryCandidateModeChanged(HbPrimaryCandidateMode mode)
 {
-	mPredictionModeHandler->setPrimaryCandidateMode(mode);
+    mPredictionModeHandler->setPrimaryCandidateMode(mode);
 }
 
 void HbVirtualQwerty::autocompletionStateChanged(HbKeyboardSettingFlags keyboardType, bool newState)
 {
-    if (keyboardType & HbKeyboardSettingQwerty) {
+    if ( isActiveMethod() && (keyboardType & HbKeyboardSettingQwerty) ){
         mPredictionModeHandler->setAutocompletionStatus(newState);
     }
 }
@@ -734,6 +704,8 @@ void HbVirtualQwerty::launchExactWordPopup(QString exactWord)
 {
     if (!mExactWordPopup) {
         mExactWordPopup = HbExactWordPopup::instance();
+        mExactWordPopup->setPreferredHeight(HbDeviceProfile::profile(
+            mCurrentKeypad->mainWindow()).logicalSize().height() * HbExactPopupHeightFactor);
         connect(mExactWordPopup, SIGNAL(exactWordSelected()), mPredictionModeHandler, SLOT(exactWordSelected()));
     }
     mExactWordPopup->setText(exactWord);
@@ -752,21 +724,47 @@ void HbVirtualQwerty::closeExactWordPopup()
 
 QPointF HbVirtualQwerty::getCursorCoordinatePosition()
 {
+    QPointF cursorPos(0.0, 0.0);
     QRectF microRect = focusObject()->microFocus();
-    QPointF cursorPos = microRect.topLeft();
-	
+    microRect.adjust(0.0, -HbEditorExtraMargin, 0.0, HbEditorExtraMargin);
+
     if (mVkbHost) {
+        QRectF activeViewRect= mVkbHost->applicationArea();
+        qreal exactPopupHeight = HbDeviceProfile::profile(
+            mCurrentKeypad->mainWindow()).logicalSize().height() * HbExactPopupHeightFactor;
+        qreal topArea = microRect.top() - activeViewRect.top();
+        qreal bottomArea = activeViewRect.bottom() - microRect.bottom();
+        qreal xPos = microRect.left();
+        cursorPos.setX(xPos);
         QSizeF exactPopupSize = mExactWordPopup->size();
-        QRectF activeViewRect = mVkbHost->applicationArea();
-        // if the exact word doesnt fit inside the visible area, then show it on the right side of
-        // the current cursor position        
-        if (microRect.left() + exactPopupSize.width() > activeViewRect.width()) {
-            qreal startPos = microRect.left() - exactPopupSize.width();
-			cursorPos.setX((startPos > activeViewRect.left()) ? startPos : activeViewRect.left());
-		} 		
+
+        // show the exact word popup either above or below the currently focused editor if both fits in the visible area.
+        // If enough space is not available, then show the exact word popup inside the focused editor        
+        if (topArea > exactPopupHeight || bottomArea > exactPopupHeight) {
+            // show the popup above the editor if more space available
+            if (topArea > exactPopupHeight) {
+                cursorPos.setY(microRect.topLeft().y() - exactPopupHeight);
+            } else {
+                cursorPos.setY(microRect.bottomLeft().y());
+            }
+            // if there is no space to show the exact word popup in the right side of the cursor
+            // recatangle, then show it on the left side of the cursor            
+            if (xPos + exactPopupSize.width() > activeViewRect.width()) {
+                cursorPos.setX(xPos - exactPopupSize.width());
+            }
+        } else {
+            // show the exact word popup inside the editor
+            cursorPos.setY(microRect.top() + (microRect.height() / 2) - (exactPopupHeight / 2));
+            xPos = xPos + HbDeltaWidth;
+            if (xPos + exactPopupSize.width() > activeViewRect.width()) {
+                qreal startPos = microRect.left() - (3 * exactPopupSize.width()) - HbDeltaWidth;
+                cursorPos.setX((startPos > activeViewRect.left()) ? startPos : activeViewRect.left());
+            }
+        }
     }
     return cursorPos;
 }
+
 
 /*!
 Returns true if prediction is on, prediction engine is available and predictions is allowed in current editor.
@@ -795,10 +793,22 @@ QList<HbKeyPressProbability> HbVirtualQwerty::probableKeypresses()
     return mCurrentKeypad->probableKeypresses();
 }
 
-void HbVirtualQwerty::candidatePopupCancelled()
+void HbVirtualQwerty::restorePreviousState()
 {
-    if(mPredictionModeHandler) {
-        mPredictionModeHandler->showExactWordPopupIfNeeded();
-    }
+    mActiveModeHandler->actionHandler(HbInputModeHandler::HbInputModeActionRestorePreviousState);
 }
+
+void HbVirtualQwerty::createSctKeypad()
+{
+    if (!mSctKeypad) {
+        mSctKeypad = new HbSctKeyboard(this, mKeymap);
+        connect(mSctKeypad, SIGNAL(smileySelected(QString)), this, SLOT(smileySelected(QString)));
+        connect(mSctKeypad, SIGNAL(keypadCloseEventDetected(HbInputVkbWidget::HbVkbCloseMethod)), this, SLOT(keypadCloseEventDetected(HbInputVkbWidget::HbVkbCloseMethod)));      
+    }
+    mSctKeypad->setMode(EModeAbc, HbModifierNone);
+}
+
 // End of file
+
+
+

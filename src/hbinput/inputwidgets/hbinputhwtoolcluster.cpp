@@ -45,15 +45,10 @@ const int HbMiniVirtualKeypadNumberOfColumn = 5;
 const qreal HbMiniVirtualKeypadReductionFactor = 4.5;
 
 /*!
-@proto
-@hbinput
 \class HbHwToolCluster
-\brief Implementation of hardware tool cluster.
+\brief Deprecated! Implementation of hardware tool cluster.
 
 Implementation of hardware tool cluster.
-
-\sa HbHwToolCluster
-\sa HbTouchKeypadButton
 */
 
 /// @cond

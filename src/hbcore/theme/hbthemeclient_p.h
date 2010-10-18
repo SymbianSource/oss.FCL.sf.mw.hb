@@ -45,23 +45,38 @@ class HB_CORE_PRIVATE_EXPORT HbThemeClient
 public:
     bool connectToServer();
 
-    HbSharedIconInfo getSharedIconInfo(const QString &iconPath,
-                        const QSizeF &size,
-                        Qt::AspectRatioMode aspectRatioMode,
-                        QIcon::Mode mode,
-                        bool mirrored,
-                        HbIconLoader::IconLoaderOptions options,
-                        const QColor &color,
-                        HbRenderingMode renderMode );
+    struct IconReqInfo {
+        QString iconPath;
+        QSizeF size;
+        Qt::AspectRatioMode aspectRatioMode;
+        QIcon::Mode mode;
+        bool mirrored;
+        HbIconLoader::IconLoaderOptions options;
+        QColor color;
+        HbRenderingMode renderMode;
+    };
+
+    HbSharedIconInfo getSharedIconInfo(const IconReqInfo &reqInfo);
+    
+    void getSharedIconInfo(const IconReqInfo &reqInfo,
+                           HbAsyncIconInfoCallback callback,
+                           void *callbackParam = 0);
+
+    void cancelGetSharedIconInfo(HbAsyncIconInfoCallback callback,
+                                 void *callbackParam);
 
     QByteArray getSharedBlob(const QString &name);
 
     HbWidgetLoader::LayoutDefinition *getSharedLayoutDefs(const QString &fileName,
                                                           const QString &layout,
-                                                          const QString &section);
+                                                          const QString &section,
+                                                          bool &fileExists);
     HbCss::StyleSheet *getSharedStyleSheet(
             const QString &filePath,
-            HbLayeredStyleLoader::LayerPriority priority);
+            HbLayeredStyleLoader::LayerPriority priority,
+            bool &fileExists);
+
+    HbVector<uint> *getSharedMissedHbCss();
 
     HbEffectFxmlData *getSharedEffect(const QString &filePath);
 
@@ -72,40 +87,36 @@ public:
 
     void notifyForegroundLostToServer();
 
-    void unloadIcon(const QString &iconPath,
-                        const QSizeF &size,
-                        Qt::AspectRatioMode aspectRatioMode,
-                        QIcon::Mode mode,
-                        bool mirrored,
-                        const QColor &color,
-                        HbRenderingMode renderMode);
+    void unloadIcon(const IconReqInfo &reqInfo);
 
-    void unLoadMultiIcon(const QStringList &iconPathList,
-                        const QVector<QSizeF> &sizeList,
-                        Qt::AspectRatioMode aspectRatioMode,
-                        QIcon::Mode mode,
-                        bool mirrored,
-                        const QColor &color,
-                        HbRenderingMode renderMode);
+    void batchUnloadIcon(const QVector<IconReqInfo> &reqInfos);
 
     HbSharedIconInfo getMultiPartIconInfo(const QStringList &multiPartIconList,
-                        const HbMultiPartSizeData &multiPartIconData,
-                        const QSizeF &size,
-                        Qt::AspectRatioMode aspectRatioMode,
-                        QIcon::Mode mode,
-                        bool mirrored,
-                        HbIconLoader::IconLoaderOptions options,
-                        const QColor &color,
-                        HbRenderingMode renderMode);
+                                          const HbMultiPartSizeData &multiPartIconData,
+                                          const QSizeF &size,
+                                          Qt::AspectRatioMode aspectRatioMode,
+                                          QIcon::Mode mode,
+                                          bool mirrored,
+                                          HbIconLoader::IconLoaderOptions options,
+                                          const QColor &color,
+                                          HbRenderingMode renderMode);
 
     HbSharedIconInfoList getMultiIconInfo(const QStringList &multiPartIconList,
-                            const QVector<QSizeF>  &sizeList,
-                            Qt::AspectRatioMode aspectRatioMode,
-                            QIcon::Mode mode,
-                            bool mirrored,
-                            HbIconLoader::IconLoaderOptions options,
-                            const QColor &color,
-                            HbRenderingMode renderMode);
+                                          const QVector<QSizeF> &sizeList,
+                                          Qt::AspectRatioMode aspectRatioMode,
+                                          QIcon::Mode mode,
+                                          bool mirrored,
+                                          HbIconLoader::IconLoaderOptions options,
+                                          const QColor &color,
+                                          HbRenderingMode renderMode);
+
+    void unLoadMultiIcon(const QStringList &iconPathList,
+                         const QVector<QSizeF> &sizeList,
+                         Qt::AspectRatioMode aspectRatioMode,
+                         QIcon::Mode mode,
+                         bool mirrored,
+                         const QColor &color,
+                         HbRenderingMode renderMode);
 
     bool switchRenderingMode(HbRenderingMode renderMode);
 

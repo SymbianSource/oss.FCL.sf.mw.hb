@@ -1,0 +1,6 @@
+HbPopup {
+    no-timeout: 0;
+    confirmation-note-timeout: 1500;
+    standard-timeout: 3000;
+    context-menu-timeout: 6000;
+}

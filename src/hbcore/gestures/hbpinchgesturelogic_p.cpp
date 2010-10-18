@@ -23,15 +23,16 @@
 **
 ****************************************************************************/
 
+#include "hbpinchgesture.h"
+#include "hbpinchgesturelogic_p.h"
+#include "hbgestures_p.h"
+
 #include <QEvent>
 #include <QGestureRecognizer>
 #include <QGraphicsView>
 #include <QMouseEvent>
 #include <QDebug>
 
-#include "hbpinchgesture.h"
-#include "hbpinchgesture_p.h"
-#include "hbpinchgesturelogic_p.h"
 
 /*!
    @hbcore
@@ -156,10 +157,22 @@ QGestureRecognizer::Result HbPinchGestureLogic::recognize(Qt::GestureState gestu
                 tmp.setLength(line.length() / 2.);
                 QPointF centerPoint = tmp.p2();
 
-                if (d->mIsNewSequence) {
+                if (p1.state() == Qt::TouchPointPressed ||
+                    p2.state() == Qt::TouchPointPressed) {
                     gesture->setStartCenterPoint(centerPoint);
                     d->mSceneStartCenterPoint = mapToScene(watched, centerPoint);
+
+                    result = QGestureRecognizer::MayBeGesture;
+
+                    // start recording
+                    break;
                 }
+
+                QLineF currentPinchPos = QLineF(p1.screenPos(), p2.screenPos());
+                //qDebug() << "distance" << currentPinchPos.length();
+                //qDebug() << "angle" << currentPinchPos.angle();
+                //qDebug() << "center point" << centerPoint;
+
                 gesture->setLastCenterPoint(gesture->centerPoint());
                 d->mSceneLastCenterPoint = mapToScene(watched, gesture->centerPoint());
                 gesture->setCenterPoint(centerPoint);

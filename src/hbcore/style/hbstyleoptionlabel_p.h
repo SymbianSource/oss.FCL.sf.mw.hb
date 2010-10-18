@@ -53,6 +53,8 @@ public:
     Qt::AspectRatioMode aspectRatioMode;
 
     Qt::Alignment       alignment;
+
+    int                 maximumLines;
 };
 
 #endif // HBSTYLEOPTIONLABEL_H

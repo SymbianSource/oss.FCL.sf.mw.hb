@@ -31,6 +31,7 @@
 #include <hbtextitem.h>
 #include <hbstyleoptioncombobox_p.h>
 #include <hbnamespace_p.h>
+#include <hbmainwindow.h>
 #include <QStandardItemModel>
 #include <QGraphicsScene>
 #include <QDebug>
@@ -161,11 +162,16 @@ HbComboBox::HbComboBox( HbComboBoxPrivate &dd, QGraphicsItem *parent ) :
 
     \property HbComboBox::items
 
-    It replaces the existing list with \a texts.
+    It replaces the existing list with \a texts. If \a texts passed is empty then this function 
+    clears the model and returns. 
+
+    \sa clear()
 */
 void HbComboBox::setItems( const QStringList &texts )
 {  
     if ( texts.isEmpty( ) ) {
+        //if string list passed is empty then clear the current items in combobox
+        clear();
         return;
     }
     QStandardItemModel* model = new QStandardItemModel( this );
@@ -487,8 +493,8 @@ void HbComboBox::removeItem( int index )
                         d->mText.clear( );
                         HbStyleOptionComboBox comboBoxOption;
                         initStyleOption( &comboBoxOption );
-                        style( )->updatePrimitive(
-                            d->mTextItem, HbStyle::P_ComboBox_text, &comboBoxOption );
+                        HbStylePrivate::updatePrimitive(
+                            d->mTextItem, HbStylePrivate::P_ComboBox_text, &comboBoxOption );
                     }
                 }
                 d->mCurrentIndex = QModelIndex();
@@ -509,8 +515,8 @@ void HbComboBox::removeItem( int index )
                         d->mText = d->mModel->data( d->mCurrentIndex ).toString( );
                         HbStyleOptionComboBox comboBoxOption;
                         initStyleOption( &comboBoxOption );
-                        style( )->updatePrimitive(
-                            d->mTextItem, HbStyle::P_ComboBox_text, &comboBoxOption);
+                        HbStylePrivate::updatePrimitive(
+                            d->mTextItem, HbStylePrivate::P_ComboBox_text, &comboBoxOption);
                     }
                 }
                 d->currentIndexChanged( d->mCurrentIndex );
@@ -579,13 +585,13 @@ QGraphicsItem* HbComboBox::primitive( HbStyle::Primitive primitive ) const
     Q_D( const HbComboBox );
 
     switch( primitive ) {
-        case HbStyle::P_ComboBox_text:
+        case HbStylePrivate::P_ComboBox_text:
             return d->mTextItem;
-        case HbStyle::P_ComboBox_background:
+        case HbStylePrivate::P_ComboBox_background:
             return d->mBackgroundItem;
-        case HbStyle::P_ComboBox_button:
+        case HbStylePrivate::P_ComboBox_button:
             return d->mButton;
-        case HbStyle::P_ComboBoxButton_toucharea:
+        case HbStylePrivate::P_ComboBoxButton_toucharea:
             return d->mButtonTouchAreaItem;
         default:
             return 0;
@@ -614,10 +620,10 @@ void HbComboBox::updatePrimitives( )
         styleOption.state |= QStyle::State_Sunken;
     }
     if ( d->mBackgroundItem ) {
-        style( )->updatePrimitive( 
-            d->mBackgroundItem, HbStyle::P_ComboBox_background, &styleOption );
-        style( )->updatePrimitive( 
-            d->mButton, HbStyle::P_ComboBox_button, &styleOption );
+        HbStylePrivate::updatePrimitive( 
+            d->mBackgroundItem, HbStylePrivate::P_ComboBox_background, &styleOption );
+        HbStylePrivate::updatePrimitive( 
+            d->mButton, HbStylePrivate::P_ComboBox_button, &styleOption );
     }
 }
 
@@ -641,7 +647,7 @@ void HbComboBox::clear( )
                 d->mText.clear( );
                 HbStyleOptionComboBox comboBoxOption;
                 initStyleOption( &comboBoxOption );
-                style( )->updatePrimitive( d->mTextItem, HbStyle::P_ComboBox_text, &comboBoxOption );
+                HbStylePrivate::updatePrimitive( d->mTextItem, HbStylePrivate::P_ComboBox_text, &comboBoxOption );
             }
         }
     }
@@ -987,8 +993,8 @@ void HbComboBox::setItemText( int index, const QString &text )
                         d->mText = text ;
                         HbStyleOptionComboBox comboBoxOption;
                         initStyleOption( &comboBoxOption );
-                        style( )->updatePrimitive(
-                            d->mTextItem, HbStyle::P_ComboBox_text, &comboBoxOption );
+                        HbStylePrivate::updatePrimitive(
+                            d->mTextItem, HbStylePrivate::P_ComboBox_text, &comboBoxOption );
                     }
                 }
             }
@@ -1048,6 +1054,41 @@ void HbComboBox::gestureEvent(QGestureEvent *event)
 /*!
     \reimp
  */
+void HbComboBox::polish( HbStyleParameters& params )
+{
+    Q_D(HbComboBox);
+    params.addParameter( "max-rows-in-dropdown" );
+    HbWidget::polish(params);
+
+    //read the maximum rows in drop down for different orientation from css
+    if (isVisible()) {
+        if( mainWindow( )->orientation( ) == Qt::Horizontal ) {
+            if( d->mDropDownRowsInLandscape == -1 ) {
+                d->mDropDownRowsInLandscape = params.value( "max-rows-in-dropdown" ).toInt( );
+                if( d->mDropDown && d->mDropDown->isVisible() ) {
+                    //if drop dow is visible in one mode and then orientation is changed then
+                    //drop down was not resized properly since positionDropDown is getting called
+                    //before polish(). Hence forcing to position drop down again.
+                    d->positionDropDown();
+                }
+            }
+        } else if( mainWindow( )->orientation( ) == Qt::Vertical ) {
+            if( d->mDropDownRowsInPortrait == -1 ) {
+                d->mDropDownRowsInPortrait = params.value( "max-rows-in-dropdown" ).toInt( );
+                if( d->mDropDown && d->mDropDown->isVisible() ) {
+                    //if drop dow is visible in one mode and then orientation is changed then
+                    //drop down was not resized properly since positionDropDown is getting called
+                    //before polish(). Hence forcing to position drop down again.
+                    d->positionDropDown();
+                }
+            }
+        }
+    }
+}
+
+/*!
+    \reimp
+ */
 QVariant HbComboBox::itemChange( GraphicsItemChange change, const QVariant & value )
 {
     Q_D( HbComboBox );
@@ -1077,7 +1118,6 @@ void HbComboBox::changeEvent( QEvent *event )
     }
     HbWidget::changeEvent( event );
 }
-
 
 // End of file
 

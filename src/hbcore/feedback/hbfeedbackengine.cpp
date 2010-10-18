@@ -28,6 +28,7 @@
 #include "hbinstantinteractionevent_p.h"
 #include "hbcontinuousinteractionevent_p.h"
 
+#include <hbglobal_p.h> // remove with HB_DEPRECATED
 #include <QPointer>
 
 /*!
@@ -43,7 +44,7 @@
     
     Instant interaction information is received by methods pressed(), released(), clicked(), keyRepeated(), 
     longPressed(), draggedOver(), flicked(), popupOpened(), popupClosed(), boundaryReached(), rotated90Degrees(), 
-    selectionChanged() and multitouchActivated().
+    selectionChanged() and advancedGestureActivated().
     
     Continuous interaction information is received by methods continuousTriggered() and continuousStopped().
 
@@ -277,15 +278,15 @@ void HbFeedbackEngine::triggered(const HbWidget *widget, Hb::InstantInteraction 
            rotated90Degrees(widget);
         }
 
-	    break;
+        break;
 
         case Hb::InstantSelectionChanged: {
            selectionChanged(widget);
         }
         break;
 
-        case Hb::InstantMultitouchActivated: {
-           multitouchActivated(widget);
+        case Hb::InstantAdvancedGestureActivated: {
+           advancedGestureActivated(widget);
         }
         break;
 
@@ -420,11 +421,11 @@ void HbFeedbackEngine::selectionChanged(const HbWidget *widget)
 }
 
 /*!
-    Called when the engine receives a "multitouch activated" event from the feedback manager.
+    Called when the engine receives a touch gesture event with more than one finger from the feedback manager.
 
     \param widget the widget being interacted with
 */
-void HbFeedbackEngine::multitouchActivated(const HbWidget *widget)
+void HbFeedbackEngine::advancedGestureActivated(const HbWidget *widget)
 {
     Q_UNUSED(widget);
 }

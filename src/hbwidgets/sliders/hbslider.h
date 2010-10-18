@@ -162,7 +162,7 @@ public:
      bool isTrackFilled() const;
 
     virtual QGraphicsItem * primitive(HbStyle::Primitive primitive) const;
-	virtual void gestureEvent(QGestureEvent *event);
+    virtual void gestureEvent(QGestureEvent *event);
 
 public slots:
     void setOrientation(Qt::Orientation orientation);

@@ -48,6 +48,7 @@ public:
         String = 3,
         StringList = 4,
         Color = 5,
+        IntList = 6,
         LastType = 0xffffffff // need this so that gcc >= 3.4 allocates 32 bits for Type
     };
 
@@ -64,11 +65,11 @@ private:
         {
             int i;
             double d;
-            int offset;
+            qptrdiff offset;
         } mData;
 
         int stringSize;
-        int stringListCount;
+        int listCount;
         QAtomicInt mRef;
     private:
         Type mDataType;
@@ -83,6 +84,7 @@ public:
     HbVariant(const char *val, HbMemoryManager::MemoryType type);
     HbVariant(const QStringList &val, HbMemoryManager::MemoryType type);
     HbVariant(const QColor &col, HbMemoryManager::MemoryType type);
+    HbVariant(const QList<int> &val, HbMemoryManager::MemoryType type);
     ~HbVariant();
 
     HbMemoryManager::MemoryType memoryType()
@@ -105,6 +107,7 @@ public:
     QColor toColor() const;
     QStringList toStringList() const;
     double toDouble() const;
+    QList<int> toIntList() const;
 
     HbVariant & operator=( int val );
     HbVariant & operator=( double val );
@@ -112,6 +115,7 @@ public:
     HbVariant & operator=( const HbString& val );
     HbVariant & operator=( const QColor& col );
     HbVariant & operator=( const QStringList& strList );
+    HbVariant & operator=( const QList<int>& intList );
     HbVariant & operator=( const HbVariant& other );
     
     bool canConvert ( HbVariant::Type t ) const;
@@ -125,6 +129,7 @@ private:
     void fillStringData(const QChar *str, int size);
     void fillStringListData(const QStringList &stringList);
     void fillColorData(const QColor &col);
+    void fillIntListData(const QList<int> &intList);
     QString getString() const;
     QColor getColor() const;
     /**
@@ -132,7 +137,7 @@ private:
      * @Todo : this function needs to be fixed as hbstring taking mshared as another argument.
      */
     template<typename T>
-    T * getAddress( HbMemoryManager::MemoryType type, int offset, bool shared ) const
+    T * getAddress( HbMemoryManager::MemoryType type, qptrdiff offset, bool shared ) const
     {
         T* data = 0;
         if( shared == true ) {
@@ -147,7 +152,8 @@ private:
     {
         return data->dataType() == HbVariant::String
                || data->dataType() == HbVariant::Color
-               || data->dataType() == HbVariant::StringList;
+               || data->dataType() == HbVariant::StringList
+               || data->dataType() == HbVariant::IntList;
     }
     void freeMemory(HbVariantData *data)
     {
@@ -163,7 +169,7 @@ private:
 private:
     HbMemoryManager::MemoryType mMemoryType;
     bool mShared;    
-    int mDataOffset;
+    qptrdiff mDataOffset;
 };
 
 #endif // HBVARIANT_P_H

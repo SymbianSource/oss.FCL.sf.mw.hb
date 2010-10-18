@@ -27,7 +27,7 @@
 
 TEMPLATE = subdirs
 
-SUBDIRS += hbdevicedialogappserver hbsplashgenerator
+SUBDIRS += hbdevicedialogappserver hbsplashgenerator hbinputserver
 
 symbian {
     SUBDIRS += hbthemeserver hbthemeserveroogmplugin

@@ -53,8 +53,8 @@ public:
     int activePage();
     bool setExpanded( bool expanded );
     void setEnabled( bool enabled );
-	int pageIndex(const QModelIndex &index) const ;
-	QModelIndex pageModelIndex(int index) const ; 
+    int pageIndex(const QModelIndex &index) const ;
+    QModelIndex pageModelIndex(int index) const ; 
 
 public:
     static HbDataGroupPrivate *d_ptr( HbDataGroup *item ) {

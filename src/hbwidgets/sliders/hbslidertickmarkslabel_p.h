@@ -34,14 +34,14 @@
 class QStyleOption;
 class HbSliderTickmarksLabelPrivate;
 class QEvent;
-
+class HbSlider;
 
 class HB_AUTOTEST_EXPORT HbSliderTickmarksLabel : public HbWidget
 {
     Q_OBJECT
 
 public:
-    explicit HbSliderTickmarksLabel( QGraphicsItem *parent = 0 );
+    explicit HbSliderTickmarksLabel(HbSlider *parent = 0);
     ~HbSliderTickmarksLabel();
 
     virtual void resizeEvent(QGraphicsSceneResizeEvent *event);

@@ -45,6 +45,7 @@ public:
     int count() const;
     const HbVgEffect *at(int index) const;
     HbVgEffect *at(int index);
+    QList<HbVgEffect *> takeAll();
 
 public slots:
     void add(HbVgEffect *effect);
@@ -58,7 +59,7 @@ protected:
     HbVgChainedEffect(HbVgChainedEffectPrivate &dd, QObject *parent = 0);
     void performEffect(QPainter *painter, const QPointF &offset,
                        const QVariant &vgImage, const QSize &vgImageSize);
-    void performEffectSw(QPainter *painter);
+    void performEffectSw(QPainter *devicePainter, QPixmap *result, QPointF *resultPos);
 
 private:
     Q_DECLARE_PRIVATE(HbVgChainedEffect)

@@ -42,10 +42,12 @@ public:
     virtual void DeviceDialogClosed(TInt aCompletionCode) = 0;
 };
 
-class CHbDeviceDialogSymbian : public CBase
+class CHbDeviceDialogSymbian
+#if !defined(HB_DOXYGEN)
+: public CBase
+#endif // !defined(HB_DOXYGEN)
 {
 public:
-
     enum TDeviceDialogError{
         EFrameworkErrors = 0x00000000,
         EPluginErrors = 0x10000000,
@@ -62,22 +64,16 @@ public:
     };
 
     IMPORT_C static CHbDeviceDialogSymbian* NewL(TInt aFlags = ENoDeviceDialogFlags);
-
-    IMPORT_C ~CHbDeviceDialogSymbian();
+    IMPORT_C virtual ~CHbDeviceDialogSymbian();
 
     IMPORT_C TInt Show(const TDesC& aDeviceDialogType, const CHbSymbianVariantMap& aParameters, MHbDeviceDialogObserver* aObserver = NULL);
-
     IMPORT_C CHbSymbianVariantMap* ReceivedDataL() const;
-
     IMPORT_C TInt Update(const CHbSymbianVariantMap& aParameters);
-
     IMPORT_C void Cancel();
-
     IMPORT_C void SetObserver(MHbDeviceDialogObserver* aObserver);
 
 private:
     CHbDeviceDialogSymbian();
-
     CHbDeviceDialogSymbianPrivate* d;
 };
 

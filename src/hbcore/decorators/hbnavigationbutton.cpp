@@ -71,11 +71,9 @@ void HbNavigationButton::delayedConstruction()
 void HbNavigationButton::createPrimitives()
 {
     Q_D(HbNavigationButton);
-    d->mTouchArea = style()->createPrimitive(HbStyle::P_NavigationButton_toucharea, this);
-    QGraphicsObject *touchArea = static_cast<QGraphicsObject*>(d->mTouchArea);
-    touchArea->grabGesture(Qt::TapGesture);
+    d->mTouchArea = HbStylePrivate::createPrimitive(HbStylePrivate::P_NavigationButton_toucharea, this);
     ungrabGesture(Qt::TapGesture);
-    d->setBackgroundItem(HbStyle::P_NavigationButton_background);
+    d->setBackgroundItem(HbStylePrivate::P_NavigationButton_background);
 }
 
 void HbNavigationButton::updatePrimitives()
@@ -83,8 +81,8 @@ void HbNavigationButton::updatePrimitives()
     Q_D(HbNavigationButton);
     HbStyleOptionNavigationButton option;
     initStyleOption(&option);
-    style()->updatePrimitive(backgroundItem(), HbStyle::P_NavigationButton_background, &option);
-    style()->updatePrimitive(d->mTouchArea, HbStyle::P_NavigationButton_toucharea, &option);
+    HbStylePrivate::updatePrimitive(backgroundItem(), HbStylePrivate::P_NavigationButton_background, &option);
+    HbStylePrivate::updatePrimitive(d->mTouchArea, HbStylePrivate::P_NavigationButton_toucharea, &option);
     HbToolButton::updatePrimitives();
 }
 

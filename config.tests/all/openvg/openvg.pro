@@ -30,6 +30,7 @@ TARGET = hbconftest_openvg
 DEPENDPATH += .
 INCLUDEPATH += .
 CONFIG += openvg
+CONFIG -= app_bundle
 
 # Input
 SOURCES += main.cpp

@@ -181,14 +181,17 @@ namespace Hb
         ItemType_SelectionDialog,
         ItemType_SelectionDialogContentWidget,
         ItemType_InputButtonGroup,
+        ItemType_DatePickerViewItem,
+        ItemType_GridView,
+        ItemType_TreeView,
+        ItemType_ListWidget,
         ItemType_Last = QGraphicsItem::UserType + 20000
     };
 
     enum WidgetAttribute {
         InteractionDisabled   = 0x00000001,
         InsidePopup = 0x00000002,
-        InputMethodNeutral = 0x00000004,
-        Widget = 0x00000008
+        Widget = 0x00000004
     };
 
     Q_DECLARE_FLAGS(WidgetAttributes, WidgetAttribute)
@@ -238,7 +241,9 @@ namespace Hb
         DefaultApplicationFlags = 0x00,
         NoSplash                = 0x01,
         SplashFixedVertical     = 0x02,
-        SplashFixedHorizontal   = 0x04
+        SplashFixedHorizontal   = 0x04,
+        ForceQtSplash           = 0x08,
+        ShowSplashWhenStartingToBackground = 0x10
     };
 
     Q_DECLARE_FLAGS(ApplicationFlags, ApplicationFlag)
@@ -249,7 +254,8 @@ namespace Hb
         ViewSwitchFullScreen    = 0x02,
         ViewSwitchUseNormalAnim = 0x04,
         ViewSwitchUseBackAnim   = 0x08,
-        ViewSwitchUseAltEvent   = 0x10
+        ViewSwitchUseAltEvent   = 0x10,
+        ViewSwitchCachedFullScreen = 0x20
     };
 
     Q_DECLARE_FLAGS(ViewSwitchFlags, ViewSwitchFlag)
@@ -283,7 +289,8 @@ namespace Hb
     enum TextWrapping {
         TextNoWrap = 0,
         TextWordWrap = 1,
-        TextWrapAnywhere = 3
+        TextWrapAnywhere = 3,
+        TextWrapAtWordBoundaryOrAnywhere = 4
     };
 
     enum InstantInteraction {
@@ -299,7 +306,7 @@ namespace Hb
         InstantBoundaryReached,
         InstantRotated90Degrees,
         InstantSelectionChanged,
-        InstantMultitouchActivated,
+        InstantAdvancedGestureActivated,
         /* add new standard instant interactions here */
         NumberOfInstantInteractions,
         InstantUser = 1000,

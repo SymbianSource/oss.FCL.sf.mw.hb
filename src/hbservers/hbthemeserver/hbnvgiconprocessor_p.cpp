@@ -125,6 +125,7 @@ HbSharedIconInfo HbNvgIconProcessor::sharedIconData()const
             data.nvgData.width = size.width();
             data.nvgData.height = size.height();
             data.type = NVG;
+            data.renderingMode = EHWRendering;
             data.nvgData.dataSize = byteArray.size();
             memcpy(HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, data.nvgData.offset),
                    byteArray.data(), byteArray.size());

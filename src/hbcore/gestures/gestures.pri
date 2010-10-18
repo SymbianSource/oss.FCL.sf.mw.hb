@@ -31,34 +31,26 @@ PUBLIC_HEADERS += $$PWD/hbtapgesture.h
 PUBLIC_HEADERS += $$PWD/hbswipegesture.h
 PUBLIC_HEADERS += $$PWD/hbpinchgesture.h
 
-contains(DEFINES, HB_GESTURE_FW) { 
-    PRIVATE_HEADERS += $$PWD/hbgestures_p.h
-    PRIVATE_HEADERS += $$PWD/hbpangesture_p.h
-    PRIVATE_HEADERS += $$PWD/hbpangesturelogic_p.h
-    PRIVATE_HEADERS += $$PWD/hbtapgesturelogic_p.h
-    PRIVATE_HEADERS += $$PWD/hbtapandholdgesturelogic_p.h
-    PRIVATE_HEADERS += $$PWD/hbpinchgesturelogic_p.h
-    PRIVATE_HEADERS += $$PWD/hbpointrecorder_p.h
-    PRIVATE_HEADERS += $$PWD/hbvelocitycalculator_p.h    
-    PRIVATE_HEADERS += $$PWD/hbswipegesture_p.h
-    PRIVATE_HEADERS += $$PWD/hbswipegesturelogic_p.h
-    PRIVATE_HEADERS += $$PWD/hbtapandholdgesture_p.h
-    PRIVATE_HEADERS += $$PWD/hbtapgesture_p.h
-    PRIVATE_HEADERS += $$PWD/hbpinchgesture_p.h
-    PRIVATE_HEADERS += $$PWD/hbgesturerecognizers_p.h
+PRIVATE_HEADERS += $$PWD/hbgestures_p.h
+PRIVATE_HEADERS += $$PWD/hbpangesturelogic_p.h
+PRIVATE_HEADERS += $$PWD/hbtapgesturelogic_p.h
+PRIVATE_HEADERS += $$PWD/hbtapandholdgesturelogic_p.h
+PRIVATE_HEADERS += $$PWD/hbpinchgesturelogic_p.h
+PRIVATE_HEADERS += $$PWD/hbpointrecorder_p.h
+PRIVATE_HEADERS += $$PWD/hbvelocitycalculator_p.h    
+PRIVATE_HEADERS += $$PWD/hbswipegesturelogic_p.h
+PRIVATE_HEADERS += $$PWD/hbgesturerecognizers_p.h
 
-    SOURCES += $$PWD/hbgesturerecognizers_p.cpp
-    SOURCES += $$PWD/hbpangesturelogic_p.cpp
-    SOURCES += $$PWD/hbtapgesturelogic_p.cpp
-    SOURCES += $$PWD/hbtapandholdgesturelogic_p.cpp
-    SOURCES += $$PWD/hbpinchgesturelogic_p.cpp
-    SOURCES += $$PWD/hbpointrecorder_p.cpp
-    SOURCES += $$PWD/hbvelocitycalculator_p.cpp
-    SOURCES += $$PWD/hbswipegesturelogic_p.cpp
-    SOURCES += $$PWD/hbtapandholdgesture.cpp
-    SOURCES += $$PWD/hbtapgesture.cpp
-    SOURCES += $$PWD/hbpangesture.cpp
-    SOURCES += $$PWD/hbswipegesture.cpp
-    SOURCES += $$PWD/hbpinchgesture.cpp
-}
-
+SOURCES += $$PWD/hbgesturerecognizers_p.cpp
+SOURCES += $$PWD/hbpangesturelogic_p.cpp
+SOURCES += $$PWD/hbtapgesturelogic_p.cpp
+SOURCES += $$PWD/hbtapandholdgesturelogic_p.cpp
+SOURCES += $$PWD/hbpinchgesturelogic_p.cpp
+SOURCES += $$PWD/hbpointrecorder_p.cpp
+SOURCES += $$PWD/hbvelocitycalculator_p.cpp
+SOURCES += $$PWD/hbswipegesturelogic_p.cpp
+SOURCES += $$PWD/hbtapandholdgesture.cpp
+SOURCES += $$PWD/hbtapgesture.cpp
+SOURCES += $$PWD/hbpangesture.cpp
+SOURCES += $$PWD/hbswipegesture.cpp
+SOURCES += $$PWD/hbpinchgesture.cpp

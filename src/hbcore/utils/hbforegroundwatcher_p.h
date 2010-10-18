@@ -30,19 +30,10 @@
 #include <QTimer>
 #include <hbglobal.h>
 
-#ifdef Q_OS_SYMBIAN
-#include <coemain.h>
-#else
-class CCoeEnv;
-#endif
-
 class HbMainWindowOrientation;
 class HbSensorListener;
 
 class HB_CORE_PRIVATE_EXPORT HbForegroundWatcher : public QObject
-#ifdef Q_OS_SYMBIAN
-    , public MCoeForegroundObserver
-#endif
 {
     Q_OBJECT
 
@@ -72,7 +63,6 @@ private:
     bool mLights;
     QTimer mSleepModeTimer;
     HbSensorListener *mSensorListener;
-    CCoeEnv *mStaticEnv;
 };
 
 #endif

@@ -35,27 +35,27 @@ class HbWidget;
 class HB_CORE_PRIVATE_EXPORT HbWidgetStyleLoader
 {
 public:
-	
+    
     static HbWidgetStyleLoader *instance();
 
-	bool addFilePath(const QString &filePath,
+    bool addFilePath(const QString &filePath,
         const HbLayeredStyleLoader::Concern concern,
         const HbLayeredStyleLoader::LayerPriority priority);
-	bool removeFilePath(const QString &filePath,
+    bool removeFilePath(const QString &filePath,
         const HbLayeredStyleLoader::Concern concern,
         const HbLayeredStyleLoader::LayerPriority priority);
 
 
-	void clearConcernFileList(const HbLayeredStyleLoader::Concern concern);
-	void clearLayerFileList(
+    void clearConcernFileList(const HbLayeredStyleLoader::Concern concern);
+    void clearLayerFileList(
         const HbLayeredStyleLoader::Concern concern, 
-		const HbLayeredStyleLoader::LayerPriority priority);
-	
-	void loadCss(const HbWidget *widget);
-	
-	bool loadWidgetML(
+        const HbLayeredStyleLoader::LayerPriority priority);
+    
+    void loadCss(const HbWidget *widget);
+    
+    bool loadWidgetML(
         HbWidget *widget, const QString &layoutName, const QString &section = QString());
-	
+    
 private:
 
     enum FileSetType {
@@ -65,39 +65,49 @@ private:
         FileSetType_WidgetML
     };
 
+    enum PatternType {
+        PatternType_None,
+        PatternType_CSS,
+        PatternType_WidgetML
+    };
+
     bool doAddFileSet(
         const QString &path,
         FileSetType type,
+        PatternType patternType,
         const HbLayeredStyleLoader::Concern concern,
-		const HbLayeredStyleLoader::LayerPriority priority);
+        const HbLayeredStyleLoader::LayerPriority priority);
 
-	bool doRemoveFileSet(
+    bool doRemoveFileSet(
         const QString &path,
-        const HbLayeredStyleLoader::Concern *concern = 0,
-		const HbLayeredStyleLoader::LayerPriority *priority = 0);
+        const HbLayeredStyleLoader::Concern concern,
+        const HbLayeredStyleLoader::LayerPriority priority);
 
     struct FileSet {
-		QString path;
+        QString path;
         FileSetType type;
-		HbLayeredStyleLoader::Concern concern;
-		HbLayeredStyleLoader::LayerPriority priority;
-		QHash<QString,int> loadedCss;
-        QStringList missedCss;
+        PatternType patternType;
+        HbLayeredStyleLoader::Concern concern;
+        HbLayeredStyleLoader::LayerPriority priority;
+        QHash<uint,int> loadedCss;
+        QList<uint> missedCss;
         int referenceCount;
-		
-		FileSet(const QString &pat,
+        
+        FileSet(const QString &pat,
                 FileSetType typ,
+                PatternType pattern,
                 const HbLayeredStyleLoader::Concern con,
-				const HbLayeredStyleLoader::LayerPriority pri) {
-			path = pat;
+                const HbLayeredStyleLoader::LayerPriority pri) {
+            path = pat;
             type = typ;
-			concern = con;
-			priority = pri;
+            patternType = pattern;
+            concern = con;
+            priority = pri;
             referenceCount = 1;
-		}
-	};
-	
-	QList<FileSet> mFileSets;
+        }
+    };
+    
+    QList<FileSet> mFileSets;
     QVector<uint> mFullyLoadedWidgets;
 };
 

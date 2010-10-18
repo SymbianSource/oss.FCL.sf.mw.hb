@@ -1,10 +1,11 @@
-
+/* Layout selection*/
 HbRatingSlider
 {
     layout:default;
 }
 
-HbRatingSlider::frame
+/* RatingSlider Elements : background & toucharea */
+HbRatingSlider::background
 {
 	left:0.0un;
 	right:0.0un;
@@ -14,7 +15,8 @@ HbRatingSlider::frame
 	pref-width:var(hb-param-screen-short-edge);
 }
 
-HbRatingSlider::toucharea{
+HbRatingSlider::toucharea
+{
     left: var(hb-param-margin-gene-left);
     right: -var(hb-param-margin-gene-right);
     top: var(hb-param-margin-gene-top);

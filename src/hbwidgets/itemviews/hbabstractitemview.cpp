@@ -28,12 +28,14 @@
 #include "hbabstractitemcontainer_p_p.h"
 
 #include <hbabstractviewitem.h>
+#include <hbabstractviewitem_p.h>
 #include <hbevent.h>
 #include <hbabstractitemcontainer_p.h>
 #include <hbwidgetfeedback.h>
 #include <hbinstance.h>
 #include <hbscrollbar.h>
 #include <hbmodeliterator.h>
+#include <hbdataform.h>
 
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsScene>
@@ -43,77 +45,91 @@
 #include <QGestureEvent>
 #include <QPanGesture>
 
+#include <QSortFilterProxyModel>
 
 /*!
     @alpha
     @hbwidgets
     \class HbAbstractItemView
-    \brief HbAbstractItemView provides basic functionality for item View Classes.  
+    \brief The HbAbstractItemView class defines a set of common properties for the item view classes that derive from it.
     
-    HbAbstractItemView is an abstract class and cannot itself be instantiated.
-    HbAbstractItemView class can be used as the base class for every standard view that uses QAbstractItemModel.
-    It provides a standard interface for interoperating with models(QAbstractItemModel and QItemSelectionModel)
-    through signals and slots mechanism, enabling subclasses to be kept up-to-date with changes to their models.
-    This class provides a default selection Model to work with. Application can set its own selection Model.
-    There are several functions concerned with selection control like clearSelection(), selectAll(), setSelectionMode().
-    HbAbstractItemView provides standard support for mouse navigation and scrolling of items,
-    selections.
+    The item view classes derived from %HbAbstractItemView are widgets used to display items of related data in a scrollable area. For example,
+    derived views are provided to display a sequential list, a tree, a grid and a form. The items of data are typically icons and text. 
+    
+    This class and its derived classes use Qt's model/view framework, which requires that the data to be displayed is stored first in the model. The only exception to this is the HbListWidget class, which does not require an existing model. The model can be any QAbstractItemModel-based model. This framework provides a standard interface for communicating with models through the signals and slots mechanism, which ensures the views are  updated when the model is changed. The QAbstractItemModel class describes the concepts of the model such as the \e index of the model, model \e items and \e roles.
+    
+    The individual view items are objects derived from HbAbstractViewItem. %HbAbstractItemView stores a list of HbAbstractViewItems
+    and manages these view items for you. By changing this list the view items can be customized. The
+     %HbAbstractItemView class explains how this can be done.
+    
+    %HbAbstractItemView is an abstract class and cannot itself be instantiated. Therefore please refer to the derived classes (HbListView, HbGridView, HbTreeView, HbDataForm) for examples of use.
+    
+    %HbAbstractItemView provides properties that you can use to customize the following aspects of a view:  
 
-    \b Subclassing
-    HbAbstractItemView can be subclassed for customization purposes. Derived class must provide
-    implementation of scrollTo(). 
+    - <b>Item sizes</b>. You can set the items to all display at the same size using setUniformItemSizes(), which  improves performance for some operations such as scrolling. 
+    
+    - <b>Item recycling</b>. You can enable item recycling via setItemRecycling() to save memory. When item recycling is enabled, the view does not create a view item for every model item immediately after the view is launched. Instead, it creates view items for the visible area plus a few adjacent extra items. When the view is scrolled the existing view items are updated with new data from the model. By default item recycling is off.
+    
+    - <b>Pixmap cache</b>. You can enable the pixmap cache via setItemPixmapCacheEnabled() to significantly improve scrolling speed. It 
+    is recommended that the cache is enabled except in cases where the cache would potentially cause problems. By default the pixmap cache is off.
+    
+    - <b>View scrolling</b>. You can scroll the view to ensure a particular item is shown by using scrollTo(). The function takes an optional hint parameter to define which part of the scroll area should contain the item, such as the middle or the top. Typically %scrollTo() is used after the creation of a view or to set a specific position for a newly added item.
+    
+    - <b>%Selection Mode</b>. You can change the selection mode to either single or multiple using setSelectionMode(). You can also modify the
+    existing selection using clearSelection() and selectAll().
+    
+    - <b>%Selection Model</b>. You can change the selection model using setSelectionModel().
 
-    Each view item is represented by an instance of HbAbstractViewItem. HbAbstractViewItem
-    can be subclassed for customization purposes.
+    - <b>Icon load policy</b>. You can change the icon load policy so that icons are loaded synchronously or asynchronously using setIconLoadPolicy(). By default icons are loaded asynchronously to improve performance, but this can result in empty areas being displayed while the icons are still being loaded.
+    
+    \section Subclassing
+    %HbAbstractItemView can be subclassed for customization purposes.
+    
 
-    HbAbstractItemView can use item recycling. This means that only visible items
-    plus a small buffer of items above and below the visible area are instantiated at a time. 
-    When the view is scrolled view items are recycled so that buffer size above and below the 
-    visible area is kept constant.By default this feature is disabled. 
+    \sa  HbAbstractViewItem
 */
 
 /*!
     \fn void HbAbstractItemView::pressed(const QModelIndex &index)
 
     This signal is emitted when a touch down event is received within
-    view item that is representing \a index.
+    the view item that is representing \a index.
 
-    See also released() and activated().
+    \sa released() activated()
 */
 
 /*!
   \fn void HbAbstractItemView::released(const QModelIndex &index)
 
     This signal is emitted when a release event is received within
-    Abstract view item that is representing \a index.
+    the view item that is representing \a index.
 
-    See also pressed() and activated().
-    \sa HbAbstractViewItem::released(const QPointF &position)
+    \sa pressed(), activated(), HbAbstractViewItem::released(const QPointF &position)
 */
 
 /*!
     \fn void HbAbstractItemView::activated(const QModelIndex &index)
 
     This signal is emitted when the item specified by \a index is activated by the user.
-    How to activate items depends on the input method; e.g., with mouse by clicking the item
-    or with touch input by tapping the item.
+    An item is activated for example by clicking the item with a mouse
+    or by tapping the item.
 
-    See also pressed() and released().
+    \sa pressed(), released()
 */
 
 /*!
     \fn void HbAbstractItemView::longPressed(HbAbstractViewItem *item, const QPointF &coords)
 
-    This signal is emitted when long press event is received within
-    Abstract view item \a viewItem. \a coords is scene position where the long press event happened.
+    This signal is emitted when a long press event is received by a view item.
+    
+    \param item The view item that received the long press event.
+    \param coords The scene position where the long press event happened.
 */
 
 /*!
     \enum HbAbstractItemView::SelectionMode
 
-    selection types supported by HbAbstractItemView.
-
-    This enum describes different selection types available in LibHb.
+    Defines the available selection types.
 */
 
 /*!
@@ -126,131 +142,143 @@
 /*!
     \var HbAbstractItemView::SingleSelection
 
-    When the user selects an item, any already-selected item becomes unselected, and the user cannot
-    unselect the selected item. 
+    When the user selects an item, all other items become deselected. The user cannot
+    deselect the selected item.
 */
 
 /*!
     \var HbAbstractItemView::MultiSelection
 
-    When the user selects an item in the usual way, the selection state of that item
-    is toggled and the other items are left alone. 
+    When the user selects an item, the selection state of that item
+    is toggled and the other items are left unchanged. 
 */
 
 /*!
     \enum HbAbstractItemView::ScrollHint
 
-    Enumeration specifies positions on the view, onto which an item can be scrolled. 
+    Defines the positions on the view that an item can be scrolled to.
 
-    \sa scrollTo(const QModelIndex &index, HbAbstractItemView::ScrollHint hint = EnsureVisible)
+    \sa scrollTo()
 */
 
 /*!
     \var HbAbstractItemView::EnsureVisible
 
-    Item will be fully visible somewhere on the view. 
+    The item will be fully visible in the view. 
 */
 
 
 /*!
     \var HbAbstractItemView::PositionAtTop
 
-    Item will be fully visible as topmost item.
+    The item will be fully visible as the topmost item.
 */
 
 
 /*!
     \var HbAbstractItemView::PositionAtBottom
 
-    Item will be fully visible as bottommost item.
+    The item will be fully visible as the bottommost item.
 */
 
 /*!
     \var HbAbstractItemView::PositionAtCenter
 
-    Item will be centered. 
+    The item will be centered in the view.
 */
 
 /*!
     \enum HbAbstractItemView::ItemAnimation
 
-    animations in HbAbstractItemView that can be disabled. By default all animations are enabled.
+    Defines the types of animations in %HbAbstractItemView. The values are designed to be used as flags.
+    By default all animations are enabled.
+    
+    The ItemAnimations type is a typedef for QFlags<ItemAnimation>. It stores an OR combination of the ItemAnimation values.
+
 */
 
 /*!
     \var HbAbstractItemView::None
 
-    Any animation is not applied. 
+    No animations are applied. 
 */
 
 /*!
     \var HbAbstractItemView::Appear
 
-    Animation related to item appearance. Disable this animation in cases you expect many model items to appear,
-    for example in case like insertion of a new data source, and you do not wish to see animations.
-    
-    Note that the item appearance animations are not used directly after a setModel call to force non-animated model change. 
+    The animation displayed during item appearance. This animation can be disabled if desired. Disable this animation in cases where you expect many model items to appear,
+    such as during the insertion of a new data source. Note that the item appearance animations are not used directly after a call to setModel().
 */
 
 /*!
     \var HbAbstractItemView::Disappear
 
-    Animation related to item removal. Disable this animation in cases you expect many model items to disappear,
-	for example in cases like filtering or removal of a data source, and you do not wish to see animations.
+    The animation displayed during item removal. This animation can be disabled if desired. Disable this animation in cases where you expect many model items to disappear, such as during the filtering or removal of a data source.
 */
 
 /*!
     \var HbAbstractItemView::TouchDown
 
-    Animation related to item press and release.
+    The animations displayed during item press and release events. This animation can be disabled if desired.
 */
 
 /*!
     \var HbAbstractItemView::Expand
 
-    Animation related to setting item expand.
+    The animation displayed when a setting item is expanded.
 */
 
 /*!
     \var HbAbstractItemView::Collapse
 
-    Animation related to setting item collapsed.
+    The animation displayed when a setting item is collapsed.
 */
 
 /*!
     \var HbAbstractItemView::All
 
-    Every animation is applied. 
-*/
-
-/*!
-    Here are the main properties of the class:
-
-    \li HbAbstractItemView::itemRecycling: ItemRecycling.
-    \li HbAbstractItemView::SelectionMode: Different selection types supported by view.
-    \li HbAbstractItemView::bufferSize   : Buffer Size used for item recycling.
-    \li HbAbstractItemView::uniformItemSizes : This property holds whether all items in the item view have the same size.
+    A combination of all the flags. Every animation is applied. 
 */
 
 
+
 /*!
-    \fn void HbAbstractItemView::scrollTo(const QModelIndex &index,
-        HbAbstractItemView::ScrollHint hint = EnsureVisible)
+    \enum HbAbstractItemView::IconLoadPolicy
 
-    Scrolls the view if necessary to ensure that the item at \a index is visible
-    in a position according to \a hint. Default value just guarantees, that item will be fully visible. 
+    Defines the icon load policies that are used to control how icon data is loaded into items.
+*/
 
-    Scrolling is not animated but movement is immediate. 
+/*!
+    \var HbAbstractItemView::LoadSynchronously
+
+    The icon data for items is always loaded synchronously. In this mode the items will block all other processing while they load their icons.  This can lead to longer item creation time and data update times which may result in poor performance especially while scrolling.
+    
+    The benefit is that the icon content is guaranteed to be painted immediately so this avoids the possibility of empty areas that might appear if the data is loaded asynchronously.
+*/
+
+/*!
+    \var HbAbstractItemView::LoadAsynchronouslyWhenScrolling
+
+    The icon data is loaded asynchronously during scrolling but otherwise the data is loaded synchronously. 
+*/
+
+/*!
+    \var HbAbstractItemView::LoadAsynchronouslyAlways
+
+    The icon data is always loaded asynchronously. In this mode the process of loading the icon data will not block other processing 
+    and so will not cause delays in item creation or data update times. This results in better scrolling 
+    performance since the item recycling delay is shared between different frames. 
+
+    The disadvantage for this mode is that icon content is not guaranteed to be painted immediately and this may cause empty areas 
+    to be painted while asynchronous data is being loaded.
+
+    This is the default mode.
 */
 
 
 /*!
-    See also HbAbstractItemManager, HbAbstractViewItem, HbAbstractItemContainer.
 
-*/
-
-/*!
-    Constructs a new HbAbstractItemView with \a parent.
+    Constructs a new %HbAbstractItemView with the given (private data) \a dd, \a container, \a model \a iterator and \a parent.
 */
 HbAbstractItemView::HbAbstractItemView(HbAbstractItemViewPrivate &dd, 
                                        HbAbstractItemContainer *container,
@@ -266,7 +294,7 @@ HbAbstractItemView::HbAbstractItemView(HbAbstractItemViewPrivate &dd,
 }
 
 /*!
-    Constructs a new HbAbstractItemView with \a parent.
+    Constructs a new %HbAbstractItemView with \a container, \a modelIterator and \a parent.
 */
 HbAbstractItemView::HbAbstractItemView(HbAbstractItemContainer *container,
                                        HbModelIterator *modelIterator,
@@ -281,7 +309,7 @@ HbAbstractItemView::HbAbstractItemView(HbAbstractItemContainer *container,
 }
 
 /*!
-    Destructs the abstract item view.
+    Destructor.
 */
 HbAbstractItemView::~HbAbstractItemView()
 {
@@ -289,7 +317,9 @@ HbAbstractItemView::~HbAbstractItemView()
 }
 
 /*!
-    Returns model that view is currently presenting.
+    Returns the model that the view is currently presenting.
+    
+    \sa setModel()
 */
 QAbstractItemModel *HbAbstractItemView::model() const
 {
@@ -298,11 +328,14 @@ QAbstractItemModel *HbAbstractItemView::model() const
 }
 
 /*!
-    Sets the model to \a model and replaces current item prototype with \a prototype.
+    Sets the model to \a model and replaces the current item prototype with \a prototype.
     Ownership of the model is not taken. Ownership of the prototype is taken. 
-    If no prototype has been passed, default prototype is used.
+    If no prototype has been passed, the default prototype for the item view is used.
+    
+    \note This function may cause existing view items to be recreated. The recreated view items are created asynchronously.
+    
+    \sa model(), setItemPrototype
 
-    Note! Itemview may create view items asynchronously.
 */
 void HbAbstractItemView::setModel(QAbstractItemModel *model, HbAbstractViewItem *prototype)
 {
@@ -314,7 +347,9 @@ void HbAbstractItemView::setModel(QAbstractItemModel *model, HbAbstractViewItem 
 }
 
 /*!
-    Returns the list of item prototypes.
+    Returns the list of item prototypes. How to use item prototypes is described in HbAbstractViewItem.
+    
+    \sa setItemPrototype(), setItemPrototypes()
 */
 QList<HbAbstractViewItem *> HbAbstractItemView::itemPrototypes() const
 {
@@ -323,11 +358,13 @@ QList<HbAbstractViewItem *> HbAbstractItemView::itemPrototypes() const
 }
 
 /*!
-    Replaces current item prototypes with \a prototype. Ownership is taken.
+    Replaces the current item prototypes with \a prototype and takes ownership of the prototype.
     
-    Concrete item views provided by library have view specific view item prototype set by default.
+    \note This function may cause existing view items to be recreated. The recreated view items are created asynchronously.
     
-    Note! This function may cause that view items are recreated. They may be created asynchronously.
+    \note Supplied item views such as HbListView have default prototypes which are set when the item view class is created.
+    
+    \sa itemPrototypes(), setItemPrototypes()
 
 */
 void HbAbstractItemView::setItemPrototype(HbAbstractViewItem *prototype)
@@ -338,25 +375,29 @@ void HbAbstractItemView::setItemPrototype(HbAbstractViewItem *prototype)
     }
 }
 
-/*!
-    To support multiple Abstractview items within single AbstractItemview.
-    Replace current item prototypes with list of \a prototypeList. Ownership is taken.
-    Setting more than one prototype will disable item recycling feature.
-
-    When list view item is being created, HbAbstractViewItem::canSetModelIndex()
-    is called for every item until item is found, which can create an item for
-    a model index. The prototype list is gone through from end to the beginning. 
+/*! 
+    Replaces the current item prototypes with the list of \a prototypes and takes ownership of the \a prototypes.
     
-    Thus specialized prototypes should be in the end of the list and 
-    'default' prototype first one. The specialized prototypes usually can create
-    only certain types of list view items. The default prototype usually return always true,
-    meaning that it can create any type of list view item. 
+    This allows multiple abstract view items within %HbAbstractItemView.
+    
+    When list view items are being created, the choice of which prototype to use for each item is 
+    based on the order of the prototypes and each prototype's response to the view calling HbAbstractViewItem::canSetModelIndex().
+    The prototype list is read from the end to the beginning. 
+    
+    The recommended list order is to place specialized prototypes at the end of the list and a
+    default prototype at the list head. The specialized prototypes would create
+    only certain types of list view items and so would implement HbAbstractViewItem::canSetModelIndex().
+     The default prototype would always return \c true for HbAbstractViewItem::canSetModelIndex() and would be capable of creating
+     any type of list view item. The specialized prototypes would be expected to create more complex items from extra data in the
+     model that the default prototype would otherwise ignore.
 
-    Concrete item views provided by library have view specific view item prototype set.
+    Supplied item views such as HbListView have default prototypes which are set when the item view class is created.
+    
+    \note Setting more than one prototype will disable the item recycling feature.
 
-    Note! This function may cause that view items are recreated. They may be created asynchronously.
+    \note This function may cause existing view items to be recreated. The recreated view items are created asynchronously.
 
-    \sa HbAbstractViewItem::canSetModelIndex()
+    \sa setItemPrototype(), itemPrototypes()
 */
 void HbAbstractItemView::setItemPrototypes(const QList<HbAbstractViewItem *> &prototypes)
 {
@@ -371,6 +412,8 @@ void HbAbstractItemView::setItemPrototypes(const QList<HbAbstractViewItem *> &pr
 
 /*!
     Returns the current selection model.
+    
+    \sa setSelectionModel
 */
 QItemSelectionModel *HbAbstractItemView::selectionModel() const
 {
@@ -380,8 +423,11 @@ QItemSelectionModel *HbAbstractItemView::selectionModel() const
 
 /*!
     Sets the current selection model to \a selectionModel.
-    Note: If setModel() is called after this function, the given selectionModel will be
-    replaced by default selection model of the view.
+    
+    \note If setModel() is called after this function, the selection model will be
+    replaced by the default selection model of the view.
+    
+    \sa selectionModel
 */
 void HbAbstractItemView::setSelectionModel(QItemSelectionModel *selectionModel)
 {
@@ -393,8 +439,12 @@ void HbAbstractItemView::setSelectionModel(QItemSelectionModel *selectionModel)
 }
 
 /*!
-    If \a newMode is not same as current selection mode of view,
-    updates selection mode, all viewitems and clears all existing selections.
+    Sets the current selection mode to \a newMode.
+    
+    If \a newMode is different from the current selection mode for the view,
+    this function updates all view items and clears all existing selections.
+    
+    \sa selectionMode()
 */
 void HbAbstractItemView::setSelectionMode(SelectionMode newMode)
 {
@@ -426,8 +476,8 @@ void HbAbstractItemView::selectAll()
 }
 
 /*!
-    Deselects all selected items. The current index will not be changed.
-*/
+    Deselects all selected items. The current index is not changed.
+ */
 void HbAbstractItemView::clearSelection()
 {
     Q_D(HbAbstractItemView);
@@ -439,7 +489,9 @@ void HbAbstractItemView::clearSelection()
 }
 
 /*!
-    Returns current selection mode used by view.
+    Returns the current selection mode used by the view.
+    
+    \sa setSelectionMode
 */
 HbAbstractItemView::SelectionMode HbAbstractItemView::selectionMode() const
 {
@@ -448,7 +500,7 @@ HbAbstractItemView::SelectionMode HbAbstractItemView::selectionMode() const
 }
 
 /*!
-    Returns index of current item.
+    Returns the index of the current item.
 */
 QModelIndex HbAbstractItemView::currentIndex() const
 {
@@ -457,9 +509,11 @@ QModelIndex HbAbstractItemView::currentIndex() const
 }
 
 /*!
-   Sets current index to \a index. The item is selected depending on the \a selectionFlag.
-   By default item is not selected. If current selection mode is NoSelection,
-   item is not selected irrespective of the selection flag.
+   Sets the current index to \a index. The item is selected depending on the \a selectionFlag.
+   By default the item is not selected. If the current selection mode (HbAbstractItemView::SelectionMode) is NoSelection,
+   the item is not selected irrespective of the selection flag.
+   
+   \sa setSelectionMode()
 */
 void HbAbstractItemView::setCurrentIndex(const QModelIndex &index, 
                                          QItemSelectionModel::SelectionFlags selectionFlag)
@@ -479,9 +533,11 @@ void HbAbstractItemView::setCurrentIndex(const QModelIndex &index,
 
 
 /*!
-    Returns model index of the model's root item. 
-    The root item is parent item to view's top level items.
+    Returns the model index of the model's root item. 
+    The root item is the parent item to the view's top level items.
     The root can be invalid.
+    
+    \sa setRootIndex
 */
 QModelIndex HbAbstractItemView::rootIndex() const
 {
@@ -490,10 +546,12 @@ QModelIndex HbAbstractItemView::rootIndex() const
 }
 
 /*!
-    Sets root index to \a index.
-    All view items are deleted and recreated
+    Sets the root index to \a index.
+    All view items are deleted and recreated.
 
-    Note! View items may be created asynchronously.
+    \note View items may be created asynchronously.
+    
+    \sa rootIndex
 */
 void HbAbstractItemView::setRootIndex(const QModelIndex &index)
 {
@@ -507,12 +565,13 @@ void HbAbstractItemView::setRootIndex(const QModelIndex &index)
 }
 
 /*!
-    Resets Item view.
+    Resets the item view. This resets all animations, scrolls the view to the original position, but preserves any existing selections.
 */
 void HbAbstractItemView::reset()
 {
     Q_D(HbAbstractItemView);    
 
+    d->stopAnimating();
     d->mModelIterator->setRootIndex(QPersistentModelIndex());
     d->resetContainer();
 
@@ -520,8 +579,9 @@ void HbAbstractItemView::reset()
 }
 
 /*!
-    \reimp
-    It should be always called by child class if overridden.
+    
+    If overridden, the child class should always call this function to ensure the events related to the abstract item view
+    and scroll area are handled.
 */
 bool HbAbstractItemView::event(QEvent *e)
 {
@@ -530,28 +590,16 @@ bool HbAbstractItemView::event(QEvent *e)
     bool result = HbScrollArea::event(e);
 
     // The two above statements have to be executed before these
-    if (e->type() == HbEvent::ChildFocusIn) {
-        HbAbstractViewItem *item = 0;
-        QList<HbAbstractViewItem *> items = d->mContainer->items();
-
-        for (QGraphicsItem *currentItem = scene()->focusItem(); currentItem != 0; currentItem = currentItem->parentItem()) {
-            item = d->viewItem(currentItem);
-            if (item) {
-                if (items.indexOf(item) == -1) {
-                    item = 0;
-                } else {
-                    break;
-                }
-            }
-        }
-        if (item && item->modelIndex() != d->mCurrentIndex) {
-            setCurrentIndex(item->modelIndex());
-        }
-        result = true;
-    } else if (e->type() == QEvent::LayoutRequest) {
+    if (e->type() == QEvent::LayoutRequest) {
         d->mContainer->resizeContainer();
         if (d->mPostponedScrollIndex.isValid()) { 
            d->scrollTo(d->mPostponedScrollIndex, d->mPostponedScrollHint);
+           if (scrollDirections() | Qt::Vertical) {
+               d->updateScrollBar(Qt::Vertical);
+           }
+           if (scrollDirections() | Qt::Horizontal) {
+               d->updateScrollBar(Qt::Horizontal);
+           }
         } 
         result = true;
     }
@@ -560,11 +608,12 @@ bool HbAbstractItemView::event(QEvent *e)
 }
 
 /*!
-    \reimp
+    
 
-    This slot is called when orientation is changed.
-    \a newOrientation has the currentOrientation mode.
-    Note: Currently platform dependent orientation support is not available
+    This slot is called when the orientation is changed.
+    \param newOrientation The current orientation mode.
+    
+    \sa Qt:Orientation
 */
 void HbAbstractItemView::orientationChanged(Qt::Orientation newOrientation)
 {
@@ -587,8 +636,9 @@ void HbAbstractItemView::orientationChanged(Qt::Orientation newOrientation)
 }
 
 /*!
-    This slot is called just before orientation is to be changed.
-    Note: Currently platform dependent orientation support is not available
+    This slot is called just before the orientation is changed.
+    
+    \sa orientationChanged()
 */
 void HbAbstractItemView::orientationAboutToBeChanged()
 {
@@ -599,6 +649,8 @@ void HbAbstractItemView::orientationAboutToBeChanged()
 /*!
     Sets item recycling to \a enabled.
     By default recycling is off.
+    
+    \sa itemRecycling
 */
 void HbAbstractItemView::setItemRecycling(bool enabled)
 {
@@ -607,17 +659,19 @@ void HbAbstractItemView::setItemRecycling(bool enabled)
 }
 
 /*!
-    Returns whether item recycling feature is in use.
+    Returns whether the item recycling feature is in use.
+    
+    \sa setItemRecycling
 */
 bool HbAbstractItemView::itemRecycling() const
 {
-    Q_D(const HbAbstractItemView);
+    Q_D(const HbAbstractItemView); 
     return d->mContainer->itemRecycling();
 }
 
 /*!
-    Returns view item representing current model index. This can be NULL if
-    index has no view item representing it.
+    Returns the view item representing the current model index. This can be \c NULL if
+    the index has no view item representing it.
 */
 HbAbstractViewItem *HbAbstractItemView::currentViewItem() const
 {
@@ -627,8 +681,8 @@ HbAbstractViewItem *HbAbstractItemView::currentViewItem() const
 
 
 /*!
-    Returns view item representing given model \a index. This can be NULL if
-    index has no view item representing it.
+    Returns the view item representing the given  \a index in the model. This can be \c NULL if
+    the index has no view item representing it.
 */
 HbAbstractViewItem *HbAbstractItemView::itemByIndex(const QModelIndex &index) const
 {
@@ -637,7 +691,7 @@ HbAbstractViewItem *HbAbstractItemView::itemByIndex(const QModelIndex &index) co
 }
 
 /*!
-   Returns true if item with model index is fully or partially visible in view.
+   Returns \c true if the item in the model at \a index is fully or partially visible in the view.
 */
 bool HbAbstractItemView::isVisible(const QModelIndex & index) const
 {
@@ -646,16 +700,21 @@ bool HbAbstractItemView::isVisible(const QModelIndex & index) const
 }
 
 /*!
-    Base class implemmentation. Take care about scrollTo when it was
-    called before view was visible (first scrollTo can be done after
-    first layoutRequest).
-    It should be always called by child class if overridden.
+    Scrolls the view to ensure that the item at \a index is visible.
+    
+    The optional \a hint parameter defines which part of the scroll area should contain the item. 
+    The view is only scrolled if necessary, and the scrolling is not animated. Any child class implementations
+    must be called if they override this function.
+    
+    The base class implementation is able to scroll an indexed item to make it visible if a view item has already been populated with the indexed item from the model. If recycling is enabled, derived classes must perform any recycling required. 
+    
+    \note If item recycling is enabled, the view item may not have reached its final 
+    position when this function returns. Item positions can still be changed while the items are in the process of being layed out,
+     which takes place asynchronously. 
 
-    Note! If item recycling is enabled, view item may not have reached its final 
-    position, when this function returns. Then its position is fine tuned asynchronously. 
-
-    \sa HbAbstractItemView::itemRecycling()
+    \sa itemRecycling(), QEvent
 */
+
 void HbAbstractItemView::scrollTo(const QModelIndex &index, ScrollHint hint)
 {
     Q_D(HbAbstractItemView);
@@ -676,7 +735,7 @@ void HbAbstractItemView::scrollTo(const QModelIndex &index, ScrollHint hint)
 }
 
 /*!
-    Returns list of currently visible view items.
+    Returns the list of fully or partially visible view items.
 */
 QList<HbAbstractViewItem *> HbAbstractItemView::visibleItems() const
 {
@@ -693,17 +752,13 @@ QList<HbAbstractViewItem *> HbAbstractItemView::visibleItems() const
 }
 
 /*!
-    Returns SelectionFlags to be used when updating selection of a item.
-    The event is a user input event, such as a mouse or keyboard event.
-    contiguousArea is true, if selectiontype is not single or no selection and
-    user has pressed on contiguousArea of viewItem i.e CheckBox.
-    By default this is false.
-    Subclasses should overide this function to define their own selection behavior.
+    Called when the selection is being updated as a result of user input. This might be the start of a selection or a change to the selection. Returns the selection flags to be used when updating the selection of an item.
+    Subclasses should override this function to define their own selection behavior.
 
-    Note: The \a event parameter is not necessary a full event. For mouse events
-    it is quaranteed to contain the event type and position.
-
-    \sa HbAbstractViewItem::selectionAreaContains(const QPointF &scenePosition) const
+    \param item The view item that emitted the event.
+    \param event The event such as a mouse or keyboard event. Touch events are received as mouse events. The event parameter does not always have all its properties set. For mouse events the event parameter always has the event type and position set.
+    
+    \sa HbAbstractViewItem::selectionAreaContains(), HbAbstractViewItem
 */
 QItemSelectionModel::SelectionFlags HbAbstractItemView::selectionCommand(const HbAbstractViewItem *item,
                                                                          const QEvent *event)
@@ -714,9 +769,9 @@ QItemSelectionModel::SelectionFlags HbAbstractItemView::selectionCommand(const H
 }
 
 /*!
-    This slot is called when items are changed in model. 
+    This slot is called when items are changed in the model. 
     The changed items are those from \a topLeft to \a bottomRight inclusive.
-    If just one item is changed topLeft == bottomRight.
+    If only one item is changed \a topLeft will equal \a bottomRight.
 */
 void  HbAbstractItemView::dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
 {
@@ -768,32 +823,28 @@ void  HbAbstractItemView::dataChanged(const QModelIndex &topLeft, const QModelIn
 }
 
 /*!
-    This slot is called when current index is changed in selection model.
-    current is the changed or current index and previous in the old current index.
-    current index may not be selected.
+    This slot is called when the current index is changed in the selection model.
+    Changing the current index does not affect which items are selected.
+
+    \param current New current index.
+    \param previous Previous current index.
 */
 void HbAbstractItemView::currentIndexChanged(const QModelIndex &current, const QModelIndex &previous)
 {
+    Q_UNUSED(previous);
     Q_D(HbAbstractItemView);
+
 
     if (current != d->mCurrentIndex) {
         d->mCurrentIndex = current;
-               
-        if (previous.isValid()) {
-           d->mContainer->setItemTransientStateValue(previous, "focused", false);
-        }
-        
-        if (d->mCurrentIndex.isValid()) {
-            d->mContainer->setItemTransientStateValue(d->mCurrentIndex, "focused", true);
-        }
-
     }
 }
 
 /*!
-    This slot is called when selection of items has changed.
-    selected contains all selected items, deselected contains
-    all deselected items.
+    This slot is called whenever the selection changes. The change in the selection is represented as an item selection
+    of \a selected items and an item selection of \a deselected items.
+    Note that the current index changes independently from the selection. Also note that this signal will not be emitted when the item model is reset.
+    
 */
 void HbAbstractItemView::currentSelectionChanged(const QItemSelection &selected, 
                                                  const QItemSelection &deselected)
@@ -805,7 +856,10 @@ void HbAbstractItemView::currentSelectionChanged(const QItemSelection &selected,
         HbAbstractViewItem *item = d->mContainer->itemByIndex(selectedIndexes.at(i));
         if (item) {
             item->setCheckState(Qt::Checked);
-            if (!d->mClearingSelection && !d->mDoingContiguousSelection) {
+            if (d->mContSelectionAction) {
+                HbWidgetFeedback::triggered(item, Hb::InstantSelectionChanged, Hb::ModifierScrolling);
+            }
+            else {
                 HbWidgetFeedback::triggered(item, Hb::InstantSelectionChanged); 
             }
         } 
@@ -820,7 +874,11 @@ void HbAbstractItemView::currentSelectionChanged(const QItemSelection &selected,
         HbAbstractViewItem *item = d->mContainer->itemByIndex(deselectedIndexes.at(i));
         if (item) {
             item->setCheckState(Qt::Unchecked);
-            if (!d->mClearingSelection && !d->mDoingContiguousSelection) {
+
+            if (d->mContSelectionAction) {
+                HbWidgetFeedback::triggered(item, Hb::InstantSelectionChanged, Hb::ModifierScrolling);
+            }
+            else {
                 HbWidgetFeedback::triggered(item, Hb::InstantSelectionChanged);
             }
         } 
@@ -832,7 +890,7 @@ void HbAbstractItemView::currentSelectionChanged(const QItemSelection &selected,
 
 /*!
     This slot is called when rows are inserted. 
-    The new rows are those under the given parent from start to end inclusive
+    The new rows are those between \a start and \a end inclusive, under the given \a parent item.
 */
 void HbAbstractItemView::rowsInserted(const QModelIndex &parent, int start, int end)
 {
@@ -855,7 +913,7 @@ void HbAbstractItemView::rowsInserted(const QModelIndex &parent, int start, int 
 
 /*!
     This slot is called after rows have been removed from the model.
-    The removed items are those between start and end inclusive, under the given parent item.
+    The removed items are those between \a start and \a end inclusive, under the given \a parent item.
 */
 void HbAbstractItemView::rowsRemoved(const QModelIndex &parent,int start,int end)
 {
@@ -865,8 +923,8 @@ void HbAbstractItemView::rowsRemoved(const QModelIndex &parent,int start,int end
 
 /*!
     This slot is called just before rows are removed from the model.
-    The items that will be removed are those between \a start and \a end inclusive, under the given \a parent item.
-    Default implementation is empty
+    The items that will be removed are those between \a start and \a end inclusive, under the given \a index item.
+    The base implementation is empty.
 */
 void HbAbstractItemView::rowsAboutToBeRemoved(const QModelIndex &index, int start, int end)
 {
@@ -877,8 +935,8 @@ void HbAbstractItemView::rowsAboutToBeRemoved(const QModelIndex &index, int star
 
 /*!
     This slot is called just before rows are inserted into the model.
-    The items that will be inserted are those between \a start and \a end inclusive, under the given \a parent item.
-    Default implementation is empty.
+    The items that will be inserted are those between \a start and \a end inclusive, under the given \a index item.
+    The base implementation is empty.
 */
 void HbAbstractItemView::rowsAboutToBeInserted(const QModelIndex &index, int start, int end)
 {
@@ -889,7 +947,7 @@ void HbAbstractItemView::rowsAboutToBeInserted(const QModelIndex &index, int sta
 
 /*!
     This slot is called when columns are inserted. 
-    The new rows are those under the given parent from start to end inclusive
+    The new columns are those under the given \a parent from \a start to \a end inclusive.
 */
 void HbAbstractItemView::columnsInserted(const QModelIndex &parent, int start, int end)
 {
@@ -908,7 +966,7 @@ void HbAbstractItemView::columnsInserted(const QModelIndex &parent, int start, i
 
 /*!
     This slot is called after columns have been removed from the model.
-    The removed items are those between start and end inclusive, under the given parent item.
+    The removed items are those between \a start and \a end inclusive, under the given \a parent item.
 */
 void HbAbstractItemView::columnsRemoved(const QModelIndex &parent, int start, int end)
 {
@@ -928,8 +986,8 @@ void HbAbstractItemView::columnsRemoved(const QModelIndex &parent, int start, in
 
 /*!
     This slot is called just before columns are removed from the model.
-    The items that will be removed are those between \a start and \a end inclusive, under the given \a parent item.
-    Default implementation is empty
+    The items that will be removed are those between \a start and \a end inclusive, under the given \a index item.
+    The base implementation is empty.
 */
 void HbAbstractItemView::columnsAboutToBeRemoved(const QModelIndex &index, int start, int end)
 {
@@ -940,8 +998,8 @@ void HbAbstractItemView::columnsAboutToBeRemoved(const QModelIndex &index, int s
 
 /*!
     This slot is called just before columns are inserted into the model.
-    The items that will be inserted are those between \a start and \a end inclusive, under the given \a parent item.
-    Default implementation is empty.
+    The items that will be inserted are those between \a start and \a end inclusive, under the given \a index item.
+    The base implementation is empty.
 */
 void HbAbstractItemView::columnsAboutToBeInserted(const QModelIndex &index, int start, int end)
 {
@@ -951,7 +1009,8 @@ void HbAbstractItemView::columnsAboutToBeInserted(const QModelIndex &index, int 
 }
 
 /*!
-    Emits the activated signal.
+    Emits the activated() signal.
+
 */
 void HbAbstractItemView::emitActivated(const QModelIndex &modelIndex)
 {
@@ -959,7 +1018,8 @@ void HbAbstractItemView::emitActivated(const QModelIndex &modelIndex)
 }
 
 /*!
-    Emits the pressed signal.
+    Emits the pressed() signal.
+
 */
 void HbAbstractItemView::emitPressed(const QModelIndex &modelIndex)
 {
@@ -967,7 +1027,8 @@ void HbAbstractItemView::emitPressed(const QModelIndex &modelIndex)
 }
 
 /*!
-    Emits the released signal.
+    Emits the released() signal.
+
 */
 void HbAbstractItemView::emitReleased(const QModelIndex &modelIndex)
 {
@@ -975,7 +1036,7 @@ void HbAbstractItemView::emitReleased(const QModelIndex &modelIndex)
 }
 
 /*!
-    \reimp
+    The abstract item view implementation handles item recycling.
 */
 bool HbAbstractItemView::scrollByAmount(const QPointF &delta)
 {
@@ -994,7 +1055,10 @@ bool HbAbstractItemView::scrollByAmount(const QPointF &delta)
 }
 
 /*!
-    \reimp
+    The abstract item view responds to QGraphicsItem::ItemSceneHasChanged to check if this item view has been added
+    or removed from the window. This is to ensure scene filters and signals are connected only when necessary.
+    
+    \sa QGraphicsItem
 */
 QVariant HbAbstractItemView::itemChange(GraphicsItemChange change, const QVariant &value)
 {
@@ -1031,7 +1095,7 @@ QVariant HbAbstractItemView::itemChange(GraphicsItemChange change, const QVarian
 }
 
 /*!
-    Returns the current name of layout definition of view items of this view.
+    Returns the current name of the layout definition for the view items of this view.
 
     \sa setLayoutName()
 */
@@ -1043,16 +1107,16 @@ QString HbAbstractItemView::layoutName() const
 }
 
 /*!
-    Sets the name of layout definition \a layoutName for selecting 
-    the layout of view items of this view from css/xml files.
+    Sets the name of the layout definition for this view to \a layoutName. This specifies that 
+    the layout of the view items comes from the css/xml files.
 
-    This layoutName is accessible from css file as layoutName property
+    This layoutName property is accessible from the css file as the \c layoutName property
     of the view item.
 
     This can be used for customization purposes. By default the layout name
-    is "default".
+    is set to "default".
 
-    \sa layoutOption()
+    \sa layoutName()
 */
 void HbAbstractItemView::setLayoutName(const QString &layoutName)
 {
@@ -1062,18 +1126,17 @@ void HbAbstractItemView::setLayoutName(const QString &layoutName)
     
     QList<HbAbstractViewItem *> items = d->mContainer->items();
     foreach (HbAbstractViewItem *item, items) {
-        QEvent* polishEvent = new QEvent( QEvent::Polish );
-        QCoreApplication::postEvent(item, polishEvent);
+        HbAbstractViewItemPrivate::d_ptr(item)->repolishItem();
     }
 } 
 
 /*!
-    Sets the property informing whether all items in the item view have the same size.
+    Sets the items to all display at the same size if \a enabled is \c true.
     
-    This property should only be set to true if it is guaranteed that all items in the view have 
+    This property should only be set to \c true if it is guaranteed that all items in the view have 
     the same size. This enables the view to do some optimizations for performance purposes.
 
-    By default, this property is false.
+    By default, this property is \c false.
 
     \sa uniformItemSizes
 */
@@ -1084,9 +1147,11 @@ void HbAbstractItemView::setUniformItemSizes(bool enable)
 }
 
 /*!
-    Returns the current value of the uniformItemsSizes property.
+    Returns whether the uniform item sizes feature is in use.
 
-    By default, this property is false.
+    The default value is \c false.
+    
+    \sa setUniformItemSizes
 */
 bool HbAbstractItemView::uniformItemSizes() const
 {
@@ -1095,7 +1160,7 @@ bool HbAbstractItemView::uniformItemSizes() const
 }
 
 /*!
-    Returns pointer to HbModelIterator. It provides functions to work with QModelIndex.
+    Returns the model iterator used by this item view.
 */
 HbModelIterator *HbAbstractItemView::modelIterator() const
 {
@@ -1104,9 +1169,11 @@ HbModelIterator *HbAbstractItemView::modelIterator() const
 }
 
 /*!
-    Sets the bitmask controlling the item animations.
+    Sets the bit mask controlling the item animations.
+    
+    \sa enabledAnimations()
 */
-void HbAbstractItemView::setEnabledAnimations(HbAbstractItemView::ItemAnimations flags)
+void HbAbstractItemView::setEnabledAnimations(ItemAnimations flags)
 {
     Q_D(HbAbstractItemView);
     d->mEnabledAnimations = flags;
@@ -1114,6 +1181,8 @@ void HbAbstractItemView::setEnabledAnimations(HbAbstractItemView::ItemAnimations
 
 /*!
     Returns the mask controlling the item animations.
+    
+    \sa ItemAnimation, setEnabledAnimations()
 */
 HbAbstractItemView::ItemAnimations HbAbstractItemView::enabledAnimations() const
 {
@@ -1122,7 +1191,7 @@ HbAbstractItemView::ItemAnimations HbAbstractItemView::enabledAnimations() const
 }
 
 /*!
-    \reimp
+   The abstract item view implementation accepts panning events.
 */
 void HbAbstractItemView::gestureEvent(QGestureEvent *event)
 {
@@ -1139,11 +1208,11 @@ void HbAbstractItemView::gestureEvent(QGestureEvent *event)
 }
 
 /*! 
-    This slot is called when touch down event occurs. Default implementation handles selection 
-    and calls emitPressed().
+    This slot is called when a touch down event occurs.
+    
+    The base implementation handles selection      and calls emitPressed().
 
-    \sa HbAbstractViewItem::pressed(const QPointF &position)
-    \sa emitPressed()
+    \sa HbAbstractViewItem::pressed(const QPointF &position),  emitPressed()
 */
 void HbAbstractItemView::itemPressed(const QPointF &pos)
 {
@@ -1156,23 +1225,24 @@ void HbAbstractItemView::itemPressed(const QPointF &pos)
     d->mContSelectionAction = QItemSelectionModel::NoUpdate;
 
     HbAbstractViewItem *item = qobject_cast<HbAbstractViewItem *>(sender()); 
-    QModelIndex index = item->modelIndex();
+    if (item) {
+        QModelIndex index = item->modelIndex();
 
-    if (d->mSelectionMode != HbAbstractItemView::NoSelection) {
-        QGraphicsSceneMouseEvent mousePressEvent(QEvent::GraphicsSceneMousePress);
-        mousePressEvent.setPos(pos);
-        d->mSelectionModel->select(index, selectionCommand(item, &mousePressEvent));
+        if (d->mSelectionMode != HbAbstractItemView::NoSelection) {
+            QGraphicsSceneMouseEvent mousePressEvent(QEvent::GraphicsSceneMousePress);
+            mousePressEvent.setPos(pos);
+            d->mSelectionModel->select(index, selectionCommand(item, &mousePressEvent));
+        }
+        emitPressed(item->modelIndex());
     }
-
-    emitPressed(item->modelIndex());
 }
 
 /*! 
-    This slot is called when release event occurs for view item.
-    Default implementation calls emitReleased().
+    This slot is called by a view item when a release event occurs for that item.
+    
+    The base implementation calls emitReleased().
 
-    \sa HbAbstractViewItem::released(const QPointF &position)
-    \sa emitReleased()
+    \sa HbAbstractViewItem::released(const QPointF &position),   emitReleased(),  itemPressed()
 */
 void HbAbstractItemView::itemReleased(const QPointF &pos)
 {
@@ -1183,11 +1253,11 @@ void HbAbstractItemView::itemReleased(const QPointF &pos)
 }
 
 /*! 
-    This slot is called when view item is activated.
-    Default implementation handles selection and calls emitActivated().
+    This slot is called when a view item is activated.
+    
+    The base implementation handles selection and calls emitActivated().
 
-    \sa HbAbstractViewItem::itemActivated(const QPointF &position)
-    \sa emitActivated()
+    \sa HbAbstractViewItem::activated(const QPointF &position), emitActivated()
 */
 void HbAbstractItemView::itemActivated(const QPointF &pos)
 {
@@ -1205,15 +1275,16 @@ void HbAbstractItemView::itemActivated(const QPointF &pos)
     }
 
     emitActivated(index);
+
+    setCurrentIndex(index);
 }
 
 /*! 
-    This slot is called when view item is long pressed and long press is enabled in itemview.
-    Default implementation calls longPressed().
+    This slot is called when the view item is long pressed and long press events are allowed for this item view.
+    
+    The base implementation calls longPressed().
 
-    \sa HbAbstractViewItem::longPressed(const QPointF &position)
-    \sa longPressEnabled()
-    \sa longPressed()
+    \sa HbAbstractViewItem::longPressed(const QPointF &position),  longPressEnabled(),  longPressed()
 */
 void HbAbstractItemView::itemLongPressed(const QPointF &pos)
 {
@@ -1225,20 +1296,17 @@ void HbAbstractItemView::itemLongPressed(const QPointF &pos)
     d->mSelectionModel->setCurrentIndex(index, QItemSelectionModel::NoUpdate);
 
     emit longPressed(item, item->mapToScene(pos));
+
+    setCurrentIndex(index);
 }
 
 /*! 
-    This slot is called when concrete view item has been created. Default implementation connects
-    touch event related signals of HbAbstractViewItem to respective slots in this class.
+    This slot is called when \a item has been created.
+    
+    The base implementation connects
+    the touch event signals of HbAbstractViewItem to the respective slots in this class.
 
-    \sa HbAbstractViewItem::pressed(const QPointF &position)
-    \sa HbAbstractViewItem::released(const QPointF &position)
-    \sa HbAbstractViewItem::itemActivated(const QPointF &position)
-    \sa HbAbstractViewItem::longPressed(const QPointF &position)
-    \sa itemPressed()
-    \sa itemReleased()
-    \sa itemActivated()
-    \sa itemLongPressed()
+    \sa HbAbstractViewItem, itemPressed(), itemReleased(), itemActivated(), itemLongPressed()
 */
 void HbAbstractItemView::itemCreated(HbAbstractViewItem *item)
 {
@@ -1246,10 +1314,16 @@ void HbAbstractItemView::itemCreated(HbAbstractViewItem *item)
     QObject::connect(item, SIGNAL(released(QPointF)), this, SLOT(itemReleased(QPointF)));
     QObject::connect(item, SIGNAL(activated(QPointF)), this, SLOT(itemActivated(QPointF)));
     QObject::connect(item, SIGNAL(longPressed(QPointF)), this, SLOT(itemLongPressed(QPointF))); 
+
+
+    Q_D(HbAbstractItemView);
+    if (d->mContainer->items().count() == 0) {
+        d->mEmptyView->setVisible(false);
+    }
 }
 
 /*!
-    \reimp
+   \sa QGraphicsItem::sceneEventFilter()
 */
 bool HbAbstractItemView::sceneEventFilter(QGraphicsItem *watched, QEvent *event)
 {
@@ -1264,12 +1338,12 @@ bool HbAbstractItemView::sceneEventFilter(QGraphicsItem *watched, QEvent *event)
 }
 
 /*!
-    Sets the value of the longPressEnabled property.  This value is set
-    to true if the widget is to respond to long press gestures, false otherwise.
+    Sets the long press gestures feature to \a enabled.  Set this value 
+    to \c true if the widget is to respond to long press gestures, or to \c false otherwise.
 
-    The default value is true.
+    The default value is \c true.
 
-    \sa HbAbstractItemView::longPressEnabled()
+    \sa longPressEnabled()
 */
 void HbAbstractItemView::setLongPressEnabled(bool enabled)
 {
@@ -1278,9 +1352,9 @@ void HbAbstractItemView::setLongPressEnabled(bool enabled)
 }
 
 /*!
-    Returns true if the item view handles long press gestures, false otherwise.
+    Returns whether the long press gestures feature is enabled.
 
-    \sa HbAbstractItemView::setLongPressEnabled()
+    \sa setLongPressEnabled()
 */
 bool HbAbstractItemView::longPressEnabled() const
 {
@@ -1289,16 +1363,140 @@ bool HbAbstractItemView::longPressEnabled() const
 }
 
 /*!
-    Slot handles QAbstractItemModel::layoutChanged() signal. 
-    Default implementation sets first model item visible as first view item. 
+    Sets the pixmap cache feature to \a enabled. When this is set to \c true, it enables the item view's pixmap cache.
+    
+    Enabling the item view's pixmap cache will significantly improve the item view scrolling speed.
+    It is recommended that the cache is enabled except 
+    in cases where the cache would potentially cause problems. Examples of situations where the cache should not be used are when a custom view item prototype cannot update the pixmap properly, or an effect is applied to a widget within a view item.
+    
+    By default the item pixmap cache is disabled. 
+
+    \note The item pixmap cache is not supported by HbDataForm.
+
+    \sa itemPixmapCacheEnabled(), HbAbstractViewItem::updatePixmapCache()
+*/
+void HbAbstractItemView::setItemPixmapCacheEnabled(bool enabled)
+{
+    Q_D(HbAbstractItemView);
+    
+    if (qgraphicsitem_cast<HbDataForm*>(this) == 0) {
+        d->mItemPixmapCacheEnabled = enabled;
+    }
+}
+
+/*!
+    Returns whether the pixmap cache is in use.
+
+    \sa setItemPixmapCacheEnabled()
+*/
+bool HbAbstractItemView::itemPixmapCacheEnabled() const
+{
+    Q_D(const HbAbstractItemView);
+    return d->mItemPixmapCacheEnabled;
+}
+
+/*!
+    Sets the icon load policy to \a policy.
+
+    The default value is HbAbstractItemView::LoadAsynchronouslyAlways.
+
+    \sa iconLoadPolicy()
+*/
+void HbAbstractItemView::setIconLoadPolicy(IconLoadPolicy policy)
+{
+    Q_D(HbAbstractItemView);
+    if (d->mIconLoadPolicy != policy) {
+        d->mIconLoadPolicy = policy;
+        
+        foreach (HbAbstractViewItem *prototype, itemPrototypes()) {
+            HbAbstractViewItemPrivate::d_ptr(prototype)->mSharedData->updateIconItemsAsyncMode();
+        }
+    }
+}
+
+/*!
+    Returns the current icon load policy used by the view.
+
+    \sa setIconLoadPolicy()
+*/
+HbAbstractItemView::IconLoadPolicy HbAbstractItemView::iconLoadPolicy() const
+{
+    Q_D(const HbAbstractItemView);
+    return d->mIconLoadPolicy;
+}
+
+
+/*!
+    Returns the current text displayed in the item view when there are no items.
+
+    \sa HbAbstractItemView::setEmptyText()
+*/
+QString HbAbstractItemView::emptyText() const
+{
+    Q_D(const HbAbstractItemView);
+    return d->mEmptyView->emptyViewText();
+}
+
+/*!
+    Sets the text displayed in the item view when there are no items. The default value is empty.
+
+    \sa HbAbstractItemView::emptyText()
+*/
+void HbAbstractItemView::setEmptyText(const QString &emptyText)
+{
+    Q_D(HbAbstractItemView);
+    d->mEmptyView->setEmptyViewText(emptyText);
+}
+
+/*!
+    This slot handles the QAbstractItemModel::layoutChanged() signal. 
+    
+    The base implementation checks if the buffer items need to be updated and if so after the update sets the first model item visible 
+    as the first view item.
+    
+    
+    QSortFilterProxyModel sends the layoutChanged 
+    signal whenever there is a data change in the model but in that case the view should
+    not be scrolled. 
 */
 void HbAbstractItemView::modelLayoutChanged()
 {
     Q_D(HbAbstractItemView);
+    QModelIndex firstItemIndex;
+
+    QSortFilterProxyModel *proxyModel = qobject_cast<QSortFilterProxyModel *>(d->mModelIterator->model());
+    if (proxyModel && proxyModel->dynamicSortFilter()) {
+        QList<HbAbstractViewItem *> items = d->mContainer->items();
+
+        if (!items.isEmpty() && !size().isEmpty()) {
+            // Try maintaining first visible item as first visible item.
+            int itemCount = items.count();
+
+            for (int currentIndex = 0; currentIndex < itemCount; ++currentIndex) {
+                HbAbstractViewItem *item = items.at(currentIndex);
+                if (d->visible(item, true)) {
+                    // Resolve new first item index when first visible item is known.
+                    firstItemIndex = d->mModelIterator->index(d->mModelIterator->indexPosition(item->modelIndex()) - currentIndex);
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!firstItemIndex.isValid()) {
+        // New first item index not fount (e.g. when items are not visible) -> take first index.
+        firstItemIndex = d->mModelIterator->nextIndex(firstItemIndex);
+    }
+
     d->mContainer->d_func()->updateItemBuffer();
-    d->mContainer->setModelIndexes(d->mModelIterator->nextIndex(QModelIndex()));
-    if (d->mContainer->items().count() > 0) {
-        scrollTo(d->mContainer->items().at(0)->modelIndex(), PositionAtTop);
+
+    if (!d->mContainer->items().isEmpty()) {
+        if (d->mContainer->items().first()->modelIndex() != firstItemIndex) {
+            d->mContainer->setModelIndexes(firstItemIndex);
+            scrollTo(firstItemIndex, PositionAtTop);
+        } else {
+            d->mContainer->setModelIndexes(firstItemIndex);
+        }
     }
 }
 

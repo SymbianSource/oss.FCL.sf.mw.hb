@@ -43,7 +43,10 @@ public:
     virtual void NotificationDialogClosed(const CHbDeviceNotificationDialogSymbian* aDialog, TInt aCompletionCode) = 0;
 };
 
-class CHbDeviceNotificationDialogSymbian : public CBase
+class CHbDeviceNotificationDialogSymbian
+#if !defined(HB_DOXYGEN)
+: public CBase
+#endif // !defined(HB_DOXYGEN)
 {
 public:
     /*!
@@ -94,6 +97,7 @@ private:
     
     CHbDeviceNotificationDialogSymbianPrivate* d;
     friend class CHbDeviceNotificationDialogSymbianPrivate;
+    friend class HbDeviceDialogsExtensionSymbian;
 };
 
 #endif // (__SYMBIAN32__) || defined(SYMBIAN) || defined(HB_DOXYGEN)

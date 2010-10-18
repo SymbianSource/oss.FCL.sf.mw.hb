@@ -36,9 +36,8 @@
 #include <QDir>
 #include <QList>
 #include <QPair>
-#include <QDebug>
 
-const int bitmap_cache_limit = 4; // Must be at least 1. Each bitmap consumes ~1 MB.
+const int bitmap_cache_limit = 8; // Must be at least 1. Each bitmap consumes ~1 MB.
 
 #define PRE "[hbsplashgenerator] [server]"
 
@@ -54,7 +53,7 @@ HbSplashGenDocument::HbSplashGenDocument(CEikApplication &app)
 
 CEikAppUi *HbSplashGenDocument::CreateAppUiL()
 {
-    qDebug() << PRE << "using custom appui";
+    splDeb() << PRE << "using custom appui";
     return new(ELeave) HbSplashGenAppUi;
 }
 
@@ -66,7 +65,7 @@ CApaDocument *HbSplashGenApplication::CreateDocumentL()
 class HbSplashGenServerSymbian : public CServer2
 {
 public:
-    HbSplashGenServerSymbian();
+    HbSplashGenServerSymbian(HbSplashGenerator *generator);
     ~HbSplashGenServerSymbian();
     CSession2 *NewSessionL(const TVersion &version, const RMessage2 &message) const;
 
@@ -97,6 +96,7 @@ private:
     const BitmapCacheData *getCachedBitmap(const QString &fileName) const;
     void cacheBitmap(const QString &key, const BitmapCacheData &data);
 
+    HbSplashGenerator *mGen;
     bool mStartupSuccess;
     RFs mFs;
     QString mSplashScreenDir;
@@ -117,16 +117,16 @@ private:
 };
 
 HbSplashGenServer::HbSplashGenServer(HbSplashGenerator *generator)
-    : mServer(new HbSplashGenServerSymbian)
+    : mServer(new HbSplashGenServerSymbian(generator))
 {
     connect(generator, SIGNAL(outputDirContentsUpdated(QString, QStringList)),
             SLOT(onOutputDirContentsUpdated(QString, QStringList)));
     // React immediately on a theme change, showing out-dated graphics
     // is never acceptable.
-    connect(generator, SIGNAL(regenerateStarted()), SLOT(dropCachedData()));
+    connect(generator, SIGNAL(regenerateStarted()), SLOT(onRegenStarted()));
     // Clear the cache again when all the screens are regenerated to
     // make sure that only the latest ones are used.
-    connect(generator, SIGNAL(finished()), SLOT(dropCachedData()));
+    connect(generator, SIGNAL(finished()), SLOT(onRegenEnded()));
 }
 
 HbSplashGenServer::~HbSplashGenServer()
@@ -137,13 +137,18 @@ HbSplashGenServer::~HbSplashGenServer()
 void HbSplashGenServer::onOutputDirContentsUpdated(const QString &dir,
         const QStringList &entries)
 {
-    qDebug() << PRE << "splash screen dir contents received" << dir;
-    qDebug() << PRE << entries;
+    splDeb() << PRE << "splash screen dir contents received" << dir;
+    splDeb() << PRE << entries;
     mServer->setSplashScreenDir(dir);
     mServer->setSplashScreenDirContents(entries);
 }
 
-void HbSplashGenServer::dropCachedData()
+void HbSplashGenServer::onRegenStarted()
+{
+    mServer->clearBitmapCache();
+}
+
+void HbSplashGenServer::onRegenEnded()
 {
     mServer->clearBitmapCache();
 }
@@ -158,15 +163,15 @@ void HbSplashGenServer::addCompositor(HbSplashCompositorInterface *compositor)
     mServer->addCompositor(compositor);
 }
 
-HbSplashGenServerSymbian::HbSplashGenServerSymbian()
-    : CServer2(CActive::EPriorityHigh)
+HbSplashGenServerSymbian::HbSplashGenServerSymbian(HbSplashGenerator *generator)
+    : CServer2(CActive::EPriorityHigh), mGen(generator)
 {
     TInt err = mFs.Connect();
     if (err == KErrNone) {
         mFs.ShareProtected();
         TRAP(err, StartL(hbsplash_server_name));
         if (err == KErrNone) {
-            qDebug() << PRE << "server started";
+            splDeb() << PRE << "server started";
         } else {
             qWarning() << PRE << "server start failed" << err;
         }
@@ -244,14 +249,14 @@ bool HbSplashGenServerSymbian::completeGetSplash(const RMessage2 &message,
     if (wantsBitmap) {
         const BitmapCacheData *cachedBitmapData = getCachedBitmap(fileName);
         if (cachedBitmapData) {
-            qDebug() << PRE << "returning cached bitmap for" << fileName;
+            splDeb() << PRE << "returning cached bitmap for" << fileName;
             completeWithBitmap(message, *cachedBitmapData);
             return true;
         }
     }
     QDir splashScreenDir(mSplashScreenDir);
     QString nativeName = QDir::toNativeSeparators(splashScreenDir.filePath(fileName));
-    qDebug() << PRE << "trying to read" << nativeName;
+    splDeb() << PRE << "trying to read" << nativeName;
     TPtrC nativeNameDes(static_cast<const TUint16 *>(nativeName.utf16()), nativeName.length());
     RFile f;
     if (f.Open(mFs, nativeNameDes, EFileRead | EFileShareReadersOrWriters) == KErrNone) {
@@ -297,11 +302,9 @@ inline bool readParam(int param, TDes &dst, const RMessage2 &message)
 
 bool HbSplashGenServerSymbian::processGetSplash(const RMessage2 &message)
 {
-    bool cachedEntryListValid = true;
-    if (mSplashScreenDir.isEmpty() || mSplashScreenDirEntries.isEmpty()) {
-        qWarning() << PRE << "getSplash: no contents received yet, using fallback";
-        mSplashScreenDir = hbsplash_output_dir();
-        cachedEntryListValid = false;
+    if (mGen->newRegenPending()) {
+        qWarning() << PRE << "getSplash: processing of the new theme is pending, stop";
+        return false;
     }
 
     TBuf<16> orientationDes;
@@ -319,7 +322,7 @@ bool HbSplashGenServerSymbian::processGetSplash(const RMessage2 &message)
     QString orientation = QString::fromUtf16(orientationDes.Ptr(), orientationDes.Length());
     QString appId = QString::fromUtf16(appIdDes.Ptr(), appIdDes.Length());
     QString screenId = QString::fromUtf16(screenIdDes.Ptr(), screenIdDes.Length());
-    qDebug() << PRE << "getSplash request" << orientation << appId << screenId;
+    splDeb() << PRE << "getSplash request" << orientation << appId << screenId;
 
     // Do not allow accessing app-specific splash screens of other applications.
     if (!appId.isEmpty() || !screenId.isEmpty()) {
@@ -336,6 +339,13 @@ bool HbSplashGenServerSymbian::processGetSplash(const RMessage2 &message)
     if (hbsplash_blacklist().contains(message.SecureId().iId)) {
         qWarning() << PRE << "app is blacklisted";
         return false;
+    }
+
+    bool cachedEntryListValid = true;
+    if (mSplashScreenDir.isEmpty() || mSplashScreenDirEntries.isEmpty()) {
+        qWarning() << PRE << "getSplash: no contents received yet, using fallback";
+        mSplashScreenDir = hbsplash_output_dir();
+        cachedEntryListValid = false;
     }
 
     // First check for file existence without filesystem access by using the directory
@@ -381,7 +391,7 @@ bool HbSplashGenServerSymbian::processGetSplash(const RMessage2 &message)
         }
     }
 
-    qDebug() << PRE << "getSplash request completed";
+    splDeb() << PRE << "getSplash request completed";
     if (!cachedEntryListValid) {
         // Set the splash dir back to empty so future invocations can also
         // recognize that the generator has not notified us yet.
@@ -393,12 +403,12 @@ bool HbSplashGenServerSymbian::processGetSplash(const RMessage2 &message)
 HbSplashGenServerSession::HbSplashGenServerSession(HbSplashGenServerSymbian *server)
     : mServer(server)
 {
-    qDebug() << PRE << "new session";
+    splDeb() << PRE << "new session";
 }
 
 HbSplashGenServerSession::~HbSplashGenServerSession()
 {
-    qDebug() << PRE << "session destroyed";
+    splDeb() << PRE << "session destroyed";
 }
 
 void HbSplashGenServerSession::ServiceL(const RMessage2 &message)
@@ -420,7 +430,7 @@ void HbSplashGenServerSession::ServiceL(const RMessage2 &message)
           param 3 [out] CFbsBitmap handle
      */
 
-    qDebug() << PRE << "ServiceL" << message.Function() << QString::number(message.SecureId().iId, 16);
+    splDeb() << PRE << "ServiceL" << message.Function() << QString::number(message.SecureId().iId, 16);
     switch (message.Function()) {
     case HbSplashSrvGetSplashFile: // fallthrough
     case HbSplashSrvGetSplashData:

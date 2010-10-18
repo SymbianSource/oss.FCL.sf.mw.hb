@@ -61,6 +61,7 @@ CONFIG -= app_bundle
 DESTDIR = $${HB_BUILD_DIR}/bin
 
 # headers and sources from hbcore
+HEADERS += $${HB_SOURCE_DIR}/src/hbcore/core/hbhash_p.h
 HEADERS += $${HB_SOURCE_DIR}/src/hbcore/core/hbmemorymanager_p.h
 HEADERS += $${HB_SOURCE_DIR}/src/hbcore/core/hbsharedmemorymanager_p.h
 HEADERS += $${HB_SOURCE_DIR}/src/hbcore/core/hbvector_p.h
@@ -75,8 +76,11 @@ HEADERS += $${HB_SOURCE_DIR}/src/hbcore/core/hbmemoryutils_p.h
 HEADERS += $${HB_SOURCE_DIR}/src/hbcore/core/hbthemeperf_p.h
 HEADERS += $${HB_SOURCE_DIR}/src/hbcore/theme/hbthemecommon_p.h
 HEADERS += $${HB_SOURCE_DIR}/src/hbcore/cssparser/hbcssparser_p.h
+HEADERS += $${HB_SOURCE_DIR}/src/hbcore/cssparser/hbexpressionparser_p.h
+
 
 #memory manager source dependencies
+SOURCES += $${HB_SOURCE_DIR}/src/hbcore/core/hbhash_p.cpp
 SOURCES += $${HB_SOURCE_DIR}/src/hbcore/core/hbmemorymanager_p.cpp
 SOURCES += $${HB_SOURCE_DIR}/src/hbcore/core/hbsharedmemorymanager_p.cpp
 SOURCES += $${HB_SOURCE_DIR}/src/hbcore/core/hbsplaytreeallocator_p.cpp
@@ -90,6 +94,7 @@ SOURCES += $${HB_SOURCE_DIR}/src/hbcore/core/hbsharedcache.cpp
 
 # css parser source dependencies
 SOURCES += $${HB_SOURCE_DIR}/src/hbcore/cssparser/hbcssparser_p.cpp
+SOURCES += $${HB_SOURCE_DIR}/src/hbcore/cssparser/hbexpressionparser_p.cpp
 SOURCES += $${HB_SOURCE_DIR}/src/hbcore/cssparser/hblayeredstyleloader_p.cpp
 SOURCES += $${HB_SOURCE_DIR}/src/hbcore/cssparser/hbwidgetstyleloader_p.cpp
 SOURCES += $${HB_SOURCE_DIR}/src/hbcore/cssparser/hbstyleselector_p.cpp
@@ -102,6 +107,9 @@ SOURCES += $${HB_SOURCE_DIR}/src/hbcore/utils/hbxmlloaderbaseactions_p.cpp
 SOURCES += $${HB_SOURCE_DIR}/src/hbcore/utils/hbxmlloaderabstractsyntax_p.cpp
 SOURCES += $${HB_SOURCE_DIR}/src/hbcore/utils/hbxmlloaderbasesyntax_p.cpp
 SOURCES += $${HB_SOURCE_DIR}/src/hbcore/utils/hbxmlloaderabstractactions_p.cpp
+
+# layout parameters
+SOURCES += $${HB_SOURCE_DIR}/src/hbcore/core/hblayoutparameters.cpp
 
 DEFINES += HB_BOOTSTRAPPED
 DEFINES += HB_BIN_CSS

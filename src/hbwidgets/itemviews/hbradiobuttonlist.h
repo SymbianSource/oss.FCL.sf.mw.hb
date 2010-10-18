@@ -82,7 +82,6 @@ protected:
     HbRadioButtonList(HbRadioButtonListPrivate &dd, HbAbstractItemContainer *container, QGraphicsItem *parent);
 
     void emitActivated(const QModelIndex &modelIndex);
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     QItemSelectionModel::SelectionFlags selectionCommand(
         const HbAbstractViewItem *item, 
         const QEvent *event);

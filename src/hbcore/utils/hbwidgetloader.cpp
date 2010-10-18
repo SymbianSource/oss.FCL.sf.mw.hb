@@ -63,9 +63,18 @@ typedef QHash<QString,HbWidgetLoader::LayoutDefinition*> ClientHashForLayoutDefs
 Q_GLOBAL_STATIC(ClientHashForLayoutDefs, clientLayoutDefsCache)
 
 // List of files that doesn't exist.
-// This reduces the check QFile::exists() at client side as well as the server side.
-// also no unnecessary IPC calls.
-Q_GLOBAL_STATIC(QStringList, filesNotPresent)
+// This reduces the check QFile::exists() at client side.
+Q_GLOBAL_STATIC(QSet<uint>, filesNotPresent)
+
+// ValidLayoutsLookup is a map of filenames to a "LayoutExists" structure, 
+// which records whether a given section and layout exists in that file.
+// ValidLayoutsLookup is also used to check whether files have previously been
+// loaded by the client and known to exist, to reduce processing overhead
+typedef QPair<QString, QString> SectionAndLayout;
+typedef QHash<SectionAndLayout, bool> LayoutExists;
+typedef QHash<QString, LayoutExists> ValidLayoutsLookup;
+Q_GLOBAL_STATIC(ValidLayoutsLookup, clientLayoutLookup)
+
 
 // Layout caching
 static HbWidgetLoader::LayoutDefinition *staticCacheLayout = 0;
@@ -164,13 +173,34 @@ bool HbWidgetLoader::load(
     HbMemoryManager::MemoryType storage)
 {
     Q_D(HbWidgetLoader);
+
+    ValidLayoutsLookup *lookup = clientLayoutLookup();
+    if (lookup && lookup->contains(fileName)) {
+        SectionAndLayout key(section, name);
+        if ((*lookup)[fileName].contains(key)) {
+            bool layoutExistsInFile = (*lookup)[fileName][key];
+            if (!layoutExistsInFile) {
+#ifdef HB_WIDGETLOADER_DEBUG
+                qDebug() << "Layout name" << name << "known not to exist in" << fileName;
+#endif
+                return false;
+            }
+        }
+    } else {
+        if (filesNotPresent()->contains(qHash(fileName))){
+#ifdef HB_WIDGETLOADER_DEBUG
+            qDebug() << "File" << fileName << "known not to exist";
+#endif
+            return false;
+        }
+    }
+    
     bool result(true);
-
     d->setWidget(widget);
-
     LayoutDefinition* layoutDef(0);
 
-    if (storage == HbMemoryManager::SharedMemory) {
+    if (storage == HbMemoryManager::SharedMemory 
+        && !clientLayoutLookup()->contains(fileName)) {
         result = d->getSharedLayoutDefinition(fileName, name, section, layoutDef);
     }
     if (result) {
@@ -255,7 +285,7 @@ void HbWidgetLoaderPrivate::setWidget( HbWidget* widget )
 {
     mActions->reset();       
     mActions->mWidget = widget;
-    mActions->mCurrentProfile = HbDeviceProfile::profile(widget);
+    mActions->mMainWindow = widget->mainWindow();
 }
 #endif
 
@@ -276,26 +306,14 @@ bool HbWidgetLoaderPrivate::getSharedLayoutDefinition(
         return true;
     }
 
-    // Not found in the client cache.
-    if (filesNotPresent()->contains(fileName)){
-        return false;
-    } 
-    // Check for the availability of the file, as QFile::Exists takes more time this 
-    // method is used
-    QFile file(fileName);        
-    bool fileExists = file.open(QIODevice::ReadOnly);
-    file.close();
-    if (!fileExists) {
-        // file doesn't exist save the info in the filesNotPresent list.
-        filesNotPresent()->append(fileName);
-        return false;
-    }
-
     // get the shared layout definition address.
 #ifdef HB_USETHEMESERVER
-    layoutDef = HbThemeClient::global()->getSharedLayoutDefs(fileName, name, section);
+    bool fileExists = true;
+    layoutDef = HbThemeClient::global()->getSharedLayoutDefs(fileName, name, section, fileExists);
     if (layoutDef) {
         clientLayoutDefsCache()->insert(key, layoutDef);
+    } else if (!fileExists) {
+        filesNotPresent()->insert(qHash(fileName));
     }
 #endif
     return true;
@@ -313,35 +331,33 @@ bool HbWidgetLoaderPrivate::getCachedLayoutDefinition(
     QFileInfo info(fileName);
     
 #ifdef HB_WIDGETLOADER_DEBUG
-    qDebug() << "Cached layout currently contains" << HbWidgetLoaderActions::mCacheLayout.count() << "items";
+    //qDebug() << "Cached layout currently contains" << HbWidgetLoaderActions::mCacheLayout.count() << "items";
 #endif
     bool cacheHit = (name == staticCacheName
-		&& section == staticCacheSection
-		&& fileName == staticCacheFileName 
-		&& info.lastModified() == staticCacheModified);
-		
+        && section == staticCacheSection
+        && fileName == staticCacheFileName 
+        && info.lastModified() == staticCacheModified);
+        
     if (cacheHit){
 #ifdef HB_WIDGETLOADER_DEBUG
         qDebug() << "Cache hit.";
 #endif
         layoutDef = staticCacheLayout;
-    	return true;
+        return true;
     }
     
 #ifdef HB_WIDGETLOADER_DEBUG
-	qDebug() << "Cache miss, reloading cache data";
+    qDebug() << "Cache miss, reloading cache data";
 #endif
-		
-    // Not found in the client cache.
-    if (filesNotPresent()->contains(fileName)){
+    
+    QFile file(fileName);
+    if ( !file.open( QFile::ReadOnly | QFile::Text ) ) {
+#ifdef HB_WIDGETLOADER_DEBUG
+        qDebug() << "Unable to open file" << fileName;
+#endif
+        filesNotPresent()->insert(qHash(fileName));
         return false;
-    } 
-	QFile file(fileName);
-	if ( !file.open( QFile::ReadOnly | QFile::Text ) ) {
-	    qWarning( "Unable to open file ");
-        filesNotPresent()->append(fileName);
-	    return false;
-	}
+    }
 
     if (!staticCacheLayout) {
         staticCacheLayout = new HbWidgetLoader::LayoutDefinition(HbMemoryManager::HeapMemory);
@@ -354,11 +370,12 @@ bool HbWidgetLoaderPrivate::getCachedLayoutDefinition(
     bool result = mSyntax->load(&file, name, section);
     if (result){
         layoutDef = staticCacheLayout;
-    	staticCacheName = name;
+        staticCacheName = name;
         staticCacheSection = section;
         staticCacheFileName = fileName;
         staticCacheModified = info.lastModified();
     }
+    (*clientLayoutLookup())[fileName].insert(SectionAndLayout(section, name), result);
     
     return result;
 }

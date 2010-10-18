@@ -37,7 +37,9 @@ class HB_CORE_PRIVATE_EXPORT HbPixmapIconRenderer
 {
 public:
 
-    HbPixmapIconRenderer(const QPixmap &pixmap, HbIconImpl *impl);
+    HbPixmapIconRenderer(const QPixmap &pixmap,
+                         HbIconImpl *impl,
+                         bool propertiesApplied = false);
 
     ~HbPixmapIconRenderer();
 

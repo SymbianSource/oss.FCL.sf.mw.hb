@@ -1,0 +1,11 @@
+HbDatePickerViewLabel
+{
+	layout:default;
+	min-width: 1un;
+}
+HbDatePickerViewLabel::text{
+	text-align: center;
+	/*bottom: var(hb-param-margin-gene-popup);*/
+	font-variant: secondary;
+	min-width: 1un;
+}

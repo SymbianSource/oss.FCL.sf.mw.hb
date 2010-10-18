@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hbdocument version="0.8">
+    <widget name="infoView" type="HbView">
+        <widget name="infoContent" role="HbView:widget" type="HbWidget">
+            <widget name="orientationInfoLabel" type="HbLabel">
+                <sizehint height="4.02985un" type="PREFERRED" width="27.31343un"/>
+                <string name="plainText" value="Orientation"/>
+            </widget>
+            <widget name="orientationInfoValue" type="HbLabel">
+                <sizehint height="4.02985un" type="PREFERRED" width="22.68657un"/>
+                <string name="plainText" value="Unknown"/>
+            </widget>
+            <widget name="resolutionInfoLabel" type="HbLabel">
+                <sizehint height="4.02985un" type="PREFERRED" width="27.31343un"/>
+                <string name="plainText" value="Resolution"/>
+            </widget>
+            <widget name="resolutionInfoValue" type="HbLabel">
+                <sizehint height="4.02985un" type="PREFERRED" width="22.68657un"/>
+                <string name="plainText" value="Unknown"/>
+            </widget>
+            <widget name="directionInfoLabel" type="HbLabel">
+                <sizehint height="4.02985un" type="PREFERRED" width="27.31343un"/>
+                <string name="plainText" value="Direction"/>
+            </widget>
+            <widget name="directionInfoValue" type="HbLabel">
+                <sizehint height="4.02985un" type="PREFERRED" width="22.68657un"/>
+                <string name="plainText" value="Unknown"/>
+            </widget>
+            <layout type="anchor">
+                <anchoritem dst="orientationInfoLabel" dstEdge="LEFT" spacing="1.34328un" src="" srcEdge="LEFT"/>
+                <anchoritem dst="orientationInfoLabel" dstEdge="TOP" spacing="1.34328un" src="" srcEdge="TOP"/>
+                <anchoritem dst="orientationInfoValue" dstEdge="TOP" spacing="1.34328un" src="" srcEdge="TOP"/>
+                <anchoritem dst="orientationInfoValue" dstEdge="RIGHT" spacing="-1.49254un" src="" srcEdge="RIGHT"/>
+                <anchoritem dst="resolutionInfoLabel" dstEdge="LEFT" spacing="1.34328un" src="" srcEdge="LEFT"/>
+                <anchoritem dst="resolutionInfoLabel" dstEdge="TOP" spacing="6.26866un" src="" srcEdge="TOP"/>
+                <anchoritem dst="resolutionInfoValue" dstEdge="TOP" spacing="6.26866un" src="" srcEdge="TOP"/>
+                <anchoritem dst="resolutionInfoValue" dstEdge="RIGHT" spacing="-1.49254un" src="" srcEdge="RIGHT"/>
+                <anchoritem dst="directionInfoLabel" dstEdge="LEFT" spacing="1.34328un" src="" srcEdge="LEFT"/>
+                <anchoritem dst="directionInfoLabel" dstEdge="TOP" spacing="11.34328un" src="" srcEdge="TOP"/>
+                <anchoritem dst="directionInfoValue" dstEdge="TOP" spacing="11.34328un" src="" srcEdge="TOP"/>
+                <anchoritem dst="directionInfoValue" dstEdge="RIGHT" spacing="-1.49254un" src="" srcEdge="RIGHT"/>
+            </layout>
+        </widget>
+        <string name="title" value="View"/>
+    </widget>
+    <widget name="settingsView" type="HbView">
+        <widget name="scrollArea" role="HbView:widget" type="HbScrollArea">
+            <widget name="scrollAreaContents" role="HbScrollArea:contents" type="HbWidget">
+                <widget name="label_6" type="HbLabel">
+                    <sizehint height="4.02985un" type="PREFERRED" width="30.29851un"/>
+                    <bool name="visible" value="TRUE"/>
+                    <string name="plainText" value="Layout direction"/>
+                </widget>
+                <widget name="directionSettingCombo" type="HbComboBox">
+                    <container name="items" type="stringlist">
+                        <string value="Combobox"/>
+                    </container>
+                </widget>
+                <widget name="label_0" type="HbLabel">
+                    <sizehint height="3.9un" type="PREFERRED"/>
+                    <string name="plainText" value="Resolution"/>
+                </widget>
+                <widget name="resolutionSettingCombo" type="HbComboBox">
+                    <container name="items" type="stringlist">
+                        <string value="Combobox"/>
+                    </container>
+                </widget>
+                <widget name="label_1" type="HbLabel">
+                    <sizehint height="3.9un" type="PREFERRED"/>
+                    <string name="plainText" value="Iconitem visible"/>
+                </widget>
+                <widget name="iconitemSettingCombo" type="HbComboBox">
+                    <container name="items" type="stringlist">
+                        <string value="Combobox"/>
+                    </container>
+                </widget>
+                <widget name="label_2" type="HbLabel">
+                    <sizehint height="3.9un" type="PREFERRED"/>
+                    <string name="plainText" value="Textitem visible"/>
+                </widget>
+                <widget name="label_3" type="HbLabel">
+                    <sizehint height="3.9un" type="PREFERRED"/>
+                    <string name="plainText" value="Fps counter visible"/>
+                </widget>
+                <widget name="label_4" type="HbLabel">
+                    <sizehint height="3.9un" type="PREFERRED"/>
+                    <string name="plainText" value="Toucharea enabled"/>
+                </widget>
+                <widget name="label_5" type="HbLabel">
+                    <sizehint height="3.9un" type="PREFERRED"/>
+                    <string name="plainText" value="Orientation"/>
+                </widget>
+                <widget name="textitemSettingCombo" type="HbComboBox">
+                    <container name="items" type="stringlist">
+                        <string value="Combobox"/>
+                    </container>
+                </widget>
+                <widget name="fpscounterSettingCombo" type="HbComboBox">
+                    <container name="items" type="stringlist">
+                        <string value="Combobox"/>
+                    </container>
+                </widget>
+                <widget name="touchareaSettingCombo" type="HbComboBox">
+                    <container name="items" type="stringlist">
+                        <string value="Combobox"/>
+                    </container>
+                </widget>
+                <widget name="orientationSettingCombo" type="HbComboBox">
+                    <container name="items" type="stringlist">
+                        <string value="Combobox"/>
+                    </container>
+                </widget>
+                <widget name="label_7" type="HbLabel">
+                    <sizehint height="3.9un" type="PREFERRED"/>
+                    <string name="plainText" value="Localization measurements"/>
+                </widget>
+                <widget name="localizationSettingCombo" type="HbComboBox">
+                    <container name="items" type="stringlist">
+                        <string value="Combobox"/>
+                    </container>
+                </widget>
+                <widget name="label_8" type="HbLabel">
+                    <sizehint height="3.9un" type="PREFERRED"/>
+                    <string name="plainText" value="TestUtility"/>
+                </widget>
+                <widget name="testUtilitySettingCombo" type="HbComboBox">
+                    <container name="items" type="stringlist">
+                        <string value="Combobox"/>
+                    </container>
+                </widget>
+                <real name="z" value="0"/>
+                <sizehint type="PREFERRED" width="54.02985un"/>
+                <layout orientation="Vertical" type="linear">
+                    <linearitem itemname="label_6"/>
+                    <linearitem itemname="directionSettingCombo"/>
+                    <linearitem itemname="label_0"/>
+                    <linearitem itemname="resolutionSettingCombo"/>
+                    <linearitem itemname="label_1"/>
+                    <linearitem itemname="iconitemSettingCombo"/>
+                    <linearitem itemname="label_2"/>
+                    <linearitem itemname="textitemSettingCombo"/>
+                    <linearitem itemname="label_3"/>
+                    <linearitem itemname="fpscounterSettingCombo"/>
+                    <linearitem itemname="label_4"/>
+                    <linearitem itemname="touchareaSettingCombo"/>
+                    <linearitem itemname="label_5"/>
+                    <linearitem itemname="orientationSettingCombo"/>
+                    <linearitem itemname="label_7"/>
+                    <linearitem itemname="localizationSettingCombo"/>
+                    <linearitem itemname="label_8"/>
+                    <linearitem itemname="testUtilitySettingCombo"/>
+                </layout>
+            </widget>
+            <real name="z" value="1"/>
+        </widget>
+        <string name="title" value=""/>
+    </widget>
+    <metadata activeUIState="Common ui state" display="QHD portrait" unit="un">
+        <uistate name="Common ui state" sections="#common"/>
+    </metadata>
+</hbdocument>

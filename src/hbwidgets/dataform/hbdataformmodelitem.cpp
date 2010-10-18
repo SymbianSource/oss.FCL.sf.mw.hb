@@ -755,6 +755,7 @@ QString HbDataFormModelItem::icon() const
 void HbDataFormModelItem::setEnabled(bool enabled)
 {
     Q_D(HbDataFormModelItem);
+    d->mDirtyProperty = "enabled";
 
     if (enabled != (bool)(d->mFlags & Qt::ItemIsEnabled)) {
         if (enabled) {

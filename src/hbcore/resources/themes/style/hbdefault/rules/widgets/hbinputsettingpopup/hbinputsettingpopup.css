@@ -1,0 +1,7 @@
+HbInputSettingPopup
+{
+    min-width:expr(var(hb-param-screen-width)-1un);
+    min-height:expr(var(hb-param-screen-height)-1un);
+    max-width:expr(var(hb-param-screen-width)-1un);
+    max-height:expr(var(hb-param-screen-height)-1un);
+}

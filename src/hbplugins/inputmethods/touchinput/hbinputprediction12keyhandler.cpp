@@ -44,9 +44,6 @@
 #include "hbinputabstractbase.h"
 #include "hbinputprediction12keyhandler_p.h"
 
-static const qreal HbDeltaHeight = 3.0;
-static const qint16 MAXUDBWORDSIZE = 64;
-
 HbInputPrediction12KeyHandlerPrivate::HbInputPrediction12KeyHandlerPrivate()
 :mLastKey(0),
 mButtonDown(false),
@@ -65,7 +62,10 @@ void HbInputPrediction12KeyHandlerPrivate::chopQMarkAndUpdateEditor()
     if(!mCanContinuePrediction && (*mCandidates)[mBestGuessLocation].endsWith('?')) {
         (*mCandidates)[mBestGuessLocation].chop(1);
         updateEditor();
+        if (!mCanContinuePrediction) {
+            mShowTail = false;
         mCanContinuePrediction = true;
+        }
     }
 }
 
@@ -83,13 +83,13 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonPressed(const QKeyEvent *keyEve
 
     if (keyEvent->isAutoRepeat() && mLastKey == buttonId) {
         // mode switch should happen only when Qt::Key_Asterisk key is pressed in non-SCT
-        // keypad.			
+        // keypad.          
         if (buttonId == HbInputButton::ButtonKeyCodeAsterisk &&
             !mInputMethod->isSctModeActive()) {
             //Remove the "?" mark if present
             if (!mCanContinuePrediction) {
                 chopQMarkAndUpdateEditor();
-            }	
+            }   
             mInputMethod->switchMode(buttonId);
             mLongPressHappened = true;
         } else if (buttonId == HbInputButton::ButtonKeyCodeShift) {
@@ -112,7 +112,7 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonPressed(const QKeyEvent *keyEve
                 mLongPressHappened = true;
             }
             // commit the first mapped number character when long key press
-            // of character key received in alphanumeric mode						
+            // of character key received in alphanumeric mode                       
             if (buttonId != HbInputButton::ButtonKeyCodeDelete &&
                 !mInputMethod->isSctModeActive()) {
                 q->commitFirstMappedNumber(buttonId, mInputMethod->currentKeyboardType());
@@ -156,13 +156,13 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
     mButtonDown = false;
     int buttonId = keyEvent->key(); 
 
-	// short key press of character keys should not be handled when "?" is displayed
+    // short key press of character keys should not be handled when "?" is displayed
     if (!mCanContinuePrediction && !mLongPressHappened &&
-		buttonId >= Qt::Key_1 && buttonId <= Qt::Key_9) {
+        buttonId >= Qt::Key_1 && buttonId <= Qt::Key_9) {
         return false;
-    }	
+    }   
     // Sym key is handled in this class it self, so not passing it to 
-    // the base mode handlers.	
+    // the base mode handlers.  
     if (buttonId == HbInputButton::ButtonKeyCodeSymbol ||
         buttonId == HbInputButton::ButtonKeyCodeAlphabet) {
         //Remove the "?" mark if present
@@ -176,11 +176,11 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
     - Behavior of Short Press of Asterisk Key when not in inline editing state 
         - Should launch SCT
     - Behaviour of Short Press of Asterisk Key in SCT keypad
-        - Should input the * character and should not change the keypad mode			
+        - Should input the * character and should not change the keypad mode            
     */
     else if (buttonId == HbInputButton::ButtonKeyCodeAsterisk &&
         !mInputMethod->isSctModeActive()) {
-        if(!mCanContinuePrediction && (*mCandidates)[mBestGuessLocation].endsWith('?')) {			
+        if(!mCanContinuePrediction && (*mCandidates)[mBestGuessLocation].endsWith('?')) {           
             //Remove the "?" mark
             (*mCandidates)[mBestGuessLocation].chop(1);
             updateEditor();
@@ -190,13 +190,10 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
         }
         return true;
     }
-    else if (buttonId == HbInputButton::ButtonKeyCodeEnter) {
-        mInputMethod->closeKeypad();
-        return true;
-    }
+
     if (buttonId == HbInputButton::ButtonKeyCodeShift) {
         // single tap of shift key toggles prediction status in case insensitive languages
-        if (!HbInputSettingProxy::instance()->globalInputLanguage().isCaseSensitiveLanguage()) {
+        if (!mInputMethod->inputState().language().isCaseSensitiveLanguage()) {
             HbInputSettingProxy::instance()->togglePrediction();
         } else {
             if (mShiftKeyDoubleTap) {
@@ -204,7 +201,7 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
                 mShiftKeyDoubleTap = false;
                 //mShowTail = false;
                 if (HbInputSettingProxy::instance()->globalInputLanguage()== mInputMethod->inputState().language()) {
-                    // in latin variants , double tap of shift key toggles the prediction status	
+                    // in latin variants , double tap of shift key toggles the prediction status    
                     // revert back to the old case as this is a double tap 
                     // (the case was changed on the single tap)
                     updateTextCase();
@@ -227,11 +224,12 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
         }
         return true;
     }
-	// ButtonKeyCodeSettings should not be propagated to the engine
+    // ButtonKeyCodeSettings should not be propagated to the engine
     if(buttonId == HbInputButton::ButtonKeyCodeSettings) {
         return true;
     }
     if (buttonId != HbInputButton::ButtonKeyCodeDelete &&
+        buttonId != HbInputButton::ButtonKeyCodeEnter &&
         mInputMethod->currentKeyboardType() == HbKeyboardSctPortrait) {
         q->sctCharacterSelected(QChar(buttonId));
         return true;
@@ -240,7 +238,7 @@ bool HbInputPrediction12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEv
     // text input happens on button release
     if (q->HbInputPredictionHandler::filterEvent(keyEvent)) {
         return true;
-    }	
+    }   
     return false;
 }
 
@@ -287,6 +285,7 @@ bool HbInputPrediction12KeyHandler::filterEvent(const QKeyEvent * event)
         int eventKey = event->key();
         switch(eventKey) {
         case Qt::Key_0:
+        case HbInputButton::ButtonKeyCodeSettings:
         case HbInputButton::ButtonKeyCodeSpace: {
             if(d->mCandidates->size() && focusObject) {
                 //Remove the "?" mark

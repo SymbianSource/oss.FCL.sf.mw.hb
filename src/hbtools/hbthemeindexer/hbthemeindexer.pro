@@ -37,12 +37,17 @@ QT = core gui svg
 CONFIG += console
 CONFIG -= app_bundle
 
+static:QTPLUGIN += qsvg
+
 # directories
 DESTDIR = $${HB_BUILD_DIR}/bin
 
 # dependencies
 HEADERS += $${HB_SOURCE_DIR}/src/hbcore/core/hbthemeindex_p.h
 SOURCES += $${HB_SOURCE_DIR}/src/hbcore/core/hbthemeindex.cpp
+
+HEADERS += $${HB_SOURCE_DIR}/src/hbcore/core/hbhash_p.h
+SOURCES += $${HB_SOURCE_DIR}/src/hbcore/core/hbhash_p.cpp
 
 HEADERS += $${HB_SOURCE_DIR}/src/hbcore/image/hbiconsource_p.h
 SOURCES += $${HB_SOURCE_DIR}/src/hbcore/image/hbiconsource.cpp

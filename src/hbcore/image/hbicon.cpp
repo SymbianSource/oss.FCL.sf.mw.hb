@@ -146,6 +146,14 @@
          HbIcon instance (before the first paint of the icon) to have any performance
          benefits.
 
+  \b KeepDefaultQIconSize \b (0x20) This flag disables all scaling for icons constructed
+         from QIcon. It has no effect on regular, native HbIcons. It only affects the
+         painting: The size of the HbIcon will remain whatever was set via setSize(), but
+         only a part of that area will be painted. This is similar to
+         HbIconItem::setIconScaling(false) but in that case the underlying icon's size
+         would also be changed to match the default size, while here size() remains
+         unaffected.
+
 */
 
 /*!
@@ -183,7 +191,10 @@ This constructor is used for shared_null instance only
 HbIconPrivate::HbIconPrivate() :
     engine(new HbIconEngine(QString())),
     qicon(engine),
-    badgeInfo(0)
+    badgeInfo(0),
+    mQIconFlags(0),
+    mQIconPixmapMode(QIcon::Normal),
+    mQIconPixmapState(QIcon::Off)
 {
     ref.ref(); // Need to do extra ref so the shared null does not get destructed
 }
@@ -194,7 +205,10 @@ HbIconPrivate::HbIconPrivate() :
 HbIconPrivate::HbIconPrivate(const QIcon &qicon) :
     engine(0),
     qicon(qicon),
-    badgeInfo(0)
+    badgeInfo(0),
+    mQIconFlags(0),
+    mQIconPixmapMode(QIcon::Normal),
+    mQIconPixmapState(QIcon::Off)
 {
 }
 
@@ -204,7 +218,10 @@ HbIconPrivate::HbIconPrivate(const QIcon &qicon) :
 HbIconPrivate::HbIconPrivate(const QString &iconName) :
     engine(new HbIconEngine(iconName)),
     qicon(engine),
-    badgeInfo(0)
+    badgeInfo(0),
+    mQIconFlags(0),
+    mQIconPixmapMode(QIcon::Normal),
+    mQIconPixmapState(QIcon::Off)
 {
 }
 
@@ -216,7 +233,11 @@ HbIconPrivate::HbIconPrivate(const HbIconPrivate &other) :
     size(other.size),
     engine(0),
     qicon(),
-    badgeInfo(0)
+    badgeInfo(0),
+    mQIconFlags(other.mQIconFlags),
+    mQIconPixmap(other.mQIconPixmap),
+    mQIconPixmapMode(other.mQIconPixmapMode),
+    mQIconPixmapState(other.mQIconPixmapState)
 {
     if (other.engine) {
         engine = new HbIconEngine(*other.engine);
@@ -311,7 +332,7 @@ QColor HbIconPrivate::themedColor() const
 QDataStream &operator>>(QDataStream &stream, HbIconPrivate &icon)
 {
     stream >> icon.size;
-    int enginePtr = 0;
+    qptrdiff enginePtr = 0;
     stream >> enginePtr;
     if (enginePtr) {
         icon.engine = new HbIconEngine(stream);
@@ -378,6 +399,27 @@ bool HbIconPrivate::removeBadge(const HbIcon &badge)
     return result;
 }
 
+/*!
+  \internal
+*/
+void HbIconPrivate::setAsync(bool async, HbIconEngine::AsyncCallback callback, void *param)
+{
+    if (engine) {
+        engine->setAsync(async, callback, param);
+    }
+}
+
+/*!
+  \internal
+*/
+bool HbIconPrivate::async() const
+{
+    if (engine) {
+        return engine->async();
+    }
+    return false;
+}
+
 /*! Default constructor. If this constructor is used, the icon name needs to be set
 * by calling HbIcon::setIconName.
 */
@@ -392,27 +434,31 @@ HbIcon::HbIcon()
 
 /*! Constructs a new icon with the icon name \a iconName.
 */
-HbIcon::HbIcon(const QString &iconName)
+HbIcon::HbIcon(const QString &iconName) : d( new HbIconPrivate(iconName) )
 {
-    d = new HbIconPrivate(iconName);
 }
 
-/*! Constructs a new icon to be a copy of the given QIcon.
-* Due to the limitations listed below, this constructor should be used only for
-* compatibility reasons if a QIcon instance needs to be passed as a parameter
-* to a method taking a HbIcon parameter.
-* \note If this constructor is used, there are the following limitations in the HbIcon methods.
-* - HbIcon::defaultSize() may return QSizeF().
-* - HbIcon::paint() ignores the parameter aspectRatioMode and converts the given QRectF to QRect.
-* - HbIcon::iconName() returns empty string by default.
-* - HbIcon::pixmap() returns null pixmap.
-* - Colorization and mirroring support are not available.
-* This method should only be used if absolute necessary, as this is not ideal for hardware accelerated environment
-* and there may be huge differences in painting performance when compared to a native HbIcon.
-*/
-HbIcon::HbIcon(const QIcon &icon)
+/*!
+ * Constructs a new icon to be a copy of the given QIcon.  Due to the
+ * limitations listed below, this constructor should be used only for
+ * compatibility reasons if a QIcon instance needs to be passed as a parameter
+ * to a method taking a HbIcon parameter.
+ *
+ * \note If this constructor is used, the following limitations apply:
+ *
+ * - HbIcon::defaultSize() may return QSizeF().
+ * - HbIcon::paint() ignores the parameter aspectRatioMode and converts the given QRectF to QRect.
+ * - HbIcon::iconName() returns empty string by default.
+ * - HbIcon::pixmap() returns null pixmap.
+ * - Colorization and mirroring support are not available.
+ *
+ * This method should only be used if absolute necessary, as this is not ideal
+ * for hardware accelerated environment and there may be huge differences in
+ * painting performance when compared to a native HbIcon.  Some advanced resource
+ * management features are not available for such icons either.
+ */
+HbIcon::HbIcon(const QIcon &icon) : d( new HbIconPrivate(icon) )
 {
-    d = new HbIconPrivate(icon);
 }
 
 /*!
@@ -518,9 +564,6 @@ QPixmap HbIcon::pixmap()
 * However it is possible to override this theme-specific color with a custom one
 * by calling this function.
 *
-* \warning Currently this method makes use of pixmap() routine in case of NVG icons.
-* pixmap() slows down the hardware accelerated rendering.
-*
 * \sa HbIcon::color(), HbIcon::Colorized
 */
 void HbIcon::setColor(const QColor &color)
@@ -569,9 +612,10 @@ QString HbIcon::iconName() const
 void HbIcon::setIconName(const QString &iconName)
 {
     if (d->engine && d->engine->iconName() != iconName) {
+        // Icon was normal HbIcon and the name is changed.
         d.detach();
         d->engine->setIconName(iconName);
-    } else {
+    } else if (!d->engine) {
         // Icon was earlier copy constructed from QIcon, but now its name is set,
         // so it becomes a 'real' HbIcon.
         d.detach();
@@ -581,7 +625,9 @@ void HbIcon::setIconName(const QString &iconName)
         // QIcon's assignment operator shares the engine.
         QIcon temp(d->engine);
         d->qicon = temp;
+        d->mQIconPixmap = QPixmap();
     }
+    // Otherwise icon was normal HbIcon and the name is same as before, so do nothing.
 }
 
 /*!
@@ -637,24 +683,50 @@ void HbIcon::paint(QPainter *painter,
         } else {
             // This HbIcon was copy constructed from QIcon and
             // we cannot use HbIconEngine for painting.
+
+            // Find out the size: It can be the size set via setSize(), or, in case of
+            // KeepDefaultQIconSize, the first available size, or, if none are set, the
+            // target area's size.
             QSizeF size = this->size();
-            if (!size.isValid()) {
-                // If size is not set, have to use rect size because QIcon
-                // does not provide defaultSize information.
-                size = rect.size();
+            if (flags().testFlag(KeepDefaultQIconSize)) {
+                QList<QSize> sizes = d->qicon.availableSizes();
+                if (!sizes.isEmpty()) {
+                    size = sizes.at(0);
+                }
+            } else {
+                if (!size.isValid()) {
+                    size = rect.size();
+                }
             }
 
-            QPixmap pixmap = d->qicon.pixmap(size.toSize(), mode, state);
+            // Get the pixmap with the needed size.
+            QPixmap pixmap;
+            QSize intSize = size.toSize();
+            bool usingCached = false;
+            if (d->mQIconPixmap.size() == intSize
+                && mode == d->mQIconPixmapMode
+                && state == d->mQIconPixmapState)
+            {
+                pixmap = d->mQIconPixmap;
+                usingCached = true;
+            } else {
+                pixmap = d->qicon.pixmap(intSize, mode, state);
+                d->mQIconPixmap = pixmap;
+                d->mQIconPixmapMode = mode;
+                d->mQIconPixmapState = state;
+            }
             QSizeF pixmapSize = pixmap.size();
 
-            // QIcon::pixmap() will not do upscaling.
-            if (pixmapSize.width() < size.width() || pixmapSize.height() < size.height()) {
+            // QIcon::pixmap() will not do upscaling, do it here if needed.
+            if (!pixmap.isNull() && !usingCached && !flags().testFlag(KeepDefaultQIconSize)
+                && (pixmapSize.width() < size.width() || pixmapSize.height() < size.height()))
+            {
                 // Native HbIcons are scaled using SmoothTransformation so use the same.
                 pixmap = pixmap.scaled(size.toSize(), aspectRatioMode, Qt::SmoothTransformation);
                 pixmapSize = pixmap.size();
             }
 
-            // Adjust the alignment
+            // Adjust the alignment.
             QPointF topLeft = rect.topLeft();
 
             if (alignment & Qt::AlignRight) {
@@ -669,9 +741,10 @@ void HbIcon::paint(QPainter *painter,
                 topLeft.setY(topLeft.y() + (rect.height() - pixmapSize.height()) / 2);
             }
 
+            // Draw.
             painter->drawPixmap(topLeft, pixmap, pixmap.rect());
 
-            // Draw the badges on this icon
+            // Draw the badges on this icon.
             if (d->badgeInfo) {
                 d->badgeInfo->paint(painter, rect, mode, state, false);
             }
@@ -684,7 +757,7 @@ void HbIcon::paint(QPainter *painter,
 */
 QSizeF HbIcon::size() const
 {
-    if ((static_cast<int>(flags()) & HbIcon::ResolutionCorrected)) {
+    if (flags().testFlag(HbIcon::ResolutionCorrected)) {
         if (d->engine) {
             d->size = d->engine->size();
         }
@@ -794,7 +867,7 @@ HbIcon::Flags HbIcon::flags() const
     if (d->engine) {
         return d->engine->flags();
     } else {
-        return (HbIcon::Flags)0;
+        return d->mQIconFlags;
     }
 }
 
@@ -807,6 +880,9 @@ void HbIcon::setFlags(HbIcon::Flags flags)
             d.detach();
             d->engine->setFlags(flags);
         }
+    } else if (flags != d->mQIconFlags) {
+        d.detach();
+        d->mQIconFlags = flags;
     }
 }
 
@@ -912,7 +988,7 @@ bool HbIcon::operator!=(const HbIcon &other) const
  * Adds a badge icon to the existing icon. The badge icons
  * are drawn relative to the alignment you specify with the
  * z-order you provide.
- * 
+ *
  * By default the badge icon will use its default size.  If this is
  * not suitable (which is typical in case of vector graphics) then
  * call setSize() explicitly on \a badge before passing it to this
@@ -1002,14 +1078,14 @@ QDataStream &operator>>(QDataStream &stream, HbIcon &icon)
     Clears the icon data (e.g. QPixmaps that are stored internally) but does not
     touch the settings, e.g. the size, state, flags, unlike clear().
 
-    The call is simply forwarded to the underlying HbIconEngine. This function
-    has no effect when the icon was constructed from a QIcon.
-
     \internal
 */
 void HbIconPrivate::clearStoredIconContent()
 {
+    // No need to detach here, usually the more icon's data we drop, the better. There are
+    // no visual results anyway, icon data is reloaded next time the icon is painted.
     if (engine) {
         engine->clearStoredIconContent();
     }
+    mQIconPixmap = QPixmap();
 }

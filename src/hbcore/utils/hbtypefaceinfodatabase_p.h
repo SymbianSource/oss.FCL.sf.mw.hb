@@ -36,8 +36,8 @@ struct HbTypefaceInfoItem {
     HbFontSpec::Role mRoleEnum;
     HbString mFamily;
     bool mIsBold;
-	bool mIsAlias;
-	HbString mAliasedFamily;
+    bool mIsAlias;
+    HbString mAliasedFamily;
 
     struct HbTypefaceMeasureInfoStruct
     {
@@ -79,7 +79,7 @@ public:
     static HbTypefaceInfoDatabase *instance(HbMemoryManager::MemoryType type =
                                              HbMemoryManager::HeapMemory);
 
-    int typefaceInfoVectorOffset();
+    qptrdiff  typefaceInfoVectorOffset();
 
 private:
     HbTypefaceInfoDatabase(HbMemoryManager::MemoryType type =
@@ -92,7 +92,7 @@ private:
 
 private:
     HbTypefaceInfoVector *mTypefaceInfoVector;
-    int mTypefaceInfoVectorOffset;
+    qptrdiff  mTypefaceInfoVectorOffset;
     HbMemoryManager::MemoryType mType;
 };
 

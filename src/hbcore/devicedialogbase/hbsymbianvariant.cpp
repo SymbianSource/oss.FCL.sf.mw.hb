@@ -25,7 +25,9 @@
 
 #include "hbsymbianvariant.h"
 
-class CHbSymbianVariantPrivate : public CBase
+_LIT(KPanicSymbianVariantNotSupportedType, "CHbSymbianVariant: Not supported type");
+
+NONSHARABLE_CLASS(CHbSymbianVariantPrivate) : public CBase
 {
 public:
     CHbSymbianVariantPrivate();
@@ -120,10 +122,12 @@ void CHbSymbianVariantPrivate::InitializeDataL(const TAny* aData, CHbSymbianVari
         case CHbSymbianVariant::EDesArray: {
             const MDesCArray* arrayPtr = reinterpret_cast<const MDesCArray*>(aData);
             TInt count = arrayPtr->MdcaCount();
-            CDesC16ArrayFlat* array = new CDesC16ArrayFlat(16);
-            for(TInt i = 0; i < count; i++) {
+            CDesC16ArrayFlat* array = new (ELeave) CDesC16ArrayFlat(16);
+            CleanupStack::PushL(array);
+            for(TInt i = 0; i < count; ++i) {
                 array->AppendL(arrayPtr->MdcaPoint(i));
             }
+            CleanupStack::Pop(array);
             iData.iBasicData.ptr = array;
             break;
         }
@@ -134,7 +138,7 @@ void CHbSymbianVariantPrivate::InitializeDataL(const TAny* aData, CHbSymbianVari
             CleanupStack::PushL(copy);
             MDesCArray& keys = mapPtr->Keys();
             TInt count = keys.MdcaCount();
-            for(TInt i = 0; i < count ; i++) {
+            for(TInt i = 0; i < count ; ++i) {
                 TPtrC ptr = keys.MdcaPoint(i);
                 const CHbSymbianVariant* var = mapPtr->Get(ptr);
                 copy->Add(ptr, CHbSymbianVariant::NewL(var->Data(), var->Type()));
@@ -144,7 +148,7 @@ void CHbSymbianVariantPrivate::InitializeDataL(const TAny* aData, CHbSymbianVari
             break;
         }
         default: {
-            User::Panic(_L("CHbSymbianVariant: Not supported type"),aDataType);
+            User::Panic(KPanicSymbianVariantNotSupportedType, aDataType);
             break;
         }
     }
@@ -243,94 +247,107 @@ void* CHbSymbianVariantPrivate::Data() {
 };
 
 /*!
- \class CHbSymbianVariant
- \brief CHbSymbianVariant implements QVariant for Symbian.
+    \class CHbSymbianVariant
+    \brief CHbSymbianVariant is a QVariant like union for Symbian data types.
 
- It supports part of the data types supported in QVariant:
- QString (TDesC)
- QChar (TChar)
- QPoint(TPoint)
- QRect(TRect)
- QSize(TSize)
- QByteArray(TDesC8)
- QStringList (MDesCArray)
+    <b>This class is Symbian only. Not available on other platforms.</b>
 
- The data passed to the constructor is copied to the CHbSymbianVariant.
+    CHbSymbianVariant holds a single value of a single type at a time. CHbSymbianVariant::TType
+    specifies supported data types.
 
- \sa CHbSymbianVariantMap, CHbDeviceDialog
- \stable
+    The class is used to pass parameters to device dialog and indicator plugins. Device dialog
+    and indicator frameworks perform conversion between Qt and Symbian data types. Below list
+    contains a partial list of Symbian data types and corresponding Qt types supported by
+    the class.
 
- \hbcore
+     <table>
+         <caption> Symbian/Qt data type analogy</caption>
+         <tr><th>Symbian type</th><th>Qt type</th></tr>
+         <tr><td>TDesC</td><td>QString</td></tr>
+         <tr><td>TChar</td><td>QChar</td></tr>
+         <tr><td>TPoint</td><td>QPoint</td></tr>
+         <tr><td>TRect</td><td>QRect</td></tr>
+         <tr><td>TSize</td><td>QSize</td></tr>
+         <tr><td>TDesC8</td><td>QByteArray</td></tr>
+         <tr><td>MDesCArray</td><td>QStringList</td></tr>
+         <tr><td>CHbSymbianVariantMap</td><td>QVariantMap</td></tr>
+     </table>
 
+    \sa CHbSymbianVariantMap, CHbDeviceDialogSymbian, CHbIndicatorSymbian
+ 
+    \stable
+    \hbcore
  */
 
 /*!
    \enum CHbSymbianVariant::TType
-   Data types the CHbSymbianVariant can contain
+   Data types CHbSymbianVariant supports.
 */
 /*!
-   \var CHbSymbianVariant::EInt
-   a TInt
+   \var CHbSymbianVariant::TType CHbSymbianVariant::EInt
+   Data type TInt.
 */
 /*!
-    \var CHbSymbianVariant::EBool
-    a TBool
+    \var CHbSymbianVariant::TType CHbSymbianVariant::EBool
+    Data type TBool.
 */
 /*!
-    \var CHbSymbianVariant::EUint
-    a TUint
+    \var CHbSymbianVariant::TType CHbSymbianVariant::EUint
+    Data type TUint.
 */
 /*!
-    \var CHbSymbianVariant::EReal
-    a TReal
+    \var CHbSymbianVariant::TType CHbSymbianVariant::EReal
+    Data type TReal.
 */
 /*!
-    \var CHbSymbianVariant::ERect
-    a TRect
+    \var CHbSymbianVariant::TType CHbSymbianVariant::ERect
+    Data type TRect.
 */
 /*!
-    \var CHbSymbianVariant::EPoint
-    a TPoint
+    \var CHbSymbianVariant::TType CHbSymbianVariant::EPoint
+    Data type TPoint.
 */
 /*!
-    \var CHbSymbianVariant::ESize
-    a TSize
+    \var CHbSymbianVariant::TType CHbSymbianVariant::ESize
+    Data type TSize.
 */
 /*!
-    \var CHbSymbianVariant::EChar
-    a TChar
+    \var CHbSymbianVariant::TType CHbSymbianVariant::EChar
+    Data type TChar.
 */
 /*!
-    \var CHbSymbianVariant::EDes
-    a TDesC
+    \var CHbSymbianVariant::TType CHbSymbianVariant::EDes
+    Data type TDesC.
 */
 /*!
-    \var CHbSymbianVariant::EBinary
-    a TDesC8
+    \var CHbSymbianVariant::TType CHbSymbianVariant::EBinary
+    Data type TDesC8.
 */
 /*!
-    \var CHbSymbianVariant::EDesArray
-    a MDesCArray
+    \var CHbSymbianVariant::TType CHbSymbianVariant::EDesArray
+    Data type MDesCArray.
 */
 /*!
-    \var CHbSymbianVariant::EVariantMap
-    a symbian variant map
+    \var CHbSymbianVariant::TType CHbSymbianVariant::EVariantMap
+    Data type CHbSymbianVariantMap.
 */
 
  /*!
-    \fn T * CHbSymbianVariant::Value()
+    \fn T* CHbSymbianVariant::Value() const
 
-    Template class to get variants value casted to the correct pointer type. See the
-    CHbSymbianVariant::TType for the supported classes.
+    Template fuction to get variant's value casted to a correct pointer type. See
+    TType for the supported types.
 
-    \sa CHbSymbianVariant::TType
+    \sa TType
 */
 
 /*!
-    Creates a new CHbSymbianVariant. Note that if CHbSymbianVariant::EDesArray
-    is used the \aData must be casted to MDesCArray pointer when passed to the method.
-*/
+    Creates a new CHbSymbianVariant and returns a pointer to it. Data passed to
+    the constructor is copied to the CHbSymbianVariant.
 
+    \param aData Data to copy into the variant. Note: If EDesArray is used, data pointer must be casted to MDesCArray.
+    \param aDataType Type of data. 
+*/
 EXPORT_C CHbSymbianVariant* CHbSymbianVariant::NewL(const TAny* aData, TType aDataType)
 {
     CHbSymbianVariant* variant = new (ELeave) CHbSymbianVariant(aData, aDataType);
@@ -340,11 +357,10 @@ EXPORT_C CHbSymbianVariant* CHbSymbianVariant::NewL(const TAny* aData, TType aDa
     return variant;
 }
 
-
 /*!
-    Returns the data type stored in CHbSymbianVariant
+    Returns type of data stored in CHbSymbianVariant.
 
-    \sa CHbSymbianVariant::TType
+    \sa TType
 */
 EXPORT_C CHbSymbianVariant::TType CHbSymbianVariant::Type() const
 {
@@ -352,10 +368,8 @@ EXPORT_C CHbSymbianVariant::TType CHbSymbianVariant::Type() const
 }
 
 /*!
-    Get TAny pointer to the CHbSymbianVariant data.
-    The CHbSymbianVariant::Value() should be used instead of this method.
-
-    Ownership is not changed.
+    Returns pointer to data stored by CHbSymbianVariant. Ownership does not changed.
+    Value() should be used instead of this method.
 */
 EXPORT_C TAny* CHbSymbianVariant::Data() const
 {
@@ -363,9 +377,11 @@ EXPORT_C TAny* CHbSymbianVariant::Data() const
 }
 
 /*!
-    Set new data to CHbSymbianVariant. Old data is deleted.
+    Copies new data to CHbSymbianVariant. Old data is deleted.
+    Ownership does not changed.
 
-    Ownership is not changed.
+    \param aData Data to copy into the variant. Note: If EDesArray is used, data pointer must be casted to MDesCArray.
+    \param aDataType Type of data. 
 */
 EXPORT_C void CHbSymbianVariant::SetData(TAny* aData, TType aDataType)
 {
@@ -375,8 +391,7 @@ EXPORT_C void CHbSymbianVariant::SetData(TAny* aData, TType aDataType)
     }
 }
 /*!
-    Is the the data in CHbSymbianVariant valid. data is valid if the variant
-    is created with valid data and data type
+    Returns true if CHbSymbianVariant holds valid data.
 */
 EXPORT_C TBool CHbSymbianVariant::IsValid() const
 {
@@ -386,6 +401,9 @@ EXPORT_C TBool CHbSymbianVariant::IsValid() const
         return EFalse;
 }
 
+/*!
+    Destructs CHbSymbianVariant.
+*/
 EXPORT_C CHbSymbianVariant::~CHbSymbianVariant()
 {
     delete d;
@@ -402,7 +420,7 @@ void CHbSymbianVariant::ConstructL(const TAny* aData, TType aDataType)
     d->InitializeDataL(aData, aDataType);
 }
 
-class CHbSymbianVariantMapPrivate : public CBase
+NONSHARABLE_CLASS(CHbSymbianVariantMapPrivate) : public CBase
 {
 public:
     CHbSymbianVariantMapPrivate():iKeyArray(NULL),iVariantArray() {
@@ -421,18 +439,20 @@ public:
 };
 
 /*!
-  \class CHbSymbianVariantMap
-  \brief CHbSymbianVariantMap is a container for CHbSymbianVariant objects.
+    \class CHbSymbianVariantMap
+    \brief CHbSymbianVariantMap is QVariantMap style container for CHbSymbianVariant objects.
 
-  It replicates QVariantMap functionality to Symbian native programming side.
+    <b>This class is Symbian only. Not available on other platforms.</b>
 
-  \sa CHbSymbianVariant, CHbDeviceDialog
-  \stable
+    This class is used to pass parameters to/from device dialogs.
+
+    \sa CHbSymbianVariant, CHbDeviceDialogSymbian
+    \stable
 */
 
 /*!
-  Create a new CHbSymbianVariantMap. Map is empty after creation and
-  ready for use.
+    Constructs a new CHbSymbianVariantMap and returns a pointer it. The container is empty after
+    construction.
  */
 EXPORT_C CHbSymbianVariantMap* CHbSymbianVariantMap::NewL()
 {
@@ -443,6 +463,9 @@ EXPORT_C CHbSymbianVariantMap* CHbSymbianVariantMap::NewL()
     return map;
 }
 
+/*!
+    Destructs CHbSymbianVariantMap.
+*/
 EXPORT_C CHbSymbianVariantMap::~CHbSymbianVariantMap()
 {
     delete d;
@@ -450,17 +473,22 @@ EXPORT_C CHbSymbianVariantMap::~CHbSymbianVariantMap()
 }
 
 /*!
- Adds a key-value pairing to the map. Takes ownership of the variant,
- key is copied. If key is already in the map, the value connected to the key
- is replaced with the new value. the old value is deleted.
+    Adds a key-value pair into the container. Takes ownership of the variant,
+    key is copied. If key is already in the map, the value connected to the key
+    is replaced with the new value and the old value is deleted.
+
+    \param aKey Key for the value.
+    \param aVariant Value to add. 
+
+    \return Returns Symbian error code. On error ownership of \p aKey is returned to caller. 
  */
 EXPORT_C TInt CHbSymbianVariantMap::Add(const TDesC& aKey, CHbSymbianVariant* aVariant)
 {
     TInt pos = KErrNotFound;
-    TInt result = d->iKeyArray->Find(aKey, pos,ECmpNormal);
+    TInt result = d->iKeyArray->Find(aKey, pos, ECmpNormal);
 
-    // there is already a key-value pairing in the map
-    if((result == KErrNone) && (pos >= 0)) {
+    // There is already a key-value pairing in the map
+    if ((result == KErrNone) && (pos >= 0)) {
 
         // for some reason directly deleting the pointer and
         // assigning a new one to position does not work
@@ -476,19 +504,22 @@ EXPORT_C TInt CHbSymbianVariantMap::Add(const TDesC& aKey, CHbSymbianVariant* aV
     else {
         result = KErrNone;
         TRAP(result, d->iKeyArray->AppendL(aKey));
-        if(result == KErrNone){
+        if (result == KErrNone){
             result = d->iVariantArray.Append(aVariant);
-            if(result) {
+            if (result) {
                 d->iKeyArray->Delete(d->iKeyArray->MdcaCount()-1);
             }
         }
     }
     return result;
 }
-/*!
- Deletes value mapped to the key given as parameter \a aKey
 
- On error returns possible Symbian error code.
+/*!
+    Deletes value from the container.
+
+    \param aKey Key for the value.
+
+    \return Returns Symbian error code.
  */
 EXPORT_C TInt CHbSymbianVariantMap::Delete(const TDesC& aKey)
 {
@@ -505,8 +536,11 @@ EXPORT_C TInt CHbSymbianVariantMap::Delete(const TDesC& aKey)
 }
 
 /*!
-  Gets value mapped to the key. CHbSymbianVariantMap keeps the ownership of the object.
-  Returns NULL if not found.
+    Gets a value from the container.
+
+    \param aKey Key for the value.
+
+    \return Returns pointer to the value or 0 if not found. Value ownership does not transfer.
  */
 EXPORT_C const CHbSymbianVariant* CHbSymbianVariantMap::Get(const TDesC& aKey) const
 {
@@ -520,7 +554,7 @@ EXPORT_C const CHbSymbianVariant* CHbSymbianVariantMap::Get(const TDesC& aKey) c
 }
 
 /*!
- Get all keys in the map. CHbSymbianVariantMap keeps the ownership of the object.
+    Returns all keys in the map. CHbSymbianVariantMap keeps ownership of the returned value.
  */
 EXPORT_C MDesCArray& CHbSymbianVariantMap::Keys() const
 {
@@ -534,6 +568,5 @@ CHbSymbianVariantMap::CHbSymbianVariantMap()
 
 void CHbSymbianVariantMap::ConstructL()
 {
-    d = new CHbSymbianVariantMapPrivate();
+    d = new (ELeave) CHbSymbianVariantMapPrivate();
 }
-

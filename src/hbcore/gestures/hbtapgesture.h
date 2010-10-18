@@ -65,6 +65,7 @@ private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbTapGesture)
     Q_DISABLE_COPY(HbTapGesture)
     friend class HbTapGestureLogic;
+    friend class HbTapGestureRecognizer;
 };
 
 #endif // HBTAPGESTURE_H

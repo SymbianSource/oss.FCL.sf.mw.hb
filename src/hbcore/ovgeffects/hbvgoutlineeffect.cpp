@@ -125,7 +125,7 @@ void HbVgOutlineEffect::setOffset(const QPointF &offset)
 QRectF HbVgOutlineEffect::boundingRectFor(const QRectF &rect) const
 {
     Q_D(const HbVgOutlineEffect);
-    QSizeF mappedOutline = d->mapSize(QSizeF(d->outline.x(), d->outline.y()));
+    QSizeF mappedOutline = d->mapSize(QSizeF(d->outline.x() + 2, d->outline.y() + 2));
     QPointF mappedOffset = d->mapOffset(d->offset);
 
     qreal ox1 = rect.left() - mappedOutline.width() + mappedOffset.x();

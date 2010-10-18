@@ -1,10 +1,10 @@
-<layers>
-	<visual>
-		<param name="opacity" type="anim">
-			<style>linear</style>
-			<duration>0.6</duration>
-			<keyframe at="0.0">0.0</keyframe>
-			<keyframe at="1.0">1.0</keyframe>
-		</param>
-	</visual>
+<layers>
+	<visual>
+		<param name="opacity" type="anim">
+			<style>linear</style>
+			<duration>0.4</duration>
+			<keyframe at="0.0">0.0</keyframe>
+			<keyframe at="1.0">1.0</keyframe>
+		</param>
+	</visual>
 </layers>

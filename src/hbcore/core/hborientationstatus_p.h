@@ -32,6 +32,8 @@
 #include <e32property.h>
 #endif
 
+class HbWsOrientationListenerPrivate;
+
 class HbOrientationStatus : public QObject, public HbSensorListenerObserver
 {
     Q_OBJECT
@@ -42,18 +44,38 @@ public:
 
     static bool currentOrientation(Qt::Orientation &orientation);
 
+    static int mapOriToRenderOri(Qt::Orientation orientation);
+    static bool mapRenderOriToOri(int renderOrientation, Qt::Orientation &orientation);
+    static QString oriToString(Qt::Orientation orientation);
+    static QString renderOriToString(int renderOrientation);
+
+    class HbWsOrientationListener {
+    public:
+        void start(QObject *receiver, const char *member);
+        void stop();
+        bool get(int &renderOrientation);
+        HbWsOrientationListener();
+        ~HbWsOrientationListener();
+    private:
+        HbWsOrientationListenerPrivate *d;
+    };
+
+private slots:
+    void storeOrientation();
+
 private:
     HbOrientationStatus(QObject *parent, Qt::Orientation defaultOrientation);
     void sensorOrientationChanged(Qt::Orientation newOrientation);
-    void sensorStatusChanged(bool status, bool notify);
-    void storeOrientation(Qt::Orientation orientation);
+    void sensorStatusChanged(bool status, bool resetOrientation);
 
 private:
 #ifdef Q_OS_SYMBIAN
     HbSensorListener *mSensorListener;
-    RProperty mProperty;
+    RProperty mQtProperty;
+    RProperty mWsProperty;
     Qt::Orientation mDefaultOrientation;
 #endif
+    Qt::Orientation mOrientationToBeStored;
 };
 
 #endif // HBORIENTATIONSTATUS_P_H

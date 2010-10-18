@@ -48,8 +48,10 @@ protected:
     HbTapAndHoldGesture(HbTapAndHoldGesturePrivate* data, QObject* parent = NULL);
 
 private:
+    Q_DECLARE_PRIVATE_D(priv, HbTapAndHoldGesture)
     HbTapAndHoldGesturePrivate* priv;
     friend class HbTapAndHoldGestureLogic;
+    friend class HbTapAndHoldGestureRecognizer;
 };
 
 #endif // HBTAPANDHOLDGESTURE_P_H

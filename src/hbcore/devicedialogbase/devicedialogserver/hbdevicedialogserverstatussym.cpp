@@ -35,9 +35,10 @@
 // There is only one fade control setter, all other applications are getters.
 // Device dialog is the setter.
 const TUid PropertyCategoryUid = {0x20022FC5};
-const TUint StatusKey = 'Stat';
+const TUint StatusKey = 0x53746174; // 'Stat'
+const TUint EventKey = 0x6e457674; // For HbIndicatorButton, to be removed when HbIndicatorButton is removed
 
-class HbDeviceDialogServerStatusPrivate  : public CActive
+NONSHARABLE_CLASS(HbDeviceDialogServerStatusPrivate)  : public CActive
 {
 public:
     HbDeviceDialogServerStatusPrivate(bool isServer, HbDeviceDialogServerStatus *parent);
@@ -64,7 +65,6 @@ HbDeviceDialogServerStatusPrivate::HbDeviceDialogServerStatusPrivate(
     bool isServer, HbDeviceDialogServerStatus *parent) :
     CActive(EPriorityHigh), p(parent)
 {
-    RProcess process;
     mIsSetter = isServer;
     mSetValue = HbDeviceDialogServerStatus::NoFlags;
     mEnableMonitoring = false;
@@ -74,6 +74,9 @@ HbDeviceDialogServerStatusPrivate::HbDeviceDialogServerStatusPrivate(
         _LIT_SECURITY_POLICY_PASS(KRdPolicy); // all pass
         _LIT_SECURITY_POLICY_S0(KWrPolicy, PropertyCategoryUid.iUid); // pass device dialog server
         mProperty.Define(PropertyCategoryUid, StatusKey, RProperty::EInt, KRdPolicy, KWrPolicy);
+        
+        // For HbIndicatorButton 
+        RProperty::Define(PropertyCategoryUid, EventKey, RProperty::EInt, KRdPolicy, KRdPolicy);
     }
     mProperty.Attach(PropertyCategoryUid, StatusKey);
     if (!mIsSetter) {
@@ -81,6 +84,7 @@ HbDeviceDialogServerStatusPrivate::HbDeviceDialogServerStatusPrivate(
     }
     else {
         mProperty.Set(PropertyCategoryUid, StatusKey, mSetValue);
+        RProperty::Set(PropertyCategoryUid, EventKey, 0); // For HbIndicatorButton
     }
 }
 

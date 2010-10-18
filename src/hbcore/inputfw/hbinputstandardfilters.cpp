@@ -32,21 +32,22 @@
 #define HB_DIGIT_EASTERN_ARABIC_END_VALUE   0x06F9
 
 /*!
-@alpha
+@stable
 @hbcore
 \class HbPhoneNumberFilter
-\brief Phone number editor filter.
+\brief The HbPhoneNumberFilter class is a phone number editor filter.
 
-This class implements standard phone number filter. It accepts
-characters 0..9, +, #, *, p and w.
-Can be used with editors that have Qt::ImhDialableCharactersOnly set.
+This class implements a standard phone number filter. It accepts
+characters <tt>0..9</tt>, \c +, \c #, \c *, \c p, and \c w.
+Can be used with editors where the Qt::ImhDialableCharactersOnly hint is set
+(see Qt::InputMethodHint in Qt).
 
 \sa HbEditorInterface
 */
 
-/* Returns true if the character is a valid number in the current input language
+/*
+Returns \c true if \a aChar is a valid number in the current input language.
 */
-
 static bool isValidNumber(QChar aChar)
 {
     bool ret = false;
@@ -76,6 +77,10 @@ static bool isValidNumber(QChar aChar)
     }
     return ret;
 }
+
+/*!
+Returns the singleton instance. 
+*/
 HbPhoneNumberFilter *HbPhoneNumberFilter::instance()
 {
     static HbPhoneNumberFilter myInstance;
@@ -86,12 +91,15 @@ HbPhoneNumberFilter::HbPhoneNumberFilter()
 {
 }
 
+/*!
+Destructor. 
+*/
 HbPhoneNumberFilter::~HbPhoneNumberFilter()
 {
 }
 
 /*!
-Returns true if given character is valid.
+Returns \c true if \a character is valid.
 */
 bool HbPhoneNumberFilter::filter(QChar character)
 {
@@ -106,18 +114,23 @@ bool HbPhoneNumberFilter::filter(QChar character)
 }
 
 /*!
-@alpha
+@stable
 @hbcore
 \class HbFormattedNumbersFilter
-\brief Converter number editor filter.
+\brief The HbFormattedNumbersFilter class is an editor filter for formatted numbers (such as 1,309).
 
-This class implements formatted numbers filter. It accepts
-characters 0..9, decimal point and minus sign.
-Can be used with editors that have Qt::ImhFormattedNumbersOnly hint set.
+This class implements a formatted numbers filter. It accepts
+characters <tt>0..9</tt>, a decimal point (\c . or \c ,), and a minus sign.
+An example of a valid formatted number is <tt>-1,309</tt>.
+Can be used with editors where the Qt::ImhFormattedNumbersOnly hint is set
+(see Qt::InputMethodHint in Qt).
 
 \sa HbEditorInterface
 */
 
+/*!
+Returns the singleton instance.
+*/
 HbFormattedNumbersFilter *HbFormattedNumbersFilter::instance()
 {
     static HbFormattedNumbersFilter myInstance;
@@ -128,12 +141,15 @@ HbFormattedNumbersFilter::HbFormattedNumbersFilter()
 {
 }
 
+/*!
+Destructor.
+*/
 HbFormattedNumbersFilter::~HbFormattedNumbersFilter()
 {
 }
 
 /*!
-Returns true if given character is valid.
+Returns \c true if \a character is valid.
 */
 bool HbFormattedNumbersFilter::filter(QChar character)
 {
@@ -146,16 +162,20 @@ bool HbFormattedNumbersFilter::filter(QChar character)
 }
 
 /*!
-@alpha
+@stable
 @hbcore
 \class HbDigitsOnlyFilter
-\brief digits only editor filter.
+\brief The HbDigitsOnlyFilter class is a digits-only editor filter.
 
-This class implements digits only filter. It accepts
-characters 0..9
-Can be used with editors that have Qt::ImhDigitsOnly hint set.
+This class implements a digits-only filter. It accepts characters
+<tt>0..9</tt>. Can be used with editors where the Qt::ImhDigitsOnly hint is set
+(see Qt::InputMethodHint in Qt).
 
 \sa HbEditorInterface
+*/
+
+/*!
+Returns the singleton instance.
 */
 HbDigitsOnlyFilter *HbDigitsOnlyFilter::instance()
 {
@@ -167,12 +187,15 @@ HbDigitsOnlyFilter::HbDigitsOnlyFilter()
 {
 }
 
+/*!
+Destructor.
+*/
 HbDigitsOnlyFilter::~HbDigitsOnlyFilter()
 {
 }
 
 /*!
-Returns true if given character is valid.
+Returns \c true if \a character is valid.
 */
 bool HbDigitsOnlyFilter::filter(QChar character)
 {
@@ -183,17 +206,20 @@ bool HbDigitsOnlyFilter::filter(QChar character)
 }
 
 /*!
-@alpha
+@stable
 @hbcore
 \class HbUrlFilter
-\brief Url editor filter.
+\brief The HbUrlFilter class is a URL editor filter.
 
-This class implements url character filter. It accepts
-characters as defined in rfc1738.
+This class implements a URL character filter. It accepts
+characters allowed in URLs as defined in RFC 1738.
 
 \sa HbEditorInterface
 */
 
+/*!
+Returns the singleton instance.
+*/
 HbUrlFilter *HbUrlFilter::instance()
 {
     static HbUrlFilter myInstance;
@@ -204,12 +230,15 @@ HbUrlFilter::HbUrlFilter()
 {
 }
 
+/*!
+Destructor.
+*/
 HbUrlFilter::~HbUrlFilter()
 {
 }
 
 /*!
-Returns true if given character is valid.
+Returns \c true if \a character is valid.
 */
 bool HbUrlFilter::filter(QChar character)
 {
@@ -217,22 +246,38 @@ bool HbUrlFilter::filter(QChar character)
         return true;
     }
 
+    QString others(".@,;?'-_&/~*+=/.:,┐?б!'\"-()\\_;+&%*=<>г$ед[]{}~^з#|"); 
+    const QChar euro(0x20AC);
+    const QChar space(0xE118);
+    const QChar enter(0xE125);
+    others.append(euro);
+    others.append(space);
+    others.append(enter);
+    for (int i = 0; i < others.size(); i++) {
+        if (others[i] == character) {
+            return true;
+        }
+    }
     return false;
 }
 
 /*!
-@proto
+@stable
 @hbcore
 \class HbEmailAddressFilter
-\brief EMail address filter filter.
+\brief The HbEmailAddressFilter class is an e-mail address filter.
 
-This class implements email address character filter. It accepts
-characters as defined in rfc5322.
-Can be used with editors that have Qt::ImhEmailCharactersOnly set.
+This class implements an e-mail address character filter. It accepts
+characters allowed in e-mail addresses as defined in RFC 5322.
+Can be used with editors where the Qt::ImhEmailCharactersOnly hint is set
+(see Qt::InputMethodHint in Qt).
 
 \sa HbEditorInterface
 */
 
+/*!
+Returns the singleton instance.
+*/
 HbEmailAddressFilter *HbEmailAddressFilter::instance()
 {
     static HbEmailAddressFilter myInstance;
@@ -243,12 +288,15 @@ HbEmailAddressFilter::HbEmailAddressFilter()
 {
 }
 
+/*!
+Destructor.
+*/
 HbEmailAddressFilter::~HbEmailAddressFilter()
 {
 }
 
 /*!
-Returns true if given character is valid.
+Returns \c true if \a character is valid.
 */
 bool HbEmailAddressFilter::filter(QChar character)
 {
@@ -270,10 +318,10 @@ bool HbEmailAddressFilter::filter(QChar character)
 
 
 /*!
-@proto
+@stable
 @hbcore
 \class HbInputLowerCaseFilter
-\brief Lower case character filter.
+\brief The HbInputLowerCaseFilter class is a lower case character filter.
 
 This filter passes only lower case characters and those characters that cannot be classified.
 
@@ -290,7 +338,7 @@ HbInputLowerCaseFilter *HbInputLowerCaseFilter::instance()
 }
 
 /*!
-Returns true if the given character is in lower case or the case cannot be determined.
+Returns \c true if \a character is in lower case or the case cannot be determined.
 */
 bool HbInputLowerCaseFilter::filter(QChar character)
 {
@@ -304,10 +352,10 @@ bool HbInputLowerCaseFilter::filter(QChar character)
 
 
 /*!
-@proto
+@stable
 @hbcore
 \class HbInputUpperCaseFilter
-\brief Upper case character filter.
+\brief The HbInputUpperCaseFilter class is an upper case character filter.
 
 This filter passes only upper case characters and those characters that cannot be classified.
 
@@ -324,7 +372,7 @@ HbInputUpperCaseFilter *HbInputUpperCaseFilter::instance()
 }
 
 /*!
-Returns true if the given character is in upper case or the case cannot be determined.
+Returns \c true if \a character is in upper case or the case cannot be determined.
 */
 bool HbInputUpperCaseFilter::filter(QChar character)
 {

@@ -31,19 +31,36 @@
 //#pragma hb_header(HbGlobal)
 
 // HB_VERSION_STR="M.N.P-B" (M=major, N=minor, P=patch, B=build=[dev|tag])
-#define HB_VERSION_STR "0.5.0-dev"
+#define HB_VERSION_STR "0.5.0-2010wk41"
 // HB_VERSION=0xMMNNPP (MM=major, NN=minor, PP=patch)
 #define HB_VERSION 0x000500
 
-#define HB_EXPORT \
-    HB_EXPORT_macro_is_obsolete_Please_use_HB_YOURMODULE_EXPORT_instead \
-    { &HB_EXPORT_macro_is_obsolete_Please_use_HB_YOURMODULE_EXPORT_instead; }; class
+#ifndef HB_DOXYGEN
 
 #define HB_DECL_DEPRECATED Q_DECL_DEPRECATED
 #define HB_DECL_VARIABLE_DEPRECATED Q_DECL_VARIABLE_DEPRECATED
 #define HB_DECL_CONSTRUCTOR_DEPRECATED Q_DECL_CONSTRUCTOR_DEPRECATED
 
-#ifndef HB_BOOTSTRAPPED
+#if defined(HB_STATIC) || defined(HB_BOOTSTRAPPED)
+
+#  define HB_CORE_EXPORT
+#  define HB_CORE_RESTRICTED_EXPORT
+#  define HB_CORE_PRIVATE_EXPORT
+#  define HB_WIDGETS_EXPORT
+#  define HB_WIDGETS_RESTRICTED_EXPORT
+#  define HB_WIDGETS_PRIVATE_EXPORT
+#  define HB_UTILS_EXPORT
+#  define HB_UTILS_RESTRICTED_EXPORT
+#  define HB_UTILS_PRIVATE_EXPORT
+#  define HB_INPUT_EXPORT
+#  define HB_INPUT_RESTRICTED_EXPORT
+#  define HB_INPUT_PRIVATE_EXPORT
+#  define HB_FEEDBACK_EXPORT
+#  define HB_FEEDBACK_RESTRICTED_EXPORT
+#  define HB_FEEDBACK_PRIVATE_EXPORT
+#  define HB_AUTOTEST_EXPORT
+
+# else
 
 #  ifdef BUILD_HB_CORE
 #    define HB_CORE_EXPORT Q_DECL_EXPORT
@@ -105,46 +122,7 @@
 #    define HB_AUTOTEST_EXPORT
 #  endif
 
-#else
-
-#  define HB_CORE_EXPORT
-#  define HB_CORE_RESTRICTED_EXPORT
-#  define HB_CORE_PRIVATE_EXPORT
-#  define HB_WIDGETS_EXPORT
-#  define HB_WIDGETS_RESTRICTED_EXPORT
-#  define HB_WIDGETS_PRIVATE_EXPORT
-#  define HB_UTILS_EXPORT
-#  define HB_UTILS_RESTRICTED_EXPORT
-#  define HB_UTILS_PRIVATE_EXPORT
-#  define HB_INPUT_EXPORT
-#  define HB_INPUT_RESTRICTED_EXPORT
-#  define HB_INPUT_PRIVATE_EXPORT
-#  define HB_FEEDBACK_EXPORT
-#  define HB_FEEDBACK_RESTRICTED_EXPORT
-#  define HB_FEEDBACK_PRIVATE_EXPORT
-#  define HB_AUTOTEST_EXPORT
-
-#endif // HB_BOOTSTRAPPED
-
-/*
-This flag enables QGraphicsEffect based effects that are available currently
-only in kinetic development branch and will be released as a part of Qt 4.6. This
-flag can be enabled with suitable environment to develop and test so called
-filter-effects.
-*/
-//#define HB_FILTER_EFFECTS
-
-/*
-This flag enables interfaces for testing
-TODO: Under flag for now, needs to be redesigned to use a more proper system(cenrep?)
-to enable runtime loading once security etc... issues are clear
-*/
-#define HB_TESTABILITY
-
-/*
-This flag enables to turn Effect API off. Only for testing purpose.
-*/
-//#define HB_EFFECT_API_OFF
+#endif // !HB_STATIC && !HB_BOOTSTRAPPED
 
 /*
 Flag enables text measurements for localization.
@@ -156,9 +134,31 @@ Flag enables text measurements for localization.
 
 #endif // HB_TEXT_MEASUREMENT_UTILITY
 
+#if defined(HB_NO_DEBUG_OUTPUT) || (!defined(HB_DEBUG_OUTPUT) && defined(Q_CC_RVCT) && defined(QT_NO_DEBUG))
+#define hbDebug QT_NO_QDEBUG_MACRO
+#else
+#define hbDebug qDebug
+#endif
+
+#if defined(HB_NO_WARNING_OUTPUT) || (!defined(HB_WARNING_OUTPUT) && defined(Q_CC_RVCT) && defined(QT_NO_DEBUG))
+#define hbWarning QT_NO_QWARNING_MACRO
+#else
+#define hbWarning qWarning
+#endif
+
+
+#ifndef HB_ALWAYS_INLINE
+#if defined(Q_CC_GNU) || defined(Q_CC_RVCT) // GCC & RVCT both support forced inlining
+#define HB_ALWAYS_INLINE __attribute__((always_inline))
+#else
+#define HB_ALWAYS_INLINE
+#endif
+#endif
+
+#endif // HB_DOXYGEN
+
 HB_CORE_EXPORT uint hbVersion();
 HB_CORE_EXPORT const char *hbVersionString();
 HB_CORE_EXPORT QString hbTrId(const char *id, int n = -1);
-
 
 #endif // HBGLOBAL_H

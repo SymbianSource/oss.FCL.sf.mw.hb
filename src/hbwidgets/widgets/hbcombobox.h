@@ -137,6 +137,7 @@ protected:
     bool eventFilter( QObject *obj, QEvent *event );
     QVariant itemChange ( GraphicsItemChange change, const QVariant & value );
     void gestureEvent( QGestureEvent *event );
+    void polish(HbStyleParameters &params);
 
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbComboBox )

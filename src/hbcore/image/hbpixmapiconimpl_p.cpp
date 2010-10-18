@@ -34,18 +34,20 @@
 #include "hbmemoryutils_p.h"
 #include "hbmaskableiconimpl_p.h"
 #include "hbpixmapiconrenderer_p.h"
+#include "hbiconsource_p.h"
 
 struct HbPixmapMaskedIcon {
-    QPixmap    currentPixmap;
+    QPixmap currentPixmap;
 };
 
-HbPixmapIconImpl::HbPixmapIconImpl(HbSharedIconInfo iconData, QString &name,
+HbPixmapIconImpl::HbPixmapIconImpl(HbSharedIconInfo iconData,
+                                   const QString &name,
                                    const QSizeF &keySize,
                                    Qt::AspectRatioMode aspectRatioMode,
                                    QIcon::Mode mode,
                                    bool mirrored,
-                                   HbRenderingMode renderMode):
-    HbIconImpl(iconData,
+                                   HbRenderingMode renderMode)
+    : HbIconImpl(iconData,
                name,
                keySize,
                aspectRatioMode,
@@ -58,16 +60,38 @@ HbPixmapIconImpl::HbPixmapIconImpl(HbSharedIconInfo iconData, QString &name,
     pixmapIconRenderer = new HbPixmapIconRenderer(pixmapData, this);
 }
 
-HbPixmapIconImpl::HbPixmapIconImpl(const QPixmap &pixmap, const QString &name):
-    pixmapData(pixmap),
+HbPixmapIconImpl::HbPixmapIconImpl(const QPixmap &pixmap,
+                                   const QString &name)
+    : pixmapData(pixmap),
     pixmapIconRenderer(0)
 {
     pixmapIconRenderer = new HbPixmapIconRenderer(pixmapData, this);
+    fileName = name;
+    cacheKeySize = size();
+    renderMode = ESWRendering;
+    createdOnServer = false;
     aspectRatioMode = Qt::KeepAspectRatio;
     mode = QIcon::Normal;
     mirrored = false;
-    createdOnServer = false;
+}
+
+HbPixmapIconImpl::HbPixmapIconImpl(const QPixmap &pixmap,
+                                   const QString &name,
+                                   const QSizeF &keySize,
+                                   Qt::AspectRatioMode aspectRatioMode_,
+                                   QIcon::Mode mode_,
+                                   bool mirrored_)
+    : pixmapData(pixmap),
+      pixmapIconRenderer(0)
+{
+    pixmapIconRenderer = new HbPixmapIconRenderer(pixmapData, this);
     fileName = name;
+    cacheKeySize = keySize;
+    renderMode = ESWRendering;
+    createdOnServer = false;
+    aspectRatioMode = aspectRatioMode_;
+    mode = mode_;
+    mirrored = mirrored_;
 }
 
 HbPixmapIconImpl::~HbPixmapIconImpl()
@@ -87,7 +111,14 @@ QSize HbPixmapIconImpl::defaultSize() const
     if (createdOnServer) {
         return defaultIconSize;
     } else {
-        return pixmapData.size();
+        // We need the default size here, regardless of any setSize calls,
+        // so pixmapData's size must not be returned from here. Instead we
+        // need to find out and cache the real default size.
+        if (defaultIconSize.isEmpty()) {
+            HbIconSource src(fileName);
+            defaultIconSize = src.defaultSize().toSize();
+        }
+        return defaultIconSize;
     }
 }
 
@@ -120,13 +151,13 @@ void HbPixmapIconImpl::paint(QPainter *painter,
     if (alignment & Qt::AlignRight) {
         topLeft.setX(rect.right() - pixmapSize.width());
     } else if (alignment & Qt::AlignHCenter) {
-        topLeft.setX(topLeft.x() + (rect.width() - pixmapSize.width()) / 2);
+        topLeft.setX(topLeft.x() + (qRound(rect.width()) - qRound(pixmapSize.width())) / 2.0f);
     }
 
     if (alignment & Qt::AlignBottom) {
         topLeft.setY(rect.bottom() - pixmapSize.height());
     } else if (alignment & Qt::AlignVCenter) {
-        topLeft.setY(topLeft.y() + (rect.height() - pixmapSize.height()) / 2);
+        topLeft.setY(topLeft.y() + (qRound(rect.height()) - qRound(pixmapSize.height())) / 2.0f);
     }
 
     pixmapIconRenderer->draw(painter, topLeft, clipPath, maskIconData);

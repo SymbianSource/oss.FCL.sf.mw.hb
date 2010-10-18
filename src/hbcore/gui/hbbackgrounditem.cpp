@@ -42,19 +42,21 @@
     \internal
 */
 
-HbBackgroundItem::HbBackgroundItem(HbMainWindow *mainWindow, QGraphicsWidget *parent) :
-    HbWidget(parent),
-    mMainWindow(mainWindow),
-    mImageMode(Hb::ScaleBackgroundToFit)
+HbBackgroundItem::HbBackgroundItem(HbMainWindow *mainWindow, QGraphicsWidget *parent)
+    : HbWidgetBase(parent),
+      mMainWindow(mainWindow),
+      mImageMode(Hb::ScaleBackgroundToFit)
 {
     setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+
+    // paint() will be called from HbMainWindow's drawBackground (which is more
+    // efficient due to the clipping it sets) so do not let the graphicsview
+    // call it directly.
+    setFlag(QGraphicsItem::ItemHasNoContents, true);
+
     mPrtImageName = defaultImageName(Qt::Vertical);
     mLscImageName = defaultImageName(Qt::Horizontal);
     updateBackgroundImage();
-}
-
-HbBackgroundItem::~HbBackgroundItem()
-{
 }
 
 void HbBackgroundItem::setImageName(Qt::Orientation orientation, const QString &name)
@@ -103,7 +105,6 @@ Hb::BackgroundImageMode HbBackgroundItem::imageMode() const
 
 void HbBackgroundItem::updateBackgroundImage()
 {
-    prepareGeometryChange();
     if (mMainWindow) {
         QSizeF size(HbDeviceProfile::profile(mMainWindow).logicalSize());
         mBoundingRect.setWidth(size.width());
@@ -122,35 +123,41 @@ void HbBackgroundItem::updateBackgroundImage()
             }
         }
         mBackground.setSize(size);
+        if (mMainWindow->scene()) {
+            mMainWindow->scene()->invalidate(boundingRect());
+        }
     }
 }
 
 void HbBackgroundItem::resizeEvent(QGraphicsSceneResizeEvent *event)
 {
-    HbWidget::resizeEvent(event);
+    HbWidgetBase::resizeEvent(event);
 
     // RnD feature for resizing the window by dragging
     if (HbMainWindowPrivate::dragToResizeEnabled) {
-        prepareGeometryChange();
         if (mMainWindow) {
             QSizeF size(event->newSize());
             mBoundingRect.setWidth(size.width());
             mBoundingRect.setHeight(size.height());
             mBackground.setSize(size);
+            if (mMainWindow->scene()) {
+                mMainWindow->scene()->invalidate(mBoundingRect);
+            }
         }
     }
 }
 
 bool HbBackgroundItem::event(QEvent *e)
 {
-    if (e->type() == QEvent::Polish) {
-        // No need for any real polishing.
-        static_cast<HbWidgetPrivate *>(d_ptr)->polished = true;
-        return true;
-    } else if (e->type() == HbEvent::DeviceProfileChanged) {
+    if (e->type() == HbEvent::DeviceProfileChanged) {
         updateBackgroundImage();
+    } else if (e->type() == QEvent::FontChange ||
+               e->type() == QEvent::PaletteChange ||
+               e->type() == QEvent::ParentChange ||
+               e->type() == QEvent::Polish) {
+        return true;
     }
-    return HbWidget::event(e);
+    return HbWidgetBase::event(e);
 }
 
 QRectF HbBackgroundItem::boundingRect() const

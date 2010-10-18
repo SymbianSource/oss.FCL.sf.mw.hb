@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="218px" version="1.1" viewBox="0 0 218 218" width="218px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<rect fill="none" height="218" width="218"/>
+<polygon fill-opacity="0.4" points="109,55.75 104,59.5 104,122.5 109,126.25 114,122.5 114,59.5 "/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="105" x2="113" y1="76" y2="76">
+<stop offset="0" style="stop-color:#FAFAFA"/>
+<stop offset="0" style="stop-color:#FAFAFF"/>
+<stop offset="1" style="stop-color:#DCDCE1"/>
+</linearGradient>
+<polygon fill="url(#SVGID_1_)" points="113,95 105,95 105,60 109,57 113,60 "/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_2_" x1="105" x2="113" y1="110" y2="110">
+<stop offset="0" style="stop-color:#4D4D4D"/>
+<stop offset="0.5212" style="stop-color:#333333"/>
+<stop offset="1" style="stop-color:#4D4D4D"/>
+</linearGradient>
+<polygon fill="url(#SVGID_2_)" points="105,95 105,122 109,125 113,122 113,95 "/>
+<circle cx="109" cy="109" r="2"/>
+</svg>

@@ -1,0 +1,25 @@
+<layers>
+	<visual src="Item">
+		<param name="opacity" type="anim">
+			<style>linear</style>
+			<duration>0.3</duration>
+			<keyframe at="0.0">1.0</keyframe>
+			<keyframe at="1.0">0.0</keyframe>
+		</param>
+	</visual>
+	<filter name="Drop Shadow" type="drop_shadow">
+		<param name="offset_x">0.0</param>
+		<param name="offset_y">4.0</param>
+		<param name="opacity" type="anim">
+			<style>linear</style>
+			<duration>0.3</duration>
+			<keyframe at="0.0">0.7</keyframe>
+			<keyframe at="1.0">0.0</keyframe>
+		</param>
+		<param name="steepness">1.0</param>
+		<param name="outline_x">4.0</param>
+		<param name="outline_y">4.0</param>
+		<param name="color">#000000</param>
+	</filter>
+</layers>
+

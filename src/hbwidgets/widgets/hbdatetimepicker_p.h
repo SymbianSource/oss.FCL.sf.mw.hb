@@ -27,20 +27,22 @@
 #define HBDATETIMEPICKER_P_H
 
 #include "hbwidget_p.h"
-#include "hbtumbleview.h"
 #include "hbdatetimepicker.h"
-
+#include "hbdatepickerview_p.h"
 #include "hbextendedlocale.h"
 
 #include <QStringListModel>
-#include <QGraphicsLinearLayout>
+#include <QGraphicsGridLayout>
 #include <QDateTime>
 #include <QGraphicsWidget>
 #include <QList>
 #include <QHash>
+#include <QPointer>
 
-#define VIEWER HbTumbleView
+#include "hbstyleframeprimitivedata.h"
+#include "hbstyletextprimitivedata.h"
 
+#define VIEWER HbDatePickerView
 
 #define HBDATETIMEPICKER_TIME_MIN QTime(0, 0, 0, 0)
 #define HBDATETIMEPICKER_TIME_MAX QTime(23, 59, 59, 999)
@@ -100,10 +102,33 @@ public:
     const SectionNode &sectionNode(int index) const;
 
     QString mDisplayFormat;
+    
     Sections mDisplaySections;
     QVector<SectionNode> mSectionNodes;
     QStringList mSeparators;
 };
+
+///////////////////////HbDatePickerViewLabel//////////////////////////
+
+class HbDatePickerViewLabel : public HbWidget
+{
+    Q_OBJECT
+
+public:
+    HbDatePickerViewLabel(QGraphicsItem *parent = 0);
+    HbDatePickerViewLabel(const QString &displayText, QGraphicsItem *parent = 0);
+
+    void initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive);
+
+    void createPrimitives();
+
+public slots:
+    void updatePrimitives();
+
+private:
+    QGraphicsObject *mTextItem;
+};
+////////////////////////////////////////////////
 
 class HbDateTimePickerPrivate : public HbWidgetPrivate
 {
@@ -116,7 +141,7 @@ public:
     void init(QVariant::Type type = QVariant::Date);
     QString localeDateTimeFormat(const QVariant::Type &mode);
     bool isFormatValid(const QString &newFormat);
-    void parseDisplayFormat(const QString &format);
+    void processDisplaySections();
     void rearrangeTumbleViews();
     void makeConnections();
     void removeConnections();
@@ -131,6 +156,8 @@ public:
     void setDateTime(const QDateTime &newDateTime);
     void setMinimumDateTime(const QDateTime &newMinDateTime);
     void setMaximumDateTime(const QDateTime &newMaxDateTime);
+    void postFormatEvent();
+    void processFormatEvent();
 
     //helpers
     void setYearRange(int start,int end);
@@ -211,8 +238,9 @@ public:
     QDateTime mMaximumDate;
     QVariant::Type mDateTimeMode;
 
-    QGraphicsLinearLayout *mLayout;
+    QGraphicsGridLayout *mLayout;
     QString mFormat;
+      int mFormatEventType;
 
     HbDateTimeParser mParser;
     QList<HbDateTimeParser::Section> mDisplaySections;
@@ -225,14 +253,22 @@ public:
     bool mIs24HourFormat;
     bool mIsTwoDigitYearFormat;
 
-    HbExtendedLocale mLocale;
-
-    //graphics items/style items
-    QGraphicsItem *mBackground;
-    QGraphicsItem *mFrame;
+    HbExtendedLocale mLocale; 
     HbWidget *mContent;
     QHash<QDateTimeEdit::Section, int> mIntervals;
-    QGraphicsItem   *mHighlight;
+
+    //graphics items/style items
+    QGraphicsObject *mBackground;
+    QGraphicsObject *mFrame;
+    QGraphicsObject *mHighlight;
+
+    QPointer<HbDatePickerViewLabel> mLabelDay;
+    QPointer<HbDatePickerViewLabel> mLabelMonth;
+    QPointer<HbDatePickerViewLabel> mLabelYear;
+    QPointer<HbDatePickerViewLabel> mLabelHour;
+    QPointer<HbDatePickerViewLabel> mLabelMinute;
+    QPointer<HbDatePickerViewLabel> mLabelSecond;
+    QPointer<VIEWER> mLastAdded;
 };
 
 #endif //HBDATETIMEPICKER_P_H

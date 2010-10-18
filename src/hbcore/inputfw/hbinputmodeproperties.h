@@ -26,8 +26,11 @@
 #ifndef HB_INPUT_MODE_PROPERTIES_H
 #define HB_INPUT_MODE_PROPERTIES_H
 
+#include <QStringList>
+
 #include <hbinputdef.h>
 #include <hbinputlanguage.h>
+#include <hbinputstate.h>
 
 /*!
 @alpha
@@ -52,6 +55,10 @@ public:
 
     HbInputModeProperties(HbInputModeType mode, const HbInputLanguage &language, HbKeyboardType keyboard)
         : mMode(mode), mLanguage(language), mKeyboard(keyboard) {
+    }
+
+    HbInputModeProperties(const HbInputState &state)
+        : mMode(state.inputMode()), mLanguage(state.language()), mKeyboard(state.keyboard()) {
     }
 
     HbInputModeProperties &operator=(const HbInputModeProperties &other) {
@@ -126,7 +133,27 @@ public:
     only needed by input method developers.
     */
     QString asString() const {
-        return mLanguage.asString() + QString(" ") + QString::number(mMode) + QString(" ") + QString::number(mKeyboard);
+        return mLanguage.asString() + QString(' ') + QString::number(mMode) + QString(' ') + QString::number(mKeyboard);
+    }
+
+    /*!
+    Creates property object from a string generated with asString.
+    */
+    static HbInputModeProperties fromString(const QString& string) {
+        HbInputModeProperties result;
+
+        // See asString() for order, amount and type of string parts
+        QStringList parts = string.split(' ');
+        if (parts.count() == 4) {
+            QString languageStr = parts[0] + QString(' ') + parts[1];
+            HbInputLanguage language;
+            language.fromString(languageStr);
+            result.setLanguage(language);
+            result.setInputMode((HbInputModeType)parts[2].toLong());
+            result.setKeyboard((HbKeyboardType)parts[3].toLong());
+        }
+
+        return result;
     }
 
 private:

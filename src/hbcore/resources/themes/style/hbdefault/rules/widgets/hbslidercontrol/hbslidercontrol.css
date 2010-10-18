@@ -1,11 +1,13 @@
 HbSliderControl[orientation="Vertical"]
 {
     layout:slidercontrol_vertical;
+    tooltip-border-height:3.0un;
 }
 
 HbSliderControl[orientation="Horizontal"]
 {
     layout:slidercontrol_horizontal;
+    tooltip-border-height:3.0un;
 }
 
 HbSliderControl[orientation="Horizontal"]::groove
@@ -51,8 +53,8 @@ HbSliderControl[orientation="Horizontal"]::handle
 
 HbSliderControl[orientation="Vertical"]::handle
 {
-   fixed-width:6un;
-   fixed-height:3un;
+    fixed-height:var(hb-param-widget-slider-thumb-width);
+    fixed-width:expr(2*var(hb-param-widget-slider-thumb-width));
 
 }
 

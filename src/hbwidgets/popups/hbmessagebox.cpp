@@ -29,90 +29,80 @@
 #include <hbstyleoptionmessagebox_p.h>
 #include <hbmainwindow.h>
 #include <hbaction.h>
-#include <hblineedit.h>
-#include <hbscrollbar.h>
+#include <hblabel.h>
 #include <hbscrollarea.h>
-#include "hbglobal_p.h"
-#include <QGraphicsItem>
+#include <hbstyleprimitivedata.h>
+#include <hbstyleiconprimitivedata.h>
 #include <QGraphicsSceneMouseEvent>
 #include <QTimer>
-#include <QTextOption>
+#include <QTextDocument>
+
 #ifdef Q_OS_SYMBIAN
 #include <systemtoneservice.h>
 #endif
 
 class HbStyle;
 
-class HbMessageBoxEditor : public HbLineEdit
+class HbMessageBoxWidget : public HbLabel
 {
-	Q_OBJECT
-public:
-    HbMessageBoxEditor(QGraphicsItem* parent =0) : HbLineEdit(parent),mText()
-    {
-        setReadOnly(true);
-        setCursorVisibility(Hb::TextCursorHidden);
-        HbScrollArea *scroll = scrollArea();
-        scroll->setVerticalScrollBarPolicy(HbScrollArea::ScrollBarAsNeeded);
-        clearContextMenuFlag(Hb::ShowTextContextMenuOnLongPress);
-        clearContextMenuFlag(Hb::ShowTextContextMenuOnSelectionClicked);
-        setBackgroundItem(0,0);     
-    }
-
-    void focusInEvent(QFocusEvent * event)
-    {
-        Q_UNUSED(event);         
-    }
-    void focusOutEvent(QFocusEvent * event)
-    {
-        Q_UNUSED(event);
-    }
-
-    void setHtmlText(const QString &text)
-    {
-        mText = text;
-        if(Qt::mightBeRichText(mText)){
-            setHtml(text);
+    Q_OBJECT
+    public:        
+        HbMessageBoxWidget(QGraphicsItem* parent =0):HbLabel(parent){
+            setTextWrapping(Hb::TextWordWrap);
         }
-        else {
-             QString htmlString = Qt::convertFromPlainText(mText);
-             setHtml(htmlString);
-        }
-     }
-
-    QString htmlText() const
+        HbMessageBoxWidget(const QString& text, QGraphicsItem *parent=0):HbLabel(text, parent){
+            HbStyle::setItemName(this, "text");
+        }    
+};
+class HbMessageBoxScrollArea : public HbScrollArea
+{
+    public:
+    HbMessageBoxWidget *widget;
+    HbMessageBoxScrollArea(QGraphicsItem* parent =0):HbScrollArea(parent),widget(0)
     {
-        return mText;
+        setScrollDirections(Qt::Vertical);
+        widget = new HbMessageBoxWidget(this);
+        setContentWidget(widget);
+        setHorizontalScrollBarPolicy(HbScrollArea::ScrollBarAlwaysOff);
+        setClampingStyle(HbScrollArea::StrictClamping);
+        setFlag(QGraphicsItem::ItemIsFocusable, false);
+        setFrictionEnabled(true);
     }
-private:
-    QString mText;
-
+    void triggerPolish()
+    {
+        repolish();
+    }
 };
 
+ 
 class HbMessageBoxContentWidget : public HbWidget
 {
     Q_OBJECT
-
-public:
+    public:
     HbMessageBoxPrivate *d;
-    HbMessageBoxEditor *mTextEdit;
-    QGraphicsItem *mIconItem;
-    HbMessageBoxContentWidget(HbMessageBoxPrivate *priv,
-        QGraphicsItem* parent =0) : HbWidget(parent),d(priv),mTextEdit(0),mIconItem(0)
-    {
+    QGraphicsObject *mIconItem;
+    HbMessageBoxScrollArea *mScrollArea;
 
-        mTextEdit = new HbMessageBoxEditor(this);
-        mIconItem = style()->createPrimitive(HbStyle::P_MessageBox_icon, this);
-        setProperty("hasIcon",true);
-        HbStyle::setItemName(mTextEdit, "text");
-        HbStyle::setItemName(mIconItem, "icon");
+    HbMessageBoxContentWidget(HbMessageBoxPrivate *priv,
+    QGraphicsItem* parent =0) : HbWidget(parent),d(priv),mIconItem(0),mScrollArea(0) 
+    {
+         mScrollArea = new HbMessageBoxScrollArea(this);        
+         mIconItem = style()->createPrimitive(HbStyle::PT_IconItem, "icon", this);
+         setProperty("hasIcon",true);
+         HbStyle::setItemName(mScrollArea, "scrollArea");
     }
+
+    void triggerPolish()
+    {
+        repolish();
+    }
+
     enum { Type = HbPrivate::ItemType_MessageNoteContentWidget };
     int type() const { return Type; }
 };
 
 /*
     constructor
-
 */
 
 HbMessageBoxPrivate::HbMessageBoxPrivate() :
@@ -120,7 +110,8 @@ HbMessageBoxPrivate::HbMessageBoxPrivate() :
     mIcon(),
     mMessageBoxContentWidget(0),
     mMessageBoxType(HbMessageBox::MessageTypeNone),
-    mIconVisible(true)
+    mIconVisible(false),
+    mBoxText("")
 {
 }
 
@@ -144,7 +135,7 @@ void HbMessageBoxPrivate::init()
 {
     Q_Q(HbMessageBox);
        
-    mMessageBoxContentWidget = new HbMessageBoxContentWidget( this );
+    mMessageBoxContentWidget = new HbMessageBoxContentWidget(this);
     q->setContentWidget( mMessageBoxContentWidget );
     q->setDismissPolicy(HbPopup::NoDismiss);
     q->setTimeout(HbPopup::NoTimeout);      
@@ -152,45 +143,45 @@ void HbMessageBoxPrivate::init()
     
     switch(mMessageBoxType) {
     case HbMessageBox::MessageTypeNone:
-        mMessageBoxContentWidget->mIconItem->hide();
-        mMessageBoxContentWidget->setProperty("hasIcon",false);
-        break;
     case HbMessageBox::MessageTypeInformation:
     case HbMessageBox::MessageTypeWarning:
     case HbMessageBox::MessageTypeQuestion:
+        mIconVisible =true;
         break;
         
     }
 
 }
+#ifdef HB_EFFECTS
 void HbMessageBoxPrivate::_q_appearEffectEnded(HbEffect::EffectStatus status)
 {
-#ifdef Q_OS_SYMBIAN 
-	
-    	if ( (status.reason == Hb::EffectFinished) ||  ( (status.reason == Hb::EffectCancelled) && (!mStartEffect) ))  {
-	        CSystemToneService *pSystemTone = systemToneService();
-			if(!pSystemTone) {
-				return ;
-			}
-			switch(mMessageBoxType) {
-    		case HbMessageBox::MessageTypeInformation:
-    			pSystemTone->PlayTone(CSystemToneService::EInformationBeep); 
-    			break;
-    		case HbMessageBox::MessageTypeWarning:
-    			pSystemTone->PlayTone(CSystemToneService::EWarningBeep); 
-    			break;
-    		case HbMessageBox::MessageTypeQuestion:
-    			pSystemTone->PlayTone(CSystemToneService::EConfirmationBeep); 
-        	break;
-      	default:
-      		break;        
-    	}
 
-		}
-#else
-	Q_UNUSED(status);
+#ifdef Q_OS_SYMBIAN 
+        if ( (status.reason == Hb::EffectFinished) ||  ( (status.reason == Hb::EffectCancelled) && (!mStartEffect) ))  {
+            CSystemToneService *pSystemTone = systemToneService();
+            if(!pSystemTone) {
+                return ;
+            }
+            switch(mMessageBoxType) {
+            case HbMessageBox::MessageTypeInformation:
+                pSystemTone->PlayTone(CSystemToneService::EInformationBeep); 
+                break;
+            case HbMessageBox::MessageTypeWarning:
+                pSystemTone->PlayTone(CSystemToneService::EWarningBeep); 
+                break;
+            case HbMessageBox::MessageTypeQuestion:
+                pSystemTone->PlayTone(CSystemToneService::EConfirmationBeep); 
+            break;
+                default:
+                break;        
+            }
+        }
+#else 
+    Q_UNUSED(status);
+
 #endif // Q_OS_SYMBIAN
 }
+#endif
 
 /*!
     @beta
@@ -199,9 +190,9 @@ void HbMessageBoxPrivate::_q_appearEffectEnded(HbEffect::EffectStatus status)
     \brief HbMessageBox is a convenience modal dialog class. HbMessageBox can be used to launch a information,question,warning or any other 
     general messages.
 
-	\image html information.PNG  "An information MessageBox"
-	\image html question.PNG  "A question MessageBox"
-	\image html warning.PNG  "A warning MessageBox"
+    \image html information.PNG  "An information MessageBox"
+    \image html question.PNG  "A question MessageBox"
+    \image html warning.PNG  "A warning MessageBox"
 
     Using HbMessageBox, the following dialogs can be created:
 
@@ -299,6 +290,7 @@ HbMessageBox::HbMessageBox(MessageBoxType type,QGraphicsItem *parent) :
     d->mMessageBoxType = type;
     d->q_ptr = this;
     d->init();
+    setModal(true);
 }
 
 /*!
@@ -314,7 +306,8 @@ HbMessageBox::HbMessageBox(const QString &text,MessageBoxType type, QGraphicsIte
     d->mMessageBoxType = type;
     d->q_ptr = this;
     d->init();
-    d->mMessageBoxContentWidget->mTextEdit->setHtmlText(text);
+    setText(text);
+    
 }
 
 /*!
@@ -337,34 +330,73 @@ HbMessageBox::HbMessageBox(HbMessageBoxPrivate &dd, QGraphicsItem *parent) :
 }
 
 /*!
-    \deprecated HbMessageBox::primitive(HbStyle::Primitive)
-        is deprecated.
-
-    Provides access to primitives of HbMessageBox. 
-    \param primitive is the type of the requested primitive. The available 
-    primitives are P_MessageBox_icon.
-
-*/
-QGraphicsItem *HbMessageBox::primitive(HbStyle::Primitive primitive) const
-{
-    Q_D(const HbMessageBox);
-    switch (primitive) {
-        case HbStyle::P_MessageBox_icon:
-            return d->mMessageBoxContentWidget->mIconItem;
-        default:
-            return 0;
-    }
-}
-
-/*!
     \reimp
 */
 void HbMessageBox::initStyleOption(HbStyleOptionMessageBox *option) const
 {
     Q_D(const HbMessageBox);
     HbDialog::initStyleOption(option);
-    option->icon = d->mIcon;
+    option->icon = d->mIcon; 
     option->messageBoxType = d->mMessageBoxType;
+}
+void HbMessageBox::changeEvent(QEvent *event)
+{
+    Q_UNUSED(event);
+    updatePrimitives();
+}
+
+void HbMessageBox::initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive)
+{
+    Q_D(HbMessageBox);
+    HbWidgetBase::initPrimitiveData(primitiveData, primitive);
+    QString itemName = HbStyle::itemName(primitive);
+    if (itemName == QLatin1String("icon")) {
+        HbStyleIconPrimitiveData *data = hbstyleprimitivedata_cast<HbStyleIconPrimitiveData*>(primitiveData);
+        data->icon = icon();
+                        
+        if (data->icon.value().isNull()) {
+            switch (d->mMessageBoxType) {
+            case HbMessageBox::MessageTypeInformation:
+                data->icon = HbIcon(QLatin1String("qtg_large_info"));
+                break;
+            case HbMessageBox::MessageTypeQuestion:
+                if(layoutDirection() == Qt::RightToLeft) {
+                    data->icon = HbIcon(QLatin1String("qtg_large_query_ah"));
+                }
+                else {
+                    data->icon = HbIcon(QLatin1String("qtg_large_query"));
+                }
+                break;
+            case HbMessageBox::MessageTypeWarning:
+                data->icon = HbIcon(QLatin1String("qtg_large_warning"));
+                break;
+            default:
+                break;
+            }
+        }
+
+        if(d->mIconVisible) {
+            if (data->icon.value().isNull()) {
+                d->mMessageBoxContentWidget->setProperty("hasIcon",false);
+                d->mMessageBoxContentWidget->mIconItem->hide();
+            }
+            else {
+                d->mMessageBoxContentWidget->setProperty("hasIcon",true);
+                d->mMessageBoxContentWidget->mIconItem->show();
+            }
+        }
+    }
+}
+
+void HbMessageBox::recreatePrimitives()
+{
+    Q_D(HbMessageBox);
+    if (d->mMessageBoxContentWidget->mIconItem) {
+        delete d->mMessageBoxContentWidget->mIconItem;
+        d->mMessageBoxContentWidget->mIconItem = 0;
+        d->mMessageBoxContentWidget->mIconItem = style()->createPrimitive(HbStyle::PT_IconItem, "icon",d->mMessageBoxContentWidget);
+        d->mMessageBoxContentWidget->setProperty("hasIcon",true);
+    }
 }
 
 /*!
@@ -373,11 +405,12 @@ void HbMessageBox::initStyleOption(HbStyleOptionMessageBox *option) const
 void HbMessageBox::updatePrimitives()
 {
     Q_D(HbMessageBox); 
-        HbDialog::updatePrimitives();
-    HbStyleOptionMessageBox option;
-    initStyleOption(&option);
+    HbDialog::updatePrimitives();
+
     if (d->mMessageBoxContentWidget->mIconItem) {
-         style()->updatePrimitive(d->mMessageBoxContentWidget->mIconItem, HbStyle::P_MessageBox_icon, &option);
+        HbStyleIconPrimitiveData data;
+        initPrimitiveData(&data, d->mMessageBoxContentWidget->mIconItem);
+        style()->updatePrimitive(d->mMessageBoxContentWidget->mIconItem, &data, this);
     }
    
 }
@@ -390,8 +423,20 @@ void HbMessageBox::updatePrimitives()
 void HbMessageBox::setText(const QString &text)
 {
     Q_D(HbMessageBox);
-    if ( text !=  d->mMessageBoxContentWidget->mTextEdit->htmlText() ) {
-        d->mMessageBoxContentWidget->mTextEdit->setHtmlText(text);
+    if ( text !=  d->mBoxText ) {
+        d->mBoxText = text;
+        if (d->mMessageBoxContentWidget->mScrollArea->widget) {
+
+            if(Qt::mightBeRichText(text)){
+                d->mMessageBoxContentWidget->mScrollArea->widget->setHtml(text);
+        
+            }
+            else {        
+                d->mMessageBoxContentWidget->mScrollArea->widget->setPlainText(text);
+            }      
+        }
+        d->mMessageBoxContentWidget->mScrollArea->triggerPolish();
+
     }
 }
 
@@ -402,7 +447,7 @@ void HbMessageBox::setText(const QString &text)
 QString HbMessageBox::text() const
 {
     Q_D(const HbMessageBox);
-    return d->mMessageBoxContentWidget->mTextEdit->htmlText();
+    return d->mBoxText;
 }
 
 /*!
@@ -416,13 +461,9 @@ void HbMessageBox::setIcon(const HbIcon &icon)
     if (icon != d->mIcon){
         d->mIcon = icon;
         if (d->mMessageBoxContentWidget->mIconItem) {
-            HbStyleOptionMessageBox option;
-            initStyleOption(&option);
-            style()->updatePrimitive(d->mMessageBoxContentWidget->mIconItem, HbStyle::P_MessageBox_icon, &option);
-        }
-        if(iconVisible() ) {
-            d->mMessageBoxContentWidget->mIconItem->show();
-            d->mMessageBoxContentWidget->setProperty("hasIcon",true);
+            HbStyleIconPrimitiveData data;
+            initPrimitiveData(&data, d->mMessageBoxContentWidget->mIconItem);
+            style()->updatePrimitive(d->mMessageBoxContentWidget->mIconItem, &data, this);
         }
     }
 }
@@ -459,7 +500,7 @@ void HbMessageBox::setIconVisible(bool visible)
         }
 
         d->mIconVisible = visible;
-        repolish();
+        d->mMessageBoxContentWidget->triggerPolish();
     }
 }
 
@@ -573,6 +614,32 @@ HbMessageBox::StandardButtons HbMessageBox::standardButtons() const
     Q_D(const HbMessageBox);
     return d->mStandardButtons;
 
+}
+
+void HbMessageBox::showEvent(QShowEvent *event)
+{
+#ifndef HB_EFFECTS
+    #ifdef Q_OS_SYMBIAN 
+                CSystemToneService *pSystemTone = systemToneService();
+                if(!pSystemTone) {
+                    return ;
+                }
+                switch(mMessageBoxType) {
+                case HbMessageBox::MessageTypeInformation:
+                    pSystemTone->PlayTone(CSystemToneService::EInformationBeep); 
+                    break;
+                case HbMessageBox::MessageTypeWarning:
+                    pSystemTone->PlayTone(CSystemToneService::EWarningBeep); 
+                    break;
+                case HbMessageBox::MessageTypeQuestion:
+                    pSystemTone->PlayTone(CSystemToneService::EConfirmationBeep); 
+                break;
+                    default:
+                    break;        
+                }
+    #endif // Q_OS_SYMBIAN
+#endif //HB_EFFECTS
+    HbDialog::showEvent(event);
 }
 
 /*!
@@ -809,6 +876,18 @@ void HbMessageBox::warning(const QString &warningText,
     messageBox->setAttribute(Qt::WA_DeleteOnClose);
     messageBox->open(receiver,member);
 }
+
+QGraphicsItem *HbMessageBox::primitive(const QString &itemName) const
+{
+    Q_D(const HbMessageBox);
+
+    if(!itemName.compare(QString("icon"))){
+        return d->mMessageBoxContentWidget->mIconItem;
+    }
+
+    return HbDialog::primitive(itemName);
+}
+
 #include "moc_hbmessagebox.cpp"
 #include "hbmessagebox.moc"
 

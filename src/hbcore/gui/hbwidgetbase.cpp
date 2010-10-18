@@ -25,9 +25,8 @@
 
 #include <QApplication>
 #include <QGraphicsWidget>
-#include <QPainter>
 #include <QDebug>
-#include <hbtextitem.h>
+#include <hbstyleprimitivedata.h>
 #ifdef HB_EFFECTS
 #include <hbeffect.h>
 #include <hbeffectinternal_p.h>
@@ -37,6 +36,8 @@
 #include "hbwidgetbase.h"
 #include "hbwidgetbase_p.h"
 #include "hbevent.h"
+#include <hbwidget.h>
+#include <QGraphicsLayout>
 
 
 /*!
@@ -51,6 +52,11 @@
     and transform changes.You should enable ItemUsesExtendedStyleOption if widget uses QStyleOptionGraphicsItem
     i.eduring painting.
 
+    HbWidgetBase is optimized to work with layout. ParentWidget is always reponsible
+    of layouting its children. If widget doesnot have a layout than it is responsible for
+    taking care of it's children geometries.HbWidgetBase doesnot guarantee that adjustSize will
+    be called before widget is shown.
+
     Currently HbWidgetBase offers the following functionality:
         - Layout direction locking                 
 */
@@ -58,6 +64,7 @@
 HbWidgetBasePrivate::HbWidgetBasePrivate() :
         mApiProtectionFlags(0),
         attributes(0)
+
 {
     q_ptr = 0;
 }
@@ -176,10 +183,7 @@ bool HbWidgetBase::event(QEvent *e)
 {
     if (e->type() == HbEvent::ThemeChanged) {
         changeEvent(e);
-    }
-
-    // This class will be rebased to QGraphicsWidget
-    // that is why direct ancestor is not called
+    } 
     return QGraphicsWidget::event(e);
 }
 
@@ -204,25 +208,18 @@ QVariant HbWidgetBase::itemChange(GraphicsItemChange change, const QVariant &val
 {
     Q_D(HbWidgetBase);
 
-    if( change == QGraphicsItem::ItemVisibleChange) {
+    if (change == QGraphicsItem::ItemVisibleChange) {
         if (value.toBool()) {
-            // Applies same initialisation for Hb widgets as QGraphicsWidget.
-            // For Hb primitives size is not set as they will be later layouted by Hb widgets.
-            // This is done to avoid flickering as primitives tend to paint themselves before layouting, 
-            // if they are added to existing layout.
-            // If Hb primitives are used standalone, their size and position must be set explicitly.
+            //For Primitives size is not set as they will be layouted
+            //after being polished. This is done to avoid flickering as primitives tend
+            //to paint themselves before layouting, if they are added to existing layout.
 
             // Send Show event before the item has been shown.
             QShowEvent event;
             QApplication::sendEvent(this, &event);
-            bool resized = testAttribute(Qt::WA_Resized);
-            if (!resized && testAttribute(Hb::Widget)) {
-                adjustSize();
-                setAttribute(Qt::WA_Resized, false);
-            } 
             return QGraphicsItem::itemChange(change, value);
         }
-    } else if( change == QGraphicsItem::ItemParentChange) {
+    } else if (change == QGraphicsItem::ItemParentChange) {
         d->handleInsidePopup(value.value<QGraphicsItem *>());
     }
     return QGraphicsWidget::itemChange(change, value);
@@ -405,6 +402,36 @@ void HbWidgetBase::initStyleOption(HbStyleOption *option) const
     option->boundingRect = boundingRect();
 }
 
+
+/*!
+  Initializes the common primitive data. This method sets the common \a state parameter.
+  
+  The state style option consists of flags. If this widget is enabled the flag QStyle::State_Enabled is set. 
+  If this widget is active the flag QStyle::State_Active will be set.    
+  Derived implementations should create a base call to this method.
+  
+  This function does not call the base class implementation.
+  \param primitiveData pointer to the primitive data
+  \param primitive primitive pointer, in case there is a need to query data from the primitive (e.g. item name)
+    
+*/
+void HbWidgetBase::initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive)
+{
+
+    Q_ASSERT(primitiveData);
+    Q_UNUSED(primitive);
+
+    primitiveData->state = QStyle::State_None;
+    if (isEnabled())
+        primitiveData->state |= QStyle::State_Enabled;
+    
+    if (QGraphicsWidget *w = window()) {
+        if (w->isActiveWindow())
+            primitiveData->state |= QStyle::State_Active;
+    }
+}
+
+
 /*!
     This event handler, for \a event, receives gesture events. Its base
     implementation ignores all gestures delivered in the \a event.
@@ -421,3 +448,17 @@ void HbWidgetBase::gestureEvent(QGestureEvent *event)
         event->ignore(g);
     }
 }
+
+
+/*!
+    \reimp
+ */
+void HbWidgetBase::updateGeometry()
+{
+    QGraphicsWidget::updateGeometry();
+}
+
+
+
+
+

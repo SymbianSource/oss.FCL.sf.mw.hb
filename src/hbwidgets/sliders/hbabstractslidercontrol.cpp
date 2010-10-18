@@ -574,12 +574,12 @@ void HbAbstractSliderControl::setSliderPosition(int position)
     d->position = position;
     if (!d->tracking)
         update();
-	if (d->pressed) {
+    if (d->pressed) {
         emit sliderMoved(position);
         if(singleStep() != 0 ) {
             HbWidgetFeedback::continuousTriggered(this, Hb::ContinuousDragged);
         }
-	}
+    }
     if (d->tracking && !d->blocktracking)
         triggerAction(SliderMove);
 }

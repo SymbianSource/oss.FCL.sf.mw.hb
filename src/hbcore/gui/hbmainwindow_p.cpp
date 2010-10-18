@@ -41,22 +41,27 @@
 #include "hbdockwidget.h"
 #include "hbeffectinternal_p.h"
 #include "hbthetestutility_p.h"
-#include "hbinputsettingproxy.h"
 #include "hbinputmethod.h"
 #include "hbfadeitem_p.h"
 #include "hbcontentwidget_p.h"
 #include "hbscreen_p.h"
 #include "hbbackgrounditem_p.h"
+#include "hbscreenshotitem_p.h"
 #include "hbcorepskeys_r.h"
+#include "hborientationstatus_p.h"
+#include "hbglobal_p.h"
 
 #include <QApplication>
 #include <QGraphicsLayout>
 #include <QLocale>
+#include <QDir>
 
 #ifdef Q_OS_SYMBIAN
 #include "hbnativewindow_sym_p.h"
 #include "hbdevicedialogserverdefs_p.h"
 #include <qsymbianevent.h>
+#include <w32std.h>
+#include <coemain.h>
 
 const TUid deviceDialogUid = {0x20022FC5};
 #endif //Q_OS_SYMBIAN
@@ -83,6 +88,7 @@ HbMainWindowPrivate::HbMainWindowPrivate() :
     mScene(0),
     mBgItem(0),
     mClippingItem(0),
+    mScreenshotItem(0),
     mViewStackWidget(0),
     mTitleBar(0),
     mStatusBar(0),
@@ -116,7 +122,7 @@ HbMainWindowPrivate::HbMainWindowPrivate() :
     mDevDlgClientSession(0)
 #endif
 {
-#if !defined(Q_WS_X11) && !defined(Q_WS_S60)
+#if !defined(Q_WS_X11) && !defined(Q_OS_SYMBIAN)
     mObscuredState = false;  //For non-x11 and non-symbian we start with revealed state.
 #endif
 
@@ -145,16 +151,24 @@ void HbMainWindowPrivate::init()
 
 void HbMainWindowPrivate::initTranslations()
 {
-#ifdef Q_OS_SYMBIAN
     QString lang = QLocale::system().name();
+#ifdef Q_OS_SYMBIAN
     // Use Z drive. Anything else is insecure as anyone could install
     // a fake common translation to C drive for example.
-    QString name = QLatin1String("Z:/resource/qt/translations/common_") + lang;
-    if (mCommonTranslator.load(name)) {
+    QString commonname = QDir(QLatin1String("Z:/resource/qt/translations")).filePath(QLatin1String("common_") + lang);
+    QString qtname = QDir(QLatin1String("Z:/resource/qt/translations")).filePath(QLatin1String("qt_") + lang);
+#else
+    QString commonname = QDir(QLatin1String(HB_TRANSLATIONS_DIR)).filePath(QLatin1String("commonstrings_") + lang);
+#endif
+    if (mCommonTranslator.load(commonname)) {
         QCoreApplication::installTranslator(&mCommonTranslator);
     } else {
-        qWarning("initTranslations: Failed to load translator based on name %s", qPrintable(name));
+        qWarning("initTranslations: Failed to load translator based on name %s", qPrintable(commonname));
     }
+#ifdef Q_OS_SYMBIAN
+    if (mQtTranslator.load(qtname)) {
+        QCoreApplication::installTranslator(&mQtTranslator);
+    } // may not exist in all cases, just let it fail silently
 #endif
 }
 
@@ -189,18 +203,15 @@ void HbMainWindowPrivate::addToolBarToLayout(HbToolBar *toolBar)
                     toolBar->setAttribute(Qt::WA_SetLayoutDirection, false);
                 }
                 HbToolBarPrivate *toolBarD = HbToolBarPrivate::d_ptr(toolBar);
-                toolBarD->mDoLayout = false;
                 // No "appear" effect when changing views or when the first
                 // toolbar is shown. The latter is needed to prevent bad UX when
                 // a splash screen containing a toolbar is shown before the
-                // mainwindow. Note that this mToolbarWasAdded check is only
-                // effective when one adds a toolbar with actions in it, it can
-                // be circumvented by setting an empty toolbar and then adding
-                // actions to it later. In that case the appear effect will be
-                // used normally.
+                // mainwindow.
                 if (mViewStackWidget->isSwitchingViews() || !mToolbarWasAdded) {
                     toolBarD->suppressNextAppearEffect();
                     mToolbarWasAdded = true;
+                } else if (mOrientationChangeOngoing && !mAnimateOrientationSwitch) {
+                    toolBarD->suppressNextAppearEffect();
                 }
                 mScene->addItem(toolBar); // top level
             }
@@ -211,7 +222,6 @@ void HbMainWindowPrivate::addToolBarToLayout(HbToolBar *toolBar)
             mCurrentToolbar = toolBar;
 
             toolBar->resetTransform();
-            toolBar->show();
         }
     }
 }
@@ -283,7 +293,9 @@ void HbMainWindowPrivate::setTransformedOrientation(Qt::Orientation orientation,
             HbEffectInternal::cancelAll();
             // Possibly posted idle events must not be delivered,
             // there will be new ones due to this new orientation switch.
-            QCoreApplication::removePostedEvents(q);
+            QCoreApplication::removePostedEvents(q, HbMainWindowPrivate::IdleOrientationEvent);
+            QCoreApplication::removePostedEvents(q, HbMainWindowPrivate::IdleOrientationFinalEvent);
+            QCoreApplication::removePostedEvents(q, QEvent::MetaCall);
         }
     }
 
@@ -307,14 +319,6 @@ void HbMainWindowPrivate::setTransformedOrientation(Qt::Orientation orientation,
         mOrientationEffectFinished = false;
         emit q->aboutToChangeOrientation();
         emit q->aboutToChangeOrientation(orientation, mAnimateOrientationSwitch);
-        
-        // Notify settingproxy only when orientation is actually changing, when this
-        // happens the animate flag is enabled. This is quick fix to prevent wrong keyboard
-        // from opening after splashscreen update. Better and final solution needs to be
-        // designed.
-        if (animate) {
-            HbInputSettingProxy::instance()->notifyScreenOrientationChange();
-        }
     }
 
     mOrientation = orientation;
@@ -474,7 +478,7 @@ void HbMainWindowPrivate::orientationEffectFinished(const HbEffect::EffectStatus
 
     // do some sanity checking for the size got from device profile
     if (newSize.isNull() || ((newSize.width()*newSize.height()) < QVga_res)) {  // the resolution must be at least QVGA..
-        qWarning("Orient. change error: size from device profile is faulty!");
+        hbWarning("Orient. change error: size from device profile is faulty!");
     }
 
     q->setSceneRect(0, 0, newSize.width(), newSize.height());
@@ -484,8 +488,11 @@ void HbMainWindowPrivate::orientationEffectFinished(const HbEffect::EffectStatus
     }
 
     // re-layouting, skip if size does not change
-    if (mClippingItem->size() != newSize) {
+    if (mOrientationChangeOngoing || mClippingItem->size() != newSize) {
         mClippingItem->resize(newSize);
+        if (mScreenshotItem) {
+            mScreenshotItem->resize(newSize);
+        }
         mLayoutRect = QRectF(QPointF(0, 0), newSize);
 
         // reset transformation
@@ -504,8 +511,6 @@ void HbMainWindowPrivate::orientationEffectFinished(const HbEffect::EffectStatus
             HbDeviceProfile oldProfile = HbDeviceProfile(o.alternateProfileName());
             HbDeviceProfileChangedEvent *event = new HbDeviceProfileChangedEvent(o, oldProfile);
             broadcastEvent(event);
-            // Also complete input orientation change
-            HbInputSettingProxy::instance()->setScreenOrientation(mOrientation);
         }
     }
     updateOrientationChangeStatus();
@@ -570,40 +575,47 @@ void HbMainWindowPrivate::addViewEffects()
     // Register the view switch animations from the theme.
     // Use HbEffectInternal and the HB_ prefix to prevent general overriding of these effects.
     // Instead, view switch effects can be overridden on a per-instance basis.
-    bool ok = HbEffectInternal::add(
-                  QStringList() << "HB_view" << "HB_view" << "HB_view" << "HB_view",
-                  QStringList() << "view_show_normal" << "view_hide_normal" <<  "view_show_back" << "view_hide_back",
-                  QStringList() << "show" << "hide" << "show_back" << "hide_back");
+    const char *vsType[] = { "HB_view", "HB_view", "HB_view", "HB_view" };
+    const char *vsPath[] = { "view_show_normal", "view_hide_normal", "view_show_back", "view_hide_back" };
+    const char *vsEvent[] = { "show", "hide", "show_back", "hide_back" };
+    bool ok = HbEffectInternal::add(vsType, vsPath, vsEvent, 4);
     if (!ok) {
-        qWarning("HbMainWindow: addViewEffects: atomic registration for show/hide effects failed");
+        hbWarning("HbMainWindow: addViewEffects: atomic registration for show/hide effects failed");
     }
 
     // Register the alternative default.
-    ok = HbEffectInternal::add(
-             QStringList() << "HB_view" << "HB_view" << "HB_view" << "HB_view",
-             QStringList() << "view_show_normal_alt" << "view_hide_normal_alt" << "view_show_back_alt" << "view_hide_back_alt",
-             QStringList() << "show_alt" << "hide_alt" << "show_alt_back" << "hide_alt_back");
+    const char *vsAltPath[] = { "view_show_normal_alt", "view_hide_normal_alt", "view_show_back_alt", "view_hide_back_alt" };
+    const char *vsAltEvent[] = { "show_alt", "hide_alt", "show_alt_back", "hide_alt_back" };
+    ok = HbEffectInternal::add(vsType, vsAltPath, vsAltEvent, 4);
     if (!ok) {
-        qWarning("HbMainWindow: addViewEffects: atomic registration for alternative show/hide effects failed");
+        hbWarning("HbMainWindow: addViewEffects: atomic registration for alternative show/hide effects failed");
     }
 
     // Register titlebar effects.
     // These should be overridable in general (so we use HbEffect and no HB_ prefix).
-    ok = HbEffect::add(
-             QStringList() << "titlebar" << "titlebar" << "titlebar" << "titlebar",
-             QStringList() << "titlebar_disappear" <<  "titlebar_appear" << "titlebar_orient_disappear" << "titlebar_orient_appear",
-             QStringList() << "disappear" << "appear" <<  "disappear_orient" << "appear_orient");
+    const char *tbType[] = { "titlebar", "titlebar", "titlebar", "titlebar" };
+    const char *tbPath[] = { "titlebar_disappear", "titlebar_appear", "titlebar_orient_disappear", "titlebar_orient_appear" };
+    const char *tbEvent[] = { "disappear", "appear",  "disappear_orient", "appear_orient" };
+    ok = HbEffectInternal::add(tbType, tbPath, tbEvent, 4);
     if (!ok) {
-        qWarning("HbMainWindow: addViewEffects: atomic registration for titlebar effects failed");
+        hbWarning("HbMainWindow: addViewEffects: atomic registration for titlebar effects failed");
     }
 
     // Register statusbar effects.
-    ok = HbEffect::add(
-             QStringList() << "statusbar" << "statusbar" << "statusbar" << "statusbar",
-             QStringList() << "statusbar_disappear" <<  "statusbar_appear" << "statusbar_orient_disappear" << "statusbar_orient_appear",
-             QStringList() << "disappear" << "appear" <<  "disappear_orient" << "appear_orient");
+    const char *sbType[] = { "statusbar", "statusbar", "statusbar", "statusbar" };
+    const char *sbPath[] = { "statusbar_disappear",  "statusbar_appear", "statusbar_orient_disappear", "statusbar_orient_appear" };
+    ok = HbEffectInternal::add(sbType, sbPath, tbEvent, 4);
     if (!ok) {
-        qWarning("HbMainWindow: addViewEffects: atomic registration for statusbar effects failed");
+        hbWarning("HbMainWindow: addViewEffects: atomic registration for statusbar effects failed");
+    }
+
+    // Register faded background effects.
+    const char *fiType[] = { "fadeitem", "fadeitem"};
+    const char *fiPath[] = { "fadeitem_disappear",  "fadeitem_appear" };
+    const char *fiEvent[] = { "disappear",  "appear" };
+    ok = HbEffectInternal::add(fiType, fiPath, fiEvent, 2);
+    if (!ok) {
+        hbWarning("HbMainWindow: addViewEffects: atomic registration for fadeitem effects failed");
     }
 }
 
@@ -753,7 +765,10 @@ void HbMainWindowPrivate::fadeScreen(qreal zValue)
 {
     initFadeItem();
     mFadeItem->setZValue(zValue);
-    mFadeItem->show();
+    if (!mFadeItem->isVisible()) {
+        mFadeItem->show();
+        HbEffect::start(mFadeItem, "fadeitem", "appear");
+    }
 }
 
 /*
@@ -764,11 +779,13 @@ void HbMainWindowPrivate::fadeScreen(qreal zValue)
 void HbMainWindowPrivate::unfadeScreen()
 {
     initFadeItem();
-    mFadeItem->hide();
+    if (mFadeItem->isVisible()) {
+       HbEffect::start(mFadeItem, "fadeitem", "disappear", this, "fadeItemEffectFinished");
+    }
 }
 
 /*
-    Creates the fade item.
+    Creates the fade item if not yet done.
 */
 void HbMainWindowPrivate::initFadeItem()
 {
@@ -781,6 +798,40 @@ void HbMainWindowPrivate::initFadeItem()
 }
 
 /*
+    Hides the fade item after disappear effect is finished
+*/
+void HbMainWindowPrivate::fadeItemEffectFinished(const HbEffect::EffectStatus &status)
+{
+    Q_UNUSED(status);
+    mFadeItem->setVisible(false);
+}
+
+/*!
+  Creates the screenshot item if not yet done.
+*/
+void HbMainWindowPrivate::initScreenshotItem()
+{
+    if (!mScreenshotItem) {
+        Q_Q(HbMainWindow);
+        mScreenshotItem = new HbScreenshotItem(q);
+        mScreenshotItem->hide();
+        mScreenshotItem->resize(mClippingItem->size());
+        mScene->addItem(mScreenshotItem);
+    }
+}
+
+/*!
+  Returns the screenshot item, creating it if not yet done.
+ */
+HbScreenshotItem *HbMainWindowPrivate::screenshotItem()
+{
+    if (!mScreenshotItem) {
+        initScreenshotItem();
+    }
+    return mScreenshotItem;
+}
+
+/*
     Updates visible items according to flags.
 */
 void HbMainWindowPrivate::updateVisibleItems()
@@ -790,8 +841,16 @@ void HbMainWindowPrivate::updateVisibleItems()
     HbView *view = q->currentView();
     if (view) {
         const Hb::SceneItems visibleItems(view->visibleItems());
-        view->setTitleBarVisible(visibleItems & Hb::TitleBarItem); // also handles updating of the navigation button
-        view->setStatusBarVisible(visibleItems & Hb::StatusBarItem);
+
+        // set statusbar and titlebar flag
+        HbView::HbViewFlags flags = view->viewFlags();
+        flags = (visibleItems & Hb::StatusBarItem) ?
+                    flags &~ HbView::ViewStatusBarHidden :
+                    flags |  HbView::ViewStatusBarHidden;
+        flags = (visibleItems & Hb::TitleBarItem) ?
+                    flags &~ HbView::ViewTitleBarHidden :
+                    flags |  HbView::ViewTitleBarHidden;
+        view->setViewFlags( flags ); // also handles updating of the navigation button
 
         // ToolBar is a special case, since it depens on the current view's toolbar
         if (visibleItems & Hb::ToolBarItem) {
@@ -987,10 +1046,13 @@ void HbMainWindowPrivate::_q_delayedConstruction()
             initializeInputs = false;
             HbInputMethod::initializeFramework(*qApp);
         }
-        HbInputSettingProxy::instance()->initializeOrientation(mOrientation);
 
         addOrientationChangeEffects();
         addViewEffects();
+        HbView *view = qobject_cast<HbView *>(mViewStackWidget->currentWidget());
+        if (view) {
+            HbViewPrivate::d_ptr(view)->delayedConstruction();
+        }
         mClippingItem->delayedConstruction();
 
         connect(hbInstance->theme(), SIGNAL(changed()),
@@ -1012,6 +1074,8 @@ void HbMainWindowPrivate::_q_delayedConstruction()
                 mTitleBar, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)));
         connect(mStatusBar, SIGNAL(allActivated(const QList<IndicatorClientInfo> &)),
                 mTitleBar, SIGNAL(allActivated(const QList<IndicatorClientInfo> &)));
+        connect(mStatusBar, SIGNAL(updated(const QList<IndicatorClientInfo> &)),
+                mTitleBar, SIGNAL(updated(const QList<IndicatorClientInfo> &)));
 
         initFadeItem();
 
@@ -1050,9 +1114,8 @@ void HbMainWindowPrivate::addBackgroundItem()
 {
     Q_Q(HbMainWindow);
     if (!mBgItem && mRootItem) {
-        mBgItem = new HbBackgroundItem(q);
+        mBgItem = new HbBackgroundItem(q, mRootItem);
         mBgItem->setZValue(HbPrivate::BackgroundZValue);
-        mBgItem->setParentItem(mRootItem);
     }
 }
 
@@ -1068,7 +1131,9 @@ void HbMainWindowPrivate::setViewportSize(const QSizeF &newSize)
 {
     mClippingItem->resize(newSize);
     mLayoutRect = QRectF(QPointF(0, 0), newSize);
-    mViewStackWidget->resize(newSize);
+    if (mScreenshotItem) {
+        mScreenshotItem->resize(newSize);
+    }
 }
 
 QSizeF HbMainWindowPrivate::viewPortSize() const
@@ -1132,31 +1197,56 @@ bool HbMainWindowPrivate::x11HandleShowEvent(QShowEvent *)
 #ifdef Q_OS_SYMBIAN
 void HbMainWindowPrivate::updateForegroundOrientationPSKey()
 {
+    Q_Q(HbMainWindow);
+    // Publish the orientation to device dialog server but only if the
+    // app has focus (do nothing if we are called while the app is in
+    // background).
     RProcess process;    
-    if (process.SecureId().iId != deviceDialogUid.iUid && mMainWindowActive) {
-        if (mDevDlgClientSession && !mPendingPsPublish) {
-            int orie = mOrientation;
-            if (!mAutomaticOrientationSwitch) {
-                orie |= KHbFixedOrientationMask;
+    if (process.SecureId().iId != deviceDialogUid.iUid) {
+        if (mMainWindowActive) {
+            if (mDevDlgClientSession && !mPendingPsPublish) {
+                int orie = mOrientation;
+                if (!mAutomaticOrientationSwitch) {
+                    orie |= KHbFixedOrientationMask;
+                }
+                mDevDlgClientSession->SendSyncRequest(EHbSrvPublishOrientation, orie);
+            } else if (mDevDlgClientSession && mPendingPsPublish) {
+                mDevDlgClientSession->SendSyncRequest(EHbSrvPublishOrientation, mPendingOrientationValue);
+                mPendingPsPublish = false;
+                mPendingOrientationValue = 0;
+            } else if (!mDevDlgClientSession && !mPendingPsPublish) {
+                mPendingOrientationValue = mOrientation;
+                if (!mAutomaticOrientationSwitch) {
+                    mPendingOrientationValue |= KHbFixedOrientationMask;
+                }
+                mPendingPsPublish = true;
             }
-            mDevDlgClientSession->SendSyncRequest(EHbSrvPublishOrientation, orie);
-        } else if (mDevDlgClientSession && mPendingPsPublish) {
-            mDevDlgClientSession->SendSyncRequest(EHbSrvPublishOrientation, mPendingOrientationValue);
-            mPendingPsPublish = false;
-            mPendingOrientationValue = 0;
-        } else if (!mDevDlgClientSession && !mPendingPsPublish) {
-            mPendingOrientationValue = mOrientation;
-            if (!mAutomaticOrientationSwitch) {
-                mPendingOrientationValue |= KHbFixedOrientationMask;
-            }
-            mPendingPsPublish = true;
         }
+        // Keep also wserv up-to-date. This must be done even if we do
+        // not have focus.
+#ifdef HB_WSERV_HAS_RENDER_ORIENTATION
+        CCoeEnv *env = CCoeEnv::Static();
+        if (env) {
+            TRenderOrientation orientationForWserv = EDisplayOrientationAuto;
+            if (!mAutomaticOrientationSwitch) {
+                orientationForWserv = (TRenderOrientation)
+                    HbOrientationStatus::mapOriToRenderOri(mOrientation);
+            }
+            env->WsSession().IndicateAppOrientation(orientationForWserv);
+        }
+#endif
+    } else {
+        // This is the device dialog server. Just keep wserv up-to-date.
+#ifdef HB_WSERV_HAS_RENDER_ORIENTATION
+        CCoeEnv *env = CCoeEnv::Static();
+        if (env) {
+            env->WsSession().IndicateAppOrientation(EDisplayOrientationIgnore);
+        }
+#endif
     }
     process.Close();
 }
-#endif
 
-#ifdef Q_OS_SYMBIAN
 void HbMainWindowPrivate::deviceDialogConnectionReady(RHbDeviceDialogClientSession *clientSession)
 {
     mDevDlgClientSession = clientSession;
@@ -1164,6 +1254,38 @@ void HbMainWindowPrivate::deviceDialogConnectionReady(RHbDeviceDialogClientSessi
         updateForegroundOrientationPSKey();
     }
 }
-
 #endif //Q_OS_SYMBIAN
-// end of file
+
+/*!
+  Any event filter installed via QCoreApplication::setEventFilter has to obey two rules:
+
+  - Proper chaining must be done (i.e. calling the previously set event filter).
+
+  - When there is no previous filter, this function must be called instead of
+    just returning false.  This makes sure that certain events are suppressed
+    (i.e. not processed by Qt, but seen by all Orbit filters).
+
+    \internal
+*/
+bool HbMainWindowPrivate::shouldStopEvent(void *message, long *result)
+{
+#if defined(Q_OS_SYMBIAN) && defined(HB_DDS_KEEPS_SURFACE)
+    QSymbianEvent *symEvent = static_cast<QSymbianEvent *>(message);
+    if (symEvent->type() == QSymbianEvent::WindowServerEvent) {
+        const TWsEvent *wsEvent = symEvent->windowServerEvent();
+        if (wsEvent->Type() == EEventWindowVisibilityChanged) {
+            // Window Server visibility events must be suppressed in the Device
+            // Dialog Server so Qt (QApplication) cannot see them.
+            RProcess process;
+            bool isDDS = TUid(process.SecureId()) == deviceDialogUid;
+            process.Close();
+            return isDDS;
+        }
+    }
+#else
+    Q_UNUSED(message);
+    Q_UNUSED(result);
+#endif
+
+    return false;
+}

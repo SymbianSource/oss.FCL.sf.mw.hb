@@ -23,32 +23,28 @@
 **
 ****************************************************************************/
 #include "hbinputkeymapfactory.h"
+#include "hbinputkeymapfactory_p.h"
 
 #include <QPluginLoader>
 #include <QDir>
 #include <QLibrary>
 #include <QTextStream>
 #include <QVector>
+#include <QDebug>
 
 #include "hbinputkeymap.h"
 #include "hbinputsettingproxy.h"
 
 /// @cond
 
-class HbKeymapFactoryPrivate
+void removeNonExistingPaths(QStringList &list)
 {
-public:
-    HbKeymapFactoryPrivate();
-    ~HbKeymapFactoryPrivate();
-    void parseFiles(QStringList &files, QList<HbInputLanguage>& languages);
-    bool isValidKeymap(QFile &file);
-    qreal keymapVersion(QFile &file);
-
-public:
-    QList<HbKeymap *> mKeymaps;
-    QList<HbInputLanguage> mRomLanguages;
-};
-
+    for (int i = list.count()-1; i >= 0; --i) {
+        if (!QFile::exists(list.at(i))) {
+            list.removeAt(i);
+        }
+    }
+}
 
 HbKeymapFactoryPrivate::HbKeymapFactoryPrivate()
 {
@@ -63,7 +59,7 @@ HbKeymapFactoryPrivate::~HbKeymapFactoryPrivate()
     mRomLanguages.clear();
 }
 
-void HbKeymapFactoryPrivate::parseFiles(QStringList &files, QList<HbInputLanguage>& languages)
+void HbKeymapFactoryPrivate::parseFileNames(const QStringList &files, QList<HbInputLanguage> &languages) const
 {
     bool ok = false;
     QLocale::Language language = QLocale::C;
@@ -97,177 +93,28 @@ void HbKeymapFactoryPrivate::parseFiles(QStringList &files, QList<HbInputLanguag
     }
 }
 
-bool HbKeymapFactoryPrivate::isValidKeymap(QFile &file)
+int HbKeymapFactoryPrivate::keymapVersion(QFile &file) const
 {
-    QTextStream stream(&file);
-    HbKeyboardType keyboardType = HbKeyboardNone;
-    bool retunResult = false;
-
-    while (!stream.atEnd()) {
-        QString line = stream.readLine();
-
-        if (keyboardType == HbKeyboardSctPortrait || keyboardType == HbKeyboardSctLandscape) {
-            continue;
-        }
-
-        // When an empty line is encountered, an ongoing keyboard definition ends
-        if (line.isEmpty()) {
-            if (keyboardType != HbKeyboardNone) {
-                keyboardType = HbKeyboardNone;
-            }
-            continue;
-        }
-        // Line starting with "//" is a comment
-        if (line.length() >= 2 && line.at(0) == '/' && line.at(1) == '/') {
-            continue;
-        }
-        // Non-empty line without ongoing keyboard definition is the start of a definition,
-        // containing the keyboard type as hex
-        if (keyboardType == HbKeyboardNone) {
-            bool ok = false;
-            int keyType = line.toInt(&ok, 16);
-            if (ok) {
-                keyboardType = static_cast<HbKeyboardType>(keyType);
-            }
-            retunResult = true;
-            // Non-empty line with ongoing keyboard definition contains a key definition
-            // Format: <keycode(char)><tab><keys_nomod><tab><keys_shiftmod><tab><keys_fnmod><tab><keys_fn+shiftmod>
-            // Keycode and keys_nomod should always be present, but the rest are optional
-
+    int version = -1;
+    if (file.fileName().length() > 0) {
+        QChar driveLetter = file.fileName().at(0).toLower();
+        // The version on the 'softest' drive is given precedence
+        // Paths starting with z, :, or any other character are taken after these
+        if (driveLetter >= 'a' && driveLetter <= 'y') {
+            version = driveLetter.toAscii() - 'a' + 1;
         } else {
-            QStringList splitResult = line.split('\t');
-            if (splitResult.count() == 0) {
-                continue;
-            }
-
-            if ((splitResult.count() < 2 || splitResult.count() > 5)) {
-                retunResult = false;
-                break;
-            } else {
-                retunResult = true;
-            }
+            version = 0;
         }
     }
-    //Make the Reading position at the start of the file
-    stream.seek(0);
-    return retunResult;
+    return version;
 }
 
-qreal HbKeymapFactoryPrivate::keymapVersion(QFile &file)
+bool HbKeymapFactoryPrivate::findKeymapFile(const HbInputLanguage &language, const QStringList &searchPaths, QFile &file) const
 {
-    QTextStream stream(&file);
-    qreal versionNumber = -1.0;
-    while (!stream.atEnd()) {
-        QString line = stream.readLine();
-        if (line.isEmpty() || (line.length() >= 2 && line.at(0) == '/' && line.at(1) == '/')) {
-            continue;
-        }
-        QStringList splitResult = line.split('\t');
-
-        if (splitResult.at(0).toLower() == QString("version")) {
-            QStringList periodSplits = splitResult.at(1).split('.');
-            QString version = periodSplits.at(0);
-            version.append('.');
-            int count = periodSplits.count() - 1;
-            int i = 1;
-            while (i < count) {
-                version.append(periodSplits.at(i++));
-            }
-            versionNumber = version.toFloat();
-            break;
-        } else {
-            QString filename = file.fileName();
-            if (filename.left(2) == ":/" || filename.left(2).toLower() == "z:") {
-                versionNumber = 0;
-                break;
-            }
-        }
-    }
-
-    //Make the Reading position at the start of the file
-    stream.seek(0);
-    return versionNumber;
-}
-/// @endcond
-
-/*!
-@alpha
-@hbcore
-\class HbKeymapFactory
-\brief A factory class for accessing keymap data.
-
-Keymap factory constructs HbKeymap objects for given languages based on keymap resource files.
-It can also provide a list of available keymap files in the system.
-
-\sa HbKeymap
-*/
-
-/*!
-Returns reference to singleton instance.
-*/
-HbKeymapFactory *HbKeymapFactory::instance()
-{
-    static HbKeymapFactory myInstance;
-    return &myInstance;
-}
-
-/*!
-Constructs the object.
-*/
-HbKeymapFactory::HbKeymapFactory()
-{
-    mPrivate = new HbKeymapFactoryPrivate();
-}
-
-/*!
-Destructs the object.
-*/
-HbKeymapFactory::~HbKeymapFactory()
-{
-    delete mPrivate;
-}
-
-/*!
-Returns a HbKeymap object initialized using keymap resource data in the system. Ownership of the
-HbKeymap object remains with HbKeymapFactory.
-
-If no data is found for the given language, 0 is returned.
-
-\param language Language for the keymap
-\param country Country for the keymap. If empty or AnyCountry, non-country specific version or a country-specific version will be returned.
-
-\sa HbKeymap
-*/
-const HbKeymap *HbKeymapFactory::keymap(const QLocale::Language language, const QLocale::Country country)
-{
-    return keymap(HbInputLanguage(language, country));
-}
-
-/*!
-Returns a HbKeymap object initialized using keymap resource data in the system. Ownership of the
-HbKeymap object remains with HbKeymapFactory.
-
-If no data is found for the given input language, 0 is returned. If the variant of the input language
-is AnyCountry, the function can return either a keymap with no variant specified or a keymap with any variant.
-
-\param language HbInputLanguage defining the language-country combination.
-
-\sa HbKeymap
-\sa HbInputLanguage
-*/
-const HbKeymap *HbKeymapFactory::keymap(const HbInputLanguage language)
-{
-    foreach(HbKeymap *keymap, mPrivate->mKeymaps) {
-        if (keymap->language() == language) {
-            return keymap;
-        }
-    }
-
     QString filename, latestVersionFilename;
-    QFile file;
-    qreal maxVersionNumber = -1.0;
+    qreal maxVersionNumber = -1;
 
-    foreach(const QString &path, HbInputSettingProxy::keymapPluginPaths()) {
+    foreach(const QString &path, searchPaths) {
         if (language.variant() == QLocale::AnyCountry) {
             filename = path + '/' + QString::number(language.language()) + ".txt";
         } else {
@@ -277,38 +124,36 @@ const HbKeymap *HbKeymapFactory::keymap(const HbInputLanguage language)
 
         if (QFile::exists(filename)) {
             file.setFileName(filename);
-            if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-                qreal fileVersion = mPrivate->keymapVersion(file);
-                if ((fileVersion > maxVersionNumber) && mPrivate->isValidKeymap(file)) {
-                    //Found the valid keymap with latest version
-                    latestVersionFilename = filename;
-                    maxVersionNumber = fileVersion;
-                }
-                //Close the file
-                file.close();
+            int fileVersion = keymapVersion(file);
+            if (fileVersion > maxVersionNumber) {
+                latestVersionFilename = filename;
+                maxVersionNumber = fileVersion;
             }
         }
     }
-    file.setFileName(latestVersionFilename);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+
+    if (latestVersionFilename.isEmpty()) {
         if (language.variant() == QLocale::AnyCountry) {
             // File not found when trying to open with AnyCountry (no location specified), check whether
             // the language is available as a country-specific version
 
-            foreach(const HbInputLanguage &availableLanguage, availableLanguages()) {
+            foreach(const HbInputLanguage &availableLanguage, HbKeymapFactory::availableLanguages()) {
                 if (availableLanguage.language() == language.language()) {
-                    return keymap(availableLanguage);
+                    return findKeymapFile(availableLanguage, searchPaths, file);
                 }
             }
         }
-        return 0;
+        return false;
+    } else {
+        file.setFileName(latestVersionFilename);
+        return true;
     }
+}
 
-    QTextStream stream(&file);
-
+HbKeymap *HbKeymapFactoryPrivate::parseKeymapDefinition(const HbInputLanguage &language, QTextStream &stream) const
+{
     HbKeymap *keymap = 0;
     HbKeyboardMap *keyboard = 0;
-
     while (!stream.atEnd()) {
         QString line = stream.readLine();
         // When an empty line is encountered, an ongoing keyboard definition ends
@@ -369,10 +214,195 @@ const HbKeymap *HbKeymapFactory::keymap(const HbInputLanguage language)
             keyboard->keys.append(mappedKey);
         }
     }
-    if (keymap) {
+    if (keyboard) {
+        // The last keyboard definition was not terminated properly, so it needs to be freed at this point
+        delete keyboard;
+        keyboard = 0;
+        qDebug() << "HbInputKeymapFactory: unterminated keyboard definition detected";
+    }
+    if (!isValid(keymap)) {
+        delete keymap;
+        keymap = 0;
+        qDebug() << "HbInputKeymapFactory: invalid keymap definition detected";
+    }
+    return keymap;
+}
+
+bool HbKeymapFactoryPrivate::isValid(const HbKeymap *keymap) const
+{
+    if (!keymap) {
+        return false;
+    }
+    // Very basic sanity checking
+    // Check that basic keyboards are present and the number of keys make sense
+    const HbKeyboardMap* keyboard = keymap->keyboard(HbKeyboardTouchPortrait);
+    if (!keyboard || keyboard->keys.count() != 10) {
+        return false;
+    }
+    keyboard = keymap->keyboard(HbKeyboardTouchLandscape);
+    if (!keyboard || keyboard->keys.count() < 30 || keyboard->keys.count() > 45) {
+        return false;
+    }
+    keyboard = keymap->keyboard(HbKeyboardSctPortrait);
+    if (!keyboard || keyboard->keys.count() < 16) {
+        return false;
+    }
+    keyboard = keymap->keyboard(HbKeyboardSctLandscape);
+    if (!keyboard || keyboard->keys.count() < 30) {
+        return false;
+    }
+    return true;
+}
+
+HbKeymap *HbKeymapFactoryPrivate::keymap(const HbInputLanguage &language) const
+{
+    QFile file;
+    HbKeymap *keymap = 0;
+    QStringList paths = HbInputSettingProxy::keymapPluginPaths();
+    removeNonExistingPaths(paths);
+    // First try to load the highest priority version of the keymap
+    if (findKeymapFile(language, paths, file)) {
+        QTextStream stream;
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            stream.setDevice(&file);
+            keymap = parseKeymapDefinition(language, stream);
+            file.close();
+        }
+        // If reading the keymap fails (and it was not in system resources to begin with),
+        // try to load a version from system resources
+        if (!keymap && file.fileName().left(2) != ":/") {
+            if (findKeymapFile(language, paths.filter(":/"), file)) {
+                if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                    stream.setDevice(&file);
+                    keymap = parseKeymapDefinition(language, stream);
+                    file.close();
+                }
+            }
+        }
+    }
+    return keymap;
+}
+
+/// @endcond
+
+/*!
+@stable
+@hbcore
+\class HbKeymapFactory
+\brief A factory class for accessing keymap data.
+
+Keymap factory constructs HbKeymap objects for given languages based on keymap resource files.
+It can also provide a list of available keymap files in the system.
+
+\sa HbKeymap
+*/
+
+/*!
+\enum HbKeymapFactory::Flag
+
+Flags for controlling keymap loading by the factory.
+*/
+
+/*!
+\var HbKeymapFactory::Flag HbKeymapFactory::Default
+
+Default functionality, loaded keymaps are cached inside the factory and factory retains ownership of keymap objects.
+*/
+
+/*!
+\var HbKeymapFactory::Flag HbKeymapFactory::NoCaching
+
+Disabled cache for this function call. Keymaps are read directly from disk and are not stored in cache.
+Ownership of the returned keymaps is transferred to the caller.
+*/
+
+/*!
+Returns reference to singleton instance.
+*/
+HbKeymapFactory *HbKeymapFactory::instance()
+{
+    static HbKeymapFactory myInstance;
+    return &myInstance;
+}
+
+/*!
+Constructs the object.
+*/
+HbKeymapFactory::HbKeymapFactory()
+{
+    mPrivate = new HbKeymapFactoryPrivate();
+}
+
+/*!
+Destructs the object.
+*/
+HbKeymapFactory::~HbKeymapFactory()
+{
+    delete mPrivate;
+}
+
+/*!
+Returns a HbKeymap object initialized using keymap resource data in the system. Ownership of the
+HbKeymap object remains with HbKeymapFactory.
+
+If no data is found for the given language, 0 is returned.
+
+\param language Language for the keymap
+\param country Country for the keymap. If empty or AnyCountry, non-country specific version or a country-specific version will be returned.
+
+\sa HbKeymap
+*/
+const HbKeymap *HbKeymapFactory::keymap(const QLocale::Language language, const QLocale::Country country)
+{
+    return keymap(HbInputLanguage(language, country), Default);
+}
+
+/*!
+Returns a HbKeymap object initialized using keymap resource data in the system. Ownership of the
+HbKeymap object remains with HbKeymapFactory.
+
+If no data is found for the given input language, 0 is returned. If the variant of the input language
+is AnyCountry, the function can return either a keymap with no variant specified or a keymap with any variant.
+
+\param language HbInputLanguage defining the language-country combination.
+
+\sa HbKeymap
+\sa HbInputLanguage
+*/
+const HbKeymap *HbKeymapFactory::keymap(const HbInputLanguage language)
+{
+    return keymap(language, Default);
+}
+
+/*!
+Returns a HbKeymap object initialized using keymap resource data in the system. Ownership of the
+HbKeymap object remains with HbKeymapFactory unless otherwise specified with flags.
+
+If no data is found for the given input language, 0 is returned. If the variant of the input language
+is AnyCountry, the function can return either a keymap with no variant specified or a keymap with any variant.
+
+\param language HbInputLanguage defining the language-country combination.
+\param flags HbKeymapFactory flags for controlling this keymap loading.
+
+\sa HbKeymap
+\sa HbInputLanguage
+\sa HbKeymapFactory::Flags
+*/
+const HbKeymap *HbKeymapFactory::keymap(const HbInputLanguage &language, HbKeymapFactory::Flags flags)
+{
+    if (!flags.testFlag(NoCaching)) {
+        foreach(HbKeymap *keymap, mPrivate->mKeymaps) {
+            if (keymap->language() == language) {
+                return keymap;
+            }
+        }
+    }
+
+    HbKeymap *keymap = mPrivate->keymap(language);
+
+    if (keymap && !flags.testFlag(NoCaching)) {
         mPrivate->mKeymaps.append(keymap);
     }
-    file.close();
     return keymap;
 }
 
@@ -386,28 +416,32 @@ QList<HbInputLanguage> HbKeymapFactory::availableLanguages()
     HbKeymapFactory *instance = HbKeymapFactory::instance();
     bool romLanguagesCached = !instance->mPrivate->mRomLanguages.isEmpty();
     QList<HbInputLanguage> languages;
-    QStringList files;
-    QStringList romFiles;
-    foreach(const QString &path, HbInputSettingProxy::keymapPluginPaths()) {
+    QStringList* files = new QStringList();
+    QStringList* romFiles = new QStringList();
+    QStringList paths = HbInputSettingProxy::keymapPluginPaths();
+    removeNonExistingPaths(paths);
+    foreach(const QString &path, paths) {
         if (path.left(2) == ":/" || path.left(2) == "z:") {
             if (romLanguagesCached) {
                 continue;
             }
             QDir languagedir(path);
-            romFiles += languagedir.entryList(QStringList(QString("*.txt")), QDir::Files);
+            *romFiles += languagedir.entryList(QStringList(QString("*.txt")), QDir::Files);
         } else {
             QDir languagedir(path);
-            files += languagedir.entryList(QStringList(QString("*.txt")), QDir::Files);
+            *files += languagedir.entryList(QStringList(QString("*.txt")), QDir::Files);
         }
     }
     if (romLanguagesCached) {
         languages = instance->mPrivate->mRomLanguages;
     } else {
-        instance->mPrivate->parseFiles(romFiles, languages);
+        instance->mPrivate->parseFileNames(*romFiles, languages);
         instance->mPrivate->mRomLanguages = languages;
     }
-    instance->mPrivate->parseFiles(files, languages);
+    instance->mPrivate->parseFileNames(*files, languages);
 
+    delete files;
+    delete romFiles;
     return languages;
 }
 

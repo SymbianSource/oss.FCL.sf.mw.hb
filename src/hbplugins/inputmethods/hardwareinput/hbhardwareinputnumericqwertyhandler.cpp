@@ -80,9 +80,9 @@ bool HbHardwareInputNumericQwertyHandlerPrivate::buttonReleased(const QKeyEvent 
         qDebug("HbHardwareInputNumericQwertyHandler::buttonReleased : no focused editor widget!");
         return false;
     }
-	int currentTextCase = focusObject->editorInterface().textCase();
-	QChar newChar = QChar(buttonId);
-	if (currentTextCase == HbTextCaseLower) {
+    int currentTextCase = focusObject->editorInterface().textCase();
+    QChar newChar = QChar(buttonId);
+    if (currentTextCase == HbTextCaseLower) {
         newChar = newChar.toLower();
     } else {
         newChar = newChar.toUpper();

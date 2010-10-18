@@ -24,6 +24,8 @@
 ****************************************************************************/
 
 #include "hboffsetmapbuilder_p.h"
+#include "hblayoutparameters_p.h"
+#include "hbhash_p.h"
 
 #include <QFileInfo>
 
@@ -35,11 +37,11 @@ extern QTextStream err;
 */
 bool HbOffsetMapBuilder::addWidgetOffsets(const QString &className,
                                        const QFileInfo *fileInfo,
-                                       int offsets[])
+                                       qptrdiff offsets[])
 {
     bool retValue = true;
-    quint32 nameHash = HbSharedCache::hash(QStringRef(&className));
-    HbBinMakerOffsetItem mapItem = _mapItems.value(nameHash, HbBinMakerOffsetItem());
+    quint32 nameHash = hbHash(QStringRef(&className));
+    HbBinMakerOffsetItem mapItem = mMapItems.value(nameHash, HbBinMakerOffsetItem());
     if (mapItem.isNull()) {
         if (fileInfo) {
             mapItem.name = fileInfo->absoluteFilePath();
@@ -47,7 +49,7 @@ bool HbOffsetMapBuilder::addWidgetOffsets(const QString &className,
         mapItem.widgetHash = nameHash;
         mapItem.offsetCSS = offsets[CSSFile];
         mapItem.offsetColorCSS = offsets[ColorCSSFile];
-        _mapItems.insert(nameHash, mapItem);
+        mMapItems.insert(nameHash, mapItem);
     } else {
         err << "duplicate hash value found!" << endl;
         retValue = false;
@@ -67,14 +69,14 @@ bool HbOffsetMapBuilder::addWidgetMLOffsets(const QString &filePath,
                                             const QList<LayoutItem> &layoutInfoList)
 {
     bool retValue = true;
-    QMap<quint32, HbBinMakerOffsetItem>::iterator offsetItem = _mapItems.find(classNameHash);
-    if (offsetItem != _mapItems.end()) {
+    QMap<quint32, HbBinMakerOffsetItem>::iterator offsetItem = mMapItems.find(classNameHash);
+    if (offsetItem != mMapItems.end()) {
         QSet<quint64> hashCheck;
         QList<HbLayoutIndexItem> &layoutIndexTable = offsetItem.value().layoutIndexItemList;
         Q_FOREACH(const LayoutItem &layoutInfo, layoutInfoList) {
             HbLayoutIndexItem item;
-            item.layoutNameHash = HbSharedCache::hash(QStringRef(&layoutInfo.layout->layoutname));
-            item.sectionNameHash = HbSharedCache::hash(QStringRef(&layoutInfo.layout->section));
+            item.layoutNameHash = hbHash(QStringRef(&layoutInfo.layout->layoutname));
+            item.sectionNameHash = hbHash(QStringRef(&layoutInfo.layout->section));
             quint64 hash = (quint64(item.layoutNameHash) << 32) | item.sectionNameHash;
             if (!hashCheck.contains(hash)) {
                 hashCheck.insert(hash);
@@ -90,6 +92,26 @@ bool HbOffsetMapBuilder::addWidgetMLOffsets(const QString &filePath,
     return retValue;
 }
 
+bool HbOffsetMapBuilder::addGlobalParameters(int zoomLevel,
+                                             const QHash<QString, HbParameterValueItem> &parameters)
+{
+    Q_UNUSED(zoomLevel)
+    mParameters.clear();
+    bool status = true;
+
+    QHash<QString, HbParameterValueItem>::const_iterator end = parameters.end();
+    for (QHash<QString, HbParameterValueItem>::const_iterator i = parameters.begin(); i != end; ++i) {
+        quint32 hash = hbHash(QStringRef(&i.key()));
+        if (mParameters.contains(hash)) {
+            err << "duplicate parameter hash found for: " << i.key();
+            status = false;
+            break;
+        }
+        mParameters.insert(hash, qMakePair(i.key(), i.value()));
+    }
+    return status;
+}
+
 /*!
     dumps the contents of the offset map to bytearray.
 
@@ -98,11 +120,11 @@ QByteArray HbOffsetMapBuilder::result()
 {
     QByteArray dataArray;
 
-    //first layoutindextable is locates after the offsetitem-array.
-    int currentLayoutIndexTableOffset = _mapItems.size() * sizeof(HbOffsetItem);
+    //first layoutindextable is located after the offsetitem-array.
+    qint32 currentLayoutIndexTableOffset = mMapItems.size() * sizeof(HbOffsetItem);
 
     //store offsetitems, update layout index table offset
-    foreach(const HbBinMakerOffsetItem &mapItem, _mapItems) {
+    foreach(const HbBinMakerOffsetItem &mapItem, mMapItems) {
         HbOffsetItem tmp(mapItem);
         if (!mapItem.layoutIndexItemList.isEmpty()) {
             tmp.offsetLayoutIndexTable = currentLayoutIndexTableOffset;
@@ -112,22 +134,43 @@ QByteArray HbOffsetMapBuilder::result()
         }
         dataArray.append(reinterpret_cast<const char*>(&tmp), sizeof(HbOffsetItem));
     }
-
     //store layout index tables
-    QMap<quint32, HbBinMakerOffsetItem>::iterator end = _mapItems.end();
-    for(QMap<quint32, HbBinMakerOffsetItem>::iterator i = _mapItems.begin(); i != end; ++i) {
+    QMap<quint32, HbBinMakerOffsetItem>::iterator end = mMapItems.end();
+    for(QMap<quint32, HbBinMakerOffsetItem>::iterator i = mMapItems.begin(); i != end; ++i) {
         HbBinMakerOffsetItem &mapItem = i.value();
         if (!mapItem.layoutIndexItemList.isEmpty()) {
             qSort(mapItem.layoutIndexItemList); //sort for binary search.
             //store the table size first.
-            quint32 size = mapItem.layoutIndexItemList.size();
-            dataArray.append(reinterpret_cast<const char*>(&size), sizeof(quint32));
+            qint32 size = mapItem.layoutIndexItemList.size();
+            dataArray.append(reinterpret_cast<const char*>(&size), sizeof(qint32));
             //store the layout-index items.
             foreach(const HbLayoutIndexItem &layoutIndexItem, mapItem.layoutIndexItemList) {
                 dataArray.append(reinterpret_cast<const char*>(&layoutIndexItem),
                                  sizeof(HbLayoutIndexItem));
             }
         }
+    }
+    //store global parameters.
+    mGlobalParameterOffset = dataArray.size()
+                             + sizeof(qint32); //for size
+    qint32 parameterCount = mParameters.count();
+
+    //parameter item array is followed by the variable name strings.
+    //the start address of the hbparameter-array is the base for the name (added to nameOffset)
+    int nameOffset = parameterCount * sizeof(HbParameterItem);
+
+    dataArray.append(reinterpret_cast<const char*>(&parameterCount), sizeof(qint32));
+    ParameterMap::const_iterator parametersEnd = mParameters.end();
+    for (ParameterMap::const_iterator i = mParameters.begin(); i != parametersEnd; ++i) {
+        HbParameterItem item(i.key(), i.value().second.offset, nameOffset, i.value().second.special);
+        dataArray.append(reinterpret_cast<const char*>(&item), sizeof(HbParameterItem));
+        nameOffset += i.value().first.length() + 1; // +1 for '\0'.
+    }
+
+    //store parameter names
+    for (ParameterMap::const_iterator i = mParameters.begin(); i != parametersEnd; ++i) {
+        QByteArray name(i.value().first.toLatin1());
+        dataArray.append(name.constData(), name.length() + 1); //constData will contain the '\0'
     }
     return dataArray;
 }

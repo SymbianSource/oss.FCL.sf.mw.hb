@@ -1,0 +1,14 @@
+<layers>
+    <visual src="item" />
+    <filter name="brightness_contrast" type="brightness_contrast">
+        <param name="opacity">1.0</param>
+        <param name="brightness" type="anim">
+            <duration>0.4</duration>
+            <style>inoutquad</style>
+            <keyframe at="0.0">0</keyframe>
+            <keyframe at="0.2">0.8</keyframe>
+            <keyframe at="1.0">0</keyframe>
+        </param>
+        <param name="contrast">1.0</param>
+    </filter>
+</layers>

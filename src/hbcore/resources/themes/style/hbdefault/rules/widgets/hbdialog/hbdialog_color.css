@@ -1,1 +1,7 @@
+HbDialog[!fullScreen]::heading {
+    color: var(qtc_popup_heading_normal);
+}
 
+HbDialog[fullScreen]::heading {
+    color: var(qtc_title_pane_normal);
+}

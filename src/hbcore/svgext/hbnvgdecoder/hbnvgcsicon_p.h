@@ -74,7 +74,7 @@ public:
 
     HbNvgEngine::HbNvgErrorType draw(const QSize &size)
     {
-	   // TODO @ Deprecated, remove from base class
+       // TODO @ Deprecated, remove from base class
        Q_UNUSED(size);
        return HbNvgEngine::NvgErrNone;
     }
@@ -98,7 +98,7 @@ public:
 
     void create(const QByteArray &buffer, const QSize& targetSize)
     {
-	   // TODO @ Deprecated, remove from base class
+       // TODO @ Deprecated, remove from base class
         Q_UNUSED(buffer);
         Q_UNUSED(targetSize);
     }

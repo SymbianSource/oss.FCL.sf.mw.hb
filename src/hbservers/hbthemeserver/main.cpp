@@ -28,23 +28,6 @@
 #include <cstdlib>
 #include <QDebug>
 
-void showHelp(const QString &argv0, const QString &error = QString())
-{
-    QTextStream qerr(stderr);
-    qerr << "Hb Theme Server" << endl;
-    if (!error.isEmpty()) {
-        qerr << argv0 << ": " << error << endl;
-    }
-    qerr << "Usage: " << argv0 << " [options]" << endl;
-    qerr << endl;
-    qerr << "Options:" << endl;
-    qerr << "  -start               start a new server" << endl;
-    qerr << "  -restart             same as -stop -start" << endl;
-    qerr << "  -stop                stop an existing server instance" << endl;
-    qerr << "  -persistent          keep server running when the last client disconnects" << endl;
-    qerr << "  -h, -help            display this information" << endl;
-}
-
 int main(int argc, char *argv[])
 {
     // Hiding theme server from the start up in first phase
@@ -62,16 +45,7 @@ int main(int argc, char *argv[])
     
     HbThemeServerApplication app(argc, argv);
 
-    if (HbThemeServerApplication::Options::help) {
-        showHelp(argv[0], HbThemeServerApplication::Options::error);
-        return EXIT_SUCCESS;
-    }
-
-    if (HbThemeServerApplication::Options::stop) {
-        app.stop();
-    }
-
-    if (app.isRunning() || !HbThemeServerApplication::Options::start) {
+    if (app.isRunning()) {
         return EXIT_SUCCESS;
     }
 

@@ -51,8 +51,8 @@ public:
     int itemCount();
     bool validateItems(qint64 byteSize);
 
-    static quint32 hash(const QString &string);
     const HbThemeIndexItemData *getItemData(const QString &itemName);
+    const HbThemeIndexItemData *getItemData(quint32 hashValue);
 
 private:
     void init();
@@ -120,6 +120,7 @@ class HB_AUTOTEST_EXPORT HbThemeIndexResource
 {
 public:
     HbThemeIndexResource(const QString &resourceName);
+    HbThemeIndexResource(quint32 hashValue);
     ~HbThemeIndexResource();
 
     bool isValid();
@@ -128,12 +129,13 @@ public:
     bool isAutomaticallyMirrored();
     bool isLocked();
     QString fullFileName();
-    QString fullMirroredFileName();
+    QString fullMirroredFileName(bool &mirroredIconFound);
     QColor colorValue();
 
 private:
     void getResourceData();
-    const QString &resourceName;
+    const QString *resourceName;
+    quint32 hashValue;
     const HbThemeIndexItemData *data; // not owned
     QString basePath;
     QString themeName;

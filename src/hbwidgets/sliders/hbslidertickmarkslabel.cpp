@@ -46,24 +46,20 @@ class HbSliderTickmarksLabelPrivate : public HbWidgetPrivate
 public:
     HbSliderTickmarksLabelPrivate();
     void createTickLabels( );
-    HbStyleOptionSlider sliderOption;
     QList<QGraphicsWidget *> tickmarkmajorIconItemsLabel;
     QList<QGraphicsWidget *> tickmarkminorIconItemsLabel;
     HbSlider *slider;
     Hb::SliderTickPositions tickPosition;
     bool createText;
-
 };
 
 
- HbSliderTickmarksLabelPrivate::HbSliderTickmarksLabelPrivate() :HbWidgetPrivate(){
-    tickmarkmajorIconItemsLabel.clear();
-    tickmarkminorIconItemsLabel.clear();
-    slider = 0;
-    tickPosition = Hb::NoSliderTicks;
-    createText = true;
-
-
+HbSliderTickmarksLabelPrivate::HbSliderTickmarksLabelPrivate()  : 
+    HbWidgetPrivate(),
+    slider(0),
+    tickPosition(Hb::NoSliderTicks),
+    createText(true)
+{
 }
 
 
@@ -88,7 +84,7 @@ void  HbSliderTickmarksLabelPrivate::createTickLabels(  )
         }
         int majorLabelListLength =  tickmarkmajorIconItemsLabel.length();
         for (int i=majorLabelListLength;i<totalMajorTicksLabel;i++) {
-            QGraphicsItem *textItem = q->style()->createPrimitive(HbStyle::P_SliderTickMark_majorlabel, q);
+            QGraphicsItem *textItem = HbStylePrivate::createPrimitive(HbStylePrivate::P_SliderTickMark_majorlabel, q);
             textItemCreated = true;
             Q_ASSERT(textItem->isWidget());
             tickmarkmajorIconItemsLabel.append(static_cast<QGraphicsWidget *>(textItem));//add newly defind primitive
@@ -115,7 +111,7 @@ void  HbSliderTickmarksLabelPrivate::createTickLabels(  )
 
         int minorIconLabelListLength =  tickmarkminorIconItemsLabel.length();
         for (int i=minorIconLabelListLength;i<totalMinorTicksLabel;i++) {
-            QGraphicsItem *textItem = q->style()->createPrimitive(HbStyle::P_SliderTickMark_minorlabel, q);
+            QGraphicsItem *textItem = HbStylePrivate::createPrimitive(HbStylePrivate::P_SliderTickMark_minorlabel, q);
             textItemCreated = true;
             Q_ASSERT(textItem->isWidget());
             tickmarkminorIconItemsLabel.append(static_cast<QGraphicsWidget *>(textItem));//add newly defind primitive
@@ -141,7 +137,6 @@ void  HbSliderTickmarksLabelPrivate::createTickLabels(  )
 void HbSliderTickmarksLabel::resizeEvent(QGraphicsSceneResizeEvent *event)
 {
     Q_UNUSED (event);
-    repolish ( );
     updateTickLabels();
     HbWidget::resizeEvent(event);
 }
@@ -160,8 +155,8 @@ void HbSliderTickmarksLabel::updateTickLabels( )
          initStyleOption(&opt);
          opt.orientation = d->slider->orientation();
          opt.text = (d->slider->majorTickLabels( )).at(i);
-         style()->updatePrimitive(textItem,HbStyle::P_SliderTickMark_majorlabel,&opt);
-	}
+         HbStylePrivate::updatePrimitive(textItem,HbStylePrivate::P_SliderTickMark_majorlabel,&opt);
+    }
     int minimum = d->slider->minimum();
     int maximum = d->slider->maximum();
     int majorTickInterval = d->slider->majorTickInterval ( );
@@ -169,7 +164,7 @@ void HbSliderTickmarksLabel::updateTickLabels( )
     qreal span = 0;
     bool rtlLayout = (((d->slider->orientation( ) != Qt::Vertical)
         &&(HbApplication::layoutDirection() == Qt::LeftToRight))?false:true);
-    HbSliderPrivate *sliderPrivate = dynamic_cast<HbSliderPrivate*>(HbSliderPrivate::d_ptr(d->slider));
+    HbSliderPrivate *sliderPrivate = HbSliderPrivate::d_ptr(d->slider);
     QSizeF handleSize(0.0,0.0);
     if( sliderPrivate) {
         handleSize = sliderPrivate->getHandleSize( );
@@ -238,7 +233,7 @@ void HbSliderTickmarksLabel::updateTickLabels( )
                 initStyleOption(&opt);
                 opt.orientation = d->slider->orientation();
                 opt.text = (d->slider->minorTickLabels( )).at(minorIndex);
-                style()->updatePrimitive(textItem,HbStyle::P_SliderTickMark_minorlabel,&opt);
+                HbStylePrivate::updatePrimitive(textItem,HbStylePrivate::P_SliderTickMark_minorlabel,&opt);
                 minorIndex++;
                 int pos = QStyle::sliderPositionFromValue( minimum, maximum,
                     minimum+minorTickInterval*i,static_cast<int>( span ), rtlLayout );
@@ -290,12 +285,12 @@ void HbSliderTickmarksLabel::updateTickLabels( )
 /*!
     constructor
 */
-HbSliderTickmarksLabel::HbSliderTickmarksLabel( QGraphicsItem *parent )
+HbSliderTickmarksLabel::HbSliderTickmarksLabel(HbSlider *parent)
     : HbWidget( *new HbSliderTickmarksLabelPrivate, parent )
 {
     Q_D( HbSliderTickmarksLabel );
     d->q_ptr = this;
-    d->slider=dynamic_cast<HbSlider*>( parentItem() );
+    d->slider = parent;
     d->createTickLabels();
 #if QT_VERSION >= 0x040600
     setFlag(QGraphicsItem::ItemSendsGeometryChanges,true);

@@ -53,14 +53,13 @@ public:
     QList<HbInputMethodDescriptor> listCustomInputMethods(Qt::Orientation orientation, const HbInputLanguage &language);
     HbInputMethodDescriptor defaultInputMethod(Qt::Orientation orientation);
     HbInputMethod *findStateHandler(const HbInputState &state);
-    HbInputMethod *activeMethod() const;
-    QList<HbInputLanguage> listInputLanguages() const;
-    bool acceptsState(const HbInputMethod *inputMethod, const HbInputState &state) const;
-    HbInputMethodDescriptor descriptor(const HbInputMethod *inputMethod) const;
+    HbInputMethod *activeMethod();
+    QList<HbInputLanguage> listInputLanguages();
+    bool acceptsState(const HbInputMethod *inputMethod, const HbInputState &state);
+    HbInputMethodDescriptor descriptor(const HbInputMethod *inputMethod);
 
 public slots:
     void shutdown();
-    void directoryChanged(const QString &directory);
 
 private:
     HbInputModeCachePrivate *const d_ptr;

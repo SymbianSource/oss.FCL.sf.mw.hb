@@ -31,9 +31,7 @@
 
 class HbTypefaceInfo;
 
-#ifdef HB_TESTABILITY
 class TestabilityInterface;
-#endif //HB_TESTABILITY
 
 #ifdef Q_OS_SYMBIAN
 #include <centralrepository.h>
@@ -57,8 +55,9 @@ public:
     bool removeWindow(HbMainWindow *window);
     void select(const HbDeviceProfile &display);
     HbDeviceProfile profile();
-	  CSystemToneService *systemTone();
+    CSystemToneService *systemTone();
     void initLibraryPaths();
+    void startLocalizationMeasurement();
 
 public slots:
     void updateScenes();
@@ -68,6 +67,7 @@ public slots:
 #ifdef HB_CSS_INSPECTOR
     void showHideCssWindow();
 #endif
+    void doLocalizationMeasurements();
 
 public:
     QList<HbMainWindow *> mWindows;
@@ -77,42 +77,35 @@ public:
     Qt::Orientation mOrientation;
     HbDeviceProfile mCurrentProfile;
     QStringList *mLibraryPaths;
+    bool mDropHiddenIconData;
 
 public:
     HbTypefaceInfo *typefaceInfo() const;
+
+    static HbInstancePrivate *d_ptr() {
+        return HbInstance::instance()->d;
+    }
 
 signals:
     void windowAdded(HbMainWindow *window);
     void windowRemoved(HbMainWindow *window);
 
 private:
-#ifdef HB_TESTABILITY
     TestabilityInterface *testabilityInterface;
 #ifdef Q_OS_SYMBIAN
     CRepository *mRepo;
     bool testabilityEnabled;
-	CSystemToneService *mSts;
+    CSystemToneService *mSts;
 #endif //Q_OS_SYMBIAN
-#endif //HB_TESTABILITY
 
     HbLocaleChangeNotifier *mLocaleChangeNotifier;
 
-    // Provided for HbMainWindow & friends who have to access
-    // HbInstancePrivate in order to add/remove windows.
-    // NOTE: Still kept as private to track dependencies...
-    static HbInstancePrivate *d_ptr() {
-        return hbInstance->d;
-    }
-    friend class HbMainWindow;
-    friend class HbDeviceProfileManager;
-    friend class HbDeviceProfile;
-    friend class HbSettingsWindow;
-    friend class HbApplication;
-    friend class HbFontSpecPrivate;
-    friend class HbEffectPrivate;
-    friend class HbMainWindowOrientation;
-    friend class HbWidgetStyleLoader;
-    friend class HbPopupPrivate;
+#ifdef HB_TEXT_MEASUREMENT_UTILITY
+    HbDeviceProfile mLocalizationMetricsProfile;
+    bool mLocalizationMeasurementPending;
+#endif
+
+    friend class HbStyle;
 };
 
 #endif // HBINSTANCE_P_H

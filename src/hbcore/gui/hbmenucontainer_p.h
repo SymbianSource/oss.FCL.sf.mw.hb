@@ -62,6 +62,7 @@ public:
 protected:
     virtual void gestureEvent(QGestureEvent *event);
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+    void changeEvent(QEvent *event);
 private:
     void updateCurrentItem();
     bool isFocusable(QAction *action);
@@ -78,8 +79,9 @@ class HbMenuListViewPrivate : public HbScrollAreaPrivate
     public:
     HbMenuListViewPrivate();
     virtual ~HbMenuListViewPrivate() { }
+    void updateScrollMetrics();
+    void doLazyInit();
     HbMenuContainer *mContainer;
-    HbMenuItem *mHitItem;
     HbMenuItem *mCurrentItem;
     int mCurrentIndex;
     bool mWasScrolling;
@@ -103,6 +105,8 @@ public:
 
 protected:
     void polish(HbStyleParameters &params);
+    QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+    void changeEvent(QEvent *event);
 private:
     int actionMenuPos(QAction *action);
     Q_DECLARE_PRIVATE_D(d_ptr, HbMenuContainer)
@@ -123,6 +127,7 @@ public:
     QMap<QAction*, HbMenuItem*>  mBufferItems;
     QList<HbMenuItem*>  mOldVisibleItems;
     QList<QAction*> mVisibleActions;
+    bool mDelayLayout;
 };
 
 #endif // MENU_P_H

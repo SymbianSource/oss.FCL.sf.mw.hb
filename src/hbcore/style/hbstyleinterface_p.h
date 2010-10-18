@@ -40,7 +40,7 @@ public:
     virtual int primitiveCount() const = 0;
     virtual QGraphicsItem *createPrimitive( HbStyle::Primitive primitive, QGraphicsItem *parent = 0 ) const = 0;
     virtual void updatePrimitive( QGraphicsItem *item, HbStyle::Primitive primitive, const QStyleOption *option ) const  = 0;
-	virtual QString layoutPath() const = 0;
+    virtual QString layoutPath() const = 0;
     void deprecated();
 };
 

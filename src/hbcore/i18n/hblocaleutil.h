@@ -29,6 +29,13 @@
 #include <QHash>
 #include <hbglobal.h>
 
+struct HbLanguageRegionMapping
+{
+    QString languageId;
+    QString regionId;
+    QString collationId;
+};
+
 class HB_CORE_EXPORT HbLocaleUtil
 {
 public:
@@ -48,6 +55,8 @@ public:
     static bool changeCollation( const QString &collation );
     
     static bool changeLocale( const QString &language );
+    
+    static QList<HbLanguageRegionMapping> languageRegionMappings( bool onlySupported=true );
 };
 
 #endif /* HBLOCALEUTIL_H */

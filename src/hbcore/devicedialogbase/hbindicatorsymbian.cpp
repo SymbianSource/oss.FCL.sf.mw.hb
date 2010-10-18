@@ -31,36 +31,49 @@
 /*!
     \fn void MHbIndicatorSymbianObserver::IndicatorUserActivated(const TDesC& aType, CHbSymbianVariantMap& aData)
 
-    This callback is called when user has interacted with an indicator on the indicator
-    menu.
-    
-    \a aType - Type of the indicator that user interacted with.
+    Callback indicates data from indicator plugin implentation. Indicator plugin may originate the callback
+    for example when user interacts with the indicator from indicator menu.
+
+    \a aType - Indicator type (identification).
     \a aData - Data sent by the indicator.
 */
 
 /*!
     \class CHbIndicatorSymbian
-    \brief CHbIndicatorSymbian can be used to activate and deactivate indicators. It is a client 
-    interface for Symbian applications to Hb indicators.
+    \brief CHbIndicatorSymbian is a Symbian implementation of HbIndicator. 
 
-    CHbIndicatorSymbian sends a request for indicator activation and deactivation to
-    server side. Indicators are identified by their type-string and there must be a
-    server side indicator implementation for that type.
+    <b>This class is Symbian only. Not available on other platforms.</b>
 
-    Active indicators may appear in the status indicator area as an icon,
-    and/or inside universal indicator menu showing icon and text.
-    Depending on the indicator implementation, activated indicator may also show up with
-    a notification dialog and some indicators can be interacted by the user in universal indicator menu.
+    See HbIndicator documentation to find out more about indicators.
 
-    User can interact with an indicator from the indicator menu. Client is notified about
-    the user interaction via MHbIndicatorSymbianObserver observer interface. Interaction 
-    notification and data sent by the indicator is a contract between HbIndicator class 
-    and indicator.
-    
-    When deactivated, icons are removed from the status
-    indicator area and in universal indicator menu.
+    CHbIndicatorSymbian is intended for use by Symbian servers that don't run Qt event loop
+    and cannot use HbIndicator.
 
-    \sa HbIndicator
+    The class is accompanied by  a class CHbSymbianVariant which
+    is used to encapsulate indicator parameter. Indicator framework takes care of
+    translating Symbian data types to/from format understood by indicator plugins.
+
+    Events from an indicator are indicated by MHbIndicatorSymbianObserver callback interface. 
+
+    The code below activates and deactivates an indicator.
+    \code
+    CHbIndicatorSymbian* indicator = CHbIndicatorSymbian::NewL();
+    CleanupStack::PushL(indicator);
+
+    _LIT(KOptionKey, "option");
+    const TInt optionValue = 0;
+    CHbSymbianVariant* option = CHbSymbianVariant::NewL(&optionValue, CHbSymbianVariant::EInt);
+    CleanupStack::PushL(option);
+
+    _LIT(KIndicatorType, "com.nokia.hb.unittestfirstindicator0/1.0");
+    indicator->Activate(KIndicatorType, option);
+    User::LeaveIfError(indicator->Error());
+    indicator->Deactivate(KIndicatorType);
+    User::LeaveIfError(indicator->Error());
+    CleanupStack::PopAndDestroy(2); // indicator, option
+    \endcode
+
+    \sa HbIndicator, CHbSymbianVariant
 
     \stable
     \hbcore
@@ -68,12 +81,11 @@
 
 /*!
     \enum CHbIndicatorSymbian::TIndicatorError
-    Defines the indicator errors.
+    Defines the indicator error ranges.
 */
 /*!
     \var CHbIndicatorSymbian::TIndicatorError CHbIndicatorSymbian::EFrameworkErrors
-    Start of an error range for errors originating from device dialog framework.
-    Error codes are defined in hbdevicedialogerrors.h
+    Start of an error range for errors originating from indicator framework.
 */
 /*!
     \var CHbIndicatorSymbian::TIndicatorError CHbIndicatorSymbian::EPluginErrors
@@ -94,17 +106,17 @@
 #include "hbdevicedialogerrors_p.h"
 #include "hbdevicedialogserverdefs_p.h"
 
-class CHbIndicatorSymbianPrivate : public CActive {
+NONSHARABLE_CLASS(CHbIndicatorSymbianPrivate) : public CActive {
 public:
-    CHbIndicatorSymbianPrivate() : CActive(EPriorityStandard), iInitialized(EFalse), iLastError(HbDeviceDialogNoError),   iMsgTypePtr(NULL,0,0),
-    		  iBuffer(NULL),
-    		  iDataPtr(NULL,0,0) { CActiveScheduler::Add(this); }
+    CHbIndicatorSymbianPrivate() : CActive(EPriorityStandard), iMsgTypePtr(NULL, 0, 0),
+        iDataPtr(NULL, 0, 0) {CActiveScheduler::Add(this);}
     ~CHbIndicatorSymbianPrivate() {
-    	Cancel();
+        Cancel();
         if (iInitialized) {
             iHbSession.Close();
             iInitialized = EFalse;
         }
+        delete iBuffer;
     }
     TBool Initialize();
     void SetError( int error )
@@ -115,8 +127,8 @@ public:
             TBool activate, const CHbSymbianVariant* aParameter);
 
     void Start();
-	    
-protected:	
+        
+protected:  
     // CActive
     void RunL();
     void DoCancel();
@@ -183,106 +195,118 @@ bool CHbIndicatorSymbianPrivate::sendActivateMessage(const TDesC& aIndicatorType
     }
     
     if (activate && result && iObserver) {
-		Start();
+        Start();
     }
        
     return result;
 }
 
 void CHbIndicatorSymbianPrivate::Start()
-	{
-	if (!IsActive() && !iRequesting) {
-		SetActive();
-		if (!iBuffer) {
-			iBuffer = HBufC8::NewL( 256 );		
-			iDataPtr.Set( iBuffer->Des() );
-		}
-		iDataPtr.Zero();
+    {
+    if (!IsActive() && !iRequesting) {
+        SetActive();
+        if (!iBuffer) {
+            iBuffer = HBufC8::NewL( 256 );      
+            iDataPtr.Set( iBuffer->Des() );
+        }
+        iDataPtr.Zero();
         TPckg<TInt> pckg( iMsgType );
         iMsgTypePtr.Set( pckg );
         iRequesting = ETrue;
-		iHbSession.SendASyncRequest(EHbSrvGetActivatedIndicatorsStart, iDataPtr, iMsgTypePtr, iStatus);
+        iHbSession.SendASyncRequest(EHbSrvGetActivatedIndicatorsStart, iDataPtr, iMsgTypePtr, iStatus);
     }       
        
 }
 
 void CHbIndicatorSymbianPrivate::RunL()
 {
-	TInt result = iStatus.Int();
-		
-	if (result < KErrNone) {
-		SetError(result);
-		iRequesting = EFalse;
-	} else if (iMsgType == EHbIndicatorUserActivated && result >= 0) {
-		iMsgType = -1;
-		if (result > 0) {		
-			delete iBuffer;
-			iBuffer = NULL;
-			iBuffer = HBufC8::NewL(result);
-			iDataPtr.Set(iBuffer->Des());
-			TInt error = iHbSession.SendSyncRequest(EHbSrvActivatedIndicatorData, iDataPtr, &iMsgTypePtr);							                
-		}
-	
-		QByteArray resArray((const char*)iDataPtr.Ptr(), iDataPtr.Size());
-		QDataStream stream(&resArray, QIODevice::ReadOnly);		
-	
-		QVariant var;
-		stream >> var;
-		QVariantMap varMap = var.toMap();
-	
-		if (iObserver) {
-			QString type = varMap.value("type").toString();
-			TPtrC descriptor(static_cast<const TUint16*>(type.utf16()),
-								type.length());
-			QVariantMap data = varMap.value("data").toMap();
-			
-			CHbSymbianVariantMap* symbianMap =
-				HbSymbianVariantConverter::fromQVariantMapL(data);
-			
-			iObserver->IndicatorUserActivated(descriptor, *symbianMap);
-			delete symbianMap;
-			symbianMap = 0;
-		}
-	}
+    TInt result = iStatus.Int();
+        
+    if (result < KErrNone) {
+        SetError(result);
+        iRequesting = EFalse;
+    } else if (iMsgType == EHbIndicatorUserActivated && result >= 0) {
+        iMsgType = -1;
+        if (result > 0) {       
+            delete iBuffer;
+            iBuffer = NULL;
+            iBuffer = HBufC8::NewL(result);
+            iDataPtr.Set(iBuffer->Des());
+            TInt error = iHbSession.SendSyncRequest(EHbSrvActivatedIndicatorData, iDataPtr, &iMsgTypePtr);                                          
+        }
+    
+        QByteArray resArray((const char*)iDataPtr.Ptr(), iDataPtr.Size());
+        QDataStream stream(&resArray, QIODevice::ReadOnly);     
+    
+        QVariant var;
+        stream >> var;
+        QVariantMap varMap = var.toMap();
+    
+        if (iObserver) {
+            QString type = varMap.value("type").toString();
+            TPtrC descriptor(static_cast<const TUint16*>(type.utf16()),
+                                type.length());
+            QVariantMap data = varMap.value("data").toMap();
+            
+            CHbSymbianVariantMap* symbianMap =
+                HbSymbianVariantConverter::fromQVariantMapL(data);
+            
+            iObserver->IndicatorUserActivated(descriptor, *symbianMap);
+            delete symbianMap;
+            symbianMap = 0;
+        }
+    }
     // Make a new request if there were no errors.
     if ( result != KErrServerTerminated && result != KErrCancel && iRequesting) {        
-		SetActive();
-		iHbSession.SendASyncRequest(EHbSrvGetActivatedIndicatorContinue, iDataPtr, iMsgTypePtr, iStatus);
+        SetActive();
+        iHbSession.SendASyncRequest(EHbSrvGetActivatedIndicatorContinue, iDataPtr, iMsgTypePtr, iStatus);
     }
 }
 
 void CHbIndicatorSymbianPrivate::DoCancel()
 {
-	if (iRequesting) {
-		iHbSession.SendSyncRequest(EhbSrvGetActivatedIndicatorsClose);
-		iRequesting = EFalse;    
-	}
+    if (iRequesting) {
+        iHbSession.SendSyncRequest(EhbSrvGetActivatedIndicatorsClose);
+        iRequesting = EFalse;    
+    }
 }
 
 TInt CHbIndicatorSymbianPrivate::RunError( TInt aError )
-	{
-	SetError(aError);
-	return KErrNone;
-	}
+    {
+    SetError(aError);
+    return KErrNone;
+    }
 
+/*!
+    Constructs a new CHbIndicatorSymbian and returns a pointer it.
+*/
 EXPORT_C CHbIndicatorSymbian* CHbIndicatorSymbian::NewL()
     {
-    CHbIndicatorSymbian *me = new CHbIndicatorSymbian();
+    CHbIndicatorSymbian *me = new (ELeave) CHbIndicatorSymbian();
+    CleanupStack::PushL(me);
     me->ConstructL();
+    CleanupStack::Pop(me);
     return me;
     }
 
+/*!
+    Destructs CHbIndicatorSymbian.
+*/
 EXPORT_C CHbIndicatorSymbian::~CHbIndicatorSymbian()
 {
     delete d;
 }
 
 /*!
-    Activates an indicator of type \a aIndicatorType.
-    An extra parameter can be passed along to the indicator plugin.
-    Returns true, if the indicator is activated, false, if an error occurred.  
+    Activates an indicator. If indicator was already active, updates it.
 
-    \sa Deactivate
+    \param aIndicatorType Indicator to activate.
+    \param aParameter Optional parameter to pass into indicator plugin implementation. Ownership
+    doesn't transfer.
+
+    \return Returns true if the indicator was activated, false if an error occurred.
+
+    \sa Deactivate()
  */
 EXPORT_C TBool CHbIndicatorSymbian::Activate(const TDesC& aIndicatorType, const CHbSymbianVariant* aParameter)
 {
@@ -290,12 +314,16 @@ EXPORT_C TBool CHbIndicatorSymbian::Activate(const TDesC& aIndicatorType, const 
 }
 
 /*!
-    Deactivates an indicator of type \a indicatorType.
-    An extra parameter can be passed along to the indicator plugin.
-    If indicator is not currently active, does nothing and returns true.
-    Returns false, if error occurred.
+    Deactivates an indicator.
 
-    \sa Activate
+    \param aIndicatorType Indicator to deactivate.
+    \param aParameter Optional parameter to pass into indicator plugin implementation. Ownership
+    doesn't transfer.
+
+    \return Returns true if the indicator was deactivated or wasn't active,
+    false if an error occurred.
+
+    \sa Activate()
  */
 EXPORT_C TBool CHbIndicatorSymbian::Deactivate(const TDesC& aIndicatorType, const CHbSymbianVariant* aParameter)
 {
@@ -312,7 +340,7 @@ EXPORT_C TInt CHbIndicatorSymbian::Error() const
 
 EXPORT_C void CHbIndicatorSymbian::SetObserver(MHbIndicatorSymbianObserver* aObserver)
 {
-	d->iObserver = aObserver;
+    d->iObserver = aObserver;
 }
 
 CHbIndicatorSymbian::CHbIndicatorSymbian()

@@ -47,6 +47,8 @@ public:
     int loopCount() const;
     void setLoopCount(int count);
 
+    void setGeometry(const QRectF &rect);
+
     enum { Type = Hb::ItemType_MarqueeItem };
     int type() const { return Type; }
 
@@ -71,8 +73,8 @@ protected:
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbMarqueeItem)
     Q_PRIVATE_SLOT(d_func(), void _q_stateChanged())
-
-
+    Q_PRIVATE_SLOT(d_func(), void _q_tryToResumeAnimation())
+    Q_PRIVATE_SLOT(d_func(), void void _q_temporaryStopAnimation())
 };
 
 #endif // HBMARQUEEITEM_H

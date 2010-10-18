@@ -35,6 +35,7 @@
 
 #include <qmath.h>
 #include <QDebug>
+#include <QMetaObject>
 
 const int Hb_Recycle_Buffer_Shrink_Threshold = 2; // Rather arbitrary
 
@@ -254,7 +255,7 @@ void HbListItemContainer::removeItem(const QModelIndex &index, bool animate)
 
 /*!
     Sets the modelIndexes of \a count container items starting from item at \a containerStartRow row of the container
-	to model's indexes starting from \a modelStartRow
+    to model's indexes starting from \a modelStartRow
 */
 void HbListItemContainer::setItemModelIndexes(int containerStartRow, int modelStartRow, int count)
 {
@@ -476,7 +477,6 @@ void HbListItemContainer::animationFinished(const HbEffect::EffectStatus &status
     Q_D(HbListItemContainer);
 
     HbAbstractViewItem *item = static_cast<HbAbstractViewItem *>(status.item);
-    item->setFlag(QGraphicsItem::ItemSendsGeometryChanges, false);
 
     // Remove item from mAnimatedItems list.
     int itemCount = d->mAnimatedItems.count();
@@ -519,7 +519,8 @@ void HbListItemContainer::animationFinished(const HbEffect::EffectStatus &status
 
         d->adjustContent();
     } else {
-        item->deleteLater();
+        item->hide();
+        QMetaObject::invokeMethod(item, "deleteLater", Qt::QueuedConnection);
     }
 }
 

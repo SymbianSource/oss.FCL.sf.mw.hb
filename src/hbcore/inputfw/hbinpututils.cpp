@@ -48,19 +48,21 @@
 
 
 /*!
+@stable
+@hbcore
 \class HbInputUtils
-\brief A collection input related utility methods.
+\brief The HbInputUtils class is a collection of input related utility functions.
 
-This class contains a collection of static input related utility methods that do not
-naturally belong to any other scope. There are convenience methods for testing
-attributes of keyboard and input mode types, instantiating plugins etc.
+This class contains a collection of static input related utility functions
+that do not naturally belong to any other scope. There are convenience functions
+for testing keyboard attributes and input mode types, instantiating plugins, and so on.
 
 \sa HbInputMethod
 \sa QInputContextPlugin
 */
 
 /*!
-Finds the fist number character bound to key using given mapping data.
+Finds the first number character bound to \a key using the given mapping data.
 */
 QChar HbInputUtils::findFirstNumberCharacterBoundToKey(const HbMappedKey *key,
         const HbInputLanguage language,
@@ -103,7 +105,7 @@ QChar HbInputUtils::findFirstNumberCharacterBoundToKey(const HbMappedKey *key,
 }
 
 /*!
-Returns true if the concept of "text case" can be applied to given input mode.
+Returns \c true if the concept of "text case" can be applied to \a inputMode.
 For example Chinese and Japanese modes do not have text case.
 */
 bool HbInputUtils::isCaseSensitiveMode(HbInputModeType inputMode)
@@ -116,7 +118,7 @@ bool HbInputUtils::isCaseSensitiveMode(HbInputModeType inputMode)
 }
 
 /*!
-Lists all Qt library files in language database directory. May return
+Lists all %Qt library files in the language database directory. Can return
 files that are not language database plugins. languageDatabasePluginInstance()
 checks the validity of plugin files provided by this function.
 
@@ -138,7 +140,7 @@ void HbInputUtils::listAvailableLanguageDatabasePlugins(QStringList &result, con
 }
 
 /*!
-Creates an instance of given language database plugin, if valid.
+Creates an instance of the given language database plugin, if valid.
 */
 HbLanguageDatabaseInterface *HbInputUtils::languageDatabasePluginInstance(const QString &pluginFileName, const QString &subfolder)
 {
@@ -170,7 +172,7 @@ HbLanguageDatabaseInterface *HbInputUtils::languageDatabasePluginInstance(const 
 }
 
 /*!
-Lists all the input languages that the set of available input methods supports. Excludes custom input methods.
+Lists all the input languages supported by the set of available input methods. Excludes custom input methods.
 */
 void HbInputUtils::listSupportedInputLanguages(QList<HbInputLanguage>& results)
 {
@@ -178,9 +180,10 @@ void HbInputUtils::listSupportedInputLanguages(QList<HbInputLanguage>& results)
 }
 
 /*!
-This method creates an instance of QWidget and wraps given graphics widget inside it.
-It creates QGraphicsScene, adds given widget there and creates a view to the scene
-inside returned QWidget. This is utility method is mainly for internal use.
+This function creates a QWidget instance and wraps the given graphics widget
+inside it. It creates a QGraphicsScene object, adds \a graphicsWidget there,
+and creates a view to the scene inside the returned %QWidget. This utility
+function is mainly for the internal use of the input framework.
 */
 QWidget *HbInputUtils::createWrapperWidget(QGraphicsWidget *graphicsWidget)
 {
@@ -204,8 +207,9 @@ QWidget *HbInputUtils::createWrapperWidget(QGraphicsWidget *graphicsWidget)
 }
 
 /*!
-A convenience method that wraps given widget inside QGraphicsProxyWidget
-and returns it. This is utility method is mainly for internal use.
+A convenience function that wraps the given widget inside a QGraphicsProxyWidget
+and returns it. This utility method is mainly for the internal use of the input
+framework.
 */
 QGraphicsWidget *HbInputUtils::createGraphicsProxyWidget(QWidget *widget)
 {
@@ -221,7 +225,7 @@ QGraphicsWidget *HbInputUtils::createGraphicsProxyWidget(QWidget *widget)
 }
 
 /*!
-returns the input digit type for the given input language
+Returns the input digit type for the given input language.
 */
 
 HbInputDigitType HbInputUtils::inputDigitType(HbInputLanguage language)
@@ -248,9 +252,9 @@ HbInputDigitType HbInputUtils::inputDigitType(HbInputLanguage language)
 
 
 /*!
-Returns the proxy widget of the embedded widget in a graphics view ;
-if widget does not have the proxy widget then it returns the proxy widget of its window.
- otherwise returns 0.
+Returns the proxy widget of the embedded widget in a graphics view.
+If the widget does not have a proxy widget it returns the proxy widget of its window.
+Otherwise returns 0.
 */
 QGraphicsProxyWidget *HbInputUtils::graphicsProxyWidget(const QWidget *w)
 {
@@ -261,6 +265,20 @@ QGraphicsProxyWidget *HbInputUtils::graphicsProxyWidget(const QWidget *w)
     return pw;
 }
 
+/*!
+\fn bool HbInputUtils::isChineseInputMode(HbInputModeType inputMode)
+Returns \c true if \a inputMode is the Chinese input mode.
+*/
+
+/*!
+\fn bool HbInputUtils::isQwertyKeyboard(HbKeyboardType keyboardType)
+Returns \c true if \a keyboardType is a QWERTY keyboard type.
+*/
+
+/*!
+\fn bool HbInputUtils::isTouchKeyboard(HbKeyboardType keyboardType)
+Returns \c true if \a keyboardType is a virtual keyboard type.
+*/
 
 // End of file
 

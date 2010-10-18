@@ -36,11 +36,18 @@ class HbInputLanguage;
 class HB_CORE_EXPORT HbKeymapFactory
 {
 public:
+    enum Flag {
+        Default   = 0,
+        NoCaching = 0x01
+    };
+    Q_DECLARE_FLAGS(Flags, Flag)
+
     static HbKeymapFactory *instance();
 
     const HbKeymap *keymap(const QLocale::Language language,
                            const QLocale::Country country = QLocale::AnyCountry);
     const HbKeymap *keymap(const HbInputLanguage language);
+    const HbKeymap *keymap(const HbInputLanguage &language, HbKeymapFactory::Flags flags);
 
     static QList<HbInputLanguage> availableLanguages();
 
@@ -53,6 +60,8 @@ private:
 private:
     HbKeymapFactoryPrivate *mPrivate;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(HbKeymapFactory::Flags)
 
 #endif // HB_INPUT_KEYMAP_FACTORY_H
 

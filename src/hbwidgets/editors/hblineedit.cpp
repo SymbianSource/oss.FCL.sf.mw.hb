@@ -29,8 +29,8 @@
 #include "hbstyleoption_p.h"
 #include "hbscrollarea.h"
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
-#include "hbtextmeasurementutility_p.h"
-#include "hbfeaturemanager_r.h"
+#include "hbtextmeasurementutility_r.h"
+#include "hbtextmeasurementutility_r_p.h"
 #endif //HB_TEXT_MEASUREMENT_UTILITY
 #include "hbevent.h"
 
@@ -259,7 +259,7 @@ void HbLineEdit::setMaxRows (int rows)
         }
 
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
-        if ( HbFeatureManager::instance()->featureStatus( HbFeatureManager::TextMeasurement ) ) {
+        if (HbTextMeasurementUtility::instance()->locTestMode()) {
             setProperty( HbTextMeasurementUtilityNameSpace::textMaxLines, d->maximumRows );
         }
 #endif
@@ -285,7 +285,7 @@ void HbLineEdit::inputMethodEvent(QInputMethodEvent *e)
 {
     Q_D(HbLineEdit);
     
-    if((!e->commitString().isEmpty() || e->replacementLength()) &&
+    if((!e->commitString().isEmpty() || e->replacementLength() || !e->preeditString().isEmpty()) &&
          d->echoMode == HbLineEdit::PasswordEchoOnEdit && d->clearOnEdit) {
         d->doc->clear();
         d->passwordText.clear();
@@ -294,7 +294,7 @@ void HbLineEdit::inputMethodEvent(QInputMethodEvent *e)
 
     if (e->commitString().contains("\n")) {
         QString str = e->commitString();
-        str.replace("\n", " ");
+        str.replace("\n", "");
         e->setCommitString(str, e->replacementStart(), e->replacementLength());
     }
     
@@ -343,9 +343,10 @@ void HbLineEdit::keyPressEvent (QKeyEvent *event)
         d->clearOnEdit = false;
     }
 
+
     if(d->forwardKeyEvent(event)) {
         HbAbstractEdit::keyPressEvent(event);
-    } else if (d->echoMode == HbLineEdit::Password || d->echoMode == HbLineEdit::NoEcho){
+    } else if (d->isPasswordMode()){
         // Keep doc and passwordText in sync
         bool update = false;
         if (event->key() == Qt::Key_Backspace && !(event->modifiers() & ~Qt::ShiftModifier)) {
@@ -357,14 +358,14 @@ void HbLineEdit::keyPressEvent (QKeyEvent *event)
         }
 
         if (update) {
-            setPlainText(((d->echoMode == HbLineEdit::Password)?d->passwordString(d->passwordText):""));
+            if(d->echoMode == HbLineEdit::PasswordEchoOnEdit) {
+                setPlainText(d->passwordText);
+            } else {
+                setPlainText(((d->echoMode == HbLineEdit::Password)?d->passwordString(d->passwordText):""));
+            }
         }
         setCursorPosition(d->passwordText.length());
     }
-    if (d->echoMode == HbLineEdit::PasswordEchoOnEdit) {
-        // Keep doc and passwordText in sync
-        d->passwordText = toPlainText();
-    }    
 }
 
 /*!
@@ -588,7 +589,7 @@ void HbLineEdit::setText(const QString &text)
     QString txt( text );
 
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
-    if ( HbFeatureManager::instance()->featureStatus( HbFeatureManager::TextMeasurement ) ) {
+    if (HbTextMeasurementUtility::instance()->locTestMode()) {
         if (text.endsWith(QChar(LOC_TEST_END))) {
             int index = text.indexOf(QChar(LOC_TEST_START));
             setProperty( HbTextMeasurementUtilityNameSpace::textIdPropertyName,  text.mid(index + 1, text.indexOf(QChar(LOC_TEST_END)) - index - 1) );

@@ -37,6 +37,7 @@ HbSliderTrackItem::HbSliderTrackItem(QGraphicsItem* parent)
     maskWidth = 0;
     trackSpan = 0;
     setMask   = true;
+    handleRect = QRectF();
 }
 
 HbSliderTrackItem::HbSliderTrackItem(HbFrameDrawer *drawer, QGraphicsItem *parent)
@@ -48,6 +49,7 @@ HbSliderTrackItem::HbSliderTrackItem(HbFrameDrawer *drawer, QGraphicsItem *paren
     maskWidth = 0;
     trackSpan = 0;
     setMask   = true;
+    handleRect = QRectF();
 }
 
 void HbSliderTrackItem::setMinimum(int min)
@@ -106,6 +108,11 @@ void HbSliderTrackItem::setSpan( qreal span )
     }
 }
 
+void HbSliderTrackItem::setHandleRect( QRectF sliderHandleRect)
+{
+    handleRect=sliderHandleRect;
+}
+
 void HbSliderTrackItem::paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget)
 {
     QSize size = boundingRect().size().toSize();
@@ -116,28 +123,28 @@ void HbSliderTrackItem::paint(QPainter * painter, const QStyleOptionGraphicsItem
                 if (mOrientation == Qt::Horizontal) {
                     qreal left = (qreal)boundingRect().topLeft().x();
                     if (inverted) {
-                        left = (qreal)boundingRect().width() * ((maximum - value) / (qreal)(maximum - minimum));
+                        left = (qreal)trackSpan * ((maximum - value) / (qreal)(maximum - minimum)) + handleRect.width()/2;
                     }
                     if (layoutDirection() == Qt::RightToLeft) {
                         maskRect = QRectF(
                                        left,
                                        (qreal)boundingRect().topLeft().y(),
-                                       (qreal)boundingRect().width() * ((value -  minimum) / (qreal)(maximum - minimum)),
+                                       (qreal)trackSpan * ((value -  minimum) / (qreal)(maximum - minimum)) + handleRect.width()/2,
                                        (qreal)boundingRect().height());
                     } else {
                         maskRect = QRectF(
                                        left,
                                        (qreal)boundingRect().topLeft().y(),
-                                       (qreal)trackSpan * ((value -  minimum) / (qreal)(maximum - minimum)),
+                                       (qreal)trackSpan * ((value -  minimum) / (qreal)(maximum - minimum))+handleRect.width()/2,
                                        (qreal)boundingRect().height());
                     }
                 } else {
-                    qreal start = boundingRect().bottom() - (qreal)trackSpan * ((value -  minimum) / (qreal)(maximum - minimum));
+                    qreal start = boundingRect().bottom() - (qreal)trackSpan * ((value -  minimum) / (qreal)(maximum - minimum))-handleRect.height()/2;
                     qreal end = boundingRect().bottom();
 
                     if (inverted) {
                         start = boundingRect().top();
-                        end = start + (qreal)trackSpan * ((value -  minimum) / (qreal)(maximum - minimum));
+                        end = start + (qreal)trackSpan * ((value -  minimum) / (qreal)(maximum - minimum))+handleRect.height()/2;
                     }
                     maskRect = QRectF(
                                    (qreal)boundingRect().topLeft().x(),

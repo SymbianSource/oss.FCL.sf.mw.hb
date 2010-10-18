@@ -33,20 +33,21 @@
 
 /*!
 \proto
+@hbcore
 \class HbStaticVkbHost
 \brief Static virtual keyboard host
 
-The virtual keyboard host takes care of keyboard animations.
-This version, unlike other vkb host implementations,  only brings up the virtual keyboard but does not
-move the underlying view or reposition the editor in case it is fully or partially covered by the virtual
-keyboard. In other words, it does not gurantee that the editor cursor remains visible.
-That task is left to application developer who chooses to use this vkb host.
+This virtual keyboard host disables container animations and only takes care of keyboard movement.
+It only brings up the virtual keyboard but does not move the underlying view or reposition
+the editor. In other words, it does not gurantee that the editor cursor remains visible.
 
-This host is meant to be used in those special cases where none of the existing vkb hosts work with the application
-in suitable way.
+This host is meant to be used in those special cases where none of the other vkb hosts works.
 
-\sa HbViewVkbHost
-\sa HbPopupVkbHost
+See \ref vkbHandling "virtual keyboard handling guide" for more information
+
+\sa HbVkbHost
+\sa HbAbstractVkbHost
+\sa HbShrinkingVkbHost
 */
 
 /// @cond

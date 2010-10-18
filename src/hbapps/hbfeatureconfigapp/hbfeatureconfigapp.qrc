@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/docml" >   
+        <file alias="hbfeatureconfigapp.docml">resources/hbfeatureconfigapp.docml</file>
+    </qresource>    
+</RCC>

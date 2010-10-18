@@ -39,6 +39,7 @@
 
 #include "hbinputsctkeyboard.h"
 #include "hbinputvkbwidget_p.h"
+class HbInputButtonGroup;
 
 class HB_INPUT_PRIVATE_EXPORT HbSctKeyboardPrivate : public HbInputVkbWidgetPrivate
 {
@@ -51,8 +52,12 @@ public:
     void init();
     int keyCode(int buttonId);
     void applyEditorConstraints();
+    void applyEditorConstraints(HbInputFocusObject *focusedObject, HbInputButtonGroup *buttonGroup);
     void updateKeyCodes();
     void updateButtons();
+    int keyAtIndex(int index);
+    int countActiveKeys();
+    void changePage(HbInputVkbWidget::HbFlickDirection flickDirection);
 
     HbKeyboardType mType;
     int mColumns;

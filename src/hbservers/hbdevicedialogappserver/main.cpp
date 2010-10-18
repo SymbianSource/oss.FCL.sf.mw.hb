@@ -32,7 +32,8 @@
 #include <hbtransparentwindow.h>
 #include <hbstackedlayout.h>
 #if defined (Q_OS_SYMBIAN)
-#include <aknappui.h>
+#include <w32std.h>
+#include <coecntrl.h>
 #include <eikenv.h>
 #include <apgwgnam.h>
 #include <hbdevicedialogserverdefs_p.h>
@@ -100,7 +101,6 @@ bool Lock::serverExists()
 }
 #endif // Q_OS_SYMBIAN
 
-#define USE_LOCKER 1
 int main(int arg, char *args[])
 {
     INSTALL_MESSAGE_HANDLER
@@ -143,7 +143,7 @@ int main(int arg, char *args[])
     view->hideItems(Hb::AllItems);
     view->setContentFullScreen();
 
-    HbMainWindow mainWindow(0, Hb::WindowFlagTransparent);
+    HbMainWindow mainWindow(0, Hb::WindowFlagTransparent|Hb::WindowFlagNoBackground);
         
 #if defined (Q_OS_SYMBIAN)
     CCoeControl *c = mainWindow.effectiveWinId();
@@ -163,16 +163,18 @@ int main(int arg, char *args[])
     mainWindow.addView(view);
 
 #if defined (Q_OS_SYMBIAN)
+    _LIT(KCaption, "HbDeviceDialogAppServer");
     CEikonEnv* env = CEikonEnv::Static();
 
     if (env) {
+        env->SetSystem(true);
         CApaWindowGroupName* wgName = CApaWindowGroupName::NewLC(env->WsSession());
         wgName->SetHidden(ETrue); // hides us from FSW and protects us from OOM FW etc.
         wgName->SetSystem(ETrue); // Allow only application with PowerManagement cap to shut us down
-        wgName->SetCaptionL(_L("HbDeviceDialogAppServer"));
+        wgName->SetCaptionL(KCaption);
         wgName->SetAppUid(KNullUid);
         wgName->SetWindowGroupName(env->RootWin());
-        CleanupStack::PopAndDestroy();       
+        CleanupStack::PopAndDestroy(wgName);
     }
 #endif // Q_OS_SYMBIAN
 
@@ -185,7 +187,28 @@ int main(int arg, char *args[])
     RProcess::Rendezvous(KErrNone);
 #endif // Q_OS_SYMBIAN
 
-    int returnValue = app.exec();
+    // Unhandled exceptions mostly do not end up here. Instead they
+    // go to Symbian exception handler which crashes the server.
+    int returnValue = 0;
+    bool hadException = true;
+    try {
+        returnValue = app.exec();
+        hadException = false;
+    } catch(...) {
+#if !defined (Q_OS_SYMBIAN)
+        throw;
+#endif
+    }
+
+    TRACE_EXIT_ARGS("excep =" << hadException << "ret =" << returnValue);
+
+#if defined (Q_OS_SYMBIAN)
+    // On exception, panic the server
+    if (hadException) {
+        _LIT(KCategory, "hbdevdialogsrv");
+        User::Panic(KCategory, 0x100);
+    }
+#endif // Q_OS_SYMBIAN
 
     UNINSTALL_MESSAGE_HANDLER
 

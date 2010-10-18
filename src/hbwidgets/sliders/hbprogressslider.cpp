@@ -26,10 +26,11 @@
 #include "hbprogressslider_p.h"
 #include <hbprogressslider.h>
 #include <hbstyleoptionprogressslider_p.h>
+#include "hbprogresstrackitem_p.h"
 #include <hbtooltip.h>
 #include <hbwidgetfeedback.h>
 #include "hbglobal_p.h"
-
+#include <hbtoucharea.h>
 #include <QGraphicsSceneMouseEvent>
 #include <QApplication>
 
@@ -39,12 +40,17 @@
 #define HB_PRGRESSSLIDER_ITEM_TYPE "HB_PROGRESSSLIDER"
 #endif
 
+#ifdef HB_GESTURE_FW
+#include <hbtapgesture.h>
+#endif
+
 HbProgressSliderPrivate::HbProgressSliderPrivate()
 {
     mDownState=false;
     handle = 0;
     mSliderValue = 0;
     mHandlePath.clear();
+    mToolTipTextVisibleUser = false;
 }
 
 HbProgressSliderPrivate::~HbProgressSliderPrivate()
@@ -53,7 +59,10 @@ HbProgressSliderPrivate::~HbProgressSliderPrivate()
         delete handle;
     }
 }
-
+bool HbProgressSliderPrivate::textVisible() const
+{
+    return mToolTipTextVisibleUser;
+}
 void HbProgressSliderPrivate::setProgressValue(int value)
 {
    Q_Q(HbProgressSlider);
@@ -63,7 +72,7 @@ void HbProgressSliderPrivate::setProgressValue(int value)
     if (value >= mMaximum) {
         value = mMaximum;
 #ifdef HB_EFFECTS
-       // HbEffect::start(mTrack, HB_PRGRESSSLIDER_ITEM_TYPE, "progressbar_progress_complete");
+        HbEffect::start(mTrack, HB_PRGRESSSLIDER_ITEM_TYPE, "progressbar_progress_complete");
 #endif
     }
     else if (value < mMinimum) {
@@ -73,11 +82,7 @@ void HbProgressSliderPrivate::setProgressValue(int value)
     mProgressValue=value;
 
     //redraw track
-    HbStyleOptionProgressSlider sliderOption;
-    q->initStyleOption(&sliderOption);
-    if(mTrack) {
-        q->style()->updatePrimitive(mTrack, HbStyle::P_ProgressSlider_track, &sliderOption);
-    }
+   updateProgressTrack();
 
     emit q->valueChanged(value);
 }
@@ -85,19 +90,27 @@ void HbProgressSliderPrivate::setProgressValue(int value)
 void HbProgressSliderPrivate::setEnableFlag(bool flag)
 {
     Q_Q(HbProgressSlider);
-	Q_UNUSED(flag);
-    HbStyleOptionProgressSlider option;
-    q->initStyleOption(&option);
+    Q_UNUSED(flag);
     q->updatePrimitives();
+    if(flag) {
+        handle->setHandleNormalState();
+    }
 }
 
 void HbProgressSliderPrivate::init()
 {
     Q_Q(HbProgressSlider);
 
-    mSliderGraphicItem  = q->style()->createPrimitive(HbStyle::P_ProgressSlider_slidertrack,mFrame);
+    mSliderGraphicItem = new HbProgressTrackItem(mFrame);
+    HbStyle::setItemName(mSliderGraphicItem, "slider-track");
+    qgraphicsitem_cast<HbProgressTrackItem*>(mSliderGraphicItem)->frameDrawer().setFillWholeRect(true);
+    mSliderGraphicItem->setZValue(-1);
     // Show the touch area which is created in ProgressBar//
-    mTouchAreaItem = q->style()->createPrimitive(HbStyle::P_ProgressSlider_toucharea,q);
+
+    mTouchAreaItem =  q->style()->createPrimitive(HbStyle::PT_TouchArea, "toucharea",q);
+    mTouchAreaItem->setFlag(QGraphicsItem::ItemIsFocusable);
+    mTouchAreaItem->setZValue(TOUCHAREA_ZVALUE);
+
     mFrame->setZValue(mTouchAreaItem->zValue()+1);
 
 #ifdef HB_EFFECTS
@@ -105,11 +118,9 @@ void HbProgressSliderPrivate::init()
     HbEffectInternal::add(HB_PRGRESSSLIDER_ITEM_TYPE,"progressslider_trackrelease", "progressslider_trackrelease");
 #endif
 
-    q->grabGesture(Qt::TapGesture);
-
-    if(QGraphicsObject *touchArea = mTouchAreaItem->toGraphicsObject()) {
-        touchArea->grabGesture(Qt::TapGesture);
-    }
+#ifdef HB_GESTURE_FW
+    mTouchAreaItem->grabGesture(Qt::TapGesture);
+#endif 
 }
 
 void HbProgressSliderPrivate::emitSliderPressed()
@@ -121,6 +132,21 @@ void HbProgressSliderPrivate::emitSliderPressed()
 void HbProgressSliderPrivate::emitSliderReleased()
 {
     Q_Q(HbProgressSlider);
+    if(mDownState){
+        mDownState = false;
+
+        if (mFrame) {
+            HbStyleFramePrimitiveData data; 
+            q->initPrimitiveData(&data, mFrame); 
+            q->style()->updatePrimitive(mFrame, &data, q);
+        }
+        HbWidgetFeedback::triggered(q, Hb::InstantReleased);
+
+#ifdef HB_EFFECTS
+        HbEffect::start(q, HB_PRGRESSSLIDER_ITEM_TYPE, "progressslider_trackrelease");
+#endif
+    }
+
     emit q->sliderReleased();
 }
 
@@ -136,12 +162,6 @@ void HbProgressSliderPrivate::emitSliderMoved(int newValue)
 QRectF HbProgressSliderPrivate::boundingRect()const
 {
     return mFrame->boundingRect();
-}
-
-HbStyle* HbProgressSliderPrivate::style() const
-{
-     Q_Q(const HbProgressSlider);
-     return q->style();
 }
 
 QGraphicsItem* HbProgressSliderPrivate::parentGraphicsItem() const
@@ -195,7 +215,7 @@ Qt::Orientation HbProgressSliderPrivate::orientation()
 
 void HbProgressSliderPrivate::setRange(int minimum, int maximum)
 {
-	Q_Q(HbProgressSlider);
+    Q_Q(HbProgressSlider);
     if( minimum > maximum ){
         maximum = minimum ;
     }
@@ -210,19 +230,73 @@ void HbProgressSliderPrivate::setRange(int minimum, int maximum)
         mProgressValue = mMaximum;
     }
 
-    HbStyleOptionProgressSlider progressSliderOption;
-    q->initStyleOption(&progressSliderOption);
+    updateSliderTrack();
 
-    if (mSliderGraphicItem) {
-            q->style()->updatePrimitive(mSliderGraphicItem, HbStyle::P_ProgressSlider_slidertrack, &progressSliderOption);
-    }
+    updateProgressTrack();
+    
+    q->setSliderValue(mSliderValue);
+}
+
+/*
+    \internal
+    Update progress track primitive
+*/
+void HbProgressSliderPrivate::updateProgressTrack()
+{
+    Q_Q(HbProgressSlider);
 
     if (mTrack) {
-            q->style()->updatePrimitive(mTrack, HbStyle::P_ProgressSlider_track, &progressSliderOption);
-     }
-    
-	q->setSliderValue(mSliderValue);
+            HbProgressTrackItem* frameItem = qgraphicsitem_cast<HbProgressTrackItem*>(mTrack);
+            if(!frameItem->isVisible()) {
+                return;
+            }
+
+            frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
+            if(!q->isEnabled()){
+                frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progslider_loaded_disabled"));
+            }
+            else
+                frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progslider_loaded"));
+
+            frameItem->setMaximum(mMaximum);
+            frameItem->setMinimum(mMinimum);
+            frameItem->setValue(mProgressValue);
+            frameItem->setInverted(mInvertedAppearance);
+            frameItem->setOrientation(mOrientation);
+            frameItem->update();
+        }
 }
+
+/*
+    \internal
+    Update slider track primitive
+*/
+void HbProgressSliderPrivate::updateSliderTrack()
+{
+    Q_Q(HbProgressSlider);
+
+    if (mSliderGraphicItem) {
+            HbProgressTrackItem* frameItem = qgraphicsitem_cast<HbProgressTrackItem*>(mSliderGraphicItem);
+            if(!frameItem->isVisible()) {
+                return;
+            }
+
+            frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
+            if(!q->isEnabled()){
+                frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progslider_played_disabled"));
+            }
+            else
+                frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progslider_played"));
+
+            frameItem->setMaximum(mMaximum);
+            frameItem->setMinimum(mMinimum);
+            frameItem->setValue(mSliderValue);
+            frameItem->setInverted(mInvertedAppearance);
+            frameItem->setOrientation(mOrientation);
+            frameItem->update();
+        }
+}
+
 
 /*!
     @beta
@@ -249,10 +323,14 @@ void HbProgressSliderPrivate::setRange(int minimum, int maximum)
     void sliderPressed();
     void sliderReleased();
     void sliderMoved(int value);
+    void trackPressed();
+    void trackReleased();
 
-    sliderPressed is emitted when the track is pressed. 
-    sliderReleased is emitted when the track is released.
+    sliderPressed is emitted when the handle is pressed. 
+    sliderReleased is emitted when the handle is released.
     sliderMoved is emitted when the handle is moved in any direction.
+    trackPressed is emitted when the track is pressed. 
+    trackReleased is emitted when the track is released.
 
     The Application can customize the Slider behaviour by listening to the signals sliderPressed and sliderReleased.By default there 
     is no behaviour defined by HbProgressSlider for these actions.
@@ -298,6 +376,7 @@ HbProgressSlider::HbProgressSlider(QGraphicsItem *parent) :
 
     setFocusPolicy(Qt::FocusPolicy(qApp->style()->styleHint(QStyle::SH_Button_FocusPolicy)));
     d->handle =new HbProgressSliderHandle(d);
+    d->handle->setZValue(1010);
     if(!flags().testFlag(ItemIsFocusable)) {
         d->handle->setVisible(false);
     }
@@ -322,6 +401,7 @@ HbProgressSlider::HbProgressSlider(QGraphicsItem *parent) :
 HbProgressSlider::HbProgressSlider(HbProgressSliderPrivate &dd,QGraphicsItem *parent) : 
     HbProgressBar( dd,parent)
 {
+
     Q_D( HbProgressSlider );
     d->init();
 
@@ -373,12 +453,7 @@ void HbProgressSlider::setSliderValue(int value)
     }
     d->mSliderValue = value;
 
-    HbStyleOptionProgressSlider option;
-    initStyleOption(&option);
-
-    if (d->mSliderGraphicItem) {
-        style()->updatePrimitive(d->mSliderGraphicItem, HbStyle::P_ProgressSlider_slidertrack, &option);
-    }
+    d->updateSliderTrack();
     d->handle->setHandlePosForValue(sliderValue());
 }
 
@@ -433,6 +508,7 @@ void HbProgressSlider::setInvertedAppearance(bool inverted)
  */
 void HbProgressSlider::mousePressEvent(QGraphicsSceneMouseEvent *event) 
 {
+#ifndef HB_GESTURE_FW
     Q_D(HbProgressSlider);
  
     QRectF rect = d->mTouchAreaItem->sceneBoundingRect( );
@@ -444,13 +520,15 @@ void HbProgressSlider::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
     if(flags().testFlag(ItemIsFocusable)) {
         d->mDownState = true;
-        HbStyleOptionProgressSlider option;
-        initStyleOption(&option);
         if (d->mFrame) {
-            style()->updatePrimitive(d->mFrame, HbStyle::P_ProgressSlider_frame, &option);          
+            HbStyleFramePrimitiveData data; 
+            initPrimitiveData(&data, d->mFrame); 
+
+            style()->updatePrimitive(d->mFrame, &data, this);
         }
         
         HbWidgetFeedback::triggered(this, Hb::InstantPressed);
+        emit trackPressed();
         d->handle->handleTrackPress(event);
         event->accept();
         #ifdef HB_EFFECTS
@@ -459,6 +537,9 @@ void HbProgressSlider::mousePressEvent(QGraphicsSceneMouseEvent *event)
     } else {
         event->ignore();
     }
+#else
+    Q_UNUSED(event)
+#endif 
 }
 
 /*!
@@ -466,19 +547,22 @@ void HbProgressSlider::mousePressEvent(QGraphicsSceneMouseEvent *event)
  */
 void HbProgressSlider::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) 
 {
+#ifndef HB_GESTURE_FW
     Q_D(HbProgressSlider);
 
     if(flags().testFlag(ItemIsFocusable)) {
         d->mDownState = false;
 
-        HbStyleOptionProgressSlider option;
-        initStyleOption(&option);
         if (d->mFrame) {
-            style()->updatePrimitive(d->mFrame, HbStyle::P_ProgressSlider_frame, &option);          
+            HbStyleFramePrimitiveData data; 
+            initPrimitiveData(&data, d->mFrame); 
+
+            style()->updatePrimitive(d->mFrame, &data, this);
         }
 
         HbWidgetFeedback::triggered(this, Hb::InstantReleased);
         d->handle->handleTrackRelease(event);
+        emit trackReleased();
         event->accept();
 #ifdef HB_EFFECTS
         HbEffect::start(this, HB_PRGRESSSLIDER_ITEM_TYPE, "progressslider_trackrelease");
@@ -486,7 +570,85 @@ void HbProgressSlider::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     } else {
         event->ignore();
     }
+#else
+    Q_UNUSED(event)
+#endif 
 }
+
+#ifdef HB_GESTURE_FW
+void HbProgressSlider::gestureEvent(QGestureEvent *event)
+{
+    Q_D (HbProgressSlider);
+
+    if(event->gesture(Qt::TapGesture)) {
+
+        HbTapGesture *tapGesture = static_cast<HbTapGesture *>(event->gesture(Qt::TapGesture));
+        switch(tapGesture->state()) {
+            case Qt::GestureStarted :{           
+                    QRectF rect = d->mTouchAreaItem->sceneBoundingRect( );
+                    // return if point is outside track touch area
+                    if ( !rect.contains( event->mapToGraphicsScene(tapGesture->position( ) ) ) ) {
+                        event->ignore( );
+                        return;
+                    }
+                    if(flags().testFlag(ItemIsFocusable)) {
+                        #ifdef HB_EFFECTS
+                            HbEffect::start(this, HB_PRGRESSSLIDER_ITEM_TYPE, "progressslider_trackpress");
+                        #endif
+                        d->mDownState = true;
+                         if (d->mFrame) {
+                            HbStyleFramePrimitiveData data; 
+                            initPrimitiveData(&data, d->mFrame); 
+
+                            style()->updatePrimitive(d->mFrame, &data, this);
+                        }
+                        
+                        HbWidgetFeedback::triggered(this, Hb::InstantPressed);
+                        emit trackPressed();
+                        d->handle->handleTrackPress(event);
+                        event->accept();
+
+                    } 
+                    else {                    
+                        event->ignore();
+                    }
+            }
+            break;
+            case Qt::GestureCanceled:
+            case Qt::GestureFinished:{       
+                if(d->mDownState) {
+                    if(flags().testFlag(ItemIsFocusable)) {                    
+                            #ifdef HB_EFFECTS
+                                HbEffect::start(this, HB_PRGRESSSLIDER_ITEM_TYPE, "progressslider_trackrelease");
+                            #endif
+
+                            d->mDownState = false;
+                            if (d->mFrame) {
+                                HbStyleFramePrimitiveData data; 
+                                initPrimitiveData(&data, d->mFrame); 
+
+                                style()->updatePrimitive(d->mFrame, &data, this);
+                            }
+                            HbWidgetFeedback::triggered(this, Hb::InstantReleased);
+                           
+                            d->handle->handleTrackRelease(event);
+                            emit trackReleased();
+                            event->accept();
+                            } else {
+                            event->ignore();
+                      }
+                }
+
+            }
+            break;
+            default:break;
+        }
+    }
+
+}
+#endif 
+
+
 /*!
     \reimp
  */
@@ -516,6 +678,35 @@ void HbProgressSlider::initStyleOption( HbStyleOptionProgressSlider *option ) co
         option->disableState = true;
     }
 }
+
+/*!
+    \reimp
+*/
+void HbProgressSlider::initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive)
+{
+    Q_D(HbProgressSlider);
+
+    QString itemName = HbStyle::itemName(primitive);
+    if (itemName == QLatin1String("frame")) {
+        HbStyleFramePrimitiveData *data = hbstyleprimitivedata_cast<HbStyleFramePrimitiveData*>(primitiveData);
+
+        data->frameType = HbFrameDrawer::ThreePiecesHorizontal;
+
+        if (!isEnabled() ) {
+            data->frameGraphicsName = QLatin1String("qtg_fr_progslider_frame_disabled");
+            }
+            else {
+                if(d->mDownState) {
+                    data->frameGraphicsName = QLatin1String("qtg_fr_progslider_frame_pressed");
+                }
+                else {
+                    data->frameGraphicsName = QLatin1String("qtg_fr_progslider_frame_normal");
+                }
+            }
+    }
+
+}
+
 /*!
     \reimp
  */
@@ -526,31 +717,35 @@ void HbProgressSlider::updatePrimitives()
         d->mWaitTrack->setVisible(false);
         d->mTrack->setVisible(true);
 
-        HbStyleOptionProgressSlider option;
-        initStyleOption(&option);
-
-        if (d->mSliderGraphicItem) {
-            style()->updatePrimitive(d->mSliderGraphicItem, HbStyle::P_ProgressSlider_slidertrack, &option);
-        }
-
-        if(d->handle)
-              d->handle->setHandlePosForValue(sliderValue());
-    
         if (d->mFrame) {
-            style()->updatePrimitive(d->mFrame, HbStyle::P_ProgressSlider_frame, &option);          
+            HbStyleFramePrimitiveData data; 
+            initPrimitiveData(&data, d->mFrame); 
+
+            style()->updatePrimitive(d->mFrame, &data, this);
         }
+
+         // update progress value mask
+        d->updateProgressTrack();
      
-        if (d->mTrack) {
-                style()->updatePrimitive(d->mTrack, HbStyle::P_ProgressSlider_track, &option);
-        }
+        // update slider value mask
+        d->updateSliderTrack();
                 
         if(d->mMinTextItem && d->mMinMaxTextVisible) {
-            style()->updatePrimitive(d->mMinTextItem,HbStyle::P_ProgressBar_mintext,&option);    
+            HbStyleTextPrimitiveData data; 
+            HbProgressBar::initPrimitiveData(&data, d->mMinTextItem); 
+
+            style()->updatePrimitive(d->mMinTextItem, &data, this);
         }
 
         if(d->mMaxTextItem && d->mMinMaxTextVisible) {
-            style()->updatePrimitive(d->mMaxTextItem,HbStyle::P_ProgressBar_maxtext,&option);    
+            HbStyleTextPrimitiveData data; 
+            HbProgressBar::initPrimitiveData(&data, d->mMaxTextItem); 
+
+            style()->updatePrimitive(d->mMaxTextItem, &data, this);
         }
+
+        if(d->handle)
+            d->handle->setHandlePosForValue(sliderValue());
     }
 }
 /*!
@@ -589,30 +784,33 @@ QVariant HbProgressSlider::itemChange(GraphicsItemChange change,const QVariant &
 /*!
     \reimp
  */
-bool HbProgressSlider::sceneEventFilter(QGraphicsItem *obj,QEvent *event)
+void HbProgressSlider::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
-    Q_D(HbProgressSlider);
-    if( obj == d->mTouchAreaItem) {
-       if (!isEnabled() ) {
-            return false;
-        }
-        if (event->type() == QEvent::GraphicsSceneMousePress){
-            mousePressEvent((QGraphicsSceneMouseEvent *) event);
-             return true;
-        }
-        else if (event->type() == QEvent::GraphicsSceneMouseRelease){
-            mouseReleaseEvent((QGraphicsSceneMouseEvent *) event);
-            return true;
-        }
-    } 
-    return false;
-}
+#ifndef HB_GESTURE_FW
+    Q_D(HbProgressSlider); 
+    QRectF rect = d->mTouchAreaItem->sceneBoundingRect( );
+    // return if point is outside track touch area
+    if ( !rect.contains( event->scenePos( ) ) ) {
+        event->ignore( );
+        return;
+    }
 
+    if(flags().testFlag(ItemIsFocusable)) {
+        d->handle->handleTrackPress(event);
+        event->accept();
+    } else {
+        event->ignore();
+    }
+#else
+    Q_UNUSED(event)
+#endif 
+}
 
 /*!
     @beta
     Sets the tooltip for the Slider handle. By default it shows the slider value.
-    The application can customize the tooltip text using this API.
+    The application can customize the tooltip text using this API. setting NULL string
+    will disable the tooltip.
 
     \param text tooltip text
 
@@ -622,6 +820,7 @@ void HbProgressSlider::setSliderToolTip(const QString &text)
 {
     Q_D(HbProgressSlider);
     d->mTooltipText = text;
+    d->mToolTipTextVisibleUser = true;
 }
 
 
@@ -671,32 +870,38 @@ QString HbProgressSlider::handleIcon() const
     return d->mHandlePath;
 }
 
-/*!
+bool HbProgressSlider::sceneEventFilter(QGraphicsItem *obj,QEvent *event)
+{
+    Q_D(HbProgressSlider);
+    bool accepted = false;
 
-    \deprecated HbProgressSlider::primitive(HbStyle::Primitive)
-        is deprecated.
+    if( obj == d->mTouchAreaItem) 
+        if (!isEnabled() ) {
+            return false;
+        }
+        
+    if(obj == static_cast<HbTouchArea*>(d->mTouchAreaItem)) {
+        if(event->type() == QEvent::Gesture ) {
+             gestureEvent(static_cast<QGestureEvent *>( event ));
+        }
+    }
+    return accepted;
+}
 
-    Returns the pointer for \a primitive passed.
-    Will return NULL if \a primitive passed is invalid
-*/
-QGraphicsItem* HbProgressSlider::primitive(HbStyle::Primitive primitive) const
+QGraphicsItem *HbProgressSlider::primitive(const QString &itemName) const
 {
     Q_D(const HbProgressSlider);
 
-    switch (primitive) {
-        case HbStyle::P_ProgressSlider_frame:
-            return d->mFrame;
-        case HbStyle::P_ProgressSlider_track:
-            return d->mTrack;
-        case HbStyle::P_ProgressSlider_slidertrack:
-            return d->mSliderGraphicItem;
-        case HbStyle::P_ProgressSlider_toucharea:
-            return d->mTouchAreaItem; 
-        case HbStyle::P_ProgressSliderHandle_icon:
-        case HbStyle::P_ProgressSliderHandle_toucharea:
-            return d->handle->primitive(primitive);
-        default:
-            return 0;
+    if(!itemName.compare(QString("slider-track"))){
+        return d->mSliderGraphicItem;
     }
-}
+    if(!itemName.compare(QString("toucharea"))){
+        return d->mTouchAreaItem;
+    }
+    if(!itemName.compare(QString("handle-icon")) ||
+        !itemName.compare(QString("handle-toucharea"))){
+            return d->handle->primitive(itemName);
+    }
 
+    return HbProgressBar::primitive(itemName);
+}

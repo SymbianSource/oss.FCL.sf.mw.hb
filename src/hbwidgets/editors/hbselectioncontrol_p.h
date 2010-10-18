@@ -50,18 +50,18 @@ class HbSelectionControl : public HbWidget
 
 public:
 
-    enum HandleType {
-        DummyHandle,
-        SelectionStartHandle,
-        SelectionEndHandle
-    };
-
     static HbSelectionControl* attachEditor(HbAbstractEdit *edit);
+    static void detachEditor(HbAbstractEdit *edit);
     void detachEditor();
     void detachEditorFromDestructor();
     void hideHandles();
     void showHandles();
     bool event(QEvent *event);
+
+    void setMagnifierEnabled(bool enable);
+    bool isMagnifierEnabled() const;
+
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
 
 public slots:
     void scrollStarted();
@@ -74,6 +74,8 @@ protected:
     void polish( HbStyleParameters& params );
     QVariant itemChange(GraphicsItemChange change, const QVariant &value);
     void gestureEvent(QGestureEvent* event);
+    bool eventFilter(QObject * watched, QEvent *event);
+
 
 private:
     HbSelectionControl();

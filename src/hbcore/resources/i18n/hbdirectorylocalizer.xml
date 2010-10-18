@@ -10,7 +10,7 @@
 			</stringElement>
 			<stringElement>
 				<name>text_memory_card_root_path</name>
-				<path>E:\</path>
+				<path>\</path>
 			</stringElement>
 			<stringElement>
 				<name>text_games_path</name>
@@ -77,176 +77,176 @@
 				<path>Links</path>
 			</stringElement>
 	    <stringElement>
-	        <translation>text_directorynamelocalizer_foldername_games</translation>
+	        <translation>txt_directorynamelocalizer_foldername_games</translation>
 	    </stringElement>
 	    <stringElement>
-	        <translation>text_directorynamelocalizer_foldername_install</translation>
+	        <translation>txt_directorynamelocalizer_foldername_install</translation>
 	    </stringElement>
 	    <stringElement>
-	        <translation>text_directorynamelocalizer_foldername_images</translation>
+	        <translation>txt_directorynamelocalizer_foldername_images</translation>
 	    </stringElement>
 	    <stringElement>
-	        <translation>text_directorynamelocalizer_foldername_gms_pict</translation>
+	        <translation>txt_directorynamelocalizer_foldername_gms_pict</translation>
 	    </stringElement>
 	    <stringElement>
-	        <translation>text_directorynamelocalizer_foldername_mms_bc</translation>
+	        <translation>txt_directorynamelocalizer_foldername_mms_bc</translation>
 	    </stringElement>
 	    <stringElement>
-	        <translation>text_directorynamelocalizer_foldername_pres_logos</translation>
+	        <translation>txt_directorynamelocalizer_foldername_pres_logos</translation>
 	    </stringElement>
 	    <stringElement>
-	        <translation>text_directorynamelocalizer_foldername_fldr_others</translation>
+	        <translation>txt_directorynamelocalizer_foldername_others</translation>
 	    </stringElement>
 	    <stringElement>
-	        <translation>text_directorynamelocalizer_foldername_sounds</translation>
+	        <translation>txt_directorynamelocalizer_foldername_sounds</translation>
 	    </stringElement>
 	    <stringElement>
-	        <translation>text_directorynamelocalizer_foldername_digital_tones</translation>
+	        <translation>txt_directorynamelocalizer_foldername_digital_tones</translation>
 	    </stringElement>
 	    <stringElement>
-	        <translation>text_directorynamelocalizer_foldername_simple_tones</translation>
+	        <translation>txt_directorynamelocalizer_foldername_simple_tones</translation>
 	    </stringElement>
 	    <stringElement>
-	        <translation>text_directorynamelocalizer_foldername_videos</translation>
+	        <translation>txt_directorynamelocalizer_foldername_videos</translation>
 	    </stringElement>			
 		   <stringElement>
-	        <translation>text_directorynamelocalizer_foldername_contacts</translation>       
+	        <translation>txt_directorynamelocalizer_foldername_contacts</translation>       
 	    </stringElement>			
 		   <stringElement>
-	        <translation>text_directorynamelocalizer_foldername_links</translation>
+	        <translation>txt_directorynamelocalizer_foldername_links</translation>
 	     </stringElement>
 		</pathStrings>
     <fullDirectoryPaths>
 			<directoryElement>
 				<rootPath>text_phone_memory_root_path</rootPath>
 				<localizedPath>text_games_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_games</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_games</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>
 				<rootPath>text_phone_memory_root_path</rootPath>
 				<localizedPath>text_installs_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_install</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_install</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>
 				<rootPath>text_phone_memory_root_path</rootPath>
 				<localizedPath>text_images_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_images</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_images</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>
 				<rootPath>text_phone_memory_root_path</rootPath>
 				<localizedPath>text_gms_pictures_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_gms_pict</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_gms_pict</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>
 				<rootPath>text_phone_memory_root_path</rootPath>
 				<localizedPath>text_mms_background_images_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_mms_bc</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_mms_bc</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>
 				<rootPath>text_phone_memory_root_path</rootPath>
 				<localizedPath>text_presence_logos_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_pres_logos</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_pres_logos</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>
 				<rootPath>text_phone_memory_root_path</rootPath>
 				<localizedPath>text_others_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_others</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_others</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>
 				<rootPath>text_phone_memory_root_path</rootPath>
 				<localizedPath>text_sounds_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_sounds</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_sounds</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>
 				<rootPath>text_phone_memory_root_path</rootPath>
 				<localizedPath>text_digital_sounds_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_digital_tones</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_digital_tones</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>
 				<rootPath>text_phone_memory_root_path</rootPath>
 				<localizedPath>text_simple_sounds_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_simple_tones</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_simple_tones</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>
 				<rootPath>text_phone_memory_root_path</rootPath>
 				<localizedPath>text_videos_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_videos</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_videos</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>
 				<rootPath>text_memory_card_root_path</rootPath>
 				<localizedPath>text_games_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_games</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_games</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>
 				<rootPath>text_memory_card_root_path</rootPath>
 				<localizedPath>text_installs_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_install</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_install</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>
 				<rootPath>text_memory_card_root_path</rootPath>
 				<localizedPath>text_images_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_images</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_images</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>
 				<rootPath>text_memory_card_root_path</rootPath>
 				<localizedPath>text_others_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_others</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_others</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>	
 				<rootPath>text_memory_card_root_path</rootPath>
 				<localizedPath>text_sounds_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_sounds</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_sounds</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>		
 				<rootPath>text_memory_card_root_path</rootPath>
 				<localizedPath>text_digital_sounds_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_digital_tones</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_digital_tones</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>
 				<rootPath>text_memory_card_root_path</rootPath>
 				<localizedPath>text_simple_sounds_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_simple_tones</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_simple_tones</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>
 				<rootPath>text_memory_card_root_path</rootPath>
 				<localizedPath>text_videos_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_videos</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_videos</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
@@ -258,13 +258,13 @@
 			</directoryElement>
 			<directoryElement>           
 				<localizedPath>text_memory_card_links_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_links</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_links</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>
 			<directoryElement>
 				<localizedPath>text_phone_memory_root_path text_links_path</localizedPath>
-				<localizedName>text_directorynamelocalizer_foldername_links</localizedName>
+				<localizedName>txt_directorynamelocalizer_foldername_links</localizedName>
 				<extraData></extraData>
 				<iconIndex>0</iconIndex>														
 			</directoryElement>     

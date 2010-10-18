@@ -28,6 +28,10 @@
 
 #include <hbwidget.h>
 
+#ifdef HB_EFFECTS
+#include <hbeffect.h>
+#endif
+
 class HbListView;
 class HbComboBoxPrivate;
 class HbComboDropDownPrivate;
@@ -44,9 +48,13 @@ public:
 public slots:
     void keypadOpened( );
     void keypadClosed( );
+    #ifdef HB_EFFECTS
+    void dismissEffectFinished( HbEffect::EffectStatus );
+    #endif
 
 protected:
     bool eventFilter( QObject *obj, QEvent *event );
+    QVariant itemChange ( GraphicsItemChange change, const QVariant & value );
     Q_DECLARE_PRIVATE_D(d_ptr, HbComboDropDown)
 
 public:

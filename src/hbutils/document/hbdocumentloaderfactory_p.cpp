@@ -36,7 +36,6 @@
 #include <hbwidget.h>
 #include <hbpushbutton.h>
 #include <hblineedit.h>
-#include <hbdatetimeedit.h>
 #include <hbsearchpanel.h>
 #include <hbmenu.h>
 #include <hbview.h>
@@ -206,7 +205,6 @@ QObject *HbDocumentLoaderFactory::create(const QString& type, const QString& nam
     CHECK_OBJECT_0(HbView)
     CHECK_OBJECT_0(HbSlider)
     CHECK_OBJECT_0(HbLineEdit)
-    CHECK_OBJECT_0(HbDateTimeEdit)
     CHECK_OBJECT_0(HbSearchPanel)
     CHECK_OBJECT_0(HbToolBar)
     CHECK_OBJECT_0(HbScrollBar)

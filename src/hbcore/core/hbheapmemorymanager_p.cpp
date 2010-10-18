@@ -26,12 +26,11 @@
 #include "hbheapmemorymanager_p.h"
 #include <stdlib.h>
 
-HbMemoryManager* HbHeapMemoryManager::memManager = 0;
-
 /*
 * c'tor
 */
-HbHeapMemoryManager::HbHeapMemoryManager()
+HbHeapMemoryManager::HbHeapMemoryManager() :
+    HbMemoryManager(true)
 {
 }
 
@@ -40,9 +39,9 @@ HbHeapMemoryManager::HbHeapMemoryManager()
 * 
 * This function can throw an exception in case of out of memory condition
 */
-int HbHeapMemoryManager::alloc(int size)
+qptrdiff HbHeapMemoryManager::alloc(int size)
 {
-    int offset = -1;
+    qptrdiff offset = -1;
     if( size > 0) {
         void* ptr = ::malloc(size);
         HB_CHECK_PTR(ptr)
@@ -57,9 +56,9 @@ int HbHeapMemoryManager::alloc(int size)
 * This function can throw an exception in case of out of memory condition
 *
 */
-int HbHeapMemoryManager::realloc(int oldOffset, int newSize)
+qptrdiff HbHeapMemoryManager::realloc(qptrdiff oldOffset, int newSize)
 {
-    int offset = -1;
+    qptrdiff offset = -1;
     if ( newSize > 0 ) {
         if (oldOffset == -1) {
             offset = (qptrdiff)::malloc(newSize);
@@ -74,29 +73,9 @@ int HbHeapMemoryManager::realloc(int oldOffset, int newSize)
 /*
 * To free memory
 */
-void HbHeapMemoryManager::free(int offset)
+void HbHeapMemoryManager::free(qptrdiff offset)
 {
     if (offset != -1) {
         ::free((void*)offset);
     }
-}
-
-/*
-* To get instance of memory manager
-*/
-HbMemoryManager* HbHeapMemoryManager::instance()
-{
-    if(!memManager) {
-        memManager = new HbHeapMemoryManager();
-    }
-    return memManager;
-}
-
-/**
- * To release instance of HbHeapMemoryManager
- */
-void HbHeapMemoryManager::releaseInstance()
-{
-    delete memManager;
-    memManager = 0;
 }

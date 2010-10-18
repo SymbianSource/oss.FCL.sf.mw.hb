@@ -70,6 +70,8 @@ public:
                              qreal minHeight,
                              qreal maxHeight);
 
+    bool isAdjustWidthNeeded(qreal newWidth);
+
     void clearAdjustedSizeCache();
 
     qreal respectHeightLimits(qreal height) const;
@@ -150,10 +152,13 @@ public:
     mutable qreal mMaxWidthForAdjust;
     mutable qreal mDefaultHeight;
     mutable QSizeF mLastConstraint;
-
+    bool mHasMultiTrans;
     mutable bool mUpdateColor;
 
+    QRectF mBoundingRect;
+
     bool mEventPosted;
+    quint32 inConstructor : 1;
 
     static bool outlinesEnabled;
 };

@@ -33,8 +33,12 @@ class HB_AUTOTEST_EXPORT HbSharedMemoryManagerUt
     : public HbSharedMemoryManager
 {
 public:
-    static HbMemoryManager * instance();
-    static void releaseInstance();
+    // To allocate a new HbSharedMemoryManagerUt
+    static inline HbSharedMemoryManagerUt * create() HB_ALWAYS_INLINE
+    {
+        return new HbSharedMemoryManagerUt();
+    }
+
     void setWritable( bool readWrite );
     // This class is only for unittest.. so getting unittest
     // should not be a problem.
@@ -46,7 +50,6 @@ private:
     bool initialize();
     HbSharedMemoryManagerUt();
     ~HbSharedMemoryManagerUt();
-    static HbSharedMemoryManagerUt *memManager;
 };
 
 #endif // HBSHAREDMEMORYMANAGERUT_P_H

@@ -31,7 +31,6 @@
 #include <hbabstractedit.h>
 #include <hbtextedit.h>
 #include <hblineedit.h>
-#include <hbinputvirtualrocker.h>
 #include <hbabstractslidercontrol.h>
 #include <hbprogressslider.h>
 #include <hbscrollbar.h>
@@ -64,11 +63,11 @@ const int continuousSliderStepLimit = 15;
 */
 int HbFeedbackEffectUtils::parentItemType(const HbWidget *widget)
 {
-    int graphicsItemType = 0;
-    if (const HbWidget *parent = dynamic_cast<const HbWidget *>(widget->parentItem())) {
-        graphicsItemType = parent->type();
-    }
-    return graphicsItemType;
+    QGraphicsItem *parent = widget->parentItem();
+    if(parent)
+        return parent->type();
+    else
+        return 0;
 }
 
 /*!
@@ -105,7 +104,7 @@ HbFeedbackEffectUtils::WidgetFamily HbFeedbackEffectUtils::widgetFamily(const Hb
         case Hb::ItemType_MenuItem:
        
         case Hb::ItemType_AbstractItemView:
-              	
+                
         case Hb::ItemType_ListView:
 
         case Hb::ItemType_ListViewItem:
@@ -268,6 +267,11 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
                     effect = HbFeedback::None;
                 }
             }
+
+            if (widget->type() == Hb::ItemType_ComboBox) {
+                effect = HbFeedback::BasicButton;
+            }
+
             break;
 
         case HbFeedbackEffectUtils::List:
@@ -277,13 +281,10 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
             else {
                 effect = HbFeedback::BasicItem;
             }
-            if (widget->type() == Hb::ItemType_DataFormViewItem) {
-                effect = HbFeedback::SensitiveItem;
-            }
-            else if (widget->type() == HbPrivate::ItemType_DataGroup) {
+            if (widget->type() == Hb::ItemType_DataFormViewItem ||
+                widget->type() == HbPrivate::ItemType_DataGroup) {
                 effect = HbFeedback::None;
             }
-
             break;
         
         case HbFeedbackEffectUtils::Grid:
@@ -326,7 +327,14 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
             break;
 
         case HbFeedbackEffectUtils::Editor:
-            effect = HbFeedback::Editor;
+            if (const HbAbstractEdit* editor = qobject_cast<const HbAbstractEdit *>(widget)) {
+                if(editor->isReadOnly() && (Hb::TextCursorHidden == editor->cursorVisibility())) {
+                    // cannot edit nor select
+                    effect = HbFeedback::None;
+                } else {
+                    effect = HbFeedback::Editor;
+                }
+            }
             break;
 
         default:
@@ -341,7 +349,7 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
             switch (itemView->selectionMode()) {
                 case HbAbstractItemView::SingleSelection:
                 case HbAbstractItemView::MultiSelection: {
-                    effect = HbFeedback::BasicButton;
+                    effect = HbFeedback::BasicItem;
                     break;
                 }
                 case HbAbstractItemView::NoSelection:
@@ -360,8 +368,9 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
             if (viewItem->type() == Hb::ItemType_RadioButtonListViewItem) {
                 effect = HbFeedback::BasicItem;
             }
-            else if(viewItem->type() == Hb::ItemType_TumbleViewItem ) {
-                effect = HbFeedback::BasicItem;
+            else if(viewItem->type() == Hb::ItemType_DatePickerViewItem ||
+                    viewItem->type() == Hb::ItemType_TumbleViewItem) {
+                effect = HbFeedback::None;
             }
 
             // expandable or collapsable items give a BasicItem feedback
@@ -372,6 +381,10 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnPress(const HbWidget *
                 else {
                     effect = HbFeedback::BasicItem;
                 }
+            }
+            // Combo box drop down list
+            if (QString(widget->metaObject()->className()) == "HbComboListViewItem") {
+                effect = HbFeedback::BasicItem;
             }
         }
     }
@@ -468,17 +481,26 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnRelease(const HbWidget
             else if (widget->type() == Hb::ItemType_DataFormViewItem) {
                 effect = HbFeedback::None;
             }
+
             break;
 
         case HbFeedbackEffectUtils::Grid:
-            effect = HbFeedback::BasicItem;
+            if (widget->type() == HbPrivate::ItemType_ColorGridViewItem) {
+                effect = HbFeedback::None;
+            }
+            else {
+                effect = HbFeedback::BasicItem;
+            }
             break;
  
-         case HbFeedbackEffectUtils::Slider:
+        case HbFeedbackEffectUtils::Slider:
 
-            // slider track default
-             effect = HbFeedback::BasicSlider;
-
+            if (widget->type() == Hb::ItemType_ScrollBar) {
+                effect = HbFeedback::None;
+            }
+            else {  // slider track default
+                effect = HbFeedback::BasicSlider;
+            }
             // slider handle
             if (modifiers & Hb::ModifierSliderHandle) {
                 effect = HbFeedback::BasicSlider;
@@ -488,6 +510,7 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnRelease(const HbWidget
             if (modifiers & Hb::ModifierSliderElement) {
                 effect = HbFeedback::None;
             }
+
             break;
 
         case HbFeedbackEffectUtils::Editor:
@@ -532,7 +555,8 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnRelease(const HbWidget
             if (viewItem->type() == Hb::ItemType_RadioButtonListViewItem) {
                 effect = HbFeedback::Checkbox;
             }
-            else if(viewItem->type() == Hb::ItemType_TumbleViewItem ) {
+            else if(viewItem->type() == Hb::ItemType_DatePickerViewItem ||
+                    viewItem->type() == Hb::ItemType_TumbleViewItem) {
                 effect = HbFeedback::BasicItem;
             }
             else if (widget->type() == Hb::ItemType_NotificationDialog) {
@@ -541,6 +565,11 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnRelease(const HbWidget
 
             if (modifiers & Hb::ModifierExpandedItem || modifiers & Hb::ModifierCollapsedItem) {
                 effect = HbFeedback::BasicItem;
+            }
+
+            // Combo box drop down list
+            if (QString(widget->metaObject()->className()) == "HbComboListViewItem") {
+                effect = HbFeedback::None;
             }
         }
     }
@@ -567,7 +596,7 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnKeyRepeat(const HbWidg
 
             // input widget special case
             if (widget->type() == Hb::ItemType_InputButtonGroup && modifiers & Hb::ModifierInputFunctionButton) {
-                effect = HbFeedback::BasicKeypad;
+                effect = HbFeedback::SensitiveKeypad;
             }
             else if (widget->type() == Hb::ItemType_InputButtonGroup) {
                 effect = HbFeedback::SensitiveKeypad;
@@ -691,49 +720,7 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnEditorHighlight(const 
             }
         }
     }
-    else if (const HbInputVirtualRocker *trackPoint = qobject_cast<const HbInputVirtualRocker *>(widget)) {
 
-        QGraphicsItem* graphicsItem = trackPoint->mainWindow()->scene()->focusItem();
-
-        if (graphicsItem->isWidget() && (static_cast<QGraphicsWidget*>(graphicsItem)->inherits("QGraphicsWebView"))) {
-            QVariant v;
-            v = graphicsItem->scene()->inputMethodQuery( Qt::ImCursorPosition );
-            if ( v.isValid() && v.canConvert<int>()) {
-                int index;
-                index = v.toInt();
-                QVariant varSurrText;
-                varSurrText = graphicsItem->scene()->inputMethodQuery( Qt::ImSurroundingText );
-                if ( varSurrText.isValid() ) {
-                    QString text = varSurrText.toString();
-                    // Index (current cursor position) can be equal to the
-                    // length of the string (for e.g. when the cursor is at the end)
-                    // So we make sure we bring index within the bounds of the string
-                    if (!text.isEmpty() && index <= text.count()) {
-                        dist = abs(index - previousCursorPosition);
-
-                        if (previousCursorPosition < index || index == text.count()) {
-                            index--;
-                        }
-                        QChar character = text.at(index);
-                        emptyline = character.category() == QChar::Separator_Paragraph;
-
-                        if (emptyline) {
-                            effect = HbFeedback::EmptyLineSelection;
-                        }
-                        else if (dist > 1) {
-                            effect = HbFeedback::LineSelection;
-                        }
-                        else if (character.isSpace()) {
-                            effect = HbFeedback::BlankSelection;
-                        }
-                        else {
-                            effect = HbFeedback::TextSelection;
-                        }
-                    }
-                }
-            }
-        }
-    }
     return effect;
 }
 
@@ -820,19 +807,20 @@ HbFeedback::InstantEffect HbFeedbackEffectUtils::instantOnSelectionChanged(const
                     break;
                 }
                 case HbAbstractItemView::MultiSelection: {
-                    effect = HbFeedback::Checkbox;
+                    if (modifiers & Hb::ModifierScrolling) {
+                        effect = HbFeedback::MultipleCheckbox;
+                    }
+                    else {
+                        effect = HbFeedback::Checkbox;
+                    }
                     break;
                 }
                 default:
                     break;
             }
-		}
-	}
-    else if (const HbAbstractItemView* itemView = qobject_cast<const HbAbstractItemView*>(widget)) {
-        if (itemView->selectionMode() == HbAbstractItemView::MultiSelection && (modifiers & Hb::ModifierScrolling)) {
-            effect = HbFeedback::MultipleCheckbox;
         }
     }
+
     return effect;
 }
 
@@ -1017,7 +1005,7 @@ HbFeedback::Modalities HbFeedbackEffectUtils::modalities(const HbWidget *widget,
         modalities =  HbFeedback::Tactile;
         break;
 
-    case Hb::InstantMultitouchActivated:
+    case Hb::InstantAdvancedGestureActivated:
         modalities = HbFeedback::Tactile | HbFeedback::Audio;
         break;
 

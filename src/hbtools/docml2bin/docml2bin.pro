@@ -29,11 +29,15 @@ TARGET = docml2bin
 #DEPENDPATH += .
 DEPENDPATH += $${HB_SOURCE_DIR}/src/hbutils/document
 DEPENDPATH += $${HB_SOURCE_DIR}/src/hbcore/core
+DEPENDPATH += $${HB_SOURCE_DIR}/src/hbcore/cssparser
+DEPENDPATH += $${HB_SOURCE_DIR}/src/hbcore/image
 DEPENDPATH += $${HB_SOURCE_DIR}/src/hbcore/utils
 DEPENDPATH += $${HB_SOURCE_DIR}/src/hbcore/layouts
 #INCLUDEPATH += .
 INCLUDEPATH += $${HB_SOURCE_DIR}/src/hbutils/document
 INCLUDEPATH += $${HB_SOURCE_DIR}/src/hbcore/core
+INCLUDEPATH += $${HB_SOURCE_DIR}/src/hbcore/cssparser
+INCLUDEPATH += $${HB_SOURCE_DIR}/src/hbcore/image
 INCLUDEPATH += $${HB_SOURCE_DIR}/src/hbcore/utils
 INCLUDEPATH += $${HB_SOURCE_DIR}/src/hbcore/layouts
 DEFINES += HB_BOOTSTRAPPED
@@ -44,6 +48,10 @@ CONFIG -= app_bundle
 DESTDIR = $${HB_BUILD_DIR}/bin
 
 # dependencies
+HEADERS += $${HB_SOURCE_DIR}/src/hbcore/core/hbhash_p.h
+SOURCES += $${HB_SOURCE_DIR}/src/hbcore/core/hbhash_p.cpp
+HEADERS += $${HB_SOURCE_DIR}/src/hbcore/cssparser/hbexpressionparser_p.h
+SOURCES += $${HB_SOURCE_DIR}/src/hbcore/cssparser/hbexpressionparser_p.cpp
 HEADERS += $${HB_SOURCE_DIR}/src/hbcore/layouts/hbanchor.h
 SOURCES += $${HB_SOURCE_DIR}/src/hbcore/layouts/hbanchor.cpp
 HEADERS += $${HB_SOURCE_DIR}/src/hbcore/utils/hbfontspec.h

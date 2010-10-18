@@ -28,28 +28,24 @@
 #include <QTimerEvent>
 
 #include "hbindicatorwin32_p.h"
-#include "hbindicatorpluginmanager_p.h"
+#include "hbdevicedialogmanager_p.h"
 #include "hbdevicedialogerrors_p.h"
 
-HbIndicatorPluginManager *HbIndicatorPrivate::mIndicatorPluginManager = 0;
+extern HbDeviceDialogManager *managerInstance();
+extern void releaseManagerInstance();
 
-HbIndicatorPluginManager *HbIndicatorPrivate::pluginManager()
-{
-    if (!mIndicatorPluginManager) {
-        mIndicatorPluginManager = new HbIndicatorPluginManager();
-    }
-    return mIndicatorPluginManager;
-}
-
+HbDeviceDialogManager *mDeviceDialogManager = 0;
 // Indicators are implemented only for Symbian/S60 OS. All others use a stub which shows
 // indicators in the calling process.
 HbIndicatorPrivate::HbIndicatorPrivate()
 : q_ptr(0), iLastError( HbDeviceDialogNoError ), iListening(false)
 {
+    mDeviceDialogManager = managerInstance();
 }
 
 HbIndicatorPrivate::~HbIndicatorPrivate()
 {
+    releaseManagerInstance();
 }
 
 void HbIndicatorPrivate::init()
@@ -61,18 +57,19 @@ bool HbIndicatorPrivate::activate(const QString &indicatorType, const QVariant &
 {
     bool ok = true;
     int result = 0;
-    HbIndicatorPluginManager *pluginManager =
-        HbIndicatorPrivate::pluginManager();
-    QVariantMap securityCredentials;
-    pluginManager->addIndicator(indicatorType, securityCredentials, &result);
+
+    const HbDeviceDialogServer::ClientCredentials cred(0);
+    const QVariantMap securityCredentials;
+
+    HbDeviceDialogServer::IndicatorParameters params(indicatorType, cred, parameter);
+    result = mDeviceDialogManager->activateIndicator(params);
+
     if (q_ptr && q_ptr->receivers(SIGNAL(userActivated(QString, QVariantMap))) > 0) {
-        connect(pluginManager, SIGNAL(indicatorUserActivated(QVariantMap)), 
-				this, SLOT(indicatorUserActivated(QVariantMap)));
+        connect(mDeviceDialogManager, SIGNAL(indicatorUserActivated(QVariantMap)),
+                this, SLOT(indicatorUserActivated(QVariantMap)));
     }
 
-    if (result == 0) {
-        pluginManager->activateIndicator(indicatorType, parameter, securityCredentials);
-    } else {
+    if (result != 0) {
         setError(result);
         ok = false;
     }
@@ -81,8 +78,10 @@ bool HbIndicatorPrivate::activate(const QString &indicatorType, const QVariant &
 
 bool HbIndicatorPrivate::deactivate(const QString &indicatorType, const QVariant &parameter)
 {
-    pluginManager()->deactivateIndicator(indicatorType, parameter, QVariantMap());
-    pluginManager()->disconnect(this, SLOT(indicatorUserActivated(QVariantMap)));
+    const HbDeviceDialogServer::ClientCredentials cred(0);
+    HbDeviceDialogServer::IndicatorParameters params(indicatorType, cred, parameter);
+    mDeviceDialogManager->deactivateIndicator(params);
+    mDeviceDialogManager->disconnect(this, SLOT(indicatorUserActivated(QVariantMap)));
     return true;
 }
 
@@ -92,16 +91,13 @@ void HbIndicatorPrivate::indicatorUserActivated(const QVariantMap& data)
 }
 
 bool HbIndicatorPrivate::startListen()
-{
-    HbIndicatorPluginManager *pluginManager =
-            HbIndicatorPrivate::pluginManager();
-
-    connect(pluginManager, SIGNAL(indicatorActivated(IndicatorClientInfo)),
-            this, SLOT(indicatorActivated(IndicatorClientInfo)));
-    connect(pluginManager, SIGNAL(indicatorRemoved(IndicatorClientInfo)),
-            this, SLOT(indicatorRemoved(IndicatorClientInfo)));
-    connect(pluginManager, SIGNAL(indicatorUpdated(IndicatorClientInfo)),
-            this, SLOT(indicatorUpdated(IndicatorClientInfo)));
+{    
+    connect( mDeviceDialogManager, SIGNAL( indicatorActivated(QList<IndicatorClientInfo>) ),
+             this, SIGNAL(activated(QList<IndicatorClientInfo>)) );
+    connect( mDeviceDialogManager, SIGNAL( indicatorUpdated(QList<IndicatorClientInfo>) ),
+             this, SIGNAL(updated( QList<IndicatorClientInfo>) ) );
+    connect( mDeviceDialogManager, SIGNAL( indicatorRemoved(QList<IndicatorClientInfo>) ),
+             this, SIGNAL( deactivated(QList<IndicatorClientInfo>) ) );
 
     timer.start(1, this);
     iListening = true;
@@ -115,11 +111,8 @@ bool HbIndicatorPrivate::listening() const
 
 bool HbIndicatorPrivate::stopListen()
 {
-    HbIndicatorPluginManager *pluginManager =
-            HbIndicatorPrivate::pluginManager();
-
-    pluginManager->disconnect(this, SLOT(indicatorActivated(IndicatorClientInfo)));
-    pluginManager->disconnect(this, SLOT(indicatorRemoved(IndicatorClientInfo)));
+    mDeviceDialogManager->disconnect(this, SIGNAL(activated(QList<IndicatorClientInfo>)));
+    mDeviceDialogManager->disconnect(this, SIGNAL(deactivated(QList<IndicatorClientInfo>)));
     iListening = false;
     return true;
 }
@@ -137,37 +130,12 @@ int HbIndicatorPrivate::error() const
     return iLastError;
 }
 
-void HbIndicatorPrivate::indicatorActivated(
-        const IndicatorClientInfo &clientInfo)
-{
-    QList<IndicatorClientInfo> clientInfoList;
-    clientInfoList.append(clientInfo);
-    emit activated(clientInfoList);
-}
-void HbIndicatorPrivate::indicatorRemoved(
-        const IndicatorClientInfo &clientInfo)
-{
-    QList<IndicatorClientInfo> clientInfoList;
-    clientInfoList.append(clientInfo);
-    emit deactivated(clientInfoList);
-}
-
-void HbIndicatorPrivate::indicatorUpdated(const IndicatorClientInfo &clientInfo)
-{
-    QList<IndicatorClientInfo> clientInfoList;
-    clientInfoList.append(clientInfo);
-    emit updated(clientInfoList);
-}
-
 void HbIndicatorPrivate::timerEvent(QTimerEvent * event)
 {
     killTimer(event->timerId());
 
-    HbIndicatorPluginManager *pluginManager =
-            HbIndicatorPrivate::pluginManager();
-
     QList<IndicatorClientInfo> clientInfoList =
-            pluginManager->indicatorClientInfoList();
+            mDeviceDialogManager->indicatorClientInfoList();
 
     if (clientInfoList.count() > 0) {
         emit allActivated(clientInfoList);

@@ -35,18 +35,26 @@ class HbDialogPrivate;
 class HB_CORE_EXPORT HbDialog : public HbPopup
 {
     Q_OBJECT
+    Q_PROPERTY( bool dismissOnAction READ dismissOnAction WRITE setDismissOnAction )
+    Q_PROPERTY( QString headingText READ headingText WRITE setHeadingText )
 
 public:
     enum DialogCode { Rejected, Accepted };
-
+    
     explicit HbDialog( QGraphicsItem *parent = 0 );
     virtual  ~HbDialog();
 
     QGraphicsWidget *headingWidget() const;
     void setHeadingWidget( QGraphicsWidget *headingWidget );
 
+    QString headingText() const;
+    void setHeadingText(const QString &heading);
+
     QGraphicsWidget *contentWidget() const;
     void setContentWidget( QGraphicsWidget *contentWidget );
+
+    bool dismissOnAction() const;
+    void setDismissOnAction(bool dismissOnAction);
 
     HbAction *primaryAction() const;
     void setPrimaryAction( HbAction *action );
@@ -56,7 +64,7 @@ public:
 
     void open( QObject* receiver, const char* member );
 
-    enum { Type = Hb::ItemType_Dialog }; // TODO: Hb::ItemType_Dialog
+    enum { Type = Hb::ItemType_Dialog };
     int type() const { return Type; }
 
 public slots:
@@ -83,6 +91,8 @@ protected:
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbDialog )
     Q_DISABLE_COPY( HbDialog )
+    Q_PRIVATE_SLOT(d_func(), void _q_actionTriggered())
+
 };
 
 #endif // HBDIALOG_H

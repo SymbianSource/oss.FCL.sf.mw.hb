@@ -28,3 +28,15 @@ HbCheckBox::toucharea{
     bottom: 0.0un;
 }
 
+HbCheckBox::spacerTop{ 
+  size-policy-vertical: expanding; 
+} 
+HbCheckBox::spacerBottom{ 
+  size-policy-vertical: expanding; 
+}
+
+/* For HbDataFormModelItem::CheckBoxItem left margin should be 
+zero so that it is aligned with all other data form items*/
+HbDataFormViewItem > HbCheckBox::icon{
+    left:0.0un;
+}

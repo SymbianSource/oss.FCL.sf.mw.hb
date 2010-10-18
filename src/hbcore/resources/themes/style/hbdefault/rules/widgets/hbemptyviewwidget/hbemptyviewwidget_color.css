@@ -1,0 +1,5 @@
+HbEmptyViewWidget::text
+{
+    color: var(qtc_view_normal);
+}
+

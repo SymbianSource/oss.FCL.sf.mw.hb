@@ -26,18 +26,29 @@
 #include "hbapplication.h"
 #include "hbapplication_p.h"
 #include "hbsplashscreen.h"
+#include "hbsplashscreen_generic_p.h"
 #include "hbactivitymanager.h"
-#include <QTime>
-#include <QUrl>
+#include "hbinputcontextproxy_p.h"
 
 #if defined(Q_OS_SYMBIAN)
 #include <qwindowsstyle.h>
 #include <qsymbianevent.h>
+#include <e32debug.h>
 #endif // Q_OS_SYMBIAN
 
 #ifdef HB_GESTURE_FW
 #include "hbgesturerecognizers_p.h"
 #endif
+
+#if QT_VERSION >= 0x040700
+#include <QElapsedTimer>
+#define ELAPSED_TIMER QElapsedTimer
+#else
+#include <QTime>
+#define ELAPSED_TIMER QTime
+#endif
+
+//#define HBAPP_LOGGING
 
 /*!
     @stable
@@ -58,15 +69,35 @@
     \skip show()
     \until }
 
-    To support Hb-widgets with QApplication the actual implementation
-    of HbApplication is available in HbInstance.
-
     Unless the Hb::NoSplash flag is passed, the HbApplication constructor will
     try to show a suitable splash screen for the application. On some platforms
     there will be no splash screens available at all and thus nothing will be
-    shown. (note that even when an application uses QApplication instead of
+    shown.
+
+    Note that even when an application uses QApplication instead of
     HbApplication, the splash screen can still be started/stopped manually via
-    the HbSplashScreen class)
+    the HbSplashScreen class.
+
+    If the application needs knowledge to decide whether to use splash screens
+    (or which screen id to set via HbSpashScreen::setScreenId()) and this
+    knowledge can only be acquired after QApplication is constructed
+    (typical with service frameworks) then the standard pattern is to pass
+    Hb::NoSplash to the HbApplication constructor and call
+    HbSplashScreen::start() manually later.
+
+    Note however that this will degrade the startup experience because in an
+    ideal case the HbApplication constructor is able to show the splash before
+    even executing the QApplication constructor. When passing Hb::NoSplash this
+    will not happen and the splash is only shown after spending a possibly
+    substantial time on initializing Qt and other frameworks. So use
+    Hb::NoSplash only when absolutely needed (or when the splash screen will not
+    be shown at all).
+
+    On Symbian the splash will be automatically suppressed (i.e. not shown) if
+    the application is started to background, that is,
+    HbApplication::startedToBackground() returns true. To override this default
+    behavior, pass Hb::ShowSplashWhenStartingToBackground to the HbApplication
+    constructor.
 
     Applications that support the 'activities' concept may check the start-up
     reason like this:
@@ -99,23 +130,7 @@
     This signal is emitted when some activity needs to be shown.
 */
 
-static int &preInitApp(int &argc)
-{
-    // This function contains code that needs to be executed before
-    // the QApplication constructor.
-
-#if defined(Q_OS_SYMBIAN)
-    // Disable legacy screen furniture.
-    QApplication::setAttribute(Qt::AA_S60DontConstructApplicationPanes);
-
-    // Temporary solution until Hb specific style is ready.
-    QApplication::setStyle(new QWindowsStyle);
-#endif //Q_OS_SYMBIAN
-
-    return argc;
-}
-
-static void initSplash(Hb::ApplicationFlags flags)
+static void initSplash(Hb::ApplicationFlags flags, int argc, char *argv[])
 {
     if (flags & Hb::NoSplash) {
         return;
@@ -130,17 +145,61 @@ static void initSplash(Hb::ApplicationFlags flags)
     } else if (flags & Hb::SplashFixedHorizontal) {
         splashFlags |= HbSplashScreen::FixedHorizontal;
     }
+    if (flags & Hb::ForceQtSplash) {
+        splashFlags |= HbSplashScreen::ForceQt;
+    }
+    if (flags & Hb::ShowSplashWhenStartingToBackground) {
+        splashFlags |= HbSplashScreen::ShowWhenStartingToBackground;
+    }
 
-#ifdef Q_OS_SYMBIAN
-    QTime t;
+#if defined(Q_OS_SYMBIAN) && defined(HBAPP_LOGGING)
+    ELAPSED_TIMER t;
     t.start();
 #endif
 
-    HbSplashScreen::start(splashFlags);
+    HbSplashScreen::start(splashFlags, argc, argv);
 
-#ifdef Q_OS_SYMBIAN
-    qDebug("[hbsplash] %d ms", t.elapsed());
+#if defined(Q_OS_SYMBIAN) && defined(HBAPP_LOGGING)
+    RDebug::Printf("[hbsplash] %d ms", (int) t.elapsed());
 #endif
+}
+
+static int &preInitApp(int &argc, char *argv[], Hb::ApplicationFlags flags)
+{
+#if defined(Q_OS_SYMBIAN) && defined(HBAPP_LOGGING)
+    RDebug::Printf("HbApplication: preInitApp");
+#endif
+
+    // This function contains code that needs to be executed before
+    // the QApplication constructor.
+
+    if (!HbSplashScreenExt::needsQt() && !flags.testFlag(Hb::ForceQtSplash)) {
+        // The splash screen is capable of working without relying on Qt in any
+        // way. So launch it now. This is the ideal case because we don't have
+        // to wait for the potentially slow QApplication construction.
+        initSplash(flags, argc, argv);
+    }
+
+#if defined(Q_OS_SYMBIAN)
+    // Disable legacy screen furniture.
+    QApplication::setAttribute(Qt::AA_S60DontConstructApplicationPanes);
+
+    // Temporary solution until Hb specific style is ready.
+    QApplication::setStyle(new QWindowsStyle);
+#endif //Q_OS_SYMBIAN
+
+    return argc;
+}
+
+static void handleQtBasedSplash(Hb::ApplicationFlags flags, int argc, char *argv[])
+{
+    if (HbSplashScreenExt::needsQt() || flags.testFlag(Hb::ForceQtSplash)) {
+        // Splash needs Qt so it has not yet been started. Launch it now.
+        initSplash(flags, argc, argv);
+    } else {
+        // Splash is already up and running, notify that Qt is now available.
+        HbSplashScreenExt::doQtPhase();
+    }
 }
 
 static void initialize()
@@ -156,15 +215,28 @@ static void initialize()
     QGestureRecognizer::registerRecognizer(new HbPanGestureRecognizer);
     QGestureRecognizer::registerRecognizer(new HbSwipeGestureRecognizer);
 #endif
+
+    // Installs empty input context proxy. It sits there
+    // and monitors if someone wants to focus an editor
+    // before the main window delayed construction is over.
+    // If such a condition is detected, it sets a flag so
+    // that HbInputMethod::initializeFramework knows
+    // to resend the requestSoftwareInputPanel event once
+    // the actual construction is over.
+    qApp->setInputContext(new HbInputContextProxy(0));
 }
 
 /*!
     Constructs the application with \a argc and \a argv.
 */
 HbApplication::HbApplication(int &argc, char *argv[], Hb::ApplicationFlags flags)
-    : QApplication(preInitApp(argc), argv)
+    : QApplication(preInitApp(argc, argv, flags), argv)
 {
-    initSplash(flags); // must be the first thing we do here
+#if defined(Q_OS_SYMBIAN) && defined(HBAPP_LOGGING)
+    RDebug::Printf("HbApplication: QApplication constructed");
+#endif
+
+    handleQtBasedSplash(flags, argc, argv); // must be the first thing we do here
 
     d_ptr = new HbApplicationPrivate(this);
 
@@ -174,12 +246,16 @@ HbApplication::HbApplication(int &argc, char *argv[], Hb::ApplicationFlags flags
     initialize();
 }
 
-#if defined(Q_WS_S60)
+#if defined(Q_OS_SYMBIAN)
 HbApplication::HbApplication(QApplication::QS60MainApplicationFactory factory,
                              int &argc, char *argv[], Hb::ApplicationFlags flags)
-    : QApplication(factory, preInitApp(argc), argv)
+    : QApplication(factory, preInitApp(argc, argv, flags), argv)
 {
-    initSplash(flags); // must be the first thing we do here
+#if defined(Q_OS_SYMBIAN) && defined(HBAPP_LOGGING)
+    RDebug::Printf("HbApplication: QApplication constructed");
+#endif
+
+    handleQtBasedSplash(flags, argc, argv); // must be the first thing we do here
 
     d_ptr = new HbApplicationPrivate(this);
 
@@ -188,7 +264,7 @@ HbApplication::HbApplication(QApplication::QS60MainApplicationFactory factory,
 
     initialize();
 }
-#endif // Q_WS_S60
+#endif // Q_OS_SYMBIAN
 
 /*!
     Destructor.
@@ -208,7 +284,7 @@ void HbApplication::hideSplash()
     HbSplashScreen::destroy();
 }
 
-#if defined(Q_WS_S60)
+#if defined(Q_OS_SYMBIAN)
 #include <w32std.h>
 #include <coecntrl.h>
 #include <coemain.h>
@@ -274,7 +350,7 @@ bool HbApplication::symbianEventFilter(const QSymbianEvent *event)
             HbApplication::setLayoutDirection(Qt::RightToLeft);
             break;
         default:
-            qWarning("HbApplication::s60EventFilter: Unknown layout direction received");
+            hbWarning("HbApplication::s60EventFilter: Unknown layout direction received");
             break;
         }
     }
@@ -283,7 +359,7 @@ bool HbApplication::symbianEventFilter(const QSymbianEvent *event)
         TUint8 *dataptr = aEvent->EventData();
         QStringList names = HbDeviceProfile::profileNames();
         if (*dataptr > names.count() - 1) {
-            qWarning("HbApplication::s60EventFilter: Unknown device profile received");
+            hbWarning("HbApplication::s60EventFilter: Unknown device profile received");
         } else {
             HbDeviceProfile profile(names.value(*dataptr));
             HbDeviceProfileManager::select(profile);
@@ -322,7 +398,7 @@ bool HbApplication::symbianEventFilter(const QSymbianEvent *event)
     }
 }
 
-#endif // Q_WS_S60
+#endif // Q_OS_SYMBIAN
 
 HbApplicationPrivate::HbApplicationPrivate(HbApplication *parent)
     : QObject(parent), q_ptr(parent), mActivateReason(Hb::ActivationReasonNormal)
@@ -397,4 +473,47 @@ QVariant HbApplication::activateData()
 {
     Q_D(HbApplication);
     return d->activateData();
+}
+
+/*!
+  Returns true when the command line indicates that the application
+  was started to background from the system starter list.
+
+  When an application is launched normally, the result will be false.
+
+  Passing argc and argv is optional, however if they are omitted,
+  QCoreApplication must have already been instantiated. If neither
+  argc and argv are specified nor QCoreApplication is available, a
+  warning will be printed and the function will return false.
+ */
+bool HbApplication::startedToBackground(int argc, char *argv[])
+{
+    // Note: We cannot use the apa command line, even though it would be very convenient
+    // to check for EApaCommandBackground instead of a custom regular command line
+    // argument. Unfortunately the apa command line can only be constructed once from the
+    // process environment and we have to let Qt to do that otherwise certain things
+    // (e.g. window group chaining) will get broken.
+    QStringList args;
+    // Support argc/argv-less invocation, at least when QCoreApplication exists.
+    if (!argv) {
+        if (QCoreApplication::instance()) {
+            args = QCoreApplication::arguments();
+        } else {
+            qWarning("startedToBackground(): Neither argc+argv was passed nor QCoreApplication was available, giving up.");
+            return false;
+        }
+    } else {
+        for (int i = 0; i < argc; ++i) {
+            args.append(QLatin1String(argv[i]));
+        }
+    }
+    foreach (const QString &arg, args) {
+        QString targ = arg.trimmed();
+        if (!targ.compare(QLatin1String("-preload"), Qt::CaseInsensitive)
+            || !targ.compare(QLatin1String("-bg"), Qt::CaseInsensitive)
+            || !targ.compare(QLatin1String("bg=yes"), Qt::CaseInsensitive)) {
+            return true;
+        }
+    }
+    return false;
 }

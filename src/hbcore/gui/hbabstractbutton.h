@@ -48,7 +48,7 @@ class HB_CORE_EXPORT HbAbstractButton : public HbWidget
     Q_PROPERTY( int autoRepeatDelay READ autoRepeatDelay WRITE setAutoRepeatDelay )
     Q_PROPERTY( int autoRepeatInterval READ autoRepeatInterval WRITE setAutoRepeatInterval )
     Q_PROPERTY( bool down READ isDown WRITE setDown DESIGNABLE false )
-
+       
 public:
     explicit HbAbstractButton( QGraphicsItem *parent = 0 );
     virtual ~HbAbstractButton();
@@ -95,6 +95,8 @@ signals:
 protected:
     HbAbstractButton( HbAbstractButtonPrivate &dd, QGraphicsItem *parent );
     void initStyleOption(HbStyleOption *option) const;
+    void initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive);
+
 
     virtual bool hitButton( const QPointF &pos ) const;
     virtual void checkStateSet();

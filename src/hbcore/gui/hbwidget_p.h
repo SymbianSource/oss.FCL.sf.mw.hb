@@ -43,24 +43,21 @@
 #include <hbstyle.h>
 #include "hbwidget.h"
 #include "hbwidgetbase_p.h"
+#include "hbstyle_p.h"
 
-#ifdef HB_TESTABILITY
 #include <hbtestabilitysignal_p.h>
-#endif //HB_TESTABILITY
+
+#include <QPointer>
 
 class HbWidget;
 class HbStyle;
 class HbTestabilitySignal_p;
-class QGraphicsItem;
 class HbFocusGroup;
-
-namespace HbStyleRulesCacheId {
-    const char hbStyleRulesForNodeCache[] = "__Hb__Style__Rules__For__Node__Cache__";
-}
+class QGraphicsItem;
 
 class HB_CORE_PRIVATE_EXPORT HbWidgetPrivate: public HbWidgetBasePrivate
 {
-	Q_DECLARE_PUBLIC(HbWidget)
+    Q_DECLARE_PUBLIC(HbWidget)
 
 public:
     HbWidgetPrivate();
@@ -74,17 +71,23 @@ public:
     bool delegateFocus(QFocusEvent *event) const;
 
     void updateBackgroundItemSize();
+    void setVisibleBackground(QGraphicsItem* background);
 
-    void setBackgroundItem(HbStyle::Primitive type, int zValue = -1);
+    void setBackgroundItem(HbStylePrivate::Primitive type, int zValue = -1);
+    void setFocusHighlight(HbStyle::Primitive type, HbWidget::FocusHighlight focusHighlight);
+    HbStyle::Primitive focusHighlight(HbWidget::FocusHighlight focusHighlight);
+    void storeBackgroundItem(QGraphicsItem *&storeItem, QGraphicsItem *item, int zValue = -1);
+
+    // derived classes should use this method to show and hide focus highlight
+    void setFocusHighlightVisible(HbWidget::FocusHighlight focusHighlight, bool enable);
+
+
     HbWidget *q_ptr;
     HbStyle *style;
 
-#ifdef HB_TESTABILITY
-	HbTestabilitySignal_p *testabilitySignal;
-#endif //HB_TESTABILITY
-
-    HbStyle::Primitive backgroundPrimitiveType;
-    bool polished;
+    HbTestabilitySignal_p *testabilitySignal;
+    HbStylePrivate::Primitive backgroundPrimitiveType;
+    quint32 polished :1;
     bool polishPending; 
     bool themingPending;
     bool repolishOutstanding;
@@ -92,16 +95,18 @@ public:
     bool notifyScene;
     int pluginBaseId;
     HbFocusGroup *focusGroup;
-    HbStyle::Primitive focusActiveType;
-    HbStyle::Primitive focusResidualType;
+    HbStylePrivate::Primitive focusActiveType;
+    HbStylePrivate::Primitive focusResidualType;
     bool highlightExpired;
+    
 private:
+    void init();
+    void notifySceneForPolish(bool polishWidget = true);
     mutable QGraphicsItem *backgroundItem;
     mutable QGraphicsItem *focusActiveItem;
     mutable QGraphicsItem *focusResidualItem;
+    mutable QGraphicsItem *visibleBackground;
 };
-
-
 
 
 #endif // HBWIDGET_P_H

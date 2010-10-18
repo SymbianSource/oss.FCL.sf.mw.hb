@@ -26,6 +26,7 @@
 #include "hbsliderhandle_p.h"
 #include "hbslidercontrol_p.h"
 #include "hbslidercontrol_p_p.h"
+#include "hbstyle_p.h"
 #include <hbwidgetfeedback.h>
 #include <hbstyle.h>
 #include <hbstyleoptionslider_p.h>
@@ -62,12 +63,12 @@ HbSliderHandle::HbSliderHandle(HbSliderControl *slider)
     mHandleItem(0)
 {
     // create handle icon item
-    gItem = slider->style()->createPrimitive(HbStyle::P_Slider_thumb, this); 
+    gItem = HbStylePrivate::createPrimitive(HbStylePrivate::P_Slider_thumb, this); 
     HbStyle::setItemName(gItem , "icon");
     setFiltersChildEvents(true) ;
 
     // create touch area for handle
-    touchItem = slider->style()->createPrimitive(HbStyle::P_SliderElement_touchhandle, this); 
+    touchItem = HbStylePrivate::createPrimitive(HbStylePrivate::P_SliderElement_touchhandle, this); 
     HbStyle::setItemName(touchItem , "toucharea");
 
     setZValue(slider->zValue() + 1);
@@ -106,9 +107,9 @@ HbSliderHandle::HbSliderHandle(HbSliderControl *slider)
 */
 HbSliderHandle::~HbSliderHandle()
 {
-	if(mHandleItem) {
-		mHandleItem->removeSceneEventFilter(this);
-	}
+    if(mHandleItem) {
+        mHandleItem->removeSceneEventFilter(this);
+    }
 }
 
 
@@ -133,8 +134,8 @@ void HbSliderHandle::forceSetPos(const QPointF &pos)
     if( scene()){
         if (true == sliderControl->isSliderDown()){
             opt.state |= QStyle::State_Sunken;
-            sliderControl->style()->updatePrimitive(
-                sliderControl->primitive(HbStyle::P_Slider_groove), HbStyle::P_Slider_groove, &opt);
+            HbStylePrivate::updatePrimitive(
+                sliderControl->primitive((HbStyle::Primitive)HbStylePrivate::P_Slider_groove), HbStylePrivate::P_Slider_groove, &opt);
           } else {
             opt.state &= ~QStyle::State_Sunken;
         } 
@@ -143,24 +144,24 @@ void HbSliderHandle::forceSetPos(const QPointF &pos)
     }
 
     opt.boundingRect=boundingRect();
-    sliderControl->style()->updatePrimitive(gItem, HbStyle::P_Slider_thumb, &opt); 
+    HbStylePrivate::updatePrimitive(gItem, HbStylePrivate::P_Slider_thumb, &opt); 
 }
 
 void HbSliderHandle::setHandleItem(QGraphicsItem *item)
 {
-	if(!item) {
-		return;
-	}
-	if(mHandleItem) {
-		delete mHandleItem;
+    if(!item) {
+        return;
+    }
+    if(mHandleItem) {
+        delete mHandleItem;
         mHandleItem =0;
-	}
+    }
 
     setHandlesChildEvents(false);
 
     mHandleItem = item;  
-	mHandleItem->setParentItem(this);
-	sliderControl->style()->setItemName(mHandleItem,"widget");
+    mHandleItem->setParentItem(this);
+    HbStyle::setItemName(mHandleItem,"widget");
     //((QGraphicsWidget*)mHandleItem)->setGeometry(gItem->geometry());//TODO:geometry from css
 
     if(scene()) {
@@ -193,7 +194,7 @@ void HbSliderHandle::showEvent(QShowEvent *event)
 bool HbSliderHandle::sceneEventFilter(QGraphicsItem *obj,QEvent *event)
 {
     //TODO: touch area does not work with the current filtering mechanism. find better solution
-	if( obj == mHandleItem) {
+    if( obj == mHandleItem) {
         if(event->type() == QEvent::GraphicsSceneMouseMove){
             mouseMoveEvent ((QGraphicsSceneMouseEvent *) event) ;
             return true;
@@ -204,12 +205,12 @@ bool HbSliderHandle::sceneEventFilter(QGraphicsItem *obj,QEvent *event)
             mouseReleaseEvent((QGraphicsSceneMouseEvent *) event);
             return true;
         }
-	} 
+    } 
     if( obj == touchItem ) {
         if (!isEnabled() ) {
             return false;
         }
-	    if (event->type() == QEvent::Gesture){
+        if (event->type() == QEvent::Gesture){
             gestureEvent( (QGestureEvent *) (event));
             return true;
         }
@@ -347,6 +348,7 @@ void HbSliderHandle::gestureEvent(QGestureEvent *event)
 { 
     if(HbTapAndHoldGesture *tapandHold= qobject_cast<HbTapAndHoldGesture *>(event->gesture(Qt::TapAndHoldGesture))) {
         if(tapandHold->state() == Qt::GestureStarted) {
+            sliderControl->setToolTip(QString::number(sliderControl->sliderPosition()));
             sliderControl->showToolTip();
         }
     }
@@ -414,8 +416,8 @@ void HbSliderHandle::gestureEvent(QGestureEvent *event)
 #endif
                 sliderBounds.adjust(0, 0, -handleBounds.width(), 0);
                 span = sliderBounds.width();
-                sliderPos = relativePos.rx();
-                sliderPos-=handleBounds.width()/2;
+                sliderPos = static_cast<int>(relativePos.x());
+                sliderPos-= static_cast<int>(handleBounds.width()/2);
             } else {
 #ifdef HB_EFFECTS
                 if( sliderBounds.topLeft().y() > relativePos.ry() ||
@@ -425,13 +427,14 @@ void HbSliderHandle::gestureEvent(QGestureEvent *event)
 #endif
                 sliderBounds.adjust(0, 0, 0, -handleBounds.height());
                 span = sliderBounds.height();
-                sliderPos = relativePos.ry();
-                sliderPos -=  handleBounds.height() / 2;
+                sliderPos = static_cast<int>(relativePos.y());
+                sliderPos -= static_cast<int>(handleBounds.height()/2);
                     
             }
             int pressValue= QStyle::sliderValueFromPosition(opt.minimum, opt.maximum,
                 sliderPos, static_cast<int>(span),opt.upsideDown);
             sliderControl->setSliderPosition(pressValue);
+            sliderControl->setToolTip(QString::number(pressValue));
             sliderControl->showToolTip();
             break;
         }
@@ -474,8 +477,8 @@ void HbSliderHandle::updatePrimitives()
     if( scene()){
         if (true == sliderControl->isSliderDown()){
             opt.state |= QStyle::State_Sunken;
-            sliderControl->style()->updatePrimitive(
-                sliderControl->primitive(HbStyle::P_Slider_groove), HbStyle::P_Slider_groove, &opt);
+            HbStylePrivate::updatePrimitive(
+                sliderControl->primitive((HbStyle::Primitive)HbStylePrivate::P_Slider_groove), HbStylePrivate::P_Slider_groove, &opt);
         } else {
             opt.state &= ~QStyle::State_Sunken;
         } 
@@ -484,8 +487,8 @@ void HbSliderHandle::updatePrimitives()
     }
 
     opt.boundingRect=boundingRect();
-    sliderControl->style()->updatePrimitive(gItem, HbStyle::P_Slider_thumb, &opt); 
-    sliderControl->style()->updatePrimitive(touchItem , HbStyle::P_SliderElement_touchhandle ,&opt);
+    HbStylePrivate::updatePrimitive(gItem, HbStylePrivate::P_Slider_thumb, &opt); 
+    HbStylePrivate::updatePrimitive(touchItem , HbStylePrivate::P_SliderElement_touchhandle ,&opt);
     sliderControl->update(boundingRect());
 }
 
@@ -496,9 +499,9 @@ void HbSliderHandle::updatePrimitives()
 QGraphicsItem * HbSliderHandle::primitive(HbStyle::Primitive primitive) const
  {
        switch (primitive) {
-        case HbStyle::P_Slider_thumb:
+        case HbStylePrivate::P_Slider_thumb:
             return gItem;
-        case HbStyle::P_SliderElement_touchhandle:
+        case HbStylePrivate::P_SliderElement_touchhandle:
             return touchItem;
         default:
             return NULL;

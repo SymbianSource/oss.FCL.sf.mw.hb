@@ -33,11 +33,10 @@
 class HbScrollBar;
 class HbAbstractItemView;
 class HbIndexFeedbackPrivate;
-class HbStyleOptionIndexFeedback;
+class HbStylePrimitiveData;
 
-QT_BEGIN_NAMESPACE
 class QGraphicsItem;
-QT_END_NAMESPACE
+class QGraphicsObject;
 
 class HB_WIDGETS_EXPORT HbIndexFeedback : public HbWidget
 {
@@ -68,11 +67,15 @@ public:
     void setItemView(HbAbstractItemView *itemView);
     HbAbstractItemView* itemView() const;
 
+public slots:
+    void updatePrimitives();
+
 protected:
     virtual void polish( HbStyleParameters& params);
     virtual bool sceneEventFilter(QGraphicsItem* watched, QEvent* event);
     virtual bool eventFilter(QObject *obj, QEvent *event);
-    void initStyleOption(HbStyleOptionIndexFeedback *option) const;
+    void initPrimitiveData( HbStylePrimitiveData     *primitiveData, 
+                            const QGraphicsObject     *primitive);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbIndexFeedback)

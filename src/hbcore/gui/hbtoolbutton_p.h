@@ -38,9 +38,11 @@
 //
 
 #include <hbicon.h>
-#include <hbstyleoptiontoolbutton_p.h>
 #include <hbabstractbutton_p.h>
 #include <QPointer>
+#include <hbstyleframeprimitivedata.h>
+#include <hbstyleiconprimitivedata.h>
+#include <hbstyletextprimitivedata.h>
 
 class HbToolButton;
 class HbStyle;
@@ -54,25 +56,42 @@ public:
     HbToolButtonPrivate();
     virtual ~HbToolButtonPrivate();
 
+    enum ToolButtonPosition
+    {
+        TB_None,
+        TB_OnlyOne,
+        TB_Beginning,
+        TB_Middle,
+        TB_End
+    };
+
     void createPrimitives();
     void setOrientation( Qt::Orientation orientation );
-    void setToolBarPosition( HbStyleOptionToolButton::ToolBarPosition position );
+    void setToolBarPosition( ToolButtonPosition position );
     void setBackgroundVisible( bool visible );
     void setExtensionBackgroundVisible( bool visible );
     void setLayoutProperty(const char *name, bool value);
+
+    bool useTransparentGraphics() const;
+    bool isToolBarExtension() const;
+
+    void framePrimitiveData(HbStyleFramePrimitiveData *data);
+    void iconPrimitiveData(HbStyleIconPrimitiveData *data);
+    void textPrimitiveData(HbStyleTextPrimitiveData *data);
+
     QSizeF getMinimumSize();
 
     QPointer<QAction> action;
 
-    HbTextItem *textItem; //Workaround should be QGraphicsItem
-    QGraphicsItem *iconItem;
-    QGraphicsItem *frameItem;
+    QGraphicsObject *textItem;
+    QGraphicsObject *iconItem;
+    QGraphicsObject *frameItem;
 
     HbIcon customBackground;
     bool backgroundVisible;
-    HbToolButton::ToolButtonStyle buttonStyle;
-    HbStyleOptionToolButton::ToolBarPosition toolBarPosition;
+    ToolButtonPosition toolBarPosition;
     Qt::Orientation orientation;
+
 
     bool mDialogToolBar;
     bool toolbarExtensionFrame;

@@ -65,25 +65,16 @@ public:
     static QGraphicsProxyWidget *graphicsProxyWidget(const QWidget *w);
 };
 
-/*!
-Returns true if given input mode is Chinese input mode.
-*/
 inline bool HbInputUtils::isChineseInputMode(HbInputModeType inputMode)
 {
     return (inputMode & HbChineseModeMask) != 0;
 }
 
-/*!
-Returns true if given keyboard type is qwerty keyboard.
-*/
 inline bool HbInputUtils::isQwertyKeyboard(HbKeyboardType keyboardType)
 {
     return (keyboardType & HbQwertyKeyboardMask) != 0;
 }
 
-/*!
-Returns true if given keyboard type is virtual keyboard.
-*/
 inline bool HbInputUtils::isTouchKeyboard(HbKeyboardType keyboardType)
 {
     return (keyboardType & HbTouchInputMask) != 0;

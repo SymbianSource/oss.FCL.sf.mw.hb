@@ -32,12 +32,13 @@
 
 class QStyleOption;
 class HbSliderTickmarksPrivate;
+class HbSlider;
 
 class HB_AUTOTEST_EXPORT HbSliderTickmarks : public HbWidget
 {
     Q_OBJECT
 public:
-    explicit HbSliderTickmarks( QGraphicsItem *parent = 0 );
+    explicit HbSliderTickmarks(HbSlider *parent = 0);
     ~HbSliderTickmarks();
 
     enum {Type = HbPrivate::ItemType_SliderTickmarks };
@@ -62,4 +63,4 @@ private:
     Q_DISABLE_COPY( HbSliderTickmarks )
 };
 
-#endif // HbSliderTickmarks_P_H
+#endif // HBSLIDERTICKMARKS_P_H

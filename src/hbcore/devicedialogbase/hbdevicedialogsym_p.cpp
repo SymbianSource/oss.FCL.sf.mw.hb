@@ -80,7 +80,6 @@ void HbDeviceDialogPrivate::init(HbDeviceDialog::DeviceDialogFlags f)
     TRACE_ENTRY
     mDeviceDialogFlags = f;
     mLastError = HbDeviceDialogNoError;
-    CActiveScheduler::Add(this);
     iRequesting = EFalse;
     if (mDeviceDialogFlags & HbDeviceDialog::ImmediateResourceReservationFlag) {
         int error = symToDeviceDialogError(initialize());
@@ -95,10 +94,13 @@ void HbDeviceDialogPrivate::init(HbDeviceDialog::DeviceDialogFlags f)
     \internal
     Initialisation step. Session to server is created.
 */
-int HbDeviceDialogPrivate::initialize()
+int HbDeviceDialogPrivate::initialize(bool connect)
 {
     TRACE_ENTRY
 
+    if (!IsAdded()) {
+        CActiveScheduler::Add(this);
+    }
     if (!iBuffer) {
         TRAP_IGNORE(iBuffer = HBufC8::NewL(64));
         if (iBuffer) {
@@ -108,7 +110,48 @@ int HbDeviceDialogPrivate::initialize()
             return KErrNoMemory;
         }
     }
-    int error = mHbSession.Connect();
+
+    int error = KErrNone;
+    if (connect) {
+        mHbSession.Connect();
+    }
+        
+    TRACE_EXIT_ARGS("error" << error)
+    return error;
+}
+
+/*!
+    \internal
+
+    Connects to server asynchronously.
+*/
+
+int HbDeviceDialogPrivate::connect()
+{
+    initialize(false);
+
+    int error(HbDeviceDialogNoError);
+    
+    if (!IsActive() && !iConnecting) {
+        bool connected = mHbSession.Handle() != 0;
+        error = mHbSession.Connect(&iStatus);    
+
+        // If not connected yet, connect and wait for eventloop to stop. Eventloop is
+        // stopped in the RunL funtion.
+        if (error == KErrNone && !connected && !mEventLoop) {
+            iConnecting = ETrue;
+            SetActive();
+            QPointer<HbDeviceDialog> guard = q_ptr;
+            QEventLoop eventLoop;
+            mEventLoop = &eventLoop;
+            error = eventLoop.exec(QEventLoop::AllEvents);
+            error = symToDeviceDialogError(error);
+            if (guard.isNull()) {
+                return false;
+            }
+            mEventLoop = 0;
+        }
+    }
     TRACE_EXIT_ARGS("error" << error)
     return error;
 }
@@ -299,6 +342,13 @@ void HbDeviceDialogPrivate::RunL()
     TRACE_ENTRY
     TInt completionCode = iStatus.Int();
     int errorCode = symToDeviceDialogError(completionCode);
+    if (iConnecting) {
+        iConnecting = EFalse;
+        if (mEventLoop && mEventLoop->isRunning()) {
+            mEventLoop->exit(errorCode);
+        }
+        return;
+    }
 
     if (completionCode < KErrNone) {
         // Any Symbian error, stop requesting

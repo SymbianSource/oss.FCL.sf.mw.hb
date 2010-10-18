@@ -81,6 +81,7 @@ public:
         EIconVisible,
         ETimeout,
         EStandardButtons,
+        EShowLevel,
         EDismissPolicy,
         ELastIntProperty = EDismissPolicy,
         EFirstStringProperty,
@@ -446,6 +447,7 @@ const TPtrC CHbDeviceMessageBoxPrivate::PropertyName(TPropertyId aId)
         L"iconVisible",
         L"timeout",
         L"standardButtons",
+        L"showLevel",
         L"dismissPolicy",
         L"text",
         L"iconName",
@@ -538,9 +540,20 @@ void CHbDeviceMessageBoxPrivate::DeviceDialogClosed(TInt aCompletionCode)
     }
 }
 
+// Set dialog show level
+void SetShowLevel(CHbDeviceMessageBoxPrivate *aBox, TInt aLevel)
+{
+    aBox->SetPropertyValue(CHbDeviceMessageBoxPrivate::EShowLevel, aLevel);
+}
+
 /*!
+    @stable
+    @hbwidgets
+
     \class CHbDeviceMessageBoxSymbian
     \brief CHbDeviceMessageBoxSymbian is a Symbian implementation of HbDeviceMessageBox.
+
+    <b>This class is Symbian only. Not available on other platforms.</b>
 
     CHbDeviceMessageBoxSymbian is intended for use by servers that don't run Qt event loop
     and cannot use HbDeviceMessageBox.
@@ -551,7 +564,7 @@ void CHbDeviceMessageBoxPrivate::DeviceDialogClosed(TInt aCompletionCode)
     It provides a similar interface as HbDeviceMessageBox. The main
     differences are:
     - Signals are replaced by an observer interface
-    - HbAction/QAction is replaced by button information.
+    - HbAction/QAction is replaced by button text.
     - Function parameters whose type is a Qt or Hb enumeration are replaced by an integer.
       As suitable default values are set at construction, it is assumed that application rarely
       needs to use these.
@@ -559,13 +572,20 @@ void CHbDeviceMessageBoxPrivate::DeviceDialogClosed(TInt aCompletionCode)
     Device message box is a modal dialog. It is shown on top of applications by device dialog
     server. CHbDeviceMessageBoxSymbian is a client of the server.
 
-    Three predefined message boxes are provided or a custom one can be constructed using the API.
-    Predefined message boxes are:
-    - Information
-    - Question
-    - Warning
+    Four types of message boxes are predefined. The type determines a set of default properties that
+    are set on construction. Below is a table listing types and their default properties.
 
-    ShowL() displays a message box asynchronously. The function returns immediately. The launched
+    <table border="1">
+        <caption><b>HbDeviceMessageBox types and default properties</b></caption>
+        <tr><th>Type</th><th>Icon</th><th>Buttons</th><th>Timeout</th><th>Dismiss policy</th><th>Sound</th></tr>
+        <tr><td>ENone</td><td>No icon</td><td>"Ok" button</td><td>Standard timeout</td><td>Tap anywhere</td><td>No sound</td></tr>
+        <tr><td>EInformation</td><td>Info icon</td><td>"Ok" button</td><td>Standard timeout</td><td>Tap anywhere</td><td>Info sound</td></tr>
+        <tr><td>EWarning</td><td>Warning icon</td><td>"Ok" button</td><td>Standard timeout</td><td>Tap anywhere</td><td>Warn sound</td></tr>
+        <tr><td>EQuestion</td><td>Question icon</td><td>"Yes" and "No" buttons</td><td>No timeout</td><td>Button press</td><td>Question sound</td></tr>
+    </table>
+
+    ShowL() displays a message box asynchronously. The function returns immediately.
+    A new message box is lauched every time ShowL() is called. The launched
     dialog can be updated by setters and then calling UpdateL(). Closing can be observed by a
     callback. Because each UpdateL() after the ShowL() requires interprocess communication,
     it's advisable to fully construct the device message box before displaying it.
@@ -585,7 +605,14 @@ void CHbDeviceMessageBoxPrivate::DeviceDialogClosed(TInt aCompletionCode)
     static functions contain a default set of properties depending on the message box type and their
     contents cannot be updated while the message box executes.
 
-    Supported animation formats are following:
+    If CHbDeviceMessageBoxSymbian has no observer set, the object can be deleted after
+    ShowL() has been called and device-dialog service takes care showing the message box. If
+    observer is set, message box is closed when CHbDeviceMessageBoxSymbian object goes out of
+    scope.  
+
+    An animation can replace an icon on device message box. Supported icon animation formats are
+    following:
+
     - GIF (.gif)
     - MNG (.mng)
         - Frame animations
@@ -666,18 +693,15 @@ void CHbDeviceMessageBoxPrivate::DeviceDialogClosed(TInt aCompletionCode)
     \endcode
 
     \sa HbDeviceMessageBox, HbMessageBox, MHbDeviceMessageBoxObserver
-
-    @stable
-    @hbwidgets
 */
 
 /*!
     \enum CHbDeviceMessageBoxSymbian::TType
-    Predefined device message boxes.
+    Message box type. Determines a set of default properties for the message box.
 */
 /*!
     \var CHbDeviceMessageBoxSymbian::TType CHbDeviceMessageBoxSymbian::ENone
-    Message box with no icon and audio defined by default.
+    Message box with no icon and audio defined.
 */
 /*!
     \var CHbDeviceMessageBoxSymbian::TType CHbDeviceMessageBoxSymbian::EInformation
@@ -711,7 +735,7 @@ void CHbDeviceMessageBoxPrivate::DeviceDialogClosed(TInt aCompletionCode)
 
 /*!
     \class MHbDeviceMessageBoxObserver
-    \brief Interface to observe CHbDeviceMessageBoxSymbian.
+    \brief MHbDeviceMessageBoxObserver is an observer interface for observing CHbDeviceMessageBoxSymbian.
 
     \sa CHbDeviceMessageBoxSymbian
 */
@@ -729,22 +753,28 @@ void CHbDeviceMessageBoxPrivate::DeviceDialogClosed(TInt aCompletionCode)
     \sa CHbDeviceMessageBoxSymbian::SetObserver()
 */
 
-// Constructor
+/*!
+    Constructs CHbDeviceMessageBoxSymbian.
+*/
 CHbDeviceMessageBoxSymbian::CHbDeviceMessageBoxSymbian()
 {
 }
 
-// Destructor
+/*!
+    Destructs CHbDeviceMessageBoxSymbian. The message box launched by ShowL()
+    is closed if observer is set. If there is no observer, it is
+    left executing and closes itself by timeout.
+*/
 EXPORT_C CHbDeviceMessageBoxSymbian::~CHbDeviceMessageBoxSymbian()
 {
     delete d;
 }
 
 /*!
-    Factory function. Returns pointer to a device message box.
+    Constructs a new CHbDeviceMessageBoxSymbian and returns a pointer it.
 
-    \param aType Selects a template for the message box. Information, question or warning.
-    \param aObserver Observer for message box close event
+    \param aType Selects a template for the message box. None, information, question or warning.
+    \param aObserver Observer for message box close event. 0 if no observer.
 */
 EXPORT_C CHbDeviceMessageBoxSymbian* CHbDeviceMessageBoxSymbian::NewL(TType aType,
     MHbDeviceMessageBoxObserver *aObserver)
@@ -765,7 +795,7 @@ EXPORT_C CHbDeviceMessageBoxSymbian* CHbDeviceMessageBoxSymbian::NewL(TType aTyp
 /*!
     Static convenience function to create and show a question device message box. Waits for
     the message box to close and returns button selected. If message box was closed for other
-    reason than button press, returns EInvalidButton.
+    reason than button press, returns CHbDeviceMessageBoxSymbian::EInvalidButton.
 
     <b> Beware that Symbian event processing is running while the function executes. For example
     application may have exited when the function returns.</b>
@@ -795,7 +825,7 @@ EXPORT_C CHbDeviceMessageBoxSymbian::TButtonId CHbDeviceMessageBoxSymbian::Quest
 /*!
     Static convenience function to create and show a question device message box. Waits for
     the message box to close and returns button selected. If message box was closed for other
-    reason than button press, returns EInvalidButton.
+    reason than button press, returns CHbDeviceMessageBoxSymbian::EInvalidButton.
 
     <b> Beware that Symbian event processing is running while the function executes. For example
     application may have exited when the function returns.</b>
@@ -820,7 +850,8 @@ EXPORT_C CHbDeviceMessageBoxSymbian::TButtonId CHbDeviceMessageBoxSymbian::Quest
 }
 
 /*!
-    Static convenience function to create and show an information device message box.
+    Static convenience function to create and show an information device message box. Returns
+    immediately (doesn't wait for the box to close).
 
     \param aText Message box text.
 */
@@ -834,7 +865,8 @@ EXPORT_C void CHbDeviceMessageBoxSymbian::InformationL(const TDesC& aText)
 }
 
 /*!
-    Static convenience function to create and show a warning device message box.
+    Static convenience function to create and show a warning device message box. Returns
+    immediately (doesn't wait for the box to close).
 
     \param aText Message box text.
 */
@@ -873,9 +905,10 @@ EXPORT_C void CHbDeviceMessageBoxSymbian::UpdateL()
 }
 
 /*!
-    Closes a device message box.
+    Closes a device message box. Closing of the message box can be observer with
+    MHbDeviceMessageBoxObserver.
 
-    \sa ShowL()
+    \sa ShowL(),  SetObserver()
 */
 EXPORT_C void CHbDeviceMessageBoxSymbian::Close()
 {
@@ -885,7 +918,7 @@ EXPORT_C void CHbDeviceMessageBoxSymbian::Close()
 /*!
     Shows a device message box synchronously. Function launches the message box and waits for it
     to close. Returns a button that was selected. If message box was closed for other reason
-    than button press, returns EInvalidButton.
+    than button press, returns CHbDeviceMessageBoxSymbian::EInvalidButton.
 
     <b> Beware that Symbian event processing is running while the function executes. For example
     application may have exited when the function returns.</b>
@@ -906,11 +939,12 @@ EXPORT_C CHbDeviceMessageBoxSymbian::TButtonId CHbDeviceMessageBoxSymbian::ExecL
 
 /*!
     Sets message box type. All message box properties are reset to a default values for the type.
-    A ShowL() must be called to launch a message box after SetTypeL() has been called.
+    Type of a showing message box cannot be changed on the fly. A ShowL() must be called to launch
+    a new message box after SetTypeL() has been called.
 
     \param aType Message box type.
 
-    \sa Type()
+    \sa Type(), ShowL()
 */
 EXPORT_C void CHbDeviceMessageBoxSymbian::SetTypeL(TType aType)
 {
@@ -930,12 +964,11 @@ EXPORT_C CHbDeviceMessageBoxSymbian::TType CHbDeviceMessageBoxSymbian::Type() co
 }
 
 /*!
-    Sets message box text. The message box gets updated next time ShowL() or UpdateL()
-    is called.
+    Sets message box text.
 
     \param aText Message box text.
 
-    \sa Text()
+    \sa Text(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceMessageBoxSymbian::SetTextL(const TDesC& aText)
 {
@@ -953,13 +986,12 @@ EXPORT_C const TPtrC CHbDeviceMessageBoxSymbian::Text() const
 }
 
 /*!
-    Sets message box icon name or animation logical name. The message box gets updated next time ShowL() or UpdateL()
-    is called.
+    Sets message box icon name or animation logical name.
 
     \param aIconName Icon name. Icon can be from Hb resources or themes. Or can be a file in
     a file system.
 
-    \sa IconName()
+    \sa IconName(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceMessageBoxSymbian::SetIconNameL(const TDesC& aIconName)
 {
@@ -977,23 +1009,22 @@ EXPORT_C const TPtrC CHbDeviceMessageBoxSymbian::IconName() const
 }
 
 /*!
-    Sets message box animation definition name.  The message box gets updated next time ShowL() or UpdateL()
-    is called.
+    Sets message box animation definition name.
 
-    Supported animation formats are following:
+    Supported icon animation formats are following:
     - GIF (.gif)
     - MNG (.mng)
-        - Frame animations
+    - Frame animations
 
     \param aAnimationDefinition Animation definition file name. Definition can be from Hb resources or themes.
     Or can be a file in a file system. The definition must be stored to a place where it can be accessed by
     device dialog service.
 
-    \sa AnimationDefinition() SetIconNameL() HbIconAnimationManager::addDefinitionFile()
+    \sa AnimationDefinition() SetIconNameL() HbIconAnimationManager::addDefinitionFile(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceMessageBoxSymbian::SetAnimationDefinitionL(const TDesC& aAnimationDefinition)
 {
-	d->SetPropertyValueL(CHbDeviceMessageBoxPrivate::EAnimationDefinition, aAnimationDefinition);
+    d->SetPropertyValueL(CHbDeviceMessageBoxPrivate::EAnimationDefinition, aAnimationDefinition);
 }
 
 /*!
@@ -1003,16 +1034,15 @@ EXPORT_C void CHbDeviceMessageBoxSymbian::SetAnimationDefinitionL(const TDesC& a
 */
 EXPORT_C TPtrC CHbDeviceMessageBoxSymbian::AnimationDefinition() const
 {
-	return d->mProperties[CHbDeviceMessageBoxPrivate::EAnimationDefinition].StringValue();
+    return d->mProperties[CHbDeviceMessageBoxPrivate::EAnimationDefinition].StringValue();
 }
 
 /*!
-    Sets message box icon visibility. The message box gets updated next time ShowL() or UpdateL()
-    is called.
+    Sets message box icon visibility.
 
     \param aVisible Icon visibility.
 
-    \sa IconVisible()
+    \sa IconVisible(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceMessageBoxSymbian::SetIconVisible(TBool aVisible)
 {
@@ -1020,7 +1050,8 @@ EXPORT_C void CHbDeviceMessageBoxSymbian::SetIconVisible(TBool aVisible)
 }
 
 /*!
-    Returns message box icon visibility.
+    Returns message box icon visibility. Default value is true for message box
+    types other than ENone.
 
     \sa SetIconVisible()
 */
@@ -1030,12 +1061,11 @@ EXPORT_C TBool CHbDeviceMessageBoxSymbian::IconVisible() const
 }
 
 /*!
-    Sets message box timeout. The message box gets updated next time ShowL() or UpdateL()
-    is called.
+    Sets message box timeout.
 
     \param aTimeout Timeout in milliseconds. Zero denotes no timeout.
 
-    \sa Timeout()
+    \sa Timeout(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceMessageBoxSymbian::SetTimeout(TInt aTimeout)
 {
@@ -1043,7 +1073,9 @@ EXPORT_C void CHbDeviceMessageBoxSymbian::SetTimeout(TInt aTimeout)
 }
 
 /*!
-    Returns message box timeout value in milliseconds.
+    Returns message box timeout value in milliseconds. Default value depends on message box type.
+    Question message box has a default of HbPopup::NoTimeout. All other boxes, the default is
+    HbPopup::StandardTimeout.
 
     \sa SetTimeout()
 */
@@ -1053,12 +1085,11 @@ EXPORT_C TInt CHbDeviceMessageBoxSymbian::Timeout() const
 }
 
 /*!
-    Sets message box dismiss policy. The message box gets updated next time ShowL() or UpdateL()
-    is called.
+    Sets message box dismiss policy.
 
     \param aHbPopupDismissPolicy Dismiss policy. Values are HbPopup::DismissPolicy flags.
 
-    \sa HbPopup::DismissPolicy, DismissPolicy()
+    \sa HbPopup::DismissPolicy, DismissPolicy(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceMessageBoxSymbian::SetDismissPolicy(TInt aHbPopupDismissPolicy)
 {
@@ -1068,6 +1099,8 @@ EXPORT_C void CHbDeviceMessageBoxSymbian::SetDismissPolicy(TInt aHbPopupDismissP
 
 /*!
     Returns message box dismiss policy. Returned values are HbPopup::DismissPolicy flags.
+    Default depends on message box type. Question box has default HbPopup::NoDismiss and
+    all other boxes HbPopup::TapAnywhere.
 
     \sa HbPopup::DismissPolicy, SetDismissPolicy()
 */
@@ -1077,13 +1110,12 @@ EXPORT_C TInt CHbDeviceMessageBoxSymbian::DismissPolicy() const
 }
 
 /*!
-    Sets message box button text. The message box gets updated next time ShowL() or UpdateL()
-    is called.
+    Sets message box button text.
 
     \param aButton Selects the button.
     \param aText Button text.
 
-    \sa ButtonText()
+    \sa ButtonText(), SetButton(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceMessageBoxSymbian::SetButtonTextL(TButtonId aButton, const TDesC& aText)
 {
@@ -1091,7 +1123,8 @@ EXPORT_C void CHbDeviceMessageBoxSymbian::SetButtonTextL(TButtonId aButton, cons
 }
 
 /*!
-    Returns message box button text.
+    Returns message box button text. Question message box by default has "Yes" and "No" buttons.
+    Other message boxes have a single "Ok" button.
 
     \param aButton Selects the button.
 
@@ -1106,13 +1139,12 @@ EXPORT_C const TPtrC CHbDeviceMessageBoxSymbian::ButtonText(TButtonId aButton) c
 }
 
 /*!
-    Sets message box button presence. The message box gets updated next time ShowL() or UpdateL()
-    is called.
+    Sets message box button presence.
 
     \param aButton Selects the button.
     \param aEnable True enables (makes visible) message box button.
 
-    \sa HasButton()
+    \sa HasButton(), SetButtonTextL(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceMessageBoxSymbian::SetButton(TButtonId aButton, TBool aEnable)
 {
@@ -1120,11 +1152,12 @@ EXPORT_C void CHbDeviceMessageBoxSymbian::SetButton(TButtonId aButton, TBool aEn
 }
 
 /*!
-    Returns message box button presence.
+    Returns message box button presence. Question message box by default has accept and reject
+    buttons. Other message boxes have a single accept button.
 
     \param aButton Selects the button.
 
-    \sa SetButton()
+    \sa SetButton(), ButtonText()
 */
 EXPORT_C TBool CHbDeviceMessageBoxSymbian::HasButton(TButtonId aButton) const
 {
@@ -1137,11 +1170,12 @@ EXPORT_C TBool CHbDeviceMessageBoxSymbian::HasButton(TButtonId aButton) const
 /*!
     Sets message box buttons to standard buttons.
 
-    \param aButtons Message box buttons. A combination of flags,
-    eg. HbMessageBox::Yes | HbMessageBox::No. Button flags are scanned starting from lsb.
-    First button found goes to accept position and so forth.
+    \param aButtons Message box buttons. A combination of flags, eg.
+    HbMessageBox::Yes | HbMessageBox::No.
+    Button flags are scanned starting from lsb. First button found goes to accept position
+    and so forth.
 
-    \sa StandardButtons()
+    \sa HbMessageBox::StandardButton, StandardButtons(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceMessageBoxSymbian::SetStandardButtons(TUint aButtons)
 {
@@ -1150,10 +1184,10 @@ EXPORT_C void CHbDeviceMessageBoxSymbian::SetStandardButtons(TUint aButtons)
 
 /*!
     Returns standard buttons set to a message box. A default value for question message box is
-    HbMessageBox::Yes|HbMessageBox::No. For all other message box types the default is
+    HbMessageBox::Yes | HbMessageBox::No. For all other message box types the default is
     HbMessageBox::Ok.
 
-    \sa SetStandardButtons()
+    \sa HbMessageBox::StandardButton, SetStandardButtons()
 */
 EXPORT_C TUint CHbDeviceMessageBoxSymbian::StandardButtons() const
 {

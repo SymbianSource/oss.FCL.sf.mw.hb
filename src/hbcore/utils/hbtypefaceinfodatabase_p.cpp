@@ -36,11 +36,11 @@
 
 
 #ifdef Q_OS_SYMBIAN
-	#define HB_FONTS_WRITABLE_PATH QString("c:\\hb\\fonts")
+    #define HB_FONTS_WRITABLE_PATH QString("c:\\hb\\fonts")
 #else
-	#ifndef Q_OS_UNIX
-		#define HB_FONTS_WRITABLE_PATH QString("c:\\Hb\\lib")
-	#endif
+    #ifndef Q_OS_UNIX
+        #define HB_FONTS_WRITABLE_PATH QString("c:\\Hb\\lib")
+    #endif
 #endif
 
 // Recognized texts for values of role strings
@@ -94,12 +94,12 @@ static bool encodeRole(const QString& roleName, HbFontSpec::Role &role)
 
 static bool isAliasRole(const QString &roleName)
 {
-	bool alias(false); // return value
+    bool alias(false); // return value
     QString name = roleName.toLower();
     if (name == ALIAS_STRING) {
         alias = true;
     }
-	return alias;
+    return alias;
 }
 /*!
 Returns path to a writable location that should be used as a base storage folder for
@@ -113,11 +113,11 @@ static QString writablePath()
     if (QString(HB_BUILD_DIR) == QString(HB_INSTALL_DIR)) {
         // This is local build so also use local writable path.
         return QString(HB_INSTALL_DIR) + QDir::separator() + QString(".hb") 
-				+ QDir::separator() + QString("fonts");
+                + QDir::separator() + QString("fonts");
     } else {
 #ifdef Q_OS_UNIX
     return QDir::homePath() + QDir::separator() + QString(".hb") 
-				+ QDir::separator() + QString("fonts");
+                + QDir::separator() + QString("fonts");
 #else
     return HB_FONTS_WRITABLE_PATH ;
 #endif
@@ -156,7 +156,7 @@ HbTypefaceInfoDatabase::HbTypefaceInfoDatabase(HbMemoryManager::MemoryType type)
     }
 }
 
-int HbTypefaceInfoDatabase::typefaceInfoVectorOffset()
+qptrdiff  HbTypefaceInfoDatabase::typefaceInfoVectorOffset()
 {
     return mTypefaceInfoVectorOffset;
 }
@@ -184,16 +184,16 @@ void HbTypefaceInfoDatabase::init()
                 item.mRoleEnum = roleEnum;
                 item.mFamily = family;
                 item.mIsBold = isBold;
-				item.mIsAlias = false;
+                item.mIsAlias = false;
                 mTypefaceInfoVector->append( item );
             }
             else if (isAliasRole(role)) {
-				item.mRoleEnum = HbFontSpec::Undefined;
-				item.mFamily = aliasFamily;
-				item.mAliasedFamily = family;
-				item.mIsBold = isBold;
-				item.mIsAlias = true;
-				mTypefaceInfoVector->append( item );
+                item.mRoleEnum = HbFontSpec::Undefined;
+                item.mFamily = aliasFamily;
+                item.mAliasedFamily = family;
+                item.mIsBold = isBold;
+                item.mIsAlias = true;
+                mTypefaceInfoVector->append( item );
             }
         }
 
@@ -243,36 +243,36 @@ void HbTypefaceInfoDatabase::init()
 
 
 bool HbTypefaceInfoDatabase::readTypefaceMetricsFile( HbTypefaceXmlParser *parser, 
-													 HbTypefaceInfoItem *typeFaceInfoItem )
+                                                     HbTypefaceInfoItem *typeFaceInfoItem )
 {
+    Q_ASSERT (parser && typeFaceInfoItem);
+    
     int numPoints(0);
+    QString typefaceMetricsFileName;
 
-    parser->init();
-
-	QString typefaceMetricsFileName;
-
-	typefaceMetricsFileName.append(TYPEFACE_RESOURCE_FOLDER);
-	typefaceMetricsFileName.append(QDir::separator());
-	typefaceMetricsFileName.append(TYPEFACE_METRICS_FILE_STEM);
+    typefaceMetricsFileName.append(TYPEFACE_RESOURCE_FOLDER);
+    typefaceMetricsFileName.append(QDir::separator());
+    typefaceMetricsFileName.append(TYPEFACE_METRICS_FILE_STEM);
+    
     // replace whitespace with underscores and append
     QString temp = typeFaceInfoItem->mFamily;
     temp = temp.toLower().replace(QRegExp("\\s+"), QString("_"));
     typefaceMetricsFileName.append( temp );
     typefaceMetricsFileName.append(".xml");
 
-	QFile *file = new QFile(typefaceMetricsFileName);
-	if( !(file && file->exists()) ) {
-		typefaceMetricsFileName = writablePath();
-		typefaceMetricsFileName.append(QDir::separator());
-		typefaceMetricsFileName.append(TYPEFACE_METRICS_FILE_STEM);
+    QFile *file = new QFile(typefaceMetricsFileName);
+    if( !(file && file->exists()) ) {
+        typefaceMetricsFileName = writablePath();
+        typefaceMetricsFileName.append(QDir::separator());
+        typefaceMetricsFileName.append(TYPEFACE_METRICS_FILE_STEM);
         typefaceMetricsFileName.append( temp );
         typefaceMetricsFileName.append(".xml");
-	}
-	delete file;
+    }
+    delete file;
 
 #ifdef HBTYPEFACEINFO_DEBUG_ENABLE
     qDebug("HbDownsizeInfo::readTypefaceMetricsFile: typeface metric filename: %s", 
-		typefaceMetricsFileName.toAscii().constData());
+        typefaceMetricsFileName.toAscii().constData());
 #endif
     parser->setFilePath(typefaceMetricsFileName);
 
@@ -365,10 +365,10 @@ void HbTypefaceInfoDatabase::autoGenerateMetrics( HbTypefaceInfoItem *typeFaceIn
 void HbTypefaceInfoDatabase::outputMetrics( HbTypefaceInfoItem *typeFaceInfoItem ) const
 {
     QString filePath = writablePath();
-	QDir dir(filePath);
-	if(!dir.exists()) {
-		dir.mkpath(filePath + QDir::separator() );
-	}
+    QDir dir(filePath);
+    if(!dir.exists()) {
+        dir.mkpath(filePath + QDir::separator() );
+    }
 
     filePath.append(QDir::separator());
     filePath.append("typeface_metrics_");

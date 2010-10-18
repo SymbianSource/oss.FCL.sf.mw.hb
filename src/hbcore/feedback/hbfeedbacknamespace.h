@@ -79,7 +79,7 @@ namespace HbFeedback
         PopupClose,
         Flick,
         StopFlick,
-        MultitouchActivate,
+        AdvancedGestureActivate,
         RotateStep,
         LongPress,
         PositiveTacticon,

@@ -57,7 +57,7 @@ public:
     void boundaryReached(const HbWidget *widget);
     void rotated90Degrees(const HbWidget *widget);
     void selectionChanged(const HbWidget *widget);
-    void multitouchActivated(const HbWidget *widget);
+    void advancedGestureActivated(const HbWidget *widget);
     void continuousTriggered(const HbWidget *widget, Hb::ContinuousInteraction interaction, QPointF delta);
     void continuousStopped(const HbWidget *widget, Hb::ContinuousInteraction interaction);
 
@@ -81,6 +81,7 @@ private:
     const HbWidget* activelyScrollingItemView;
     QList<const HbWidget*> boundaryWidgets;
     int previousCursorPosition;
+    int previousSliderValue;
 
     HbInstantFeedback* instantFeedback;
 

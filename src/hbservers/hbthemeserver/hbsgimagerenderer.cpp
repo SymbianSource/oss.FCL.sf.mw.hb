@@ -26,6 +26,7 @@
 #include "hbsgimagerenderer_p.h"
 #include "hbnvg_p.h"
 
+#include <sgresource/sgerror.h>
 #include <QDebug>
 QHash<unsigned long long, RSgImage*> HbSgImageRenderer::sgImageHash;
 
@@ -81,6 +82,7 @@ bool HbSgImageRenderer::initialize()
     }
 
     init = true;
+    errorCode = KErrNone;
     return true;
 }
 
@@ -101,6 +103,7 @@ void HbSgImageRenderer::terminate()
         delete engine;
         engine = 0;
         init = false;
+        errorCode = KErrNone;
     }
 }
 
@@ -123,7 +126,11 @@ bool HbSgImageRenderer::createContext(RSgImage * sgImage)
     }
 
     eglContext = eglCreateContext(display, eglConfig, EGL_NO_CONTEXT, 0);
-
+    if ( eglContext == EGL_NO_CONTEXT ) {
+        if ((eglGetError() == EGL_BAD_ALLOC)) {
+            setLastError(KErrNoGraphicsMemory);
+        }
+    }
     return eglContext != EGL_NO_CONTEXT;
 }
 
@@ -140,6 +147,9 @@ bool HbSgImageRenderer::beginRendering(RSgImage * sgImage)
 
     currentSurface = eglCreatePixmapSurface(display, eglConfig, sgImage, KPixmapAttributes);
     if (currentSurface == EGL_NO_SURFACE) {
+        if ((eglGetError() == EGL_BAD_ALLOC)){
+            setLastError(KErrNoGraphicsMemory);
+        }
         return false;
     }
 
@@ -178,8 +188,15 @@ void HbSgImageRenderer::removeSgImageFromHash(unsigned long long id)
         sgImageHash.remove(id);
     }    
 }
+int HbSgImageRenderer::lastError()
+{
+    return errorCode;
+}
+void HbSgImageRenderer::setLastError(int lastError)
+{
+    errorCode = lastError;
+}
 
-#ifdef HB_ICON_CACHE_DEBUG
 unsigned long HbSgImageRenderer::totalGPUMemory()
 {
     qDebug() <<"Inside  HbSgImageRenderer::totalGPUMemory()  " ;
@@ -316,4 +333,3 @@ EGLint* HbSgImageRenderer::getProfileData(EGLint & data_count)
 
     return prof_data;
 }
-#endif //HB_ICON_CACHE_DEBUG

@@ -32,75 +32,46 @@
 
 #include "hbmemoryutils_p.h"
 
-#define SHARED_CONTAINER_UNITTEST_PREFIX "unittest_hbsharedcontainer_"
-#define SHARED_MEMORYMANAGER_UNITTEST_PREFIX "unittest_hbsharedmemory"
-
-/**
-* helper function to know whether process is a shared container unittest
-*/
-#ifndef HB_BIN_CSS
-static bool isSharedContainerUnitTest()
-{
-    static bool isSharedContainerUnit = false;
-    // to avoid string operations multiple times in each call
-    static bool appNameNotTested=true;
-
-    if (appNameNotTested) {
-        appNameNotTested = false;
-        if ( HbMemoryUtils::getCleanAppName().startsWith(SHARED_CONTAINER_UNITTEST_PREFIX) ||
-             HbMemoryUtils::getCleanAppName().startsWith(SHARED_MEMORYMANAGER_UNITTEST_PREFIX) ) {
-            isSharedContainerUnit = true;
-        } else {
-            isSharedContainerUnit = false;
-        }
-    }
-    return isSharedContainerUnit;
-}
-#endif
-/**
-* to get instance of hbmemory manager
-*/
-HbMemoryManager * HbMemoryManager::instance( MemoryType type )
-{
-    Q_UNUSED(type)
-
-#ifndef HB_BIN_CSS
-    switch(type) {
-        case SharedMemory :
-            if ( isSharedContainerUnitTest() )    {
-                return HbSharedMemoryManagerUt::instance();
-            } else {
-                return HbSharedMemoryManager::instance();
-            }
-        case HeapMemory :          
-            return HbHeapMemoryManager::instance();
-        default:
-            return 0;
-    }
-#else
-    return HbSharedMemoryManager::instance();
-#endif
-}
+HbMemoryManager *HbMemoryManager::sharedMemoryManager = 0;
+HbMemoryManager *HbMemoryManager::heapMemoryManager = 0;
 
 /**
 * release the HbSharedMemoryManager-instance.
 */
 void HbMemoryManager::releaseInstance( MemoryType type )
 {
-    Q_UNUSED(type)
-
 #ifndef HB_BIN_CSS
     if ( type == SharedMemory ) {
-        if ( isSharedContainerUnitTest() ) {
-            HbSharedMemoryManagerUt::releaseInstance();
-        } else {
-            HbSharedMemoryManager::releaseInstance();
-        }
-
+        delete sharedMemoryManager;
+        sharedMemoryManager = 0;
     } else if ( type == HeapMemory ) {
-        HbHeapMemoryManager::releaseInstance();
+        delete heapMemoryManager;
+        heapMemoryManager = 0;
     }
 #else
-    return HbSharedMemoryManager::releaseInstance();
+    Q_UNUSED(type)
+
+    delete sharedMemoryManager;
+    sharedMemoryManager = 0;
+#endif
+}
+
+void HbMemoryManager::createSharedMemoryManager()
+{
+    if(!sharedMemoryManager) {
+        sharedMemoryManager = HbSharedMemoryManager::create();
+        if(!sharedMemoryManager->initialize()) {
+            delete sharedMemoryManager;
+            sharedMemoryManager = 0;
+        }
+    }
+}
+
+void HbMemoryManager::createHeapMemoryManager()
+{
+#ifndef HB_BIN_CSS
+    if(!heapMemoryManager) {
+        heapMemoryManager = HbHeapMemoryManager::create();
+    }
 #endif
 }

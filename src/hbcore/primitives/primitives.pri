@@ -35,10 +35,7 @@ PUBLIC_HEADERS += $$PWD/hbtoucharea.h
 PUBLIC_HEADERS += $$PWD/hbrichtextitem.h
 PUBLIC_HEADERS += $$PWD/hbmarqueeitem.h
 
-PRIVATE_HEADERS += $$PWD/hbrepeatitem_p.h
 PRIVATE_HEADERS += $$PWD/hbiconitem_p.h
-PRIVATE_HEADERS += $$PWD/hbprogresstrackitem_p.h
-PRIVATE_HEADERS += $$PWD/hbrepeaticonitem_p.h
 PRIVATE_HEADERS += $$PWD/hbtextitem_p.h
 PRIVATE_HEADERS += $$PWD/hbrichtextitem_p.h
 PRIVATE_HEADERS += $$PWD/hbtoucharea_p.h
@@ -47,9 +44,6 @@ PRIVATE_HEADERS += $$PWD/hbmarqueeitem_p.h
 
 SOURCES += $$PWD/hbframeitem.cpp
 SOURCES += $$PWD/hbiconitem.cpp
-SOURCES += $$PWD/hbprogresstrackitem.cpp
-SOURCES += $$PWD/hbrepeaticonitem_p.cpp
-SOURCES += $$PWD/hbrepeatitem_p.cpp
 SOURCES += $$PWD/hbtextitem.cpp
 SOURCES += $$PWD/hbtoucharea.cpp
 SOURCES += $$PWD/hbrichtextitem.cpp

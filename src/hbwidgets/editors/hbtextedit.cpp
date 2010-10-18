@@ -30,8 +30,8 @@
 #include <QTextCursor>
 
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
-#include "hbtextmeasurementutility_p.h"
-#include "hbfeaturemanager_r.h"
+#include "hbtextmeasurementutility_r.h"
+#include "hbtextmeasurementutility_r_p.h"
 #endif //HB_TEXT_MEASUREMENT_UTILITY
 
 /*!
@@ -153,7 +153,7 @@ void HbTextEdit::setPlainText (const QString &text)
 {
     QString txt( text );
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
-    if ( HbFeatureManager::instance()->featureStatus( HbFeatureManager::TextMeasurement ) ) {
+    if (HbTextMeasurementUtility::instance()->locTestMode()) {
         if (text.endsWith(QChar(LOC_TEST_END))) {
             int index = text.indexOf(QChar(LOC_TEST_START));
             setProperty( HbTextMeasurementUtilityNameSpace::textIdPropertyName,  text.mid(index + 1, text.indexOf(QChar(LOC_TEST_END)) - index - 1) );
@@ -173,8 +173,6 @@ void HbTextEdit::setPlainText (const QString &text)
 void HbTextEdit::resizeEvent(QGraphicsSceneResizeEvent *event)
 {
     HbAbstractEdit::resizeEvent(event);
-
-    document()->setTextWidth(primitive(HbStyle::P_Edit_text)->boundingRect().width());
 }
 
 

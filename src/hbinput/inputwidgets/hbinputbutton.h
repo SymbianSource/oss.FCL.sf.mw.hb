@@ -151,6 +151,16 @@ public:
     void setBoundingRect(const QRectF &rect);
     QRectF boundingRect() const;
 
+    QRectF activeTouchArea() const;
+
+    void setLastTriggeredPosition(const QPointF &position);
+    void clearLastTriggeredPosition();
+    bool wasTriggeredAt(const QPointF &position) const;
+
+    void setTouchPointPosition(const QPointF &position);
+    QPointF currentTouchPointPosition() const;
+    bool suppressMoveEvent(const QPointF &position);
+
 protected:
     HbInputButtonPrivate *const d_ptr;
 

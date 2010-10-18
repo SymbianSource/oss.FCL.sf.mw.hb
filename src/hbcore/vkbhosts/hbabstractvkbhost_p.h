@@ -22,60 +22,53 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
-
 #ifndef HBABSTRACTVKBHOST_P_H
 #define HBABSTRACTVKBHOST_P_H
 
+#include <QGraphicsObject>
+#include <QWidget>
 #include <QTimeLine>
 #include <QPointer>
+#include <QPointF>
+#include <QRectF>
+#include <QSizeF>
+
+#include "hbinputvkbhost.h"
+
+#include <hbview.h>
 
 class QGraphicsWidget;
 class HbMainWindow;
 class HbVirtualKeyboard;
 class HbAbstractVkbHost;
+class HbInputFocusObject;
+class HbVkbHostContainerWidget;
 
 class HbPendingVkbHostCall
 {
 public:
-    HbPendingVkbHostCall() : vkb(0), animationAllowed(false) {}
+    HbPendingVkbHostCall() : vkb(0),
+                             animationAllowed(false),
+                             popupOpening(false)
+    {}
 
 public:
     HbVirtualKeyboard *vkb;
     bool animationAllowed;
+    bool popupOpening;
 };
 
-
-// This class is to handle all the specific widget actions in an,
-// abstract way, put all such widget specific code in below class.
-class HbVkbHostContainerWidget
+class HB_CORE_PRIVATE_EXPORT HbAbstractVkbHostPrivate
 {
-public:
-    HbVkbHostContainerWidget(QObject *containterWidget);
-    void setPos(QPointF newPosition);
-    QPointF pos();
-    QRectF sceneBoundingRect();
-    QObject *widgetObject() {
-        return mContainerWidget;
-    }
-    void connectSignals(QObject *receiver);
-    void disconnectSignals(QObject *receiver);
-private:
-    QPointer<QObject> mContainerWidget;
-};
-
-class HbAbstractVkbHostPrivate
-{
+    Q_DECLARE_PUBLIC(HbAbstractVkbHost)
 public:
     HbAbstractVkbHostPrivate(HbAbstractVkbHost *myVkbHost, QObject *containerWidget);
     virtual ~HbAbstractVkbHostPrivate();
 
     virtual void openKeypad();
     virtual void closeKeypad();
-    virtual void minimizeKeypad();
-    virtual void openMinimizedKeypad();
     virtual void openKeypadWithoutAnimation();
     virtual void closeKeypadWithoutAnimation();
-    virtual void minimizeKeypadWithoutAnimation();
     virtual void cancelAnimationAndHideVkbWidget();
     virtual bool prepareContainerAnimation(HbVkbHost::HbVkbStatus status);
     virtual bool prepareKeypadAnimation(HbVkbHost::HbVkbStatus status);
@@ -89,6 +82,13 @@ public:
     HbMainWindow *mainWindow() const;
     QSizeF screenSize() const;
     bool disableCursorShift();
+    bool getViewAndFocusObjects(HbView*& currentView, HbInputFocusObject*& focusObject);
+    void _q_containerAboutToClose();
+    void ensureVisibilityInsideScrollArea() const;
+    void ensureVisibilityInsideVisibleArea() const;
+    QRectF findEditorRect(HbInputFocusObject* fo) const;
+    QPointF selectLongestVerticalVector(const QPointF &v1, const QPointF &v2) const;
+    bool popupAnimationInProgress() const;
 
 public:
     HbAbstractVkbHost *q_ptr;
@@ -99,19 +99,25 @@ public:
     QTimeLine mTimeLine;
     HbVkbHost::HbVkbStatus mKeypadStatus;
     bool mKeypadOperationOngoing;
-
     QPointF mOriginalContainerPosition;
-
     QPointF mContainerMovementStartingPoint;
     QPointF mContainerMovementVector;
-
     QPointF mKeypadMovementStartingPoint;
     QPointF mKeypadMovementVector;
-
     QPointer<HbInputMethod> mInputMethod;
     HbVkbHost::HbVkbStatus mKeypadStatusBeforeOrientationChange;
-    bool mIsHiddenFlagSetByVkbHost;
     HbPendingVkbHostCall mPendingCall;
+    bool mTitleBarHiddenByVkbHost;
+    bool mStatusBarHiddenByVkbHost;
+    mutable QRectF mScrollAreaRect;
+    qreal mMarginInPixels;
+
+private: // For unit test.
+    static HbAbstractVkbHostPrivate *d_ptr(HbAbstractVkbHost *host) {
+        Q_ASSERT(host);
+        return host->d_func();
+    }
+    friend class TestHbAbstractVkbHostPrivate;
 };
 
 #endif // HBABSTRACTVKBHOST_P_H

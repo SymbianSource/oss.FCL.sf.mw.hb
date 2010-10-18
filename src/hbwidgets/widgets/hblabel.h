@@ -46,6 +46,7 @@ class HB_WIDGETS_EXPORT HbLabel: public HbWidget
     Q_PROPERTY(QColor textColor READ textColor WRITE setTextColor)
     Q_PROPERTY(HbIcon icon READ icon WRITE setIcon)
     Q_PROPERTY(Qt::AspectRatioMode aspectRatioMode READ aspectRatioMode WRITE setAspectRatioMode)
+    Q_PROPERTY(int maximumLines READ maximumLines WRITE setMaximumLines)
 
 public:
 
@@ -73,6 +74,9 @@ public:
 
     void setTextColor( const QColor &textColor );
     QColor textColor() const;
+
+    void setMaximumLines(int maxLines);
+    int maximumLines() const;
 
     bool isEmpty() const;
 

@@ -33,7 +33,10 @@
 class CHbDeviceProgressDialogSymbianPrivate;
 class MHbDeviceProgressDialogObserver;
 
-class CHbDeviceProgressDialogSymbian : public CBase
+class CHbDeviceProgressDialogSymbian
+#if !defined(HB_DOXYGEN)
+: public CBase
+#endif // !defined(HB_DOXYGEN)
 {
 public:
 
@@ -89,6 +92,7 @@ private:
     void ConstructL(TType aType);
     CHbDeviceProgressDialogSymbianPrivate* d;
     friend class CHbDeviceProgressDialogSymbianPrivate;
+    friend class HbDeviceDialogsExtensionSymbian;
 };
 
 class MHbDeviceProgressDialogObserver

@@ -39,6 +39,7 @@ class HbDeviceNotificationDialogWidget : public HbNotificationDialog, public HbD
     Q_PROPERTY(QString iconName READ iconName WRITE setIconName)
     Q_PROPERTY(bool touchActivation READ isTouchActivating WRITE enableTouchActivation)
     Q_PROPERTY(QString animationDefinition READ animationDefinition WRITE setAnimationDefinition)
+    Q_PROPERTY(int showLevel READ showLevel WRITE setShowLevel)
 
 public:
     HbDeviceNotificationDialogWidget(const QVariantMap &parameters);
@@ -62,7 +63,10 @@ private:
     void setIconName(QString iconName);
 
     void hideEvent(QHideEvent *event);
-    void showEvent(QShowEvent *event);
+    void closeEvent(QCloseEvent *event);
+
+    void setShowLevel(int level);
+    int showLevel() const;
 
     QString animationDefinition() const;
     void setAnimationDefinition(QString &animationDefinition);
@@ -76,7 +80,7 @@ private:
 
     int mLastError;
     QString mIconFilename;
-    bool mShowEventReceived;
+    bool mCloseEventReceived;
     QString mAnimationDefinition;
 };
 

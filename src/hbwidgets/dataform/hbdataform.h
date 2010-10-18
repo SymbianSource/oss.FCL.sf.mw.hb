@@ -89,6 +89,10 @@ protected:
 
     void initStyleOption(HbStyleOptionDataForm *option);
 
+    void orientationChanged(Qt::Orientation newOrientation);
+    void orientationAboutToBeChanged();
+    void showEvent(QShowEvent * event);
+    void hideEvent ( QHideEvent * event );
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbDataForm)
     Q_DISABLE_COPY(HbDataForm)

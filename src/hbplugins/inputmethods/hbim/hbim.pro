@@ -38,6 +38,7 @@ symbian {
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL
     TARGET.UID3 = 0x2002EACD
+    MMP_RULES += SMPSAFE
 
     pluginstub.sources = HbIm.dll
     pluginstub.path = /resource/qt/plugins/inputmethods

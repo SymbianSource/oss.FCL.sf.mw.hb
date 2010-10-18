@@ -46,46 +46,68 @@ public:
 
     \class HbInstantFeedback
 
-    \brief Class for instant feedback effects.
+    \brief The HbInstantFeedback class is used for setting and playing
+    instant feedback effects from custom widgets.
 
-    Instant feedbacks are used to initiate short, fire&forget type of feedback effects.
-    Effects are used as a feedback indication while the user is interacting with the device.
+    Instant feedback requests are used for initiating short, fire-and-forget
+    type of feedback effects as a response to short user interactions,
+    such as clicking a button or selecting an item on a list. You can
+    use the class HbInstantFeedback to ask the feedback framework to play
+    a selected instant effect, by giving HbInstantFeedback a parameter
+    of type HbFeedback::InstantEffect. The type HbFeedback::InstantEffect
+    has predefined instant effects for many widget types, such as buttons,
+    checkboxes, sliders, and so on.
+    
+    When you call play() from your widget, HbInstantFeedback calls the internal
+    feedback framework. If effects are enabled in the current application,
+    the effect will be played. Applications can disable effects with the class
+    HbFeedbackSettings, when effects are not wanted. 
+    
+    If your custom widget derives from one of the standard %Hb widgets, it
+    probably has some default feedback behaviour defined, and you should
+    rely on the base class widget for triggering the feedback effects through
+    the HbWidgetFeedback class. Note that if you choose to use this class,
+    HbInstantFeedback, to play effects directly, you may end up getting
+    feedback effects twice, both through your call to HbInstantFeedback and
+    through the base class widget feedback mechanism.
+    
+    If your custom widget derives directly from HbWidget, and not through
+    any other %Hb widget, HbInstantFeedback provides you with an easy way
+    to play instant feedback effects. Just call the static method 
+    HbInstantFeedback::play(HbFeedback::InstantEffect effect) to play the
+    effect. Alternatively, you can instantiate an HbInstantFeedback object
+    first and set the effect to be played, before calling play().
+            
+    
+    
+    \sa HbFeedback::InstantEffect, HbContinuousFeedback, HbWidgetFeedback
 */
 
 /*!
-    \fn void HbInstantFeedback::setInstantEffect(HbFeedback::InstantEffect effect)
-
-    Sets the instant effect of the feedback object. This effect will be played when calling
-    the play() function.
-
+    Sets the instant effect to be played when calling play().
+    
     \sa instantEffect()
 */
-
 void HbInstantFeedback::setInstantEffect(HbFeedback::InstantEffect effect)
 {
     d->cEffect = effect;
 }
 
 /*!
-    \fn void HbFeedback::InstantEffect HbInstantFeedback::instantEffect() const
-
-    Returns the instant effect of the instant feedback object.
-
+    Returns the currently set instant effect. The instant effect is
+    the feedback effect to be played when calling play().
+    
     \sa setInstantEffect()
 */
-
 HbFeedback::InstantEffect HbInstantFeedback::instantEffect() const
 {
     return d->cEffect;
 }
 
 /*!
-    \fn bool HbInstantFeedback::isValid() const
-
-    Instant feedback is valid if a proper instant effect (not HbFeedback::None) has been
-    defined for the feedback.
+    Returns \c true if an instant effect (other than HbFeedback::None) has been
+    defined for this object.
 */
-
 bool HbInstantFeedback::isValid() const
 {
     switch(d->cEffect) {
@@ -112,8 +134,7 @@ HbInstantFeedback::HbInstantFeedback() : d(new HbInstantFeedbackPrivate)
 /*!
     Constructor.
 
-    \param effect the instant feedback effect of the feedback object. This effect will
-           be played when calling the play() function.
+    \param effect Instant feedback to be played.
 */
 HbInstantFeedback::HbInstantFeedback(HbFeedback::InstantEffect effect) : d(new HbInstantFeedbackPrivate)
 {
@@ -129,7 +150,7 @@ HbInstantFeedback::~HbInstantFeedback()
 }
 
 /*!
-    Plays the feedback object's instant feedback effect.
+    Plays the currently set instant feedback effect.
 */
 void HbInstantFeedback::play()
 {
@@ -141,6 +162,8 @@ void HbInstantFeedback::play()
 
 /*!
     Plays the given instant feedback effect.
+    
+    \sa HbFeedback::InstantEffect
 */
 void HbInstantFeedback::play(HbFeedback::InstantEffect effect)
 {
@@ -151,7 +174,7 @@ void HbInstantFeedback::play(HbFeedback::InstantEffect effect)
 }
 
 /*!
-    Assigns a copy of the feedback \a feedback to this feedback, and returns a
+    Assigns a copy of \a feedback to this object, and returns a
     reference to it.
 */
 HbInstantFeedback &HbInstantFeedback::operator=(const HbInstantFeedback & feedback)
@@ -162,8 +185,8 @@ HbInstantFeedback &HbInstantFeedback::operator=(const HbInstantFeedback & feedba
 }
 
 /*!
-    Returns true if this feedback has the same parameters as the feedback
-    \a feedback, otherwise returns false.
+    Returns \c true if this object has the same parameters as \a feedback,
+    otherwise returns \c false.
 */
 bool HbInstantFeedback::operator==(const HbInstantFeedback &feedback) const
 {
@@ -173,8 +196,8 @@ bool HbInstantFeedback::operator==(const HbInstantFeedback &feedback) const
 }
 
 /*!
-    Returns true if this feedback has different parameters than the feedback
-    \a feedback, otherwise returns false.
+    Returns \c true if this object has different parameters from \a feedback,
+    otherwise returns \c false.
 */
 bool HbInstantFeedback::operator!=(const HbInstantFeedback &feedback) const
 {

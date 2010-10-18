@@ -50,6 +50,7 @@ symbian {
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL
     TARGET.UID3=0x20022E9E
+    MMP_RULES += SMPSAFE
 
     pluginstub.sources = HbFeedbackEffectPlugin.dll
     pluginstub.path = /resource/plugins/feedback

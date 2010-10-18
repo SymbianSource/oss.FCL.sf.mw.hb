@@ -40,6 +40,7 @@ static const struct {
     {"com.nokia.hb.indicatormenu/1.0"}
 };
 
+/// \cond
 class HbIndicatorMenuPluginPrivate
 {
 public:
@@ -47,6 +48,7 @@ public:
 
     int mError;
 };
+/// \endcond
 
 // Constructor
 HbIndicatorMenuPlugin::HbIndicatorMenuPlugin()
@@ -111,7 +113,7 @@ bool HbIndicatorMenuPlugin::deviceDialogInfo(const QString &deviceDialogType,
 
     info->group = IndicatorGroup;
     info->flags = ReceiveIndicatorStatus;
-    info->priority = DefaultPriority;
+    info->showLevel = NormalLevel;
 
     TRACE_EXIT
     return true;

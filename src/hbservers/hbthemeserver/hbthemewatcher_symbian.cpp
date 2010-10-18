@@ -36,67 +36,40 @@
 static _LIT_SECURITY_POLICY_PASS(KAllowAllPolicy);
 static _LIT_SECURITY_POLICY_C1(KThemeChangerPolicy,ECapabilityWriteDeviceData);
 
-CHbThemeWatcher::CHbThemeWatcher(HbThemeServerPrivate& aObserver) : CActive(EPriorityStandard), 
-                                                                    iObserver(aObserver)
+
+HbThemeWatcher::HbThemeWatcher(HbThemeServerPrivate &observer) :
+    mObserver(observer)
+{
+}
+
+HbThemeWatcher::~HbThemeWatcher()
+{
+}
+
+void HbThemeWatcher::startWatching(const QString &file)
 { 
-    CActiveScheduler::Add(this); 
+    mWatcher.removePath(mFile);
+    mWatcher.addPath(file);
+    connect(&mWatcher, SIGNAL(fileChanged(const QString &)),
+            this, SLOT(fileChanged(const QString &)));
+    mFile = file;
 }
 
-void CHbThemeWatcher::ConstructL()
+void HbThemeWatcher::fileChanged(const QString &file)
 {
-    User::LeaveIfError(iFs.Connect());
-}
-
-CHbThemeWatcher* CHbThemeWatcher::NewL(HbThemeServerPrivate& aObserver)
-{
-    CHbThemeWatcher* self = new (ELeave) CHbThemeWatcher(aObserver);
-    CleanupStack::PushL(self);
-    self->ConstructL();
-    CleanupStack::Pop(self);
-    return self;
-}
-
-CHbThemeWatcher::~CHbThemeWatcher()
-{
-    Cancel();
-    iFs.Close();
-}
-
-void CHbThemeWatcher::startWatchingL(const QString &file)
-{ 
-    // Cancel ongoing watch
-    if (IsActive()) {
-        Cancel();
-    }
-    iFile = file;
-
-    TBuf<256> fileToWatch(iFile.utf16());
-    iFs.NotifyChange(ENotifyAll, iStatus, fileToWatch); 
-    SetActive();
-}
-
-void CHbThemeWatcher::RunL()
-{
-    if (iStatus != KErrNone) {
+    Q_UNUSED(file);
+    if (QFile::exists(mFile)) {
+        // active theme still exists, continue watching
         return;
     }
     
-    if (QFile::exists(iFile)) {
-        // theme exists continue watching
-        TBuf<256> fileToWatch(iFile.utf16());
-        iFs.NotifyChange(ENotifyAll, iStatus, fileToWatch);
-        SetActive();
-        return;
-    }
-
     // theme doesn't exist, change active theme to default
-    iObserver.HandleThemeSelection(HbThemeUtils::getThemeSetting(HbThemeUtils::DefaultThemeSetting));
+    mObserver.HandleThemeSelection(
+        HbThemeUtils::getThemeSetting(HbThemeUtils::DefaultThemeSetting));
 }
- 
-void CHbThemeWatcher::DoCancel()
-{
-    iFs.NotifyChangeCancel(iStatus);
-}
+
+
+
 
 CHbThemeChangeNotificationListener* CHbThemeChangeNotificationListener::NewL(HbThemeServerPrivate& aObserver)
 {
@@ -192,32 +165,22 @@ void CHbThemeChangeNotificationListener::RunL()
     TBuf<KThemeChangeDataBufferSize> requestData;
     TInt ret = themeRequestProp.Get(requestData);
     switch (ret) {
-        case KErrNone:
-            {
-                QString qrequestData((QChar*)requestData.Ptr(),requestData.Length());
-                HbThemeServerRequest etype = EInvalidServerRequest;
-                TBuf<KThemeChangeDataBufferSize> data;
-                ///Parse the data from the Publisher
-                bool bSuccess = parseData( requestData, etype, data);
-                if( bSuccess && EThemeSelection == etype) {
-                    QString str((QChar*)data.Ptr(), data.Length());
-                    str = str.trimmed();
-                    iObserver.HandleThemeSelection( str );
-                }
-            }
-            break;
-        case KErrPermissionDenied:
-            qDebug() << "KErrPermissionDenied";
-            break;
-        case KErrNotFound:
-            qDebug() << "KErrNotFound";
-            break;
-        case KErrArgument:
-            qDebug() << "KErrArgument";
-            break;
-        case KErrOverflow:
-            qDebug() << "KErrOverflow";
-            break;
+    case KErrNone: {
+        QString qrequestData((QChar*)requestData.Ptr(),requestData.Length());
+        HbThemeServerRequest etype = EInvalidServerRequest;
+        TBuf<KThemeChangeDataBufferSize> data;
+        ///Parse the data from the Publisher
+        bool bSuccess = parseData( requestData, etype, data);
+        if( bSuccess && EThemeSelection == etype) {
+            QString str((QChar*)data.Ptr(), data.Length());
+            str = str.trimmed();
+            iObserver.HandleThemeSelection( str );
+        }
+        break;
+    }
+    default:
+        THEME_GENERIC_DEBUG() << Q_FUNC_INFO << "Themechange request read failed. Error code: " << ret;
+        break;
     }
 }
 

@@ -71,6 +71,7 @@
 //#define MONITOR_INSTALLATION_DIRS 1
 
 // Thread that scans directories and keeps the cache current
+/// \cond
 class HbPluginNameCacheThread : public QThread
 {
 public:
@@ -98,6 +99,7 @@ private: // data
     HbPluginNameCache &mNameCache;
     static QMutex *mMutex;
 };
+/// \endcond
 
 // Share lock between all instances of the cache.
 QMutex *HbPluginNameCacheThread::mMutex = 0;
@@ -184,7 +186,7 @@ void HbPluginNameCacheThread::stop()
 // Scan directory for plugins and keys they implement.
 void HbPluginNameCacheThread::doDirectoryScan(const WorkItem &workItem)
 {
-    TRACE_ENTRY_ARGS(path)
+    TRACE_ENTRY_ARGS(workItem.mDirPath)
 
     // Invalidate cache contents for the path
     mNameCache.insertPath(workItem.mDirPath);
@@ -298,7 +300,7 @@ void HbPluginNameCache::removeWatchPath(const QString &path)
 // Scan directory directory for plugins
 void HbPluginNameCache::scanDirectory(const ScanParameters &parameters)
 {
-    TRACE_ENTRY_ARGS(path)
+    TRACE_ENTRY_ARGS(parameters.mDirPath)
     QString dirPath = directoryPath(parameters.mDirPath);
     TRACE(dirPath)
     if (!dirPath.isEmpty()) {
@@ -376,7 +378,7 @@ void HbPluginNameCache::print()
             TRACE("File:" << fileitem.mFile)
             int keyCount = fileitem.mKeys.count();
             for(int k = 0; k < keyCount; k++) {
-                TRACE(fileitem.keys.at(k))
+                TRACE(fileitem.mKeys.at(k))
             }
         }
     }
@@ -401,7 +403,7 @@ void HbPluginNameCache::insertPath(const QString &dirPath)
 void HbPluginNameCache::insert(const QStringList &keys, const QString &dirPath,
     const QString &fileName)
 {
-    TRACE_ENTRY_ARGS("keys" << keys << "filePath" << filePath)
+    TRACE_ENTRY_ARGS("keys" << keys << "filePath" << dirPath)
     QMutexLocker(&mThread->lock());
     // Find directory path
     DirItem searchItem;

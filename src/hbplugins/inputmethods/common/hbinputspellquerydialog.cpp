@@ -35,11 +35,22 @@
 #include <hbinstance.h>
 #include <hbeffect.h>
 #include <hbinputregioncollector_p.h>
+#include <hbinputmainwindow_p.h>
 
 #include "hbinputspellquerydialog.h"
 #include "hbinputmodehandler.h"
+#include "hbinputdialog_p.h"
 
 static const qint16 MAXUDBWORDSIZE = 64;
+
+class HbInputSpellQueryPrivate : public HbInputDialogPrivate
+{
+    Q_DECLARE_PUBLIC(HbInputSpellQuery)
+
+public:
+    HbInputSpellQueryPrivate() {};
+    ~HbInputSpellQueryPrivate() {};
+};
 
 HbInputSpellQuery::HbInputSpellQuery(HbInputMethod *inputMethod, HbInputPredictionHandler *predictionHandler)
  : mOwner(inputMethod), mPredictionHandler(predictionHandler), mPrimaryAction(0) 
@@ -56,10 +67,16 @@ HbInputSpellQuery::~HbInputSpellQuery()
 
 void HbInputSpellQuery::launch(QString editorText)
 {
-    HbInputFocusObject *focusObject = 0;
-    if (!mOwner || !(focusObject = mOwner->focusObject())) {
+    Q_D(HbInputSpellQuery);
+
+    if (!mOwner) {
         return;
     }
+    HbInputFocusObject *focusObject = mOwner->focusObject();
+    if (!focusObject) {
+        return;
+    }
+
     mSavedState = mOwner->inputState();
     // close the keypad before showing the spell dialog
     HbVkbHost *vkbHost = focusObject->editorInterface().vkbHost();
@@ -89,11 +106,14 @@ void HbInputSpellQuery::launch(QString editorText)
         eInt.setLastFocusedState(mSavedState);
         spellEdit->setFocus();
     }
+
+    d->setPriority(focusObject->editorPriority());
+
     // execute the spell dialog
     mSavedFocusObject = focusObject->object();
     mSavedEditorText = editorText;
     mDidHandleFinish = false;
-    mainWindow()->setProperty("SpellQueryLaunched", true);
+    HbInputMainWindow::instance()->lockFocus();
     open(this,SLOT(dialogClosed(HbAction*)));
     mPrimaryAction = qobject_cast<HbAction*>(actions().first());
 
@@ -108,7 +128,6 @@ void HbInputSpellQuery::launch(QString editorText)
 
 void HbInputSpellQuery::dialogClosed(HbAction* action)
 {
-    mainWindow()->setProperty("SpellQueryLaunched", false);
     //There are multiple dialog closed event received. This will make sure we handle finish
     //only once
     if(mDidHandleFinish) {
@@ -133,7 +152,9 @@ void HbInputSpellQuery::dialogClosed(HbAction* action)
     HbEffect::disable(this);
     hide();
     HbEffect::enable(this);  
-
+    
+    HbInputMainWindow::instance()->unlockFocus();
+    
     mPredictionHandler->spellQueryDialogClosed(mSavedFocusObject,closeReason,string);
     mSavedFocusObject = 0;
     mSavedEditorText.clear();

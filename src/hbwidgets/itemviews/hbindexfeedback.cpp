@@ -29,14 +29,18 @@
 #include "hbabstractitemview.h"
 
 #include <hbscrollbar.h>
-#include <hbstyleoptionindexfeedback_p.h>
+#include <hbframeitem.h>
+#include <hbtextitem.h>
 #include <hbstyleparameters.h>
 #include <hbstyle.h>
 #include <hbdeviceprofile.h>
+#include <hbstyletextprimitivedata.h>
+#include <hbstyleframeprimitivedata.h>
 
 #include <QEvent>
 #include <QObject>
 #include <QGraphicsScene>
+#include <QGraphicsObject>
 
 /*!
     @alpha
@@ -60,8 +64,8 @@
     \sa HbAbstractItemView, HbIndexFeedback::IndexFeedbackPolicy.
 
     \primitives
-    \primitive{index-text} HbTextItem representing the text in the HbIndexFeedback. 
-    \primitive{index-background} HbFrameItem representing the background of the HbIndexFeedback. 
+    \primitive{index-text} HbTextItem with item name "index-text" representing the text in the HbIndexFeedback. 
+    \primitive{index-background} HbFrameItem with item name "index-background" representing the background of the HbIndexFeedback. 
 */
 
 /*!
@@ -172,7 +176,7 @@ void HbIndexFeedback::setIndexFeedbackPolicy(IndexFeedbackPolicy policy)
         d->_q_hideIndexFeedbackNow();
         d->mIndexFeedbackPolicy = policy;
         d->calculatePopupRects();
-        d->updatePrimitives();
+        updatePrimitives();
     }
 }
 
@@ -292,7 +296,7 @@ bool HbIndexFeedback::eventFilter(QObject *obj, QEvent *ev)
             case QEvent::Resize:
                     d->_q_hideIndexFeedbackNow();
                     d->calculatePopupRects();
-                    d->updatePrimitives();
+                    updatePrimitives();
                 break;
 
             default:
@@ -304,59 +308,76 @@ bool HbIndexFeedback::eventFilter(QObject *obj, QEvent *ev)
     return QObject::eventFilter(obj, ev);
 }
 
-/*
-    For use with HbStyle.
-
-    Provide the correct data to use in the 'model.'
+/*!
+  Initializes the HbIndexFeedback primitive data. 
+  
+  This function calls HbWidgetBase::initPrimitiveData().
+  \a primitiveData is data object, which is populated with data. \a primitive is the primitive.
 */
-void HbIndexFeedback::initStyleOption(HbStyleOptionIndexFeedback *option) const
+void HbIndexFeedback::initPrimitiveData(HbStylePrimitiveData     *primitiveData, 
+                                       const QGraphicsObject     *primitive)
 {
-    Q_D( const HbIndexFeedback );
+    Q_ASSERT_X(primitive && primitiveData, "HbIndexFeedback::initPrimitiveData" , "NULL data not permitted");
+    Q_D(HbIndexFeedback);
 
-    HbWidget::initStyleOption(option);
+    HbWidgetBase::initPrimitiveData(primitiveData, primitive);
+    
+    if (primitiveData->type == HbStylePrimitiveData::SPD_Text) {
+        HbStyleTextPrimitiveData *textPrimitiveData = hbstyleprimitivedata_cast<HbStyleTextPrimitiveData*>(primitiveData);
 
-    if (!d->mItemView) {
-        return;
-    }
-
-    HbFontSpec fontSpec;
-    qreal margin = 0;
-
-    style()->parameter(QLatin1String("hb-param-margin-gene-popup"), margin);
-
-    switch (d->mIndexFeedbackPolicy) {
-        case IndexFeedbackSingleCharacter:
-            {
+        HbFontSpec fontSpec;
+        switch (d->mIndexFeedbackPolicy) {
+            case IndexFeedbackSingleCharacter: {
                 fontSpec = HbFontSpec(HbFontSpec::Primary);
                 fontSpec.setTextHeight(d->textHeight());
-            }
-            break;
-            
-        case IndexFeedbackThreeCharacter:
-            {
+                }
+                break;
+            case IndexFeedbackThreeCharacter: {
                 fontSpec = HbFontSpec(HbFontSpec::Primary);
                 fontSpec.setTextHeight(d->textHeight());
-            }
-            break;
-
-        case IndexFeedbackString:
-            {
+                }
+                break;
+            case IndexFeedbackString: {
                 fontSpec = HbFontSpec(HbFontSpec::Primary);
                 qreal textHeight = 0;
                 style()->parameter(QLatin1String("hb-param-text-height-primary"), textHeight);
                 fontSpec.setTextHeight( textHeight );
-            }
-            break;
+                }
+                break;
+            case IndexFeedbackNone:
+                // no initialisation
+                return;
+        }
+        textPrimitiveData->fontSpec = fontSpec;
 
-        case IndexFeedbackNone:
-            // leave the HbStyleOption uninitialized
-            return;
+        textPrimitiveData->text = d->mPopupContent;
+        textPrimitiveData->geometry = d->mPopupTextRect;
+
+    } else if (primitiveData->type == HbStylePrimitiveData::SPD_Frame) {
+        HbStyleFramePrimitiveData *framePrimitiveData = hbstyleprimitivedata_cast<HbStyleFramePrimitiveData*>(primitiveData);
+        framePrimitiveData->geometry = d->mPopupBackgroundRect;
     }
+}
 
-    option->text = d->mPopupContent;
-    option->fontSpec = fontSpec;
-    option->textRect = d->mPopupTextRect;
-    option->popupRect = d->mPopupBackgroundRect;
+
+
+/*
+    Update the primitives for the index feedback.
+*/
+void HbIndexFeedback::updatePrimitives()
+{
+    Q_D( HbIndexFeedback );
+
+    if (d->mTextItem) {
+        HbStyleTextPrimitiveData textPrimitiveData;
+        initPrimitiveData(&textPrimitiveData, d->mTextItem);
+        style()->updatePrimitive(d->mTextItem, &textPrimitiveData, this);
+    }
+    if (d->mPopupItem) {
+        HbStyleFramePrimitiveData framePrimitiveData;
+        initPrimitiveData(&framePrimitiveData, d->mPopupItem);
+        style()->updatePrimitive(d->mPopupItem, &framePrimitiveData, this);
+    }
 }
 
 void HbIndexFeedback::polish(HbStyleParameters& params)

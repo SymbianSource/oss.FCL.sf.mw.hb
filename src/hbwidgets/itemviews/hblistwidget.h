@@ -45,6 +45,11 @@ public:
     explicit HbListWidget(QGraphicsItem *parent = 0);
     virtual ~HbListWidget();
   
+    enum { Type = Hb::ItemType_ListWidget };
+    virtual int type() const {
+        return Type;
+    }
+
     int count() const;
 
     int currentRow() const;

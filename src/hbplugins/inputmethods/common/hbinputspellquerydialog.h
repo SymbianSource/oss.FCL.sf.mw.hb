@@ -31,6 +31,7 @@
 class HbAction;
 class HbInputMethod;
 class HbInputPredictionHandler;
+class HbInputSpellQueryPrivate;
 
 class HbInputSpellQuery : public HbInputDialog
 {
@@ -45,8 +46,11 @@ public:
         HbForceClose
     };
 public slots:
-    void dialogClosed(HbAction* action);    
+    void dialogClosed(HbAction* action);   
+
 private:
+    Q_DECLARE_PRIVATE_D(d_ptr, HbInputSpellQuery)
+
     HbInputState mSavedState;
     bool mDidHandleFinish;
     QString mSavedEditorText;

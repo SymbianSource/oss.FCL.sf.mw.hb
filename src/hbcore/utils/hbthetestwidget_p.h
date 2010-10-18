@@ -74,8 +74,8 @@ public:
     HbTheTestButton *button4();
 
 public slots:
-    void textLayoutMeasure();
-    void textLayoutWriteReport();
+    void textLayoutMeasure();      // Measures localization metrics and writes the results to file.
+    void textLayoutWriteReport();  // Deprecated. Calls textLayoutMeasure().
     void toggleOrientation();
     void toggleMirroring();
     void setApplicationBackground(); // only for S60

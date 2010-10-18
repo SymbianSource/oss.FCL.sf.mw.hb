@@ -41,12 +41,39 @@ HbDeviceDialogsContainer::Dialog::Dialog()
     mIndex = InvalidIndex;
 #ifndef QT_NO_DEBUG
     mContainer = 0;
+    mReadOnly = false;
 #endif // QT_NO_DEBUG
 }
 
+// Set class read only
+void HbDeviceDialogsContainer::Dialog::setReadOnly()
+{
+#ifndef QT_NO_DEBUG
+    mReadOnly = true;
+#endif
+}
+
+// Comparison
 bool HbDeviceDialogsContainer::Dialog::operator ==(const Dialog &other) const
 {
     return mId == other.mId;
+}
+
+// Assignment
+void HbDeviceDialogsContainer::Dialog::operator =(const Dialog &other)
+{
+    Q_ASSERT(!readOnly());
+    mId = other.mId;
+    mPtr = other.mPtr;
+    mFlags = other.mFlags;
+    for(int i = 0; i < NumVariables; i++) {
+        mVariables[i] = other.mVariables[i];
+    }
+    mIndex = other.mIndex;
+#ifndef QT_NO_DEBUG
+    mContainer = other.mContainer;
+    mReadOnly = other.mReadOnly; 
+#endif // QT_NO_DEBUG
 }
 
 // Verify that Dialog reference is valid
@@ -60,10 +87,21 @@ bool HbDeviceDialogsContainer::Dialog::verify() const
 #endif // QT_NO_DEBUG
 }
 
+// Return class read only
+bool HbDeviceDialogsContainer::Dialog::readOnly() const
+{
+#ifndef QT_NO_DEBUG
+    return mReadOnly == true;
+#else // QT_NO_DEBUG
+    return true;
+#endif // QT_NO_DEBUG
+}
+
 // Constructor
 HbDeviceDialogsContainer::HbDeviceDialogsContainer(HbDeviceDialogPluginManager &pluginManager) :
     mPluginManager(pluginManager), mNextId(1)
 {
+    mInvalidDialog.setReadOnly();
 }
 
 // Destructor
@@ -84,6 +122,7 @@ HbDeviceDialogsContainer::Dialog &HbDeviceDialogsContainer::add(HbDeviceDialogIn
     Dialog dialog;
     dialog.mId = mNextId++;
     dialog.mPtr = widget;
+
     switch(deviceDialogInfo.group) {
     case HbDeviceDialogPlugin::DeviceNotificationDialogGroup:
         dialog.mFlags |= Dialog::NotificationGroup;
@@ -93,13 +132,29 @@ HbDeviceDialogsContainer::Dialog &HbDeviceDialogsContainer::add(HbDeviceDialogIn
         break;
     case HbDeviceDialogPlugin::SecurityGroup:
         dialog.mFlags |= Dialog::SecurityGroup;
+        dialog.mFlags |= Dialog::SecurityLevel;
         break;
     case HbDeviceDialogPlugin::CriticalGroup:
-        dialog.mFlags |= Dialog::CriticalGroup;
+        dialog.mFlags |= Dialog::GenericGroup;
+        dialog.mFlags |= Dialog::CriticalLevel;
         break;
     default:
         dialog.mFlags |= Dialog::GenericGroup;
     }
+
+    if ((dialog.mFlags & (Dialog::CriticalLevel|Dialog::SecurityLevel|Dialog::NormalLevel)) == 0) {
+        switch(deviceDialogInfo.showLevel) {
+        case HbDeviceDialogPlugin::SecurityLevel:
+            dialog.mFlags |= Dialog::SecurityLevel;
+            break;
+        case HbDeviceDialogPlugin::CriticalLevel:
+            dialog.mFlags |= Dialog::CriticalLevel;
+            break;
+        default:
+            dialog.mFlags |= Dialog::NormalLevel;
+        }
+    }
+
 #ifndef QT_NO_DEBUG
     dialog.mContainer = this;
 #endif // QT_NO_DEBUG
@@ -160,8 +215,8 @@ void HbDeviceDialogsContainer::remove(Dialog &dialog)
 }
 
 // Get next dialog with matching flag pattern
-HbDeviceDialogsContainer::Dialog &HbDeviceDialogsContainer::next(
-    const Dialog &from, Dialog::Flags flags, Dialog::Flags mask)
+const HbDeviceDialogsContainer::Dialog &HbDeviceDialogsContainer::next(
+    const Dialog &from, Dialog::Flags flags, Dialog::Flags mask) const
 {
     // With invalid from start from beginning, otherwise start from next
     int i = from.isValid() ? from.mIndex + 1 : 0;
@@ -178,9 +233,17 @@ HbDeviceDialogsContainer::Dialog &HbDeviceDialogsContainer::next(
     if (i >= count) { // at the end
         return mInvalidDialog;
     }
-    Dialog &dialog = mDialogs[i];
-    dialog.mIndex = i;
+    const Dialog &dialog = mDialogs[i];
+    const_cast<Dialog &>(dialog).mIndex = i;
     return dialog;
+}
+
+// Get next dialog with matching flag pattern
+HbDeviceDialogsContainer::Dialog &HbDeviceDialogsContainer::next(
+    const Dialog &from, Dialog::Flags flags, Dialog::Flags mask)
+{
+    const HbDeviceDialogsContainer *container = this;
+    return const_cast<Dialog &>(container->next(from, flags, mask));
 }
 
 // Get next dialog with matching variable value
@@ -205,6 +268,19 @@ HbDeviceDialogsContainer::Dialog &HbDeviceDialogsContainer::next(
     Dialog &dialog = mDialogs[i];
     dialog.mIndex = i;
     return dialog;
+}
+
+// Count dialogs with matching flag pattern
+int HbDeviceDialogsContainer::count(Dialog::Flags flags, Dialog::Flags mask) const
+{
+    int count = 0;
+    const Dialog *current = &next(Dialog(), flags, mask);
+    while(current->isValid()) {
+        count++;
+        // Find next one
+        current = &next(*current, flags, mask);
+    }
+    return count;
 }
 
 // check is the dialog list empty

@@ -40,7 +40,7 @@ public:
     static HbDeviceProfileDatabase *instance(HbMemoryManager::MemoryType type =
                 HbMemoryManager::HeapMemory);
 
-    int deviceProfilesOffset();
+    qptrdiff  deviceProfilesOffset();
 
 private:
     HbDeviceProfileDatabase(HbMemoryManager::MemoryType type =
@@ -55,7 +55,7 @@ private:
 private:
     HbDeviceProfileList *mDeviceProfiles;
     HbDeviceModeInfo *mDeviceModes;
-    int mDeviceProfilesOffset;
+    qptrdiff mDeviceProfilesOffset;
     HbMemoryManager::MemoryType mType;
 };
 

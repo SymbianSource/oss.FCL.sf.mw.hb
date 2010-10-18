@@ -41,13 +41,16 @@ public:
     ~HbMessageBoxPrivate();
 
     void init();
-	void _q_appearEffectEnded(HbEffect::EffectStatus status);
+#ifdef HB_EFFECTS
+    void _q_appearEffectEnded(HbEffect::EffectStatus status);
+#endif
     HbIcon mIcon;
     HbMessageBoxContentWidget *mMessageBoxContentWidget;
     HbMessageBox::MessageBoxType mMessageBoxType;
-  	bool mIconVisible;
+    bool mIconVisible;
     QMap <HbAction* , HbMessageBox::StandardButton> mActionList;
     HbMessageBox::StandardButtons mStandardButtons;
+    QString mBoxText;
 public slots:
     void _q_buttonClicked();
 };

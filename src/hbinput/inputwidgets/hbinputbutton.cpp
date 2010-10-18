@@ -25,7 +25,33 @@
 
 #include "hbinputbutton.h"
 
+#include <QTime>
+#include <hbdeviceprofile.h>
+
+/*!
+@stable
+@hbinput
+\class HbInputButton
+\brief Provides vkb button definitions used by HbInputButtonGroup
+
+\sa HbInputButtonGroup
+*/
+
 /// @cond
+
+// Defines how much the button size should be increased from its original size.
+const qreal HbInputThresholdMultiplier = 0.25;
+
+// Threshold for touch point position comparison
+const qreal HbInputTouchThreshold = 5.0;
+
+// Timeout for increased touch down region
+const int HbInputInstantTouchTimeout = 500;
+
+// Threshold for increased touch down region in mm
+const qreal HbInputInstantTouchThreshold = 3.5;
+
+const QPoint HbInputInvalidPoint = QPoint(-1, -1);
 
 class HbInputButtonPrivate
 {
@@ -40,6 +66,7 @@ public:
 
     HbInputButton::HbInputButtonType mType;
     HbInputButton::HbInputButtonState mState;
+    HbInputButton::HbInputButtonState mPreviousState;
     QPoint mPosition;
     QSize mSize;
     int mKeyCode;
@@ -48,11 +75,18 @@ public:
     QString mMappedCharacters;
     QList<HbIcon> mIcons;
     QRectF mBoundingRect;
+    QPointF mTouchPoint;
+    QPointF mLastInteractionPoint;
+    bool mTap;
+    QTime mTouchTime;
+    qreal mTouchThreshold;
 };
 
 HbInputButtonPrivate::HbInputButtonPrivate()
     : mType(HbInputButton::ButtonTypeNormal), mState(HbInputButton::ButtonStateReleased),
-      mPosition(0, 0), mSize(1, 1), mKeyCode(-1), mAutoRepeat(false)
+      mPreviousState(HbInputButton::ButtonStateReleased), mPosition(0, 0), mSize(1, 1),
+      mKeyCode(-1), mAutoRepeat(false), mTouchPoint(HbInputInvalidPoint),
+      mLastInteractionPoint(HbInputInvalidPoint), mTap(false)
 {
     for (int i = 0; i < HbInputButton::ButtonTextIndexCount; ++i) {
         mTexts.append("");
@@ -61,11 +95,16 @@ HbInputButtonPrivate::HbInputButtonPrivate()
     for (int i = 0; i < HbInputButton::ButtonIconIndexCount; ++i) {
         mIcons.append(HbIcon());
     }
+
+    // Convert millimeters to pixels
+    mTouchThreshold = HbDeviceProfile::current().ppmValue() * HbInputInstantTouchThreshold;
 }
 
 HbInputButtonPrivate::HbInputButtonPrivate(int keyCode, const QPoint &position, const QSize &size)
     : mType(HbInputButton::ButtonTypeNormal), mState(HbInputButton::ButtonStateReleased),
-      mPosition(position), mSize(size), mKeyCode(keyCode), mAutoRepeat(false)
+      mPreviousState(HbInputButton::ButtonStateReleased), mPosition(position),
+      mSize(size), mKeyCode(keyCode), mAutoRepeat(false), mTouchPoint(HbInputInvalidPoint),
+      mLastInteractionPoint(HbInputInvalidPoint), mTap(false)
 {
     for (int i = 0; i < HbInputButton::ButtonTextIndexCount; ++i) {
         mTexts.append("");
@@ -92,13 +131,17 @@ HbInputButtonPrivate::HbInputButtonPrivate(int keyCode, const QPoint &position, 
     if (mKeyCode == HbInputButton::ButtonKeyCodeDelete || mKeyCode == HbInputButton::ButtonKeyCodeSpace) {
         mAutoRepeat = true;
     }
+
+    // Convert millimeters to pixels
+    mTouchThreshold = HbDeviceProfile::current().ppmValue() * HbInputInstantTouchThreshold;
 }
 
 HbInputButtonPrivate::HbInputButtonPrivate(HbInputButton::HbInputButtonType type, HbInputButton::HbInputButtonState state,
         const QPoint &position, const QSize &size, int keyCode, bool autoRepeat,
         const QList<QString> &texts, const QString &mappedCharacters, const QList<HbIcon> &icons)
-    : mType(type), mState(state), mPosition(position), mSize(size), mKeyCode(keyCode), mAutoRepeat(autoRepeat),
-      mMappedCharacters(mappedCharacters)
+    : mType(type), mState(state), mPreviousState(state), mPosition(position), mSize(size),
+      mKeyCode(keyCode), mAutoRepeat(autoRepeat), mMappedCharacters(mappedCharacters),
+      mTouchPoint(HbInputInvalidPoint), mLastInteractionPoint(HbInputInvalidPoint), mTap(false)
 {
     for (int i = 0; i < HbInputButton::ButtonTextIndexCount; ++i) {
         if (i < texts.count()) {
@@ -122,38 +165,78 @@ HbInputButtonPrivate::HbInputButtonPrivate(HbInputButton::HbInputButtonType type
     if (mSize.height() < 1) {
         mSize.setHeight(1);
     }
+
+    // Convert millimeters to pixels
+    mTouchThreshold = HbDeviceProfile::current().ppmValue() * HbInputInstantTouchThreshold;
 }
 
 void HbInputButtonPrivate::setDefaultGraphics(int keyCode)
 {
     switch(keyCode) {
-        case HbInputButton::ButtonKeyCodeDelete:
-            mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconDelete));
-            break;
-        case HbInputButton::ButtonKeyCodeShift:
-            mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconShift));
-            break;
-        case HbInputButton::ButtonKeyCodeSymbol:
-            mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconSymbol));
-            break;
-        case HbInputButton::ButtonKeyCodeEnter:
-            mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconEnter));
-            break;
-        case HbInputButton::ButtonKeyCodeSpace:
-            mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconSpace));
-            break;
-        case HbInputButton::ButtonKeyCodeAlphabet:
-            mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconSymbol));
-            break;
-        case HbInputButton::ButtonKeyCodeSmiley:
-            mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconSmiley));
-            break;
-        default:
-            break;
+    case HbInputButton::ButtonKeyCodeDelete:
+        mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconDelete));
+        break;
+    case HbInputButton::ButtonKeyCodeShift:
+        mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconShift));
+        break;
+    case HbInputButton::ButtonKeyCodeSymbol:
+        mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconSymbol));
+        break;
+    case HbInputButton::ButtonKeyCodeEnter:
+        mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconEnter));
+        break;
+    case HbInputButton::ButtonKeyCodeSpace:
+        mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconSpace));
+        break;
+    case HbInputButton::ButtonKeyCodeAlphabet:
+        mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconSymbol));
+        break;
+    case HbInputButton::ButtonKeyCodeSmiley:
+        mIcons.replace(HbInputButton::ButtonTextIndexPrimary, HbIcon(HbInputButtonIconSmiley));
+        break;
+    default:
+        break;
     }
 }
 
 /// @endcond
+
+/*!
+    \enum HbInputButton::HbInputButtonKeyCode
+
+    This enum defines a set of predefined key codes for input button. ButtonKeyCodeCustom should
+    always be the last item so that all values bigger than ButtonKeyCodeCustom can be interpreted
+    as custom key codes
+ */
+
+/*!
+    \enum HbInputButton::HbInputButtonType
+
+    This enum defines different button types. Button's graphics, text layout and functionality
+    depend of the this type. ButtonTypeCount should always be the last value.
+ */
+
+/*!
+    \enum HbInputButton::HbInputButtonState
+
+    This enum defines button states. State mostly affects the button's visual look in addition
+    to what can be done with the button (i.e. no interaction with disabled buttons, released and
+    latched buttons can be pressed). ButtonStateCount should always be the last value.
+ */
+
+/*!
+    \enum HbInputButton::HbInputButtonTextIndex
+
+    This enum defines set of text indices that can be used when setting texts to different parts of
+    a button using setText function. ButtonTextIndexCount should always be the last value.
+ */
+
+/*!
+    \enum HbInputButton::HbInputButtonIconIndex
+
+    This enum defines set of icon indices that can be used when setting icons to different parts of
+    a button using setIcon function. ButtonIconIndexCount should always be the last value.
+ */
 
 /*!
 Constructor
@@ -210,6 +293,8 @@ HbInputButton::HbInputButtonType HbInputButton::type() const
 
 /*!
 Updates button's state.
+State change sequence latched, pressed, released will result
+in a latched state. Otherwise the new state will be the given state.
 
 \sa state
 */
@@ -217,7 +302,19 @@ void HbInputButton::setState(HbInputButtonState state)
 {
     Q_D(HbInputButton);
 
-    d->mState = state;
+    if (state == ButtonStateReleased) {
+        d->mTap = false;
+        clearLastTriggeredPosition();
+    }
+
+    if (d->mState == ButtonStatePressed &&
+        d->mPreviousState == ButtonStateLatched &&
+        state == ButtonStateReleased) {
+        d->mState = d->mPreviousState;
+    } else {
+        d->mPreviousState = d->mState;
+        d->mState = state;
+    }
 }
 
 /*!
@@ -515,6 +612,125 @@ QRectF HbInputButton::boundingRect() const
     Q_D(const HbInputButton);
 
     return d->mBoundingRect;
+}
+
+/*!
+\brief Returns an active touch area for current button.
+
+Button contains bounding rectangle for actual size of the item, while touch area
+can actually extend over buttons physical boundaries. This is to make interacting
+with button easier.
+
+\return Active touch area as a rectangle, centered to its button.
+\sa setBoundingRect
+*/
+QRectF HbInputButton::activeTouchArea() const
+{
+    Q_D(const HbInputButton);
+
+    QRectF threshold(d->mBoundingRect);
+
+    qreal mod_w = d->mBoundingRect.width() * HbInputThresholdMultiplier;
+    qreal mod_h = d->mBoundingRect.height() * HbInputThresholdMultiplier;
+    threshold.adjust(-mod_w, -mod_h, mod_w, mod_h);
+
+    return threshold;
+}
+
+/*!
+\brief Set position where last user interaction occurred.
+*/
+void HbInputButton::setLastTriggeredPosition(const QPointF &position)
+{
+    Q_D(HbInputButton);
+
+    d->mLastInteractionPoint = position;
+}
+
+/*!
+\brief Clear last user interaction data.
+*/
+void HbInputButton::clearLastTriggeredPosition()
+{
+    Q_D(HbInputButton);
+
+    d->mLastInteractionPoint = HbInputInvalidPoint;
+}
+
+/*!
+Checks whether the new touch point position is close enough to the previous
+one that hit this button so that the new touch point can
+be interpreted as the same as the old one.
+*/
+bool HbInputButton::wasTriggeredAt(const QPointF &position) const
+{
+    Q_D(const HbInputButton);
+
+    QRectF rect(d->mLastInteractionPoint.x() - HbInputTouchThreshold, d->mLastInteractionPoint.y() - HbInputTouchThreshold,
+                2 * HbInputTouchThreshold, 2 * HbInputTouchThreshold);
+
+    return rect.contains(position);
+}
+
+/*!
+\brief Set position where the button was first touched.
+*/
+void HbInputButton::setTouchPointPosition(const QPointF &position)
+{
+    Q_D(HbInputButton);
+
+    d->mTouchPoint = position;
+    d->mTap = true;
+    d->mTouchTime.start();
+}
+
+/*!
+Returns the current touch position which in case of
+a short tap is the touch down position and otherwise the
+last triggered position.
+*/
+QPointF HbInputButton::currentTouchPointPosition() const
+{
+    Q_D(const HbInputButton);
+
+    if (d->mTap) {
+        return d->mTouchPoint;
+    }
+    return d->mLastInteractionPoint;
+}
+
+/*!
+\brief Checks whether move to given \a position should be ignored or processed normally
+
+True is returned if given position is close enough to touch down point during
+short timeout after the button has been pressed or after timeout if the
+position is inside button's active touch area. Otherwise false is returned and
+move event should be handled normally.
+*/
+bool HbInputButton::suppressMoveEvent(const QPointF &position)
+{
+    Q_D(HbInputButton);
+
+    // Check if the timeout from the touch down event has passed
+    if (d->mTap && d->mTouchTime.elapsed() < HbInputInstantTouchTimeout) {
+        // Create rectangle around touch down position
+        QRectF rect(d->mTouchPoint.x() - d->mTouchThreshold, d->mTouchPoint.y() - d->mTouchThreshold,
+                    2 * d->mTouchThreshold, 2 * d->mTouchThreshold);
+
+        // If inside created rectangle, update last position and ignore the event
+        if (rect.contains(position)) {
+            setLastTriggeredPosition(position);
+            return true;
+        }
+    // Check if new position is still inside active button
+    } else if (activeTouchArea().contains(position)) {
+        setLastTriggeredPosition(position);
+        d->mTap = false;
+        return true;
+    }
+
+    d->mTap = false;
+    return false;
 }
 
 // End of file

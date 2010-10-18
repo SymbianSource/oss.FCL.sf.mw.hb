@@ -139,6 +139,7 @@ bool HbSgimageIconProcessor::createSgimage(const QString &iconPath)
 
     TInt err = sgImage->Create(info, 0, 0);
     if (err != KErrNone) {
+        sgImageRenderer->setLastError(err);
         return false;
     }
 
@@ -146,6 +147,7 @@ bool HbSgimageIconProcessor::createSgimage(const QString &iconPath)
 
     memcpy(&data.sgImageData.id, &sgImageId.iId, sizeof(data.sgImageData.id));
     data.type = SGIMAGE;
+    data.renderingMode = EHWRendering;
 
     bool success = sgImageRenderer->beginRendering(sgImage);
     if (!success) {
@@ -161,7 +163,7 @@ bool HbSgimageIconProcessor::createSgimage(const QString &iconPath)
     if (!success) {
         return false;
     }
-    vgFinish();
+    vgFlush();
     // Once finished, release all handles to the image, and shut down EGL.
     // Make a null EGLSurface current to release the current surface before
     // destroying. The RSgImage contents will persist until the RSgImage is closed.
@@ -244,10 +246,12 @@ bool HbSgimageIconProcessor::createMultiPieceIconData(const QVector<HbSharedIcon
 
     TInt err = sgImage->Create(info, 0, 0);
     if (err != KErrNone) {
+        sgImageRenderer->setLastError(err);
         return false;
     }
 
     data.type = SGIMAGE;
+    data.renderingMode = EHWRendering;
     data.sgImageData.width = qRound(multiPieceIconParams.size.width());
     data.sgImageData.height = qRound(multiPieceIconParams.size.height());
     data.sgImageData.defaultWidth = defaultSize.width();
@@ -301,7 +305,7 @@ bool HbSgimageIconProcessor::createMultiPieceIconData(const QVector<HbSharedIcon
             return false;
         }
     }
-    vgFinish();
+    vgFlush();
 
     sgImageRenderer->endRendering();
 
@@ -327,6 +331,9 @@ bool HbSgimageIconProcessor::renderNvg(const QByteArray& byteArray, const QRect&
     sgImageRenderer->nvgEngine()->enableMirroring(mirrored);
 
     HbNvgEngine::HbNvgErrorType errorType = sgImageRenderer->nvgEngine()->drawNvg(byteArray, size);
+    if (errorType == HbNvgEngine::NvgErrNoMemory){
+        sgImageRenderer->setLastError(KErrNoGraphicsMemory);
+    }
     return errorType == HbNvgEngine::NvgErrNone;
 }
 

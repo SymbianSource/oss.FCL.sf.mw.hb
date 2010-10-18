@@ -30,6 +30,7 @@ TARGET = hbconftest_mobility
 DEPENDPATH += .
 INCLUDEPATH += .
 CONFIG += mobility
+CONFIG -= app_bundle
 MOBILITY += publishsubscribe systeminfo
 
 # Input

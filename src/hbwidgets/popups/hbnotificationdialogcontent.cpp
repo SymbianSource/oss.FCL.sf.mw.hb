@@ -27,11 +27,17 @@
 #include <hbdeviceprofile.h>
 
 #include "hbnotificationdialogcontent_p.h"
+#include "hbstyle_p.h"
 
 HbNotificationDialogContent::HbNotificationDialogContent(QGraphicsWidget *parent) :
     HbWidget(parent), mTitleTextWrapping(Hb::TextNoWrap),
     mIsTouchActivating(false), mTextItem(0), mTitleItem(0), mIconItem(0)
 {
+}
+
+HbNotificationDialogContent::~HbNotificationDialogContent()
+{
+
 }
 
 void HbNotificationDialogContent::setIcon(const HbIcon &icon)
@@ -40,8 +46,8 @@ void HbNotificationDialogContent::setIcon(const HbIcon &icon)
     mIconItem = 0;
 
     if (!icon.isNull()) {    
-        mIconItem = style()->createPrimitive(
-                HbStyle::P_NotificationDialog_icon, this);
+        mIconItem = HbStylePrivate::createPrimitive(
+                HbStylePrivate::P_NotificationDialog_icon, this);
         Q_CHECK_PTR(mIconItem);
     }
     mIcon = icon;
@@ -54,8 +60,8 @@ void HbNotificationDialogContent::setIcon(const HbIcon &icon)
 void HbNotificationDialogContent::setText(const QString &text)
 {
     if (!mTextItem) {
-        mTextItem = style()->createPrimitive(
-                HbStyle::P_NotificationDialog_text, this);
+        mTextItem = HbStylePrivate::createPrimitive(
+                HbStylePrivate::P_NotificationDialog_text, this);
         Q_CHECK_PTR(mTextItem);
     }
     mText = text;
@@ -68,8 +74,8 @@ void HbNotificationDialogContent::setText(const QString &text)
 void HbNotificationDialogContent::setTitle(const QString &title)
 {
     if (!mTitleItem) {
-        mTitleItem = style()->createPrimitive(
-                HbStyle::P_NotificationDialog_title, this);
+        mTitleItem = HbStylePrivate::createPrimitive(
+                HbStylePrivate::P_NotificationDialog_title, this);
         Q_CHECK_PTR(mTitleItem);
     }
 
@@ -177,16 +183,16 @@ void HbNotificationDialogContent::updatePrimitives()
     initStyleOption(&option);
 
     if (mTextItem) {
-        style()->updatePrimitive(mTextItem,
-            HbStyle::P_NotificationDialog_text, &option);
+        HbStylePrivate::updatePrimitive(mTextItem,
+            HbStylePrivate::P_NotificationDialog_text, &option);
     }
     if (mTitleItem) {
-        style()->updatePrimitive(mTitleItem,
-            HbStyle::P_NotificationDialog_title, &option);
+        HbStylePrivate::updatePrimitive(mTitleItem,
+            HbStylePrivate::P_NotificationDialog_title, &option);
     }
     if (!mIcon.isNull()) {
-        style()->updatePrimitive(mIconItem,
-            HbStyle::P_NotificationDialog_icon, &option);
+        HbStylePrivate::updatePrimitive(mIconItem,
+            HbStylePrivate::P_NotificationDialog_icon, &option);
     }
 }
 

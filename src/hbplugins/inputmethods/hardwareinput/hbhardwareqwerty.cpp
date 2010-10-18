@@ -160,12 +160,12 @@ void HbHardwareQwerty::reset()
 //
 bool HbHardwareQwerty::filterEvent(const QEvent *event)
 {
-	const QKeyEvent *keyEvent = 0;
+    const QKeyEvent *keyEvent = 0;
     keyEvent = static_cast<const QKeyEvent *>(event);
-	if(keyEvent->key() == Qt::Key_F8){
-		emit flipStatusChange();
-		return false;
-	}
+    if(keyEvent->key() == Qt::Key_F8){
+        emit flipStatusChange();
+        return false;
+    }
     if(handleEvent()){
         return mActiveModeHandler->filterEvent(event);
     } 
@@ -425,7 +425,7 @@ void HbHardwareQwerty::predictiveInputStatusChanged(int newStatus)
     //activateState(inputState);
     //focusedObject->editorInterface().setInputMode(mMode);
     //focusedObject->syncEditorInterface();
-	Q_UNUSED(newStatus);
+    Q_UNUSED(newStatus);
 
 //    HbInputFocusObject *focusedObject = focusObject();
     /*if (focusedObject)*/ {
@@ -556,26 +556,26 @@ Returns true if prediction is on, prediction engine is available and predictions
 */
 bool HbHardwareQwerty::usePrediction() const
 {
-	qDebug("in usePrediction()");
+    qDebug("in usePrediction()");
     HbInputFocusObject *fo = focusObject();
-	if(!fo){
-		qDebug("NO Focus object");
-	} else {
-		qDebug("Yes Focus object");
-	}
-	
-	if (!HbInputSettingProxy::instance()->predictiveInputStatus()){
-		qDebug("No HbInputSettingProxy::instance()->predictiveInputStatus()");
-	} else {
-		qDebug("Yes HbInputSettingProxy::instance()->predictiveInputStatus()");	
-	}
-	
-	if(!mPredictionModeHandler->isActive()){
-		qDebug("No mPredictionModeHandler->isActive()");
+    if(!fo){
+        qDebug("NO Focus object");
+    } else {
+        qDebug("Yes Focus object");
+    }
+    
+    if (!HbInputSettingProxy::instance()->predictiveInputStatus()){
+        qDebug("No HbInputSettingProxy::instance()->predictiveInputStatus()");
+    } else {
+        qDebug("Yes HbInputSettingProxy::instance()->predictiveInputStatus()"); 
+    }
+    
+    if(!mPredictionModeHandler->isActive()){
+        qDebug("No mPredictionModeHandler->isActive()");
 
-	} else {
-		qDebug("Yes mPredictionModeHandler->isActive()");
-	}
+    } else {
+        qDebug("Yes mPredictionModeHandler->isActive()");
+    }
 
 
     if (HbInputSettingProxy::instance()->predictiveInputStatus() &&

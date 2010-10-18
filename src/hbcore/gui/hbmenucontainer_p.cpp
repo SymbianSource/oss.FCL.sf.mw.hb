@@ -32,9 +32,10 @@
 #include <hbwidgetfeedback.h>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsGridLayout>
+#include <hbscrollbar_p.h>
 
 HbMenuContainerPrivate::HbMenuContainerPrivate(HbMenu *menu) :
-        menu(menu), actionManager(0)
+        menu(menu), actionManager(0), mDelayLayout(false)
 {
 }
 HbMenuContainerPrivate::~HbMenuContainerPrivate()
@@ -111,6 +112,7 @@ void HbMenuContainer::removeActionItem(QAction *action)
 void HbMenuContainer::delayedLayout()
 {
     Q_D(HbMenuContainer);
+    d->mDelayLayout = true;
     foreach (QAction *action, d->menu->actions()) {
         QObject::connect(action, SIGNAL(triggered()), d->menu, SLOT(_q_onActionTriggered()));
         if (action->isVisible()) {
@@ -118,6 +120,8 @@ void HbMenuContainer::delayedLayout()
             addItem(action);
         }
     }
+    d->mDelayLayout = false;
+    reLayout();
 }
 
 /*!
@@ -168,7 +172,8 @@ void HbMenuContainer::addItem(QAction *action, HbMenuItem *item)
         HbMenuPrivate::d_ptr(castedAction->menu())->setSubMenuItem(item);
     }
     d->mItems.insert(pos, item);
-    reLayout();
+    if (!d->mDelayLayout)
+        reLayout();
 }
 
 //this is called when an existing items visibility has changed.
@@ -221,13 +226,64 @@ void HbMenuContainer::polish(HbStyleParameters &params)
     d->polished = true;
 }
 
+/*!
+    \reimp
+ */
+void HbMenuContainer::changeEvent(QEvent *event)
+{
+    switch (event->type()) {
+        // suppress events (optimize)
+    case QEvent::FontChange:
+    case QEvent::PaletteChange:
+    case QEvent::ParentChange:
+    case QEvent::StyleChange: // flow through
+        break;
+    default:
+        HbWidget::changeEvent(event);
+        break;
+    }
+}
+
+QVariant HbMenuContainer::itemChange(GraphicsItemChange change, const QVariant &value)
+{
+    Q_D(HbMenuContainer);
+    if (change == QGraphicsItem::ItemVisibleChange) {
+        if (value.toBool()) {
+            if (d->polished && !testAttribute(Qt::WA_Resized)) {
+                adjustSize();
+                setAttribute(Qt::WA_Resized, false);
+            }
+            return QGraphicsItem::itemChange(change, value);
+        }
+    }
+    return HbWidget::itemChange(change, value);
+}
+
 HbMenuListViewPrivate::HbMenuListViewPrivate() :
-        HbScrollAreaPrivate(),
-        mHitItem(0),
+        HbScrollAreaPrivate(HbScrollAreaPrivate::VerticalScrollBar),
         mCurrentItem(0),
         mCurrentIndex(-1),
         mWasScrolling(false)
 {
+}
+
+  void HbMenuListViewPrivate::updateScrollMetrics()
+  {
+      if (mContainer && mContainer->layout())
+          mContainer->layout()->activate();
+      HbScrollAreaPrivate::updateScrollMetrics();
+  }
+
+void HbMenuListViewPrivate::doLazyInit()
+{
+  //we dont use indicative scrollbars fro menu so no need to do the signal slot connections
+    if (!mLazyInitDone) {
+        if (mVerticalScrollBar) {
+            if (mVerticalScrollBar->isVisible())
+                HbScrollBarPrivate::d_ptr(mVerticalScrollBar)->loadEffects();
+        }
+        mLazyInitDone = true;
+    }
 }
 
 HbMenuListView::HbMenuListView(HbMenu *menu,QGraphicsItem *parent)
@@ -239,6 +295,7 @@ HbMenuListView::HbMenuListView(HbMenu *menu,QGraphicsItem *parent)
     d->mScrollDirections = Qt::Vertical;
     d->mFrictionEnabled = false;
     d->mContainer = new HbMenuContainer(menu, this);
+    d->mContainer->setFlag(QGraphicsItem::ItemHasNoContents, true);
     setContentWidget(d->mContainer);
     setScrollingStyle(HbScrollArea::Pan);
 }
@@ -310,6 +367,7 @@ void HbMenuListView::doDelayedLayout()
 {
     Q_D(HbMenuListView);
     d->mContainer->delayedLayout();
+    d->doLazyInit();
 }
 
 void HbMenuListView::updateContainer()
@@ -325,15 +383,32 @@ void HbMenuListView::updateContainer()
 QVariant HbMenuListView::itemChange(GraphicsItemChange change, const QVariant &value)
 {
     Q_D(HbMenuListView);
-
-    // Remove highlighting on a menuitem when the menu disappears.
-    if (change == QGraphicsItem::ItemVisibleHasChanged && !value.toBool()) {
-        if (d->mHitItem) {
-            d->mHitItem->pressStateChanged(false);
+    if (change == QGraphicsItem::ItemVisibleChange && value.toBool()) {
+        if (d->polished && !testAttribute(Qt::WA_Resized)) {
+            adjustSize();
+            setAttribute(Qt::WA_Resized, false);
         }
+        return QGraphicsItem::itemChange(change, value);
     }
-
     return HbScrollArea::itemChange(change, value);
+}
+
+/*!
+    \reimp
+ */
+void HbMenuListView::changeEvent(QEvent *event)
+{
+    switch (event->type()) {
+        // suppress events (optimize)
+    case QEvent::FontChange:
+    case QEvent::PaletteChange:
+    case QEvent::ParentChange:
+    case QEvent::StyleChange: // flow through
+        break;
+    default:
+        HbWidget::changeEvent(event);
+        break;
+    }
 }
 
 void HbMenuListView::gestureEvent(QGestureEvent *event)
@@ -344,3 +419,6 @@ void HbMenuListView::gestureEvent(QGestureEvent *event)
         event->accept(panGesture);
     }
 }
+
+
+

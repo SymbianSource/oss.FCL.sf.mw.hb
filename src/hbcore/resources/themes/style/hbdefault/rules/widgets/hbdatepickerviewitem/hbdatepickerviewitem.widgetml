@@ -1,0 +1,23 @@
+<hbwidget version="0.1" type="HbDatePicekerViewItem">
+    <layout name="tumble-layout" type="mesh">
+      <meshitem src="text-1" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+      <meshitem src="text-1" srcEdge="TOP" dst="" dstEdge="TOP" />
+      <meshitem src="text-1" srcEdge="RIGHT" dst="" dstEdge="RIGHT"/>
+      <meshitem src="text-1" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+      
+      <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+      <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />
+      <meshitem src="background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+      <meshitem src="background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+  
+      <meshitem src="frame" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+      <meshitem src="frame" srcEdge="TOP" dst="" dstEdge="TOP" />
+      <meshitem src="frame" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+      <meshitem src="frame" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+      
+      <meshitem src="focus-indicator" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+      <meshitem src="focus-indicator" srcEdge="TOP" dst="" dstEdge="TOP" />
+      <meshitem src="focus-indicator" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+      <meshitem src="focus-indicator" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    </layout>
+</hbwidget>

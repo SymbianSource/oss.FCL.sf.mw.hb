@@ -36,22 +36,62 @@
 #include "hbdeleteguardsymbian_p.h"
 
 /*!
- \class CHbDeviceDialogSymbian
- \brief CHbDeviceDialog displays dialogs on top of applications. It is a client interface for Symbian applications to Hb
-    device dialogs.
- \sa HbDeviceDialog
+    \stable
+    \hbcore
 
- Data given to this API in symbian format is packed to QVariantMap. See
- CHbSymbianVariant to see which Qt datatypes are supported.
- \sa CHbSymbianVariant
- \sa CHbSymbianVariantMap
+    \class CHbDeviceDialogSymbian
+    \brief CHbDeviceDialogSymbian is a Symbian implementation of HbDeviceDialog. 
 
- When plugin returns data in Qt format, the data is converted, if possible,
- to CHbSymbianVariantMap.
+    <b>This class is Symbian only. Not available on other platforms.</b>
 
- \stable
+    See HbDeviceDialog documentation to find out more about device dialogs.
 
- \hbcore
+    CHbDeviceDialogSymbian is intended for use by Symbian servers that don't run Qt event loop
+    and cannot use HbDeviceDialog.
+
+    The class is accompanied by classes CHbSymbianVariant and CHbSymbianVariantMap which
+    are used to encapsulate device dialog parameters. Device dialog framework takes care of
+    translating Symbian data types to/from format understood by device dialog plugins.
+
+    CHbDeviceDialogSymbian provides an asynchronous interface to show dialogs. Dialog closing
+    and data events are indicated by MHbDeviceDialogObserver callback interface. 
+
+    The code below launches a device dialog. Observer is not set and the dialog
+    closes itself by timeout.
+    \code
+
+    CHbDeviceDialogSymbian* dialog = CHbDeviceDialogSymbian::NewL();
+    CleanupStack::PushL(dialog);
+    CHbSymbianVariantMap* map = CHbSymbianVariantMap::NewL();
+    CleanupStack::PushL(map);
+
+    _LIT(KTimeoutKey, "timeout");
+    const TInt timeoutValue = 10000;
+    CHbSymbianVariant* timeout = CHbSymbianVariant::NewL(&timeoutValue, CHbSymbianVariant::EInt);
+    CleanupStack::PushL(timeout);
+    User::LeaveIfError(map->Add(KTimeoutKey, timeout));
+    CleanupStack::Pop(); // timeout
+
+    _LIT(KTitleValue, "Sample title");
+    _LIT(KTitleKey, "title");
+    CHbSymbianVariant* title = CHbSymbianVariant::NewL(&KTitleValue(), CHbSymbianVariant::EDes);
+    CleanupStack::PushL(title);
+    User::LeaveIfError(map->Add(KTitleKey, title));
+    CleanupStack::Pop(); // title
+
+    _LIT(KTextValue, "Sample text");
+    _LIT(KTextKey, "text");
+    CHbSymbianVariant* text = CHbSymbianVariant::NewL(&KTextValue(), CHbSymbianVariant::EDes);
+    CleanupStack::PushL(text);
+    User::LeaveIfError(map->Add(KTextKey, text));
+    CleanupStack::Pop(); // text
+
+    _LIT(KDeviceDialogType, "com.nokia.hb.devicenotificationdialog/1.0");
+    dialog->Show(KDeviceDialogType, *map);
+    CleanupStack::PopAndDestroy(2); // dialog, map
+    \endcode
+
+    \sa HbDeviceDialog, CHbSymbianVariant, CHbSymbianVariantMap, MHbDeviceDialogObserver
  */
 
 /*!
@@ -59,61 +99,75 @@
     Defines device dialog error codes and ranges.
 */
 /*!
-    \var TDeviceDialogError::DeviceDialogError HbDeviceDialog::EFrameworkErrors
+    \var CHbDeviceDialogSymbian::TDeviceDialogError CHbDeviceDialogSymbian::EFrameworkErrors
     Start of an error range for errors originating from device dialog framework (client or server).
 */
 /*!
-    \var TDeviceDialogError::DeviceDialogError HbDeviceDialog::EPluginErrors
+    \var CHbDeviceDialogSymbian::TDeviceDialogError CHbDeviceDialogSymbian::EPluginErrors
     Start of an error range for errors originating from device dialog plugins. The framework passes
     these from the plugin unmodified.
 */
 /*!
-    \var TDeviceDialogError::DeviceDialogError HbDeviceDialog::EErrorTypeMask
+    \var CHbDeviceDialogSymbian::TDeviceDialogError CHbDeviceDialogSymbian::EErrorTypeMask
     Mask for error type part of the error code.
 */
 /*!
-    \var TDeviceDialogError::DeviceDialogError HbDeviceDialog::ECancelledError
+    \var CHbDeviceDialogSymbian::TDeviceDialogError CHbDeviceDialogSymbian::ECancelledError
     Operation was cancelled by Cancel().
 */
 /*!
-    \var TDeviceDialogError::DeviceDialogError HbDeviceDialog::ESystemCancelledError
+    \var CHbDeviceDialogSymbian::TDeviceDialogError CHbDeviceDialogSymbian::ESystemCancelledError
     Operation was cancelled by device dialog framework.
 */
 /*!
-    \var TDeviceDialogError::DeviceDialogError HbDeviceDialog::EInstanceExistsError
+    \var CHbDeviceDialogSymbian::TDeviceDialogError CHbDeviceDialogSymbian::EInstanceExistsError
     A single instance device dialog widget exists already (has been launched).
     See HbDeviceDialogPlugin::SingleInstance.
+*/
+
+/*!
+    \enum CHbDeviceDialogSymbian::TDeviceDialogFlag
+    Defines construct flags.
+*/
+/*!
+    \var CHbDeviceDialogSymbian::TDeviceDialogFlag CHbDeviceDialogSymbian::ENoDeviceDialogFlags
+    No flags specified.
+*/
+/*!
+    \var CHbDeviceDialogSymbian::TDeviceDialogFlag CHbDeviceDialogSymbian::EImmediateResourceReservation
+    Reserves resources immediately instead of delaying until Show() is called.
+*/
+/*!
+    \var CHbDeviceDialogSymbian::TDeviceDialogFlag CHbDeviceDialogSymbian::EASyncServerStartup
+    Starts device dialog service asynchronously.
 */
 
 /*!
    \fn void MHbDeviceDialogObserver::DataReceived(CHbSymbianVariantMap& aData)
 
     This callback is called when data is received from a device dialog.
-    \a aData contains data from the dialog plugin.
-    The structure and meaning of the data is a contract between the dialog and
-    a client. Structure should be aligned with the data types supported by
-	CHbSymbianVariantMap.
+    \a aData contains data from the dialog plugin. The structure and meaning
+    of the data is a contract between the dialog and a client.
 
-    \sa CHbSymbianVariantMap.
+    If no observer is set in CHbDeviceDialogSymbian::Show() the latest data
+    can be retrieved with CHbDeviceDialogSymbian::receivedData().
+
+    \sa CHbSymbianVariantMap
 */
 
 /*!
     \fn void MHbDeviceDialogObserver::DeviceDialogClosed(TInt aCompletionCode)
 
     This callback is called when a device dialog is closed. Any data sent by
-    the dialog is indicated by the dataReceived() callback. If no observer is
-    set in CHbDeviceDialogSymbian::Show the latest data can be retrieved with
-    CHbDeviceDialogSymbian::receivedData()
+    the dialog is indicated by the dataReceived() callback.
 
     \a aCompletionCode gives the result of the dialog completion. Code can be
     either Symbian error code or device dialog error code.
 
-    \sa DataReceived() ReceivedData()
+    \sa DataReceived(), ReceivedData()
 */
 
-// Device dialogs are implemented only for Symbian/S60 OS.
-
-class CHbDeviceDialogSymbianPrivate : public CActive
+NONSHARABLE_CLASS(CHbDeviceDialogSymbianPrivate) : public CActive
 {
 public:
         CHbDeviceDialogSymbianPrivate(TInt aFlags);
@@ -238,11 +292,7 @@ TInt CHbDeviceDialogSymbianPrivate::Show(const QByteArray& aArray)
     return error;
 }
 
-/*!
-    \internal
-
-    Send device dialog update.
-*/
+// Send device dialog update.
 TInt CHbDeviceDialogSymbianPrivate::Update( const QByteArray& aArray )
 {
     TInt error = iLastError = KErrNone;
@@ -263,12 +313,7 @@ TInt CHbDeviceDialogSymbianPrivate::Update( const QByteArray& aArray )
     return error;
 }
 
-/*!
-    \internal
-
-    Cancel a scheduled popup on HbDeviceDialogManager. Event buffer is cleared
-    at server.
-*/
+// Cancel a scheduled popup on HbDeviceDialogManager. Event buffer is cleared at server.
 void CHbDeviceDialogSymbianPrivate::CancelDialog()
 {
     iLastError = KErrNone;
@@ -284,11 +329,7 @@ void CHbDeviceDialogSymbianPrivate::CancelDialog()
     }
 }
 
-/*!
-    \internal
-
-    Return last error.
-*/
+// Return last error.
 TInt CHbDeviceDialogSymbianPrivate::Error() const
 {
     return iLastError;
@@ -298,10 +339,8 @@ void CHbDeviceDialogSymbianPrivate::SetObserver( MHbDeviceDialogObserver* aObser
 {
     iObserver = aObserver;
 }
-/*!
-    \internal
-    RunL from CActive.
-*/
+
+// RunL from CActive.
 void CHbDeviceDialogSymbianPrivate::RunL()
 {
     TInt completionCode = iStatus.Int();
@@ -390,10 +429,7 @@ void CHbDeviceDialogSymbianPrivate::RunL()
     }
 }
 
-/*!
-    \internal
-    DoCancel from CActive.
-*/
+// DoCancel from CActive.
 void CHbDeviceDialogSymbianPrivate::DoCancel()
 {
     SetError(KErrCancel);
@@ -401,20 +437,14 @@ void CHbDeviceDialogSymbianPrivate::DoCancel()
     iHbSession.SendSyncRequest(EHbSrvCancelUpdateChannel);
 }
 
-/*!
-    \internal
-    RunError from CActive.
-*/
+// RunError from CActive.
 TInt CHbDeviceDialogSymbianPrivate::RunError(TInt /*aError*/)
 {
     SetError(SymToDeviceDialogError(KErrGeneral));
     return KErrNone;
 }
 
-/*!
-    \internal
-    Starts asynchronous message to receive update and close events from session.
-*/
+// Starts asynchronous message to receive update and close events from session.
 void CHbDeviceDialogSymbianPrivate::Start()
 {
     iDataPtr.Zero();
@@ -470,7 +500,8 @@ bool CHbDeviceDialogSymbianPrivate::CallDataReceivedObserver(CHbSymbianVariantMa
 }
 
 /*!
-    Constructs CHbDeviceDialogSymbian object. \a f contains construct flags.
+    Constructs CHbDeviceDialogSymbian and returns a pointer to it.
+    \a f contains construct flags.
 */
 EXPORT_C CHbDeviceDialogSymbian* CHbDeviceDialogSymbian::NewL(TInt aFlags)
 {
@@ -481,36 +512,42 @@ EXPORT_C CHbDeviceDialogSymbian* CHbDeviceDialogSymbian::NewL(TInt aFlags)
      if (aFlags & EImmediateResourceReservation) {
          User::LeaveIfError(self->d->Initialize());
      }
-     CleanupStack::Pop(); // self
+     CleanupStack::Pop(self);
      return self;
 }
 
+/*!
+    Constructs CHbDeviceDialogSymbian.
+*/
 CHbDeviceDialogSymbian::CHbDeviceDialogSymbian()
 {
 }
 
+/*!
+    Destructs CHbDeviceDialogSymbian. The dialog launched by ShowL()
+    is closed if observer is set. If there is no observer, the dialog is
+    left executing and should close itself by timeout.
+*/
 EXPORT_C CHbDeviceDialogSymbian::~CHbDeviceDialogSymbian()
 {
     delete d;
 }
 
 /*!
-  Show of device dialog. Each time a Show() is called a new dialog is launched.
-  aParameter data is sent to device dialog in Qt's QVariantMap object.
-  The function is asynchronous and returns immediately. Closing and data events from the
-  dialog can be received by observer interface. Deleting CHbDeviceDialogSymbian object
-  closes and deletes the device dialog at server if observer is set. If observer is null
-  the dialog is left executing at the server and it's assumed it closes itself by a timeout.
-  Cancel() to closes the device dialog.
+    Shows a device dialog. Each time a Show() is called, a new dialog is launched.
+    The function is asynchronous and returns after the service has accepted the dialog.
+    Closing and data events from the dialog are indicated by observer interface.
+    Deleting CHbDeviceDialogSymbian object closes and deletes the device dialog at server
+    if observer is set. If no observer is set, the dialog is left executing at the server
+    and it's assumed it closes itself by a timeout. Cancel() closes the device dialog.
 
-  \a aDeviceDialogType is name of the device dialog. Identifies the device
-  dialog plugin. \a aParameters is a buffer containing data for the device dialog.
+    \param aDeviceDialogType Identifies a device dialog.
+    \param aParameters Contains parameters for the device dialog.
+    \param aObserver Contains observer for the dialog or 0 for no observer.
 
-  \a aObserver is used to observe the session.
+    \return returns 0 on success or error code.
 
-  Return value informs if the call was successful.
-
-  \sa Update() Cancel()
+    \sa Update(), Cancel()
  */
 EXPORT_C TInt CHbDeviceDialogSymbian::Show(const TDesC& aDeviceDialogType, const CHbSymbianVariantMap& aParameters, MHbDeviceDialogObserver* aObserver)
 {
@@ -533,8 +570,11 @@ EXPORT_C TInt CHbDeviceDialogSymbian::Show(const TDesC& aDeviceDialogType, const
 
 /*!
     Updates device dialog parameters by a set of new values. Show() must be called before an
-    Update() can be called. Returns true on success and false
-    if error occurred.
+    Update() can be called.
+
+    \param aParameters Contains parameters for the device dialog.
+    
+    \return returns 0 on success or error code.
 
     \sa Show()
 */
@@ -557,8 +597,10 @@ EXPORT_C TInt CHbDeviceDialogSymbian::Update(const CHbSymbianVariantMap& aParame
 }
 
 /*!
-    Get the data received from device dialog if using synchronous Show
-    in s60 data types. Caller gets the ownership.
+    Gets the latest data received from a device dialog. If observer is set, data received from
+    device dialog is not saved and an empty container is returned.
+
+    \return returns data received from device dialog. Ownership is transferred to caller.
 */
 EXPORT_C CHbSymbianVariantMap* CHbDeviceDialogSymbian::ReceivedDataL() const
 {
@@ -567,8 +609,8 @@ EXPORT_C CHbSymbianVariantMap* CHbDeviceDialogSymbian::ReceivedDataL() const
 }
 
 /*!
-    Cancel device dialog session. Visible dialog is removed from the screen.
-    Waiting dialogs are canceled and no effect if dialog already dismissed
+    Cancels a device dialog. Visible dialog is closed and a queued one is deleted.
+    No effect if dialog has already closed.
 */
 EXPORT_C void CHbDeviceDialogSymbian::Cancel()
 {
@@ -576,8 +618,9 @@ EXPORT_C void CHbDeviceDialogSymbian::Cancel()
 }
 
 /*!
-    Set observer for device dialog events. \aObserver is pointer to the
-    observer. Null disables observing.
+    Sets observer for device dialog events.
+
+    \param aObserver Contains observer for the device dialog. 0 disables observing.
 */
 EXPORT_C void CHbDeviceDialogSymbian::SetObserver(MHbDeviceDialogObserver* aObserver)
 {

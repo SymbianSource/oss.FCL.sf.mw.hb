@@ -25,6 +25,8 @@
 #ifndef HBDDAPPFACTORYSYMBIAN_P_H
 #define HBDDAPPFACTORYSYMBIAN_P_H
 
+/// \cond 
+
 #include <hbglobal.h>
 #include <hbapplication.h>
 
@@ -42,10 +44,11 @@ class HbDeviceDialogServerApp : public HbApplication
 public:
     HbDeviceDialogServerApp(QApplication::QS60MainApplicationFactory factory,
         int &argc, char *argv[], Hb::ApplicationFlags flags = Hb::DefaultApplicationFlags);
-    bool symbianEventFilter(const QSymbianEvent *event);
 
 public slots:
   static void quit();
 };
+
+/// \endcond
 
 #endif // HBDDAPPFACTORYSYMBIAN_P_H

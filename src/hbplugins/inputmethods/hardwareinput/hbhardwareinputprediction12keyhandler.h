@@ -37,7 +37,7 @@ public:
 
     bool actionHandler(HbInputModeAction action);
     bool filterEvent(const QKeyEvent * event);
-	bool isActive() const;
+    bool isActive() const;
     
 private:
     Q_DECLARE_PRIVATE(HbHardwareInputPrediction12KeyHandler)

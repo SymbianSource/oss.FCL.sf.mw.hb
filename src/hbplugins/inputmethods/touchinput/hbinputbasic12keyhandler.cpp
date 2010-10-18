@@ -63,13 +63,15 @@ bool HbInputBasic12KeyHandlerPrivate::handleAlphaEvent(int buttonId, HbKeyboardT
     do {
         int currCharIndex = 0;
         mCurrentChar = 0;
-	    //This condition is to avoid get the characters mapped to Asterisk
-	    //Especially for Thai language we have mapped character to Asterisk
+        //This condition is to avoid get the characters mapped to Asterisk
+        //Especially for Thai language we have mapped character to Asterisk
         if (buttonId != HbInputButton::ButtonKeyCodeAsterisk ||
-            mInputMethod->currentKeyboardType() == HbKeyboardSctPortrait) {
+            mInputMethod->currentKeyboardType() == HbKeyboardSctEmail || 
+            mInputMethod->currentKeyboardType() == HbKeyboardSctUrl || 
+            mInputMethod->currentKeyboardType() == HbKeyboardSctPortrait ) {
             currCharIndex = mNumChr ;
             mCurrentChar = q->getNthCharacterInKey(mNumChr, buttonId, type);
-	    }
+        }
 
         if (mCurrentChar != 0) {
             if (focusObject->characterAllowedInEditor(mCurrentChar)) {
@@ -108,14 +110,23 @@ bool HbInputBasic12KeyHandlerPrivate::buttonPressed(const QKeyEvent *keyEvent)
         if (mDownKey == HbInputButton::ButtonKeyCodeShift) {
             mLongPressHappened = true;
             mInputMethod->switchMode(HbInputButton::ButtonKeyCodeShift);                
-        } else if (mDownKey == HbInputButton::ButtonKeyCodeSymbol) {
-            // launch the smiley popup when long press of Sym key is received
+        } else if (mDownKey == HbInputButton::ButtonKeyCodeSymbol  &&
+            (mInputMethod->currentKeyboardType() != HbKeyboardSctPortrait && 
+            mInputMethod->currentKeyboardType() != HbKeyboardSctEmail &&
+            mInputMethod->currentKeyboardType() != HbKeyboardSctUrl )) {
             mLongPressHappened = true;
-            mInputMethod->selectSpecialCharacterTableMode();
+            if (HbInputSettingProxy::instance()->globalInputLanguage().language() == QLocale::Chinese) {
+                mInputMethod->switchMode(mDownKey);
+            } else {
+                mInputMethod->selectSpecialCharacterTableMode();
+            }
         } else if (mDownKey == HbInputButton::ButtonKeyCodeAsterisk &&
+            !mInputMethod->isSctModeActive() && 
+            (mInputMethod->currentKeyboardType() != HbKeyboardSctPortrait &&
+            mInputMethod->currentKeyboardType() != HbKeyboardSctUrl &&
+            mInputMethod->currentKeyboardType() != HbKeyboardSctEmail )) {
             // launch the SCT keypad when long press of Asterisk key is 
-			// received in non-SCT mode
-            !mInputMethod->isSctModeActive()) {
+            // received in non-SCT mode
             mLongPressHappened = true;
             mInputMethod->switchMode(mDownKey);
         } else if (mDownKey != HbInputButton::ButtonKeyCodeDelete &&
@@ -130,12 +141,13 @@ bool HbInputBasic12KeyHandlerPrivate::buttonPressed(const QKeyEvent *keyEvent)
     }
 
     // mark a shift key double tap. This would be handled when the release event is received.
-    if ((buttonId == HbInputButton::ButtonKeyCodeShift) && (mLastKey == buttonId) && mTimer->isActive()) {
+    if (buttonId == HbInputButton::ButtonKeyCodeShift && mLastKey == buttonId && mTimer->isActive()) {
         mShiftKeyDoubleTapped = true;        
     }
 
     if (mInputMethod) {
-        if (mLastKey != buttonId || mInputMethod->currentKeyboardType() == HbKeyboardSctPortrait)
+        if (mLastKey != buttonId || mInputMethod->currentKeyboardType() == HbKeyboardSctPortrait || 
+            mInputMethod->currentKeyboardType() == HbKeyboardSctEmail || mInputMethod->currentKeyboardType() == HbKeyboardSctUrl)
         {
             if (mCurrentChar != 0) {
                 if (!focusObject->characterAllowedInEditor(mCurrentChar)) {
@@ -149,13 +161,19 @@ bool HbInputBasic12KeyHandlerPrivate::buttonPressed(const QKeyEvent *keyEvent)
                     mCurrentChar = 0;
                     mNumChr = 0;
                     focusObject->filterAndCommitCharacter(commitChar);
-                }            
-            }            
-        }
+                }
+            }
 
+            // we should not launch auto-completor when function keys are pressed.
+            if (buttonId == HbInputButton::ButtonKeyCodeCharacter)
+                refreshAutoCompleter();
+        }
+    
         mDownKey = buttonId;
         mTimer->stop();
-        if (mInputMethod->currentKeyboardType() == HbKeyboardVirtual12Key) {
+        if (mInputMethod->currentKeyboardType() == HbKeyboardVirtual12Key || 
+            mInputMethod->currentKeyboardType() == HbKeyboardVirtual12KeyEmail || 
+            mInputMethod->currentKeyboardType() == HbKeyboardVirtual12KeyUrl ) {
             mTimer->start(HbMultiTapTimerTimeout);
         }
     }
@@ -195,13 +213,12 @@ bool HbInputBasic12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEvent)
             if (mLastKey && (HbInputButton::ButtonKeyCodeShift != mLastKey)) {
                 mInputMethod->updateState();
             }
-            refreshAutoCompleter();
         }
 
         if (buttonId == HbInputButton::ButtonKeyCodeShift) {
             // single tap of shift key toggles prediction status in case insensitive languages
             // The Editor should not be Web or URL which allows only Latin Alphabet
-            if (!HbInputSettingProxy::instance()->globalInputLanguage().isCaseSensitiveLanguage() &&
+            if (!mInputMethod->inputState().language().isCaseSensitiveLanguage() &&
                                 ((HbEditorConstraintLatinAlphabetOnly | HbEditorConstraintAutoCompletingField)!=focusObject->editorInterface().inputConstraints()) &&
                 // when the language does not support prediction in that case we should not update the state and prediction
                 HbPredictionFactory::instance()->predictionEngineForLanguage(mInputMethod->inputState().language())) {
@@ -215,7 +232,7 @@ bool HbInputBasic12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEvent)
                     if( HbInputSettingProxy::instance()->globalInputLanguage() == mInputMethod->inputState().language() ||
                         HbInputSettingProxy::instance()->globalSecondaryInputLanguage() == mInputMethod->inputState().language() ||
                                                 ((HbEditorConstraintLatinAlphabetOnly | HbEditorConstraintAutoCompletingField)==focusObject->editorInterface().inputConstraints())){
-                        // in latin variants , double tap of shift key toggles the prediction status	
+                        // in latin variants , double tap of shift key toggles the prediction status    
                         // revert back to the old case as this is a double tap 
                         // (the case was changed on the single tap)
                         updateTextCase();
@@ -258,7 +275,7 @@ bool HbInputBasic12KeyHandlerPrivate::buttonReleased(const QKeyEvent *keyEvent)
             return true;
         }
         // switch the keypad mode when the short key press of Asterisk key in non-SCT mode
-        // or SYM button or Alphabet button is received		
+        // or SYM button or Alphabet button is received     
         if ((buttonId == HbInputButton::ButtonKeyCodeAsterisk &&
             !mInputMethod->isSctModeActive()) || buttonId == HbInputButton::ButtonKeyCodeSymbol ||
             buttonId == HbInputButton::ButtonKeyCodeAlphabet) {

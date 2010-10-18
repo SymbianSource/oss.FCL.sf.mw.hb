@@ -218,13 +218,25 @@ void HbIconAnimator::paint(
     QIcon::Mode mode,
     QIcon::State state) const
 {
+    if (d->animation && d->mLoopCountSet && !d->animation->loopCountSet()) {
+        d->animation->setLoopCount(d->mLoopCount);
+    }
     d->icon.paint(painter, rect, aspectRatioMode, alignment, mode, state);
 }
 
 /*!
-* Starts the icon animation if the icon is animated. Otherwise this method has no effect.
-* If the animation is already running or finished, it is restarted from the beginning.
-* \sa flag HbIcon::NoAutoStartAnimation
+  Starts the icon animation if the icon is animated. Otherwise this method
+  has no effect.
+
+  If the animation is already running or finished, it is restarted from the
+  beginning.
+
+  Note that this function will not override the HbIcon::NoAutoStartAnimation
+  flag, so if it is called before the first paint of the icon and the flag is
+  set then the function will have no effect.
+
+  \sa flag HbIcon::NoAutoStartAnimation
+  \sa stopAnimation
 */
 void HbIconAnimator::startAnimation()
 {
@@ -235,8 +247,18 @@ void HbIconAnimator::startAnimation()
 }
 
 /*!
-* Stops the icon animation if the icon is animated. Otherwise this method has no effect.
-* The icon shows the last frame of the animation.
+  Stops the icon animation if the icon is animated. Otherwise this method has no effect.
+
+  When an animation is stopped, the icon will show the last frame of the animation.
+
+  Note that in accordance with the lazy loading behavior of icons, this function
+  has no effect if called before the icon is painted first, so if you need to
+  make sure that an animation is not automatically started then consider setting
+  the HbIcon::NoAutoStartAnimation flag for the HbIcon or HbIconItem instead of
+  using this function.
+
+  \sa flag HbIcon::NoAutoStartAnimation
+  \sa startAnimation
 */
 void HbIconAnimator::stopAnimation()
 {
@@ -246,7 +268,7 @@ void HbIconAnimator::stopAnimation()
     }
 }
 
-/**
+/*!
 * Sets the \a view showing the animated icon that this animator instance is associated with.
 * The animation is then paused automatically when the view is deactivated and resumed when it is activated.
 * If the owner view is not set the animation does not care about view switches.
@@ -266,5 +288,31 @@ void HbIconAnimator::setOwnerView(HbView *view)
         }
     }
 }
+
+/*!
+  Sets a manual loop count.
+
+  Note that the interpretation depends on the underlying format, for
+  example animated XML only supports enabling/disabling looping,
+  i.e. a loop count cannot explicitly be specified. On the other hand
+  animated GIF and MNG supports explicit loop counts too.
+
+  Generally -1 means infinite looping and 0 means no loop, i.e. play
+  only once.
+
+  When this function is not called, the looping behavior is based on
+  what is specified in the file, e.g. in case of axml the playmode
+  attribute, in case of GIF the value returned by loopCount() of the
+  underlying QImageReader, etc.
+ */
+void HbIconAnimator::setLoopCount(int loopCount)
+{
+    d->mLoopCountSet = true;
+    d->mLoopCount = loopCount;
+    if (d->animation) {
+        d->animation->setLoopCount(d->mLoopCount);
+    }
+}
+
 
 // End of File

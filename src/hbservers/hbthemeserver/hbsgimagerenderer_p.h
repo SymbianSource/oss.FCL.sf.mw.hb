@@ -32,11 +32,7 @@
 #include <hbthemecommon_symbian_p.h>
 
 class HbNvgEngine;
-
-#ifdef HB_ICON_CACHE_DEBUG
 typedef EGLBoolean (*NOK_resource_profiling)(EGLDisplay, EGLint, EGLint*, EGLint, EGLint*);
-#endif
-
 class HbSgImageRenderer
 {
 public:
@@ -51,22 +47,19 @@ public:
     static void addSgImageToHash(unsigned long long id, RSgImage* sgImage);
     static void removeSgImageFromHash(unsigned long long id);
     void terminate();
-
-#ifdef HB_ICON_CACHE_DEBUG
+    int  lastError();
+    void setLastError(int lastError);
     unsigned long totalGPUMemory();
     unsigned long freeGPUMemory();
-#endif
+
     
 private:
 
     bool createContext(RSgImage * sgImage);
-    
-#ifdef HB_ICON_CACHE_DEBUG
-    EGLint* HbSgImageRenderer::getProfileData(EGLint & data_count);
+    EGLint* getProfileData(EGLint & data_count);
     NOK_resource_profiling eglQueryProfilingData;
     EGLint data_count;
     EGLint* prof_data;
-#endif
     
     EGLDisplay  display;
     EGLSurface  currentSurface;
@@ -76,6 +69,7 @@ private:
     RSgDriver sgDriver;
     static QHash<unsigned long long, RSgImage*> sgImageHash;
     HbNvgEngine *engine;
+    int         errorCode;
 };
 
 #endif

@@ -39,10 +39,11 @@ static const int SPACE_NEEDED_FOR_MULTISEGMENT_ALLOCATOR = 512;
 static const int MAXIMUM_ALLOC_SIZE_FOR_SUBALLOCATOR = 224;
 
 // used to identify memory allocated by main or sub allocator
-// if metadata (integer just before allocated data) & MAIN_ALLOCATOR_IDENTIFIER
+// if metadata (qptrdiff just before allocated data) & MAIN_ALLOCATOR_IDENTIFIER
 // == true, data was allocated using main allocator, otherwise suballocator
-// was used
-static const int MAIN_ALLOCATOR_IDENTIFIER = 0x80000000;
+// was used. This works because suballocator saves aligned offsets to metadata and
+// they can't be odd.
+static const qptrdiff MAIN_ALLOCATOR_IDENTIFIER = 1;
 
 // max. amount of different chunk sizes in multisegment allocator
 static const int AMOUNT_OF_DIFFERENT_CHUNK_SIZES = 8;
@@ -61,11 +62,11 @@ public:
     void *data();
     int size() const;
     
-#ifdef HB_HAVE_PROTECTED_CHUNK    
+#if defined(HB_HAVE_PROTECTED_CHUNK) && defined(Q_OS_SYMBIAN)
     void setErrorString(const QString &function, TInt errorCode);
 #endif    
 private:
-#ifdef HB_HAVE_PROTECTED_CHUNK
+#if defined(HB_HAVE_PROTECTED_CHUNK) && defined(Q_OS_SYMBIAN)
     QSharedMemory::SharedMemoryError wrapperError;
     QString errorString;
     const QString key;
@@ -82,11 +83,11 @@ class HbSharedMemoryAllocator
 {
 public:
     virtual void initialize(HbSharedMemoryWrapper *sharedChunk,
-        const unsigned int offset = 0,
+        const quintptr offset = 0,
         HbSharedMemoryAllocator *mainAllocator = 0) = 0;
-    virtual int alloc(int size) = 0;
-    virtual int allocatedSize(int offset) = 0;
-    virtual void free(int offset) = 0;
+    virtual qptrdiff alloc(int size) = 0;
+    virtual int allocatedSize(qptrdiff offset) = 0;
+    virtual void free(qptrdiff offset) = 0;
     virtual ~HbSharedMemoryAllocator() { }
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
     virtual void writeReport(QTextStream &reportWriter) = 0;
@@ -100,11 +101,11 @@ public:
     HbSplayTreeAllocator();
     ~HbSplayTreeAllocator();
 
-    int alloc(int size);
-    int allocatedSize(int offset);
-    void free(int offset);
+    qptrdiff alloc(int size);
+    int allocatedSize(qptrdiff offset);
+    void free(qptrdiff offset);
     void initialize(HbSharedMemoryWrapper *sharedChunk,
-        const unsigned int offset = 0,
+        const quintptr offset = 0,
         HbSharedMemoryAllocator *mainAllocator = 0);
     int size();
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
@@ -117,49 +118,49 @@ public:
 private:
     struct TreeNode
     {
-        unsigned int key;
-        unsigned int rightNode;
-        unsigned int leftNode;
+        quintptr key;
+        quintptr rightNode;
+        quintptr leftNode;
     };
 
     struct MemoryBlock
     {
         TreeNode lengthNode;
         TreeNode pointerNode;
-        unsigned int next;
-        unsigned int prev;
-        int allocatorIdentifier;
+        quintptr next;
+        quintptr prev;
+        qptrdiff allocatorIdentifier;
     };
 
     struct HeapHeader
     {
-        unsigned int identifier;
-        unsigned int lengthNode;
-        unsigned int pointerNode;
+        quint32 identifier;
+        quintptr lengthNode;
+        quintptr pointerNode;
         int freeBytes;
         int allocatedBytes;
     };
 
 private:
-    unsigned int splay(unsigned int *root, unsigned int key);
+    quintptr splay(quintptr *root, quintptr key);
 
-    void insertNode(unsigned int *root, TreeNode *node);
-    void insertNode(unsigned int *root, TreeNode *node, TreeNode *temp);
-    void deleteNode(unsigned int *root, TreeNode *node, bool splayed);
+    void insertNode(quintptr *root, TreeNode *node);
+    void insertNode(quintptr *root, TreeNode *node, TreeNode *temp);
+    void deleteNode(quintptr *root, TreeNode *node, bool splayed);
 
-    void insertLengthNode(unsigned int *root, TreeNode *node);
-    void deleteLengthNode(unsigned int *root, TreeNode *node, bool splayed);
+    void insertLengthNode(quintptr *root, TreeNode *node);
+    void deleteLengthNode(quintptr *root, TreeNode *node, bool splayed);
 
-    void *toPointer(unsigned int offset) const;
+    void *toPointer(quintptr offset) const;
     template<typename T>
-    inline T *address(int offset)
+    inline T *address(qptrdiff offset)
     {
         return reinterpret_cast<T *>(static_cast<char *>(chunk->data()) + offset);
     }
 
 private:
     HbSharedMemoryWrapper *chunk;
-    unsigned int offset;
+    quintptr offset;
     HeapHeader *header;
 };
 
@@ -171,11 +172,11 @@ public:
     HbMultiSegmentAllocator();
     ~HbMultiSegmentAllocator();
 
-    int alloc(int size);
-    int allocatedSize(int offset);
-    void free(int offset);
-	void initialize(HbSharedMemoryWrapper *sharedChunk,
-        const unsigned int offset = 0,
+    qptrdiff alloc(int size);
+    int allocatedSize(qptrdiff offset);
+    void free(qptrdiff offset);
+    void initialize(HbSharedMemoryWrapper *sharedChunk,
+        const quintptr offset = 0,
         HbSharedMemoryAllocator *mainAllocator = 0);
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
     void writeReport(QTextStream &reportWriter);
@@ -184,36 +185,36 @@ public:
 private:
     struct MultiAllocatorHeader
     {
-        unsigned int identifier;
+        quint32 identifier;
         // always points to the first list
-        int offsetsToChunkLists[AMOUNT_OF_DIFFERENT_CHUNK_SIZES];
+        qptrdiff offsetsToChunkLists[AMOUNT_OF_DIFFERENT_CHUNK_SIZES];
         // always points to the list with free chunks
-        int offsetsToFreeChunkLists[AMOUNT_OF_DIFFERENT_CHUNK_SIZES];
+        qptrdiff offsetsToFreeChunkLists[AMOUNT_OF_DIFFERENT_CHUNK_SIZES];
     };
 
     struct ChunkListHeader
     {
         int chunkListIndex;
-        int freedChunkCursor;
-        int allocCursor;
-        int previousListOffset;
-        int nextListOffset;
+        qptrdiff freedChunkCursor;
+        qptrdiff allocCursor;
+        qptrdiff previousListOffset;
+        qptrdiff nextListOffset;
         int allocatedChunks;
     };
 
 private:
     // helper methods
-    void addList(int index, int offset);
+    void addList(int index, qptrdiff offset);
     bool setFreeList(int index);
     template<typename T>
-    inline T *address(int offset)
+    inline T *address(qptrdiff offset)
     {
         return reinterpret_cast<T *>(static_cast<char *>(chunk->data()) + offset);
     }
 
 private:
     HbSharedMemoryWrapper *chunk;
-    unsigned int offset;
+    quintptr offset;
     HbSharedMemoryAllocator *mainAllocator;
     MultiAllocatorHeader *header;
     int indexTable[MAXIMUM_ALLOC_SIZE_FOR_SUBALLOCATOR+1];

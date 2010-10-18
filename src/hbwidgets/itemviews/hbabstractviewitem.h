@@ -32,16 +32,15 @@
 
 #include <QHash>
 
-QT_BEGIN_NAMESPACE
-class QModelIndex;
-QT_END_NAMESPACE
-
 class HbAbstractViewItemPrivate;
 class HbAbstractViewItemShared;
 class HbAbstractItemView;
-class HbStyleOptionAbstractViewItem;
 class HbStyleParameters;
 class HbFrameBackground;
+class HbStylePrimitiveData;
+
+class QGraphicsObject;
+class QModelIndex;
 
 class HB_WIDGETS_EXPORT HbAbstractViewItem : public HbWidget
 {
@@ -87,6 +86,8 @@ public:
 
     Hb::ModelItemType modelItemType() const;
 
+    virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
+
 public slots:
     void updatePrimitives();
 
@@ -102,7 +103,8 @@ protected:
     HbAbstractViewItem &operator=(const HbAbstractViewItem &source);
 
     HbAbstractViewItem( HbAbstractViewItemPrivate &dd, QGraphicsItem *parent );
-    void initStyleOption(HbStyleOptionAbstractViewItem *option) const;
+    void initPrimitiveData( HbStylePrimitiveData     *primitiveData, 
+                            const QGraphicsObject    *primitive);
     virtual void polish(HbStyleParameters& params);
 
     virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value);
@@ -114,9 +116,16 @@ protected:
 
     virtual void gestureEvent(QGestureEvent *event);
 
+    virtual void changeEvent(QEvent *event);
+
+protected slots:
+    
+    void updatePixmapCache();
+
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbAbstractViewItem )
     Q_PRIVATE_SLOT(d_func(), void _q_animationFinished(const HbEffect::EffectStatus &status))
+    Q_PRIVATE_SLOT(d_func(), void _q_childrenChanged())
 
     friend class HbAbstractViewItemShared;
 };

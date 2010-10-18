@@ -76,6 +76,7 @@ public:
     void removeAllConnection(HbDataFormModelItem *item);
     inline HbTreeModelIterator *treeModelIterator() const;
     void emitActivated(const QModelIndex &modelIndex);
+    void collapseAllGroupPages(const QModelIndex index) ;
 
 public:
     HbDataFormHeadingWidget* mHeadingWidget;

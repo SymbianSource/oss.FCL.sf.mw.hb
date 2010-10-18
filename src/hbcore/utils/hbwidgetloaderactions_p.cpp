@@ -97,7 +97,7 @@ bool HbWidgetLoaderActions::addAnchorLayoutItem(
 
     HbAnchor* anchor = new HbAnchor( srcId, srcEdge, dstId, dstEdge );
 
-    if ( minLength.mType != HbXmlLengthValue::None ) {
+    if ( minLength.mValues.count() ) {
         qreal minVal(0);
         if ( !toPixels(minLength, minVal) ) {
             delete anchor;
@@ -107,17 +107,21 @@ bool HbWidgetLoaderActions::addAnchorLayoutItem(
         }
     }
 
-    if ( prefLength.mType != HbXmlLengthValue::None ) {
+    if ( prefLength.mValues.count() ) {
         qreal prefVal(0);
         if ( !toPixels(prefLength, prefVal) ) {
             delete anchor;
             return false;
         } else {
-            anchor->setPreferredLength( prefVal );
+            // if the expression resulted a negative result, we must reverse the direction
+            if ( prefVal < 0 && dir ) {
+                *dir = (*dir==HbAnchor::Positive) ? HbAnchor::Negative : HbAnchor::Positive;
+            }
+            anchor->setPreferredLength( qAbs(prefVal) );         
         }
     }
 
-    if ( maxLength.mType != HbXmlLengthValue::None ) {
+    if ( maxLength.mValues.count() ) {
         qreal maxVal(0);
         if ( !toPixels(maxLength, maxVal) ) {
             delete anchor;
@@ -199,15 +203,17 @@ bool HbWidgetLoaderMemoryActions::addAnchorLayoutItem(
     item.dstId = dstId;
     item.srcEdge = srcEdge;
     item.dstEdge = dstEdge;
-    item.minType = minLength.mType;
-    item.minVal = minLength.mValue;
-    item.minText = minLength.mString;
-    item.prefType = prefLength.mType;
-    item.prefVal = prefLength.mValue;
-    item.prefText = prefLength.mString;
-    item.maxType = maxLength.mType;
-    item.maxVal = maxLength.mValue;
-    item.maxText = maxLength.mString;
+
+    for (int i=0; i<minLength.mValues.count(); i++) {
+        item.minVal.append(minLength.mValues.at(i));
+    }
+    for (int j=0; j<prefLength.mValues.count(); j++) {
+        item.prefVal.append(prefLength.mValues.at(j));
+    }
+    for (int k=0; k<maxLength.mValues.count(); k++) {
+        item.maxVal.append(maxLength.mValues.at(k));
+    }
+
     item.sizepolicy = policy ? *policy : -1;
     item.direction = dir ? *dir : -1;
     item.anchorId = anchorId;

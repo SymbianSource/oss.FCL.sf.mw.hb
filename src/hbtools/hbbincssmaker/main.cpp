@@ -34,11 +34,15 @@
 #include <hbcssconverterutils_p.h>
 #include <hboffsetmapbuilder_p.h>
 #include <hbwidgetloader_p.h>
+#include <hblayoutparameters_p.h>
 
 // Global variables
 static const QString CSSFileExtension = ".css";
 static const QString WMLFileExtension = ".widgetml";
 static const QString ColorCSSEnding = "_color.css";
+static const QString GlobalParameterCssFile = "hbglobalparameters";
+static const QSet<QString> IgnoreCSSFiles = QSet<QString>() << "hbapplicationcolorgroup.css"
+                                                            << "hbwidgetcolorgroup.css";
 
 static const QString AppName = "hbbincssmaker";
 static bool verboseOn = false;
@@ -130,6 +134,7 @@ void testStyleSheet(HbCss::StyleSheet *styleSheet)
         testStyleRules(rule.styleRules);
         testStyleRules(rule.portraitRules);
         testStyleRules(rule.landscapeRules);
+        VERBOSELN("dependsOnScreen: " << rule.dependsOnScreen);
     }
 }
 
@@ -140,7 +145,9 @@ void testLayoutDef(const HbWidgetLoader::LayoutDefinition *layoutDef)
         const HbWidgetLoader::AnchorItem &anchorItem = layoutDef->anchorItems.at(i);
         VERBOSELN("srcId: " << anchorItem.srcId);
         VERBOSELN("dstId: " << anchorItem.dstId);
-        VERBOSELN("prefLength text: " << anchorItem.prefText);
+        VERBOSELN("minVal.count: " << anchorItem.minVal.count());
+        VERBOSELN("prefVal.count: " << anchorItem.prefVal.count());
+        VERBOSELN("maxVal.count: " << anchorItem.maxVal.count());
         VERBOSELN("anchorId: " << anchorItem.anchorId);
     }
 }
@@ -170,6 +177,20 @@ bool testCss()
                             HbMemoryManager::SharedMemory, ptr->offset);
                 testLayoutDef(layoutDef);
             }
+        }
+    }
+    qint32 size = 0;
+    const HbParameterItem *item = cache->parameterItemBegin(&size);
+    const char* base = reinterpret_cast<const char*>(item);
+    for (int i = 0; i < size; ++i, ++item) {
+        QLatin1String tmp(base + item->nameOffset);
+        VERBOSE(QString(tmp));
+        if (!item->special) {
+            HbCss::Value *value = HbMemoryUtils::getAddress<HbCss::Value>(
+                    HbMemoryManager::SharedMemory, item->valueOffset);
+            VERBOSELN(" = " << value->variant.toString());
+        } else {
+            VERBOSELN(" (special)");
         }
     }
     return true;
@@ -290,6 +311,50 @@ QMap<QString, QFileInfo> collectCssFiles(const QStringList &inputFilePaths)
     return cssFileMap;
 }
 
+bool parseGlobalParameters(HbCss::StyleSheet *styleSheet,
+                           const QFileInfo &fileInfo,
+                           HbOffsetMapBuilder &offsetMap)
+{
+    bool ok = true;
+    int zoomLevel = fileInfo.dir().dirName().toInt(&ok, 10);
+    if (!ok) {
+        err << "global parameter zoom level invalid: " << fileInfo.dir().dirName();
+        return false;
+    }
+    QHash<QString, HbParameterValueItem> parameters;
+    GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
+    VERBOSELN("processing global parameters for zoom level " << zoomLevel);
+    foreach(const HbCss::VariableRule &rule, styleSheet->variableRules) {
+        foreach(const HbCss::Declaration &decl, rule.declarations) {
+            if (decl.values.count() > 1) {
+                return false;
+            }
+            qptrdiff offset = manager->alloc(sizeof(HbCss::Value));
+            new ((char*)manager->base() + offset) HbCss::Value(decl.values.at(0));
+            QString parameterName(decl.property);
+            VERBOSELN(parameterName << " = " << decl.values.at(0).variant.toString());
+            qptrdiff prevOffset = parameters.value(parameterName, -1).offset;
+            if (prevOffset >= 0) {
+                err << "Warning: global parameter: " << parameterName <<
+                       " already assigned. Using the latest value." << endl;
+                HbCss::Value *v = reinterpret_cast<HbCss::Value*>((char*)manager->base() + prevOffset);
+                HbMemoryUtils::release(v);
+                parameters.remove(parameterName);
+            }
+            parameters.insert(decl.property, offset);
+        }
+    }
+    //add special variables
+    QStringList variables = HbLayoutParameters::specialVariableNames();
+    for(int i = 0; i < variables.count(); ++i) {
+        parameters.insert(variables.at(i), HbParameterValueItem(i, true));
+    }
+
+    offsetMap.addGlobalParameters(zoomLevel, parameters);
+    VERBOSELN("end processing global parameters");
+    return true;
+}
+
 /*!
     Collects the css files from \a inputFiles, parses them to shared memory, stores
     offsets to \a offsetMap.
@@ -297,7 +362,9 @@ QMap<QString, QFileInfo> collectCssFiles(const QStringList &inputFilePaths)
 */
 bool parseCss(const QStringList &inputFiles, HbOffsetMapBuilder &offsetMap)
 {
-    if (inputFiles.isEmpty()) return false;
+    if (inputFiles.isEmpty()) {
+        return false;
+    }
     QMap<QString, QFileInfo> cssFiles = collectCssFiles(inputFiles);
 
     HbCss::Parser parser;
@@ -310,7 +377,10 @@ bool parseCss(const QStringList &inputFiles, HbOffsetMapBuilder &offsetMap)
         QMap<QString, QFileInfo>::iterator CSSFiles[CSSFileTypeEnd];
 
         QString widgetName(first.key());
-        if (widgetName.endsWith(ColorCSSEnding)) {
+        if (IgnoreCSSFiles.contains(widgetName)) {
+            cssFiles.erase(first);
+            continue;
+        } else if (widgetName.endsWith(ColorCSSEnding)) {
             //color css file, find the layout css pair.
             CSSFiles[ColorCSSFile] = first;
             widgetName.remove(widgetName.size() - ColorCSSEnding.size(),
@@ -323,7 +393,7 @@ bool parseCss(const QStringList &inputFiles, HbOffsetMapBuilder &offsetMap)
                               CSSFileExtension.size());
             CSSFiles[ColorCSSFile] = cssFiles.find(widgetName + ColorCSSEnding);
         }
-        int offsets[] = {-1, -1};
+        qptrdiff offsets[] = {-1, -1};
 
         for (int i = 0; i < CSSFileTypeEnd; ++i) {
             if (CSSFiles[i] != cssFiles.end()) {
@@ -333,8 +403,10 @@ bool parseCss(const QStringList &inputFiles, HbOffsetMapBuilder &offsetMap)
                 if (offsets[i] >= 0) {
                     styleSheet = new (static_cast<char*>(manager->base()) + offsets[i])
                                  HbCss::StyleSheet(HbMemoryManager::SharedMemory);
-                    parser.init(file.absoluteFilePath(), true);
-                    success = parser.parse(styleSheet);
+                    success = parser.init(file.absoluteFilePath(), true);
+                    if (success) {
+                        success = parser.parse(styleSheet);
+                    }
                     VERBOSE("cache key = " << CSSFiles[i].key() << "...");
                 }
                 if (success) {
@@ -353,10 +425,17 @@ bool parseCss(const QStringList &inputFiles, HbOffsetMapBuilder &offsetMap)
             tmp = CSSFiles[CSSFile].key();
             info = &CSSFiles[CSSFile].value();
         }
-        if (!offsetMap.addWidgetOffsets(widgetName, info, offsets)) {
+        if (widgetName == GlobalParameterCssFile) {
+            bool ok = parseGlobalParameters(styleSheet, CSSFiles[CSSFile].value(), offsetMap);
+            //remove parsed global parameter stylesheet from binary, when processed.
+            HbMemoryUtils::release(styleSheet);
+            if (!ok) {
+                err << "Failed to parse global parameters. " << endl;
+                return false;
+            }
+        } else if (!offsetMap.addWidgetOffsets(widgetName, info, offsets)) {
             return false;
         }
-
         //remove processed files from the map.
         cssFiles.erase(CSSFiles[ColorCSSFile]);
         if (!tmp.isEmpty()) {
@@ -383,7 +462,7 @@ bool parseWidgetML(HbOffsetMapBuilder &offsetMap,
         return false;
     }
     HbWidgetLoader::LayoutDefinition *layoutDef = 0;
-    int layoutDefOffset = -1;
+    qptrdiff layoutDefOffset = -1;
     bool success = true;
 
     GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
@@ -444,9 +523,10 @@ bool writeCssBinary(const QStringList &inputFiles, const QString &targetFile)
     QByteArray data(offsetMap.result());
     bool success = false;
 
-    if (shared->createSharedCache(data.data(), data.size(), offsetMap.size())) {
+    if (shared->createSharedCache(data.data(), data.size(),
+                                  offsetMap.size(), offsetMap.globalParameterOffset())) {
         // Defragment the chunk contents before dumping it in a file
-        int endOffset = HbCssConverterUtils::defragmentChunk();
+        qptrdiff endOffset = HbCssConverterUtils::defragmentChunk();
         if (verboseOn) testCss();
 
         VERBOSELN("writing the binary file");

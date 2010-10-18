@@ -30,10 +30,10 @@
 #include <hbprogressdialog.h>
 #include <hbdialog_p.h>
 #include <hblabel.h>
-
+#include <hbaction.h>
 #include <QFlags>
 #include <QTimeLine>
-
+#include <QPointer>
 class HbProgressDialogContentWidget;
 
 class HbProgressDialogPrivate :public HbDialogPrivate
@@ -73,6 +73,7 @@ public:
     HbProgressDialog::ProgressDialogType mNoteType;
     QString mTextString;
     Qt::Alignment mAlign;
+    QPointer <HbAction> mAction;
 };
 
 #endif

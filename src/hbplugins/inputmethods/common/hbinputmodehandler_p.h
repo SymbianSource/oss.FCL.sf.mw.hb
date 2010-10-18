@@ -45,6 +45,7 @@ public:
     // HbPredictionCallback
     QString surroundingText();
     int cursorPosition();
+    bool isPunctuationKey(const Qt::Key key, const HbKeyboardType keypad);
     bool isEnterCharacter(QChar character); 
     const HbKeymap* mKeymap;
     HbInputAbstractMethod *mInputMethod;

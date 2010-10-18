@@ -45,7 +45,8 @@ public:
         ButtonTextTypePrimary,
         ButtonTextTypeSecondaryFirstRow,
         ButtonTextTypeSecondarySecondRow,
-        ButtonTextTypeLabel
+        ButtonTextTypeLabel,
+        ButtonTextTypeCount
     };
 
     explicit HbInputButtonGroup(QGraphicsItem *parent = 0);
@@ -81,6 +82,8 @@ public:
     void setBackground(HbFrameDrawer *background);
 
     qreal fontSize(HbInputButtonTextType textType);
+    void setFontSize(HbInputButtonTextType textType,qreal size);
+    void resetFontSizes();
 
     QList<HbKeyPressProbability> buttonProbabilities() const;
 
@@ -97,6 +100,7 @@ protected: // From QGraphicsItem
     void changeEvent(QEvent *event);
     void showEvent(QShowEvent *event);
     void hideEvent(QHideEvent *event);
+    bool eventFilter(QObject *obj, QEvent *event);
     int type() const {
         return Hb::ItemType_InputButtonGroup;
     }

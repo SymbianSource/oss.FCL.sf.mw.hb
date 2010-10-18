@@ -71,6 +71,7 @@ private:
     Q_DISABLE_COPY(HbPinchGesture)
 
     friend class HbPinchGestureLogic;
+    friend class HbPinchGestureRecognizer;
 };
 
 #endif // HBPINCHGESTURE_H

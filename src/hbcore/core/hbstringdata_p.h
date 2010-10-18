@@ -31,7 +31,7 @@
 
 template<typename T>
 inline
-T * getAddress(HbMemoryManager::MemoryType type, int offset, bool shared)
+T * getAddress(HbMemoryManager::MemoryType type, qptrdiff offset, bool shared)
 {
     if(shared) {
         type = HbMemoryManager::SharedMemory;
@@ -45,14 +45,14 @@ public:
     HbStringData();
     ~HbStringData();
 public:
-    int mStartOffset;
+    qptrdiff mStartOffset;
     int mLength;
     int mCapacity;
     QAtomicInt mRef;
 };
 
 inline
-HbStringData *getStringData(HbMemoryManager::MemoryType type, int offset, bool shared = false)
+HbStringData *getStringData(HbMemoryManager::MemoryType type, qptrdiff  offset, bool shared = false)
 {
     return getAddress<HbStringData>(type, offset, shared);
 }

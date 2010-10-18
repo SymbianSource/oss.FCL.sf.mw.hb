@@ -1,0 +1,23 @@
+<hbwidget version="0.1" type="HbEmptyViewWidget">
+    <layout name="default-portrait" type="mesh">
+      <meshitem src="text" srcEdge="LEFT" dst="" dstEdge="LEFT" spacing="-var(hb-param-margin-gene-screen)"/>
+      <meshitem src="text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" spacing="var(hb-param-margin-gene-screen)"/>
+      <meshitem src="text" srcEdge="TOP" dst="" dstEdge="TOP" spacing="-30.0un" />      
+    </layout>        
+
+    <layout name="default-landscape" type="mesh">
+      <meshitem src="text" srcEdge="LEFT" dst="" dstEdge="LEFT" spacing="-var(hb-param-margin-gene-screen)"/>
+      <meshitem src="text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" spacing="var(hb-param-margin-gene-screen)"/>
+      <meshitem src="text" srcEdge="TOP" dst="" dstEdge="TOP" spacing="-10.0un" />      
+    </layout>        
+
+    <layout name="centered" type="mesh">
+      <meshitem src="text" srcEdge="LEFT" dst="" dstEdge="LEFT" spacing="-var(hb-param-margin-gene-screen)"/>
+      <meshitem src="text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" spacing="var(hb-param-margin-gene-screen)"/>
+      <meshitem src="text" srcEdge="TOP" dst="" dstEdge="TOP" sizepolicy="Expanding" direction="NEGATIVE"/>      
+      <meshitem src="text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" sizepolicy="Expanding" direction="POSITIVE"/>      
+    </layout>
+
+
+</hbwidget>
+

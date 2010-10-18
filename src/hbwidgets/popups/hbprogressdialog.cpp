@@ -26,13 +26,14 @@
 #include <hbprogressdialog.h>
 #include <hbprogressdialog_p.h>
 #include <hbstyleoptionprogressdialog_p.h>
-
 #include <hbnamespace_p.h>
 #include <hbaction.h>
 #include <hbpopup.h>
 #include <hbtextitem.h>
 #include <QGraphicsItem>
-
+#include <hbstyleprimitivedata.h>
+#include <hbstyleiconprimitivedata.h>
+#include <hbstyletextprimitivedata.h>
 /*
     \internal
     HbProgressDialogContentWidget class
@@ -48,9 +49,9 @@ class HbProgressDialogContentWidget : public HbWidget
     
     public:
     
-    QGraphicsItem *mIconItem;
+    QGraphicsObject  *mIconItem;
     HbProgressBar *mProgressBar;
-    QGraphicsItem *mTextItem;
+    QGraphicsObject  *mTextItem;
     HbProgressDialogPrivate *d;
     
     enum { Type = HbPrivate::ItemType_ProgressDialogContentWidget };
@@ -111,9 +112,9 @@ void HbProgressDialogPrivate::init(HbProgressDialog::ProgressDialogType type)
         mContentWidget->mProgressBar->setRange(0,100);
     }
     
-    HbAction *action = new HbAction(hbTrId("txt_common_button_cancel"), q);
-    QObject::connect(action, SIGNAL(triggered()), q, SLOT(_q_userCancel()));
-    q->addAction(action);
+    mAction = new HbAction(hbTrId("txt_common_button_cancel"), q);
+    QObject::connect(mAction, SIGNAL(triggered()), q, SLOT(_q_userCancel()));
+    q->addAction(mAction);
     
     mMinDuration = 1500;
     mDelayTime = 1000;
@@ -135,29 +136,36 @@ void HbProgressDialogPrivate::init(HbProgressDialog::ProgressDialogType type)
 void HbProgressDialogPrivate::createPrimitives()
 {
     Q_Q(HbProgressDialog);
+    bool repolish = false;
 
-    if( !mContentWidget->mProgressBar ){
-            mContentWidget->mProgressBar = new HbProgressBar(mContentWidget);
-            HbStyle::setItemName(mContentWidget->mProgressBar, "pbar");
+    if( !mContentWidget->mProgressBar ){ 
+        mContentWidget->mProgressBar = new HbProgressBar(mContentWidget); 
+        HbStyle::setItemName(mContentWidget->mProgressBar, "pbar"); 
+        repolish = true; 
     }
-
-    if ( !mContentWidget->mTextItem ) {
-        mContentWidget->mTextItem = q->style()->createPrimitive(HbStyle::P_ProgressDialog_text,mContentWidget);
-        HbStyle::setItemName(mContentWidget->mTextItem, "text");
+    
+    if ( !mContentWidget->mTextItem ) { 
+        mContentWidget->mTextItem = q->style()->createPrimitive(HbStyle::PT_TextItem, "text", mContentWidget); 
+        repolish = true;
     }
 
     if ( !mIcon.isNull() ) {
-        if ( !mContentWidget->mIconItem ) {
-            mContentWidget->mIconItem = q->style()->createPrimitive(HbStyle::P_ProgressDialog_icon, mContentWidget); 
-            HbStyle::setItemName(mContentWidget->mIconItem, "icon");
+        if ( !mContentWidget->mIconItem ) { 
+            mContentWidget->mIconItem = q->style()->createPrimitive(HbStyle::PT_IconItem, "icon", mContentWidget); 
+            repolish = true; 
         }
     } else {
         if( mContentWidget->mIconItem ){
-            delete mContentWidget->mIconItem;
+            delete mContentWidget->mIconItem; 
+            repolish = true; 
         }
         mContentWidget->mIconItem = 0;
     }
+
+    if (repolish)
+        mContentWidget->repolishContent();
 }
+
 
 /*!
     \internal
@@ -196,7 +204,8 @@ void HbProgressDialogPrivate::_q_finished()
     else if(flags.testFlag(HbProgressDialogPrivate::Closetimer)){
         flags &= ~HbProgressDialogPrivate::Closetimer;
         if(flags.testFlag(HbProgressDialogPrivate::Closepending)){
-            q->close();
+             flags &= ~HbProgressDialogPrivate::Closepending;
+             q->close();            
         }
     }
 }
@@ -209,8 +218,15 @@ void HbProgressDialogPrivate::_q_finished()
 void HbProgressDialogPrivate::_q_progressValueChanged(int value)
 {
     Q_Q(HbProgressDialog);
-    
+    if(value >= mContentWidget->mProgressBar->maximum() && !(q->autoClose()) && (mAction->text() == hbTrId("txt_common_button_cancel")) ){
+        if(mAction) {
+            if(mAction->text() == hbTrId("txt_common_button_cancel")) {
+                mAction->setText(hbTrId("txt_common_button_close"));
+            }
+        }
+    }
     if(value >= mContentWidget->mProgressBar->maximum() && q->autoClose()){
+        
         if(flags.testFlag(HbProgressDialogPrivate::Closetimer)){
             flags |= HbProgressDialogPrivate::Closepending;
             flags &= ~HbProgressDialogPrivate::Showtimer;
@@ -496,28 +512,6 @@ void HbProgressDialog::cancel()
 }
 
 /*!
-
-    \deprecated HbProgressDialog::primitive(HbStyle::Primitive)
-        is deprecated.
-
-    Returns the pointer for \a primitive passed.
-    Will return NULL if \a primitive passed is invalid
-*/
-QGraphicsItem* HbProgressDialog::primitive(HbStyle::Primitive primitive) const
-{
-    Q_D(const HbProgressDialog);
-
-    switch (primitive) {
-        case HbStyle::P_ProgressDialog_icon:
-            return d->mContentWidget->mIconItem;
-        case HbStyle::P_ProgressDialog_text:
-            return d->mContentWidget->mTextItem;
-        default:
-            return 0;
-        }
-}
-
-/*!
     @beta
     Sets the progressdialog type. 
 
@@ -613,14 +607,34 @@ void HbProgressDialog::initStyleOption(HbStyleOptionProgressDialog *option) cons
     option->textAlignment = d->mAlign;
 }
 
+void HbProgressDialog::initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive)
+{
+    HbWidgetBase::initPrimitiveData(primitiveData, primitive);
+    QString itemName = HbStyle::itemName(primitive);
+    if (itemName == QLatin1String("text")) {
+        HbStyleTextPrimitiveData *data = hbstyleprimitivedata_cast<HbStyleTextPrimitiveData*>(primitiveData);
+        data->text = text();
+        data->textWrapping = Hb::TextWordWrap;
+    }
+
+    if (itemName == QLatin1String("icon")) {
+        HbStyleIconPrimitiveData *data = hbstyleprimitivedata_cast<HbStyleIconPrimitiveData*>(primitiveData);
+        data->icon = icon();        
+    }
+}
+
 /*!
     \reimp
  */
 void HbProgressDialog::showEvent(QShowEvent *event)
 {
     Q_D(HbProgressDialog);
-    
     d->mContentWidget->mProgressBar->show();
+    if(d->mAction) {
+        if(d->mAction->text() == hbTrId("txt_common_button_close")) {
+            d->mAction->setText(hbTrId("txt_common_button_cancel"));
+        }
+    }
     HbDialog::showEvent(event);   
 }
 
@@ -662,9 +676,9 @@ void HbProgressDialog::setText(const QString &text)
 
         if(d->mContentWidget->mTextItem)
         {
-            HbStyleOptionProgressDialog progressDialogOption;
-            initStyleOption(&progressDialogOption);
-            style()->updatePrimitive(d->mContentWidget->mTextItem, HbStyle::P_ProgressDialog_text, &progressDialogOption);
+            HbStyleTextPrimitiveData data;
+            initPrimitiveData(&data, d->mContentWidget->mTextItem);
+            style()->updatePrimitive(d->mContentWidget->mTextItem, &data, this);
         }
     }
 }
@@ -700,16 +714,15 @@ void HbProgressDialog::setIcon(const HbIcon &icon)
 
         if (d->mContentWidget->mIconItem) {
             d->mContentWidget->setProperty("icon",true);
+            HbStyleIconPrimitiveData data;
+            initPrimitiveData(&data, d->mContentWidget->mIconItem);
+            style()->updatePrimitive(d->mContentWidget->mIconItem, &data, this);
 
-            HbStyleOptionProgressDialog progressDialogOption;
-            initStyleOption(&progressDialogOption);
-            style()->updatePrimitive(d->mContentWidget->mIconItem, HbStyle::P_ProgressDialog_icon, &progressDialogOption);
         }
         else
         {
             d->mContentWidget->setProperty("icon",false);
         }
-        d->mContentWidget->repolishContent();
     }
 }
 
@@ -726,7 +739,57 @@ HbIcon HbProgressDialog::icon() const
 
     return d->mIcon;
 }
+/*!
+    updation of pri
+ */
+void HbProgressDialog::updatePrimitives()
+{
+    Q_D(HbProgressDialog); 
+    HbDialog::updatePrimitives();
+    if (d->mContentWidget->mIconItem) {
+        HbStyleIconPrimitiveData data;
+        initPrimitiveData(&data, d->mContentWidget->mIconItem);
+        style()->updatePrimitive(d->mContentWidget->mIconItem, &data, this);
+    }    
+    
+    if (d->mContentWidget->mTextItem) {
+        HbStyleTextPrimitiveData data;
+        initPrimitiveData(&data, d->mContentWidget->mTextItem);
+        style()->updatePrimitive(d->mContentWidget->mTextItem, &data, this);
+    }   
+}
+/*!
+    Recreaction of all the primitives.
+ */
+void HbProgressDialog::recreatePrimitives()
+{
+    Q_D(HbProgressDialog);
+    if (d->mContentWidget->mIconItem) {
+        delete d->mContentWidget->mIconItem;
+        d->mContentWidget->mIconItem = 0;
+        d->mContentWidget->mIconItem = style()->createPrimitive(HbStyle::PT_IconItem, "icon",d->mContentWidget);
+    }
+    if (d->mContentWidget->mTextItem) {
+        delete d->mContentWidget->mTextItem;
+        d->mContentWidget->mTextItem = 0;
+        d->mContentWidget->mTextItem = style()->createPrimitive(HbStyle::PT_TextItem, "text",d->mContentWidget);
+    }
+}
 
+QGraphicsItem *HbProgressDialog::primitive(const QString &itemName) const
+{
+    Q_D(const HbProgressDialog);
+
+    if(!itemName.compare(QString("icon"))){
+        return d->mContentWidget->mIconItem;
+    }
+
+    if(!itemName.compare(QString("text"))){
+        return d->mContentWidget->mTextItem;
+    }
+
+    return HbDialog::primitive(itemName);
+}
 
 #include "moc_hbprogressdialog.cpp"
 #include "hbprogressdialog.moc"

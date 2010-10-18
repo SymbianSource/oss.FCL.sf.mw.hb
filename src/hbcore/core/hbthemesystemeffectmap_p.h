@@ -72,6 +72,9 @@ public:
 #endif //Q_OS_SYMBIAN
 
 private:
+    bool isValidEffectEntry(QString &incomingFile, QString &outgoingFile) const;
+
+private:
     class SystemEffectKey
     {
     public:

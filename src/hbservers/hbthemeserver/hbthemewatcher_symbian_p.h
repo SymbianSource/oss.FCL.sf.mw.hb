@@ -30,6 +30,7 @@
 
 #include "hbthemecommon_p.h"
 
+#include <QFileSystemWatcher>
 #include <e32property.h>
 #include <e32base.h>
 #include <f32file.h>
@@ -37,32 +38,30 @@
 class HbThemeServerPrivate;
 
 //**********************************
-//CHbThemeWatcher
+//HbThemeWatcher
 //**********************************
 /**
 This class is for watching changes in active theme e.g. ejection of the MMC.
 */
-class CHbThemeWatcher : public CActive
-{
-public:
-    static CHbThemeWatcher* NewL(HbThemeServerPrivate& aObserver);
-    ~CHbThemeWatcher();
-    void startWatchingL(const QString &file);
 
-protected: // From CActive
-    void RunL();
-    void DoCancel();
+class HbThemeWatcher : public QObject
+{
+    Q_OBJECT
+public:
+    HbThemeWatcher(HbThemeServerPrivate &observer);
+    ~HbThemeWatcher();
+
+    void startWatching(const QString &file);
+
+private slots:
+    void fileChanged(const QString &file);
 
 private:
-    CHbThemeWatcher(HbThemeServerPrivate& aObserver);
-    void ConstructL();    
-
-private: // data
-    RFs iFs;
-    QString iFile;
-    HbThemeServerPrivate& iObserver;
+    QFileSystemWatcher mWatcher;
+    QString mFile;
+    HbThemeServerPrivate &mObserver;
 };
-
+    
 //**********************************
 //CHbThemeChangeNotificationListener
 //**********************************

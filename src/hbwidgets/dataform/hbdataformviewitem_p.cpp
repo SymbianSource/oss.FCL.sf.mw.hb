@@ -356,9 +356,9 @@ void HbRadioItem::buttonClicked()
         mDialog->setDismissPolicy(HbPopup::NoDismiss);
         mDialog->setModal(true);
         mDialog->setContentWidget(mRadioButtonList);   
-        HbAction *ok = new HbAction(QString("Ok"));
+        HbAction *ok = new HbAction(hbTrId("txt_common_button_ok"), mDialog);
         mDialog->addAction(ok);
-        HbAction *cancel = new HbAction(QString("Cancel"));
+        HbAction *cancel = new HbAction(hbTrId("txt_common_button_cancel"), mDialog);
         connect(ok, SIGNAL(triggered()), mDialog,SLOT(accept()));
         mDialog->addAction(cancel);
         mDialog->connect(cancel, SIGNAL(triggered()), mDialog, SLOT(reject()));
@@ -371,8 +371,8 @@ void HbRadioItem::buttonClicked()
 void HbRadioItem::updateModel( int index )
 {
     mSelected = index;
-    if( index > -1 && mItems.count() < index ) {
-    	emit valueChanged(mViewItem->modelIndex(), mItems.at(index));
+    if( index > -1 && mItems.count() > index ) {
+        emit valueChanged(mViewItem->modelIndex(), mItems.at(index));
     }
     // Disconnect modelchanged signal since visualization is already updated by user
     // so if not disconnected , this will trigger visualization change again
@@ -707,13 +707,13 @@ void HbDataFormViewItemPrivate::createPrimitives()
     Q_Q( HbDataFormViewItem );
 
     if( !mBackgroundItem ) {
-        mBackgroundItem = q->style()->createPrimitive( HbStyle::P_DataItem_background, q );
+        mBackgroundItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_DataItem_background, q );
     }
     
 
     if( !mLabel.isEmpty() ) {
         if( !mLabelItem ) {
-            mLabelItem = q->style()->createPrimitive( HbStyle::P_DataItem_label, q );
+            mLabelItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_DataItem_label, q );
         }
     } else {
         if( mLabelItem ) {
@@ -727,7 +727,7 @@ void HbDataFormViewItemPrivate::createPrimitives()
     if( !mIcon.isEmpty() ) {
         q->setProperty( "hasIcon", true );
         if(!mIconItem) {
-            mIconItem = q->style()->createPrimitive( HbStyle::P_DataItem_icon, q );
+            mIconItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_DataItem_icon, q );
         }
     } else {
         q->setProperty( "hasIcon", false );
@@ -740,7 +740,7 @@ void HbDataFormViewItemPrivate::createPrimitives()
 
     if(!mDescription.isEmpty()) {
         if(!mDescriptionItem) {
-            mDescriptionItem = q->style()->createPrimitive(HbStyle::P_DataItem_description, q);
+            mDescriptionItem = HbStylePrivate::createPrimitive(HbStylePrivate::P_DataItem_description, q);
         }
     } else {
         if( mDescriptionItem ) {
@@ -771,6 +771,11 @@ void HbDataFormViewItemPrivate::setDescription( const QString& description )
     }
 
     mDescription = description;
+    if(mDescription.isEmpty()) {
+        q->setProperty("hasDescription",false);
+    } else {
+        q->setProperty("hasDescription",true);
+    }
     createPrimitives();
     if ( doRepolish ) {
         q->repolish();
@@ -795,21 +800,21 @@ void HbDataFormViewItemPrivate::updatePrimitives()
     q->initStyleOption(&options);
 
     if( mBackgroundItem ) {
-        q->style()->updatePrimitive(
-            mBackgroundItem, HbStyle::P_DataItem_background, &options );
+        HbStylePrivate::updatePrimitive(
+            mBackgroundItem, HbStylePrivate::P_DataItem_background, &options );
     }
 
     if( mLabelItem ) {
-        q->style()->updatePrimitive( mLabelItem, HbStyle::P_DataItem_label, &options );
+        HbStylePrivate::updatePrimitive( mLabelItem, HbStylePrivate::P_DataItem_label, &options );
     }
 
     if( mIconItem ) {
-        q->style()->updatePrimitive(
-            mIconItem, HbStyle::P_DataItem_icon, &options );
+        HbStylePrivate::updatePrimitive(
+            mIconItem, HbStylePrivate::P_DataItem_icon, &options );
     }
     
     if(mDescriptionItem) {
-        q->style()->updatePrimitive(mDescriptionItem, HbStyle::P_DataItem_description, &options);
+        HbStylePrivate::updatePrimitive(mDescriptionItem, HbStylePrivate::P_DataItem_description, &options);
     }
 }
 
@@ -897,7 +902,7 @@ void HbDataFormViewItemPrivate::updateData()
 void HbDataFormViewItemPrivate::setEnabled(bool enabled)
 {
     Q_Q(HbDataFormViewItem);
-
+    Q_UNUSED(enabled);
     QGraphicsItem::GraphicsItemFlags itemFlags = q->flags();
     Qt::ItemFlags indexFlags = mIndex.flags();
 
@@ -920,18 +925,18 @@ void HbDataFormViewItemPrivate::setEnabled(bool enabled)
     }
 
     if( mContentWidget ) {
-        mContentWidget->setEnabled(enabled);
+        //mContentWidget->setEnabled(enabled);
         //If slider is disabled then still panning should be possible.
         if( ( mType == HbDataFormModelItem::SliderItem ) ||
             ( mType == HbDataFormModelItem::VolumeSliderItem ) ) {
                 HbSlider *slider = static_cast<HbSlider*>( mContentWidget );
-                if( enabled ) {
+                if( slider && slider->isEnabled() ) {
                     //grab pan gesture
-                    slider->primitive(HbStyle::P_SliderElement_touchgroove)->toGraphicsObject()->grabGesture(
+                    slider->primitive((HbStyle::Primitive)HbStylePrivate::P_SliderElement_touchgroove)->toGraphicsObject()->grabGesture(
                         Qt::PanGesture);
                 } else {
                     //ungrab pan gesture
-                    slider->primitive(HbStyle::P_SliderElement_touchgroove)->toGraphicsObject()->ungrabGesture(
+                    slider->primitive((HbStyle::Primitive)HbStylePrivate::P_SliderElement_touchgroove)->toGraphicsObject()->ungrabGesture(
                         Qt::PanGesture);
                 }
         }
@@ -1062,8 +1067,8 @@ void HbDataFormViewItemPrivate::createContentWidget()
     HbStyleOptionDataFormViewItem options;
     q->initStyleOption(&options);
     if( mBackgroundItem ) {
-        q->style()->updatePrimitive(
-            mBackgroundItem, HbStyle::P_DataItem_background, &options );
+        HbStylePrivate::updatePrimitive(
+            mBackgroundItem, HbStylePrivate::P_DataItem_background, &options );
     }
 
     //if ( mContentWidget ) {

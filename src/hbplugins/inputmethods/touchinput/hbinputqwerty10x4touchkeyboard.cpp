@@ -36,7 +36,7 @@
 #include "hbinputbutton.h"
 #include "hbinputmodeindicator.h"
 
-const qreal HbKeyboardHeightInUnits = 33.7;
+const qreal HbKeyboardHeightInUnits = 27.0;
 const qreal HbKeyboardWidthInUnits = 95.5;
 
 const int HbVirtualQwertyNumberOfRows = 4;

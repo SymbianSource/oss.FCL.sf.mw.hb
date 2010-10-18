@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
 <svg baseProfile="tiny" height="15px" version="1.1" viewBox="0 0 15 15" width="15px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<g>
+<path d="M0,0v9h4c4.61,0,7.485,2.654,8.638,5.141   C12.968,14.852,13.448,15,13.793,15c0.555,0,1.016-0.406,1.176-1.035L15,13.844V0H0z" fill="#14141E" fill-opacity="0.1" fill-rule="evenodd" stroke-opacity="0.1"/>
+<path d="M0,0v8h4c5,0,8.203,2.826,9.545,5.719   c0.294,0.633,0.455,0,0.455,0V0H0z" fill="url(#SVGID_1_)" fill-rule="evenodd"/>
+<path d="M13,0v1v10.029C11.156,8.824,8.157,7,4,7H0v1h4c5,0,8.203,2.826,9.545,5.719c0.294,0.633,0.455,0,0.455,0V1   V0H13z" fill-opacity="0.2" stroke-opacity="0.2"/>
+<path d="M12,0v8.666C9.809,6.934,7.043,6,4,6H0v1h4   c4.157,0,7.156,1.824,9,4.029V0H12z" fill="#FFFFFF" fill-opacity="0.2" fill-rule="evenodd" stroke-opacity="0.2"/>
 <rect fill="none" height="15" width="15"/>
-<rect fill="none" height="15" width="15"/>
-<path d="M0,0v9h4c4.611,0,7.485,2.655,8.639,5.141  C12.968,14.852,13.448,15,13.793,15l0,0c0.555,0,1.016-0.406,1.176-1.035L15,13.844V0H0z" fill="#14141E" fill-opacity="0.1" fill-rule="evenodd" stroke-opacity="0.1"/>
-<path d="M0,0v8h4c5,0,8.203,2.826,9.545,5.719  C13.839,14.352,14,13.718,14,13.718V0H0z" fill="#14141E" fill-opacity="0.2" fill-rule="evenodd" stroke-opacity="0.2"/>
-<path d="M0,0v7h4c5,0,8.203,2.826,9.545,5.719  c0.294,0.633,0.455,0,0.455,0V0H0z" fill="url(#SVGID_1_)" fill-rule="evenodd"/>
-<path d="M13,0v10.029C11.156,7.824,8.157,6,4,6H0v1h4  c5,0,8.203,2.826,9.545,5.719c0.294,0.633,0.455,0,0.455,0V0H13z" fill-opacity="0.2" fill-rule="evenodd" stroke-opacity="0.2"/>
-<path d="M12,0v7.666C9.809,5.934,7.043,5,4,5H0v1h4  c4.157,0,7.156,1.824,9,4.029V0H12z" fill="#FFFFFF" fill-opacity="0.2" fill-rule="evenodd" stroke-opacity="0.2"/>
 <defs>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="7" x2="7" y1="7.25" y2="-43.5221">
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="7.0005" x2="7.0005" y1="7.812" y2="-37.8529">
 <stop offset="0" style="stop-color:#59B397"/>
 <stop offset="1" style="stop-color:#2A7362"/>
 </linearGradient>
 </defs>
+</g>
 </svg>

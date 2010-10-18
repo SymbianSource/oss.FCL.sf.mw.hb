@@ -27,291 +27,266 @@
 #include "hbwidgetbase_p.h"
 #include "hbtextutils_p.h"
 #include "hbevent.h"
+#include "hbmainwindow.h"
 
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
-#include "hbtextmeasurementutility_p.h"
-#include "hbfeaturemanager_r.h"
+#include "hbtextmeasurementutility_r.h"
+#include "hbtextmeasurementutility_r_p.h"
 #endif //HB_TEXT_MEASUREMENT_UTILITY
 
 #include "hbdeviceprofile.h"
 #include "hbcolorscheme.h"
 #include "hbnamespace_p.h"
+#include "hbforegroundwatcher_p.h"
 
 #include <qmath.h>
 #include <QPainter>
 #include <QPropertyAnimation>
+#include <QGraphicsLinearLayout>
 
-//#define HB_DEBUG_MARQUEE_DRAW_RECTS
+//#define HB_DEBUG_MARQUEE_LOGS
+#ifdef HB_DEBUG_MARQUEE_LOGS
+    #include <QDebug>
+    #define HB_MARQUEE_LOG(args) qDebug() << "HbMarqueeItem::" << __FUNCTION__ \
+            << ", objectName:" << this->objectName() \
+            << " " << args;
+    #define HB_MARQUEE_PRIV_LOG(args) qDebug() << "HbMarqueeItemPrivate::" << __FUNCTION__ \
+            << ", objectName:" << q_ptr->objectName() \
+            << " " << args;
+#else
+    #define HB_MARQUEE_LOG(args)
+    #define HB_MARQUEE_PRIV_LOG(args)
+#endif
 
 namespace {
     // The bigger the value the slower the animation
-    static const qreal ANIMATION_SPEED_FACTOR = 2.5;
-    static const int ANIMATION_LEAD_TIME = 500;
-    static const int ANIMATION_IDENT_BY_PIXEL = 5;
-
-    static const QString DEFAULT_COLORGROUP = "qtc_view_normal";
+    static const int   ANIMATION_MAXIMUM_RETURN_TIME = 780;
+    static const qreal ANIMATION_SPEED_METERS_PER_SEC = 0.012; // mm/ms
 }
 
 
 
 HbMarqueeContent::HbMarqueeContent(HbMarqueeItem *parent) :
-    QGraphicsObject(parent),
-    parent(parent),
-    mTextDirection(Qt::LeftToRight),
-    mTextWidth(0),
-    mAlpha(0),
-    mFadeLength(0)
+    HbTextItem(parent)
 {
-    setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+    // setCacheMode(QGraphicsItem::DeviceCoordinateCache);
 }
 
-
-QRectF HbMarqueeContent::boundingRect() const
+void HbMarqueeContent::setAlpha(qreal alpha)
 {
-    return mBoundingRect;
+    setFadeLengths(alpha, 0);
 }
 
-QPen HbMarqueeContent::pen()
+qreal HbMarqueeContent::alpha() const
 {
-    QColor fullColor = parent->textColor();
-    QPen pen(fullColor);
+    return fadeLengths().x();
+}
 
-    if(parent->contentsRect().width() < mTextWidth) {
-        QColor fadeColor = fullColor;
-        fadeColor.setAlpha(alpha());
+qreal HbMarqueeContent::xOffset() const
+{
+    Q_D(const HbTextItem);
+    return d->mOffsetPos.x();
+}
 
-        QLinearGradient gradient;
-        gradient.setColorAt(0.0,fullColor);
-        gradient.setColorAt(1.0,fadeColor);
-
-        gradient.setStart(gradientStart);
-        gradient.setFinalStop(gradientStop);
-        pen.setBrush(QBrush(gradient));
+void HbMarqueeContent::setXOffset(qreal newOffset)
+{
+    Q_D(HbTextItem);
+    if (!qFuzzyCompare(d->mOffsetPos.x(), newOffset)) {
+        d->mOffsetPos.setX(newOffset);
+        d->mPaintFaded = d->fadeNeeded(contentsRect());
+        update();
     }
-    return pen;
-}
-
-void HbMarqueeContent::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
-{
-    Q_UNUSED(option);
-    Q_UNUSED(widget);
-
-    painter->save();
-
-    painter->setPen(pen());
-
-    painter->setLayoutDirection ( mTextDirection );
-    painter->setFont(parent->font());
-    painter->drawText(boundingRect(), Qt::TextDontClip, mText);
-
-#ifdef HB_DEBUG_MARQUEE_DRAW_RECTS
-    painter->setPen(Qt::green);
-    painter->drawRect(boundingRect());
-    painter->setOpacity(0.3);
-#endif
-
-    painter->restore();
-}
-
-
-void HbMarqueeContent::updateTextMetaData()
-{
-    QFontMetricsF metrics(parent->font());
-
-    //calculate bounding rect
-    prepareGeometryChange();
-
-    mBoundingRect = metrics.boundingRect(mText);
-    mBoundingRect.moveTopLeft(QPointF(0,0));
-
-    // text direction
-    bool rightToLeft = HbTextUtils::ImplicitDirectionalityIsRightToLeft(
-        mText.utf16(), mText.length(), 0 );
-    mTextDirection = rightToLeft ? Qt::RightToLeft : Qt::LeftToRight;
-
-    // Update text width
-    mTextWidth = mBoundingRect.width();
-
-    // Update fade length from device profile
-    mFadeLength = HbDeviceProfile::profile(this).unitValue()*HbPrivate::TextTruncationFadeWidth;
-
-}
-
-
-void HbMarqueeContent::setAlpha(int alpha)
-{
-    mAlpha = alpha;
-    update();
-}
-
-int HbMarqueeContent::alpha() const
-{
-    return mAlpha;
 }
 
 HbMarqueeItemPrivate::HbMarqueeItemPrivate() :
     content(0),
-    mAnimationPending(false)
-    
+    mUserRequestedAnimation(false),
+    mOffsetAnimation(0),
+    mBackAnimation(0),
+    mAnimationIsNeeded(false),
+    mLastPrefWidth(0)
 {
 }
 
 void HbMarqueeItemPrivate::init()
 {
     Q_Q(HbMarqueeItem);
-    content = new HbMarqueeContent(q);
 
-    q->setFlag(QGraphicsItem::ItemClipsChildrenToShape);
+    QGraphicsLinearLayout *layout = new QGraphicsLinearLayout(q);
+    content = new HbMarqueeContent(q);
+    layout->setContentsMargins(0,0,0,0);
+    layout->addItem(content);
+    content->setFont(QFont());
+    content->setTextWrapping(Hb::TextNoWrap);
+    content->setMaximumLines(1);
+
+    q->setFlag(QGraphicsItem::ItemHasNoContents);
+
     QObject::connect(&mAnimGroup, SIGNAL(stateChanged(QAbstractAnimation::State,QAbstractAnimation::State)) ,q,SLOT(_q_stateChanged()));
 
+    connectToMainWidow();
+#ifdef Q_OS_SYMBIAN
+    // this feature has sence only on phone device
+    HbForegroundWatcher *fgWatcher = HbForegroundWatcher::instance();
+    if (fgWatcher) {
+        //this has similar funcionality like mainWindow obscured reveled signals
+        // but it is used just in case if HbMarqueItem is used in application
+        // without HbMainWindow
+        QObject::connect(fgWatcher, SIGNAL(foregroundLost()), q, SLOT(_q_temporaryStopAnimation()));
+        QObject::connect(fgWatcher, SIGNAL(foregroundGained()), q, SLOT(_q_tryToResumeAnimation()));
+    }
+#endif // Q_OS_SYMBIAN
+
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
-    if ( HbFeatureManager::instance()->featureStatus( HbFeatureManager::TextMeasurement ) ) {
+    if (HbTextMeasurementUtility::instance()->locTestMode()) {
         q->setProperty( HbTextMeasurementUtilityNameSpace::textMaxLines, 1 );
     }
 #endif
 }
 
-
-void HbMarqueeItemPrivate::updateTextMetaData()
+void HbMarqueeItemPrivate::createAnimation()
 {
-    Q_Q(HbMarqueeItem);
+    Q_ASSERT(content);
 
-    q->update();
-    q->updateGeometry();
-    content->updateTextMetaData();
-    initContentPosition();
-    initAnimations();
-    content->update();
+    mOffsetAnimation = new QPropertyAnimation;
+    mOffsetAnimation->setEasingCurve(QEasingCurve::Linear);
+    mOffsetAnimation->setTargetObject(content);
+    mOffsetAnimation->setPropertyName("xOffset");
+    mOffsetAnimation->setStartValue(0);
+    mAnimGroup.addAnimation(mOffsetAnimation);
+
+    mAnimGroup.addPause(1000);
+
+    mBackAnimation = new QPropertyAnimation;
+    mBackAnimation->setEasingCurve(QEasingCurve::Linear);
+    mBackAnimation->setTargetObject(content);
+    mBackAnimation->setPropertyName("xOffset");
+    mBackAnimation->setEndValue(0);
+    mAnimGroup.addAnimation(mBackAnimation);
+
+    mAnimGroup.addPause(2000);
 }
 
-/*
-  Initializes the position of the text so that it can be drawn to the screen
-  in the initial position, either elided or not
-*/
-void HbMarqueeItemPrivate::initContentPosition()
+void HbMarqueeItemPrivate::updateAnimation()
 {
     Q_Q(HbMarqueeItem);
+    mAnimationIsNeeded = mLastPrefWidth>q->size().width();
 
-    QRectF contentRect = content->boundingRect();
-    QRectF rect = q->contentsRect();
-    contentRect.moveCenter(rect.center());
+    if (!mAnimationIsNeeded) {
+        // nothing to update
+        return;
+    }
 
-    if (q->layoutDirection() == Qt::RightToLeft) {
-        contentRect.moveRight(rect.right());
+    if (mAnimGroup.animationCount()==0) {
+        // create animation only when it is needed
+        createAnimation();
+    }
+
+    Q_ASSERT(mOffsetAnimation);
+    Q_ASSERT(mBackAnimation);
+
+    qreal ppmValue = HbDeviceProfile::profile(content).ppmValue();
+
+    // Calculate the offset for scrolling
+    const qreal MaxOffset = mLastPrefWidth-q->size().width();
+
+    qreal v = ANIMATION_SPEED_METERS_PER_SEC*ppmValue; // pisxels per milisecond
+    int duration = qRound(MaxOffset/v);  // t = s/v in miliseconds
+
+    if (content->layoutDirection()!=Qt::RightToLeft) {
+        mOffsetAnimation->setEndValue(-MaxOffset);
     } else {
-        contentRect.moveLeft(rect.left());
+        mOffsetAnimation->setEndValue(MaxOffset);
     }
+    mOffsetAnimation->setDuration(duration);
+    mBackAnimation->setDuration(qMin(duration, ANIMATION_MAXIMUM_RETURN_TIME));
 
-    if(rect.width() < content->mTextWidth) {
-        if (content->mTextDirection == Qt::RightToLeft) {
-            contentRect.moveRight(rect.right());
-
-        } else {
-            contentRect.moveLeft(rect.left());
-        }
-    }
-    content->setPos(contentRect.topLeft());
-
-    // Calculate the gradient point only after the content was positioned
-    initGradient();
-
+    // resume animation if it is needed
+    _q_tryToResumeAnimation();
 }
 
-void HbMarqueeItemPrivate::initGradient()
-{
-    Q_Q(HbMarqueeItem);
-    QRectF rect = q->contentsRect();
-
-    if(rect.width() < content->mTextWidth) {
-        if (content->mTextDirection == Qt::RightToLeft) {
-            content->gradientStop = q->mapToItem(content, rect.topRight());
-            content->gradientStop.rx() -= rect.width();
-            content->gradientStart = content->gradientStop;
-            content->gradientStart.rx() += content->mFadeLength;
-
-        } else {
-            content->gradientStop = q->mapToItem(content,rect.topLeft());
-            content->gradientStop.rx() += rect.width();
-            content->gradientStart = content->gradientStop;
-            content->gradientStart.rx() -= content->mFadeLength;
-        }
-        content->setAlpha(0);
-    }
-}
-
-void HbMarqueeItemPrivate::initAnimations()
+void HbMarqueeItemPrivate::connectToMainWidow()
 {
     Q_Q(HbMarqueeItem);
 
-    bool oldAnimationPending = mAnimationPending;
-    mAnimGroup.clear();
-    mAnimationPending = oldAnimationPending;
+    if (q->scene()) {
+        QGraphicsView *view=q->scene()->views().front();
+        if (qobject_cast<HbMainWindow *>(view)) {
+            HB_MARQUEE_PRIV_LOG("Connecting to main window")
+            QObject::connect(view, SIGNAL(obscured()),
+                             q, SLOT(_q_temporaryStopAnimation()));
 
-    if (q->contentsRect().width() < content->mTextWidth) {
-
-        // get pixel per millimeter value to ensure same animation speed on each device
-        qreal ppmValue = HbDeviceProfile::profile(q).ppmValue();
-
-        // Calculate the offset for scrolling
-        qreal scrollOffsetX = content->mTextWidth+ANIMATION_IDENT_BY_PIXEL - q->contentsRect().width();
-
-        // animation duration depends on the length of the scrolled text and is not linear
-        int duration = (int)((qSqrt(scrollOffsetX)*1000*ANIMATION_SPEED_FACTOR)/ppmValue);
-
-        if (content->mTextDirection != Qt::LeftToRight) {
-            scrollOffsetX = -scrollOffsetX;
+            QObject::connect(view, SIGNAL(revealed()),
+                             q, SLOT(_q_tryToResumeAnimation()));
+        } else {
+            HB_MARQUEE_PRIV_LOG("FAIL to connect: " << view)
         }
-
-        QPointF scrolledOutPos(content->pos().x() - scrollOffsetX, content->pos().y());
-
-        mAnimGroup.addPause(ANIMATION_LEAD_TIME);
-
-        QPropertyAnimation *anim = 0;
-
-        anim = new QPropertyAnimation;
-        anim->setEasingCurve(QEasingCurve::Linear);
-        anim->setTargetObject(content);
-        anim->setPropertyName("alpha");
-        anim->setStartValue(0);
-        anim->setEndValue(0xFF);
-        anim->setDuration(1000);
-        mAnimGroup.addAnimation(anim);
-
-        anim = new QPropertyAnimation;
-        anim->setEasingCurve(QEasingCurve::SineCurve);
-        anim->setTargetObject(content);
-        anim->setPropertyName("pos");
-        anim->setStartValue(content->pos());
-        anim->setEndValue(scrolledOutPos);
-        anim->setDuration(duration);
-        mAnimGroup.addAnimation(anim);
-
-        anim = new QPropertyAnimation;
-        anim->setEasingCurve(QEasingCurve::Linear);
-        anim->setTargetObject(content);
-        anim->setPropertyName("alpha");
-        anim->setEndValue(0);
-        anim->setDuration(1000);
-        mAnimGroup.addAnimation(anim);
-
-        if(mAnimationPending) {
-            q->startAnimation();
-        }
+    } else {
+        HB_MARQUEE_PRIV_LOG("No Scene")
     }
 }
-
 
 void HbMarqueeItemPrivate::_q_stateChanged()
 {
     Q_Q(HbMarqueeItem);
+
+    HB_MARQUEE_PRIV_LOG("New State: " << mAnimGroup.state())
+
     if (mAnimGroup.state() == QAbstractAnimation::Running) {
         emit q->animationStarted();
     } else if (mAnimGroup.state() == QAbstractAnimation::Stopped) {
-        initContentPosition();
-        mAnimationPending = false;
+        mUserRequestedAnimation = false;
         emit q->animationStopped();
     } else {
         // Other states are irrelevant
+    }
+}
+
+/*
+    Starts animation if:
+    1. user what to animate it
+    2. item is visible
+    3. item is scene
+    4. application is in foreground TODO: missing feature in HbForegroundWatcher how to read current state
+ */
+void HbMarqueeItemPrivate::_q_tryToResumeAnimation()
+{
+    Q_Q(HbMarqueeItem);
+    HB_MARQUEE_PRIV_LOG(mUserRequestedAnimation << mAnimationIsNeeded
+                        << q->isVisible() << (q->scene()!=0))
+
+    if (mUserRequestedAnimation
+        && mAnimationIsNeeded
+        && q->isVisible()
+        && (q->scene()!=0)) {
+        HbMainWindow *mainWin = qobject_cast<HbMainWindow *>(q->scene()->views().front());
+        if (mainWin && mainWin->isObscured()) {
+            HB_MARQUEE_PRIV_LOG("Preventing animation main window is obscured")
+            return;
+        }
+
+        mAnimGroup.start();
+    }
+}
+
+void HbMarqueeItemPrivate::_q_temporaryStopAnimation()
+{
+    // store old state
+    bool oldUserRequest = mUserRequestedAnimation;
+    q_func()->stopAnimation();
+
+    // restore old state
+    mUserRequestedAnimation = oldUserRequest;
+}
+
+void HbMarqueeItemPrivate::toggleAnimation(bool startAnimate)
+{
+    if (startAnimate) {
+        if (mAnimGroup.state()!=QAbstractAnimation::Running) {
+            _q_tryToResumeAnimation();
+        }
+    } else {
+        _q_temporaryStopAnimation();
     }
 }
 
@@ -371,10 +346,9 @@ HbMarqueeItem::~HbMarqueeItem()
  */
 QString HbMarqueeItem::text () const
 {
-    Q_D( const HbMarqueeItem );
-    return d->content->mText;
+    Q_D(const HbMarqueeItem);
+    return d->content->text();
 }
-
 
 /*!
     Sets the text into \a text.
@@ -386,7 +360,7 @@ void HbMarqueeItem::setText(const QString &text)
     QString txt(text);
 
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
-    if (HbFeatureManager::instance()->featureStatus(HbFeatureManager::TextMeasurement)) {
+    if (HbTextMeasurementUtility::instance()->locTestMode()) {
         if (text.endsWith(QChar(LOC_TEST_END))) {
             int index = text.indexOf(QChar(LOC_TEST_START));
             setProperty(HbTextMeasurementUtilityNameSpace::textIdPropertyName, 
@@ -399,15 +373,15 @@ void HbMarqueeItem::setText(const QString &text)
     }
 #endif // HB_TEXT_MEASUREMENT_UTILITY
 
-    if (d->content->mText != txt) {
-        d->content->mText = txt;
-        d->updateTextMetaData();
-        d->content->update();
-    }
+    d->content->setText(text);
 }
 
 /*!
     Returns if the text is currently animating.
+
+    Note that if marquee item is not visible (isVisible is false or
+    it is not in scene or phone in in sleep mode) then animation is stoped and
+    this method will return false even when startAnimation() was called.
  */
 bool HbMarqueeItem::isAnimating() const
 {
@@ -416,15 +390,15 @@ bool HbMarqueeItem::isAnimating() const
 }
 
 /*!
-    Starts or restarts the animation of the text.
+    Starts or restarts the animation of the text when animation is needed,
+    marquee item became/is visible and is inside of scene.
  */
 void HbMarqueeItem::startAnimation()
 {
     Q_D(HbMarqueeItem);
-    if (isVisible()) {
-        d->mAnimGroup.start();
-    }
-    d->mAnimationPending = true;
+
+    d->mUserRequestedAnimation = true;
+    d->_q_tryToResumeAnimation();
 }
 
 /*!
@@ -433,7 +407,9 @@ void HbMarqueeItem::startAnimation()
 void HbMarqueeItem::stopAnimation()
 {
     Q_D(HbMarqueeItem);
+    d->mAnimGroup.setCurrentTime(0);
     d->mAnimGroup.stop();
+    d->mUserRequestedAnimation = false;
 }
 
 /*!
@@ -467,35 +443,8 @@ void HbMarqueeItem::setLoopCount(int count)
  */
 QSizeF HbMarqueeItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
 {
-    Q_D(const HbMarqueeItem);
-
-    QSizeF size;
-
-    switch(which) {
-    case Qt::MinimumSize: {
-            if (d->content->mText.isEmpty()) {
-                return QSizeF(0.f, 0.f);
-            }
-
-            size = d->content->boundingRect().size();
-            size.setWidth(qMin( size.width() , size.height()));
-            size.setHeight(size.height());
-
-            break;
-        }
-
-    case Qt::PreferredSize: {
-            size = d->content->boundingRect().size();
-            break;
-        }
-
-    default:
-        size = HbWidgetBase::sizeHint(which, constraint);
-    }
-
-    return size;
+    return HbWidgetBase::sizeHint(which, constraint);
 }
-
 
  /*!
     \reimp
@@ -506,14 +455,7 @@ void HbMarqueeItem::changeEvent(QEvent *event)
 
     if(event->type() == HbEvent::FontChange ||
        event->type() == HbEvent::LayoutDirectionChange) {
-        d->updateTextMetaData();
-    }
-    if (event->type() == HbEvent::ThemeChanged) {
-        d->mDefaultColor = QColor();
-        if(!d->mColor.isValid()) {
-           update();
-           d->content->update();
-        }
+        d->updateAnimation();
     }
     HbWidgetBase::changeEvent(event);
 }
@@ -525,9 +467,9 @@ void HbMarqueeItem::resizeEvent(QGraphicsSceneResizeEvent *event)
 {
     Q_D(HbMarqueeItem);
     HbWidgetBase::resizeEvent(event);
-    d->updateTextMetaData();
+    d->updateAnimation();
+    d->toggleAnimation(d->mAnimationIsNeeded);
 }
-
 
 /*!
     \reimp
@@ -536,14 +478,22 @@ QVariant HbMarqueeItem::itemChange(GraphicsItemChange change, const QVariant &va
 {
     Q_D(HbMarqueeItem);
 
-    if (change == QGraphicsItem::ItemVisibleHasChanged) {
-        if (!value.toBool()) {
-            bool oldAnimationPending = d->mAnimationPending;
-            stopAnimation();
-            d->mAnimationPending = oldAnimationPending;
-        } else if (d->mAnimationPending) {
-            startAnimation();
+    switch (change) {
+    case QGraphicsItem::ItemVisibleHasChanged: {
+            HB_MARQUEE_LOG("Visible changed event:" << value.toBool())
+            d->toggleAnimation(value.toBool());
         }
+        break;
+
+    case QGraphicsItem::ItemSceneHasChanged: {
+            HB_MARQUEE_LOG("Sceane changed event")
+            d->toggleAnimation(0!=scene());
+            d->connectToMainWidow();
+        }
+        break;
+
+    default:
+        ;// nothing to do
     }
     return HbWidgetBase::itemChange(change, value);
 }
@@ -555,13 +505,11 @@ bool HbMarqueeItem::event(QEvent *e)
 {
     Q_D(HbMarqueeItem);
     if (e->type() == HbEvent::SleepModeEnter) {
-        bool oldAnimationPending = d->mAnimationPending;
-        stopAnimation();
-        d->mAnimationPending = oldAnimationPending;
+        HB_MARQUEE_LOG("Sleep Enter")
+        d->_q_temporaryStopAnimation();
     } else if (e->type() == HbEvent::SleepModeExit) {
-        if (d->mAnimationPending) {
-            startAnimation();
-        }
+        HB_MARQUEE_LOG("Sleep Exit")
+        d->_q_tryToResumeAnimation();
     }
     return HbWidgetBase::event(e);
 }
@@ -578,11 +526,7 @@ void HbMarqueeItem::setTextColor(const QColor &color)
 {
     Q_D(HbMarqueeItem);
     d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextColor, true);
-    if (d->mColor != color) {
-        d->mColor = color;
-        update();
-        d->content->update();
-    }
+    d->content->setTextColor(color);
 }
 
 /*!
@@ -594,14 +538,23 @@ void HbMarqueeItem::setTextColor(const QColor &color)
 QColor HbMarqueeItem::textColor() const
 {
     Q_D( const HbMarqueeItem );
+    return d->content->textColor();
+}
 
-    if (d->mColor.isValid()) { // Means user has set text color
-        return d->mColor;
+void HbMarqueeItem::setGeometry(const QRectF &rect)
+{
+    Q_D(HbMarqueeItem);
+
+    if (!qFuzzyCompare(d->mLastPrefWidth, d->content->preferredWidth())) {
+        d->mLastPrefWidth = d->content->preferredWidth();
+        HbWidgetBase::setGeometry(rect);
+
+        d->updateAnimation();
+        d->toggleAnimation(d->mAnimationIsNeeded);
+        return;
     }
-    if (!d->mDefaultColor.isValid()) {
-        d->mDefaultColor = HbColorScheme::color(DEFAULT_COLORGROUP);
-    }
-    return d->mDefaultColor;
+
+    HbWidgetBase::setGeometry(rect);
 }
 
 #include "moc_hbmarqueeitem.cpp"

@@ -1,15 +1,15 @@
-<layers>
-	<visual>
-	    <param name="translation_x" type="anim">
-	        <duration>0.4</duration>
-	        <style>inoutquad</style>
-	        <keyframe at="0.0">0.0</keyframe>
-	        <keyframe at="1.0">1.0</keyframe>
-	        <start ref="visual.left">1.0</start>
-	        <end ref="screen.width">1</end>
-	    </param>
-	</visual>
-</layers>
-
-
+<layers>
+	<visual>
+	    <param name="translation_x" type="anim">
+	        <duration>0.4</duration>
+	        <style>inoutquad</style>
+	        <keyframe at="0.0">0.0</keyframe>
+	        <keyframe at="1.0">1.0</keyframe>
+	        <start ref="visual.left">1.0</start>
+	        <end ref="screen.width">1</end>
+	    </param>
+	</visual>
+</layers>
+
+
 		

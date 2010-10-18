@@ -1,0 +1,12 @@
+<layers>
+	<visual src="Item" />
+	<filter name="colorize" type="colorize">
+		<param name="opacity" type="anim">
+			<duration>0.2</duration>
+			<style>linear</style>
+			<keyframe at="0.0">0.0</keyframe>
+			<keyframe at="1.0">0.9</keyframe>
+		</param>
+		<param name="color">#ff0000</param>
+	</filter>
+</layers>

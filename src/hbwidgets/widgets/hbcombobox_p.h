@@ -89,6 +89,8 @@ public:
     void showPopup( QAbstractItemModel* aModel, QModelIndex aIndex = QModelIndex( ) );
     void createDropDown( );
     void calculateListItemHeight( );
+    void resetGeometryChangeFlag( );
+    void showDismissEffect( );
 
 public:
     HbCustomLineEdit* mLineEdit;
@@ -112,6 +114,7 @@ public:
     qreal mListItemHeight;
     int mDropDownRowsInPortrait;
     int mDropDownRowsInLandscape;
+    QMap< QGraphicsWidget *, bool > widgetGeometryChange;
 };
 
 class HbComboListViewItem : public HbListViewItem
@@ -138,26 +141,13 @@ public:
     }
 
     ~HbCustomLineEdit() {
-        HbEditorInterface editorInterface( this );
-        HbVkbHost *host = editorInterface.vkbHost( );
-        if( host ) {
-            host->disconnect();
-        }
-    }
-
-    void setLongPressEnabled( bool enable = true ) {
-        if( enable ) {
-            scrollArea( )->setLongPressEnabled( true );
-        } else {
-            scrollArea( )->setLongPressEnabled( false );
-        }
     }
 
 protected:
     void focusInEvent( QFocusEvent *event ) {
         HbEditorInterface editorInterface( this );
         HbVkbHost *host = editorInterface.vkbHost( );
-        if ( host && !VkbLaunched ) {
+        if ( host && comboBoxPrivate->mDropDown && !VkbLaunched ) {
             VkbLaunched = true;
             connect( host, SIGNAL( keypadClosed (  ) ), comboBoxPrivate->mDropDown,
                 SLOT( keypadClosed(  ) ) );

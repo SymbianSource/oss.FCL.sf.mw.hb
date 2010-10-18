@@ -80,8 +80,8 @@ void HbLineEditPrivate::init()
     scrollArea->setHorizontalScrollBarPolicy(HbScrollArea::ScrollBarAlwaysOff); 
     defaultWrapMode = doc->defaultTextOption().wrapMode(); // cannot be changed.
     q->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    setBackgroundItem(HbStyle::P_LineEdit_frame_normal);
-    q->setFocusHighlight(HbStyle::P_LineEdit_frame_highlight,HbWidget::FocusHighlightActive);
+    setBackgroundItem(HbStylePrivate::P_LineEdit_frame_normal);
+    setFocusHighlight((HbStyle::Primitive)HbStylePrivate::P_LineEdit_frame_highlight,HbWidget::FocusHighlightActive);
     updateWrappingMode();
 
     Q_ASSERT(scrollArea);
@@ -114,6 +114,7 @@ void HbLineEditPrivate::updatePaletteFromTheme()
     QColor selectedColor = HbColorScheme::color("qtc_lineedit_selected");
     QColor selectedBackground = HbColorScheme::color("qtc_lineedit_marker_normal");
     QColor hintText = HbColorScheme::color("qtc_lineedit_hint_normal");
+    setCursorColor(HbColorScheme::color("qtc_lineedit_cursor"));
     QPalette pal = q->palette();
 
     if (textColor.isValid()) {
@@ -158,8 +159,7 @@ bool HbLineEditPrivate::forwardKeyEvent (QKeyEvent *event)
     }
 
     if (result) {
-        // Don not allow key events in HbLineEdit::Password or HbLineEdit::NoEcho mode
-        if (echoMode == HbLineEdit::Password || echoMode == HbLineEdit::NoEcho) {
+        if (isPasswordMode()) {
             result = false;
         }
     }

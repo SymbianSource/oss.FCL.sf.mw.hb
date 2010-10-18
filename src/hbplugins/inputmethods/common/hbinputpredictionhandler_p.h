@@ -25,6 +25,8 @@
 #ifndef HB_INPUT_PREDICTION_HANDLER_PRIVATE
 #define HB_INPUT_PREDICTION_HANDLER_PRIVATE
 
+#include <QPointer>
+
 #include "hbinputmodehandler_p.h"
 
 class HbPredictionEngine;
@@ -68,8 +70,9 @@ public:
     bool                mCanContinuePrediction;
     bool                mShowTooltip;
     Qt::KeyboardModifiers mModifiers;
-    HbInputSpellQuery *mSpellQueryDialog;
+    QPointer<HbInputSpellQuery> mSpellQueryDialog;
     bool mAutocompletionEnabled;
+    HbInputLanguage mSecLanguage;
 public:
     virtual void updateEditor();
 };

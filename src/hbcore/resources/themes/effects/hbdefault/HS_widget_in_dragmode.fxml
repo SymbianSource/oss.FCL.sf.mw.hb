@@ -1,0 +1,31 @@
+<layers>
+	<visual src="Item">
+		<param name="scale_x" type="anim">
+			<duration>0.3</duration>
+			<style>linear</style>
+			<keyframe at="0.0">1</keyframe>
+			<keyframe at="1.0">1</keyframe>
+			<start ref="visual.width">1.0</start>
+			<end ref="visual.width">1.1</end>
+		</param>
+		<param name="scale_y" type="anim">
+			<duration>0.3</duration>
+			<style>linear</style>
+			<keyframe at="0.0">1</keyframe>
+			<keyframe at="1.0">1</keyframe>
+			<start ref="visual.height">1.0</start>
+			<end ref="visual.height">1.1</end>
+		</param>
+		<param name="scale_origin_x" ref="visual.width">0.5</param>
+		<param name="scale_origin_y" ref="visual.height">0.5</param>
+	</visual>
+	<filter name="drop_shadow" type="drop_shadow">
+		<param name="offset_x">2</param>
+		<param name="offset_y">3</param>
+		<param name="opacity">0.7</param>
+		<param name="steepness">8.0</param>
+		<param name="outline_x">4.0</param>
+		<param name="outline_y">4.0</param>
+		<param name="color">#000000</param>
+	</filter>
+</layers>

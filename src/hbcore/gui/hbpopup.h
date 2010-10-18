@@ -26,16 +26,6 @@
 #ifndef HBPOPUP_H
 #define HBPOPUP_H
 
-//
-//  N O T E
-//  -------
-//
-// This class is to be called HbPopup, the base class of all popups.
-// It's merely a popup frame whose stacking order is handled by the
-// popup manager. It doesn't have heading/content widgets nor actions.
-// This functionality will be provided by the upcoming HbDialog class.
-//
-
 #include <hbglobal.h>
 #include <hbwidget.h>
 
@@ -51,6 +41,7 @@ class HB_CORE_EXPORT HbPopup : public HbWidget
                 READ isBackgroundFaded WRITE setBackgroundFaded )
     Q_PROPERTY( DismissPolicy dismissPolicy READ dismissPolicy WRITE setDismissPolicy )
     Q_PROPERTY( FrameType frameType READ frameType WRITE setFrameType )
+    Q_PROPERTY(bool fullScreen READ isFullScreen WRITE setFullScreen)
                
 public:
 
@@ -97,10 +88,10 @@ public:
     void setTimeout(HbPopup::DefaultTimeout timeout);
 
     bool isModal() const;
-    void setModal(bool enabled);
+    void setModal(bool modal);
 
-    void setBackgroundFaded(bool fadeBackground);
     bool isBackgroundFaded() const;
+    void setBackgroundFaded(bool fadeBackground);    
 
     DismissPolicy dismissPolicy() const;
     void setDismissPolicy(HbPopup::DismissPolicy dismissPolicy);
@@ -108,27 +99,30 @@ public:
     FrameType frameType() const;
     void setFrameType(HbPopup::FrameType frameType);
 
+    bool isFullScreen() const;
+    void setFullScreen(bool fullScreen);
+
     enum { Type = Hb::ItemType_Popup };
     int type() const { return Type; }
 
-    void setPreferredPos(const QPointF& position,
+    virtual void setPreferredPos(const QPointF& position,
                           HbPopup::Placement placement = HbPopup::TopLeftCorner);
 
     QPainterPath shape() const;
 
 public slots:
     void open( QObject *receiver = 0, const char *member = 0);
-    void handlePopupPos();
 
 signals:
     void aboutToShow();
     void aboutToHide();
     void aboutToClose();
+    void popupReady();
 
 protected:
     HbPopup(HbPopupPrivate &dd, QGraphicsItem *parent);
     QVariant itemChange(GraphicsItemChange change, const QVariant & value);
-
+    void polish(HbStyleParameters &params);
     void mousePressEvent(QGraphicsSceneMouseEvent *event );
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event );
 
@@ -145,7 +139,8 @@ private:
     Q_PRIVATE_SLOT(d_func(), void _q_delayedHide(HbEffect::EffectStatus status))
     Q_PRIVATE_SLOT(d_func(), void _q_orientationAboutToChange(Qt::Orientation orient, bool animate))
     Q_PRIVATE_SLOT(d_func(), void _q_orientationChanged())
-	Q_PRIVATE_SLOT(d_func(), void _q_appearEffectEnded(HbEffect::EffectStatus status))
+    Q_PRIVATE_SLOT(d_func(), void _q_appearEffectEnded(HbEffect::EffectStatus status))
+    Q_PRIVATE_SLOT(d_func(), void _q_maskEffectDestroyed())
 #endif // HB_EFFECTS
     Q_PRIVATE_SLOT(d_func(), void _q_timeoutFinished())
 };

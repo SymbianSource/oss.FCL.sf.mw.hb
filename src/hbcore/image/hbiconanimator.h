@@ -61,6 +61,8 @@ public:
         QIcon::Mode mode = QIcon::Normal,
         QIcon::State state = QIcon::Off) const;
 
+    void setLoopCount(int loopCount);
+
 public slots:
     void startAnimation();
     void stopAnimation();

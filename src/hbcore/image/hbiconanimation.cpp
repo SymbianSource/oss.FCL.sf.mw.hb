@@ -161,6 +161,20 @@ void HbIconAnimation::setRenderSize(const QSizeF &size)
     mRenderSize = size;
 }
 
+void HbIconAnimation::setLoopCount(int loopCount)
+{
+    Q_UNUSED(loopCount);
+    // Nothing to do here, some subclasses may want to reimplement this in case
+    // they want to offer support to the user for manually controlling the loop
+    // behavior.
+}
+
+bool HbIconAnimation::loopCountSet(int *loopCount)
+{
+    Q_UNUSED(loopCount);
+    return false;
+}
+
 bool HbIconAnimation::mirrored() const
 {
     return mMirrored;
@@ -188,7 +202,7 @@ HbIconAnimationDefinition::PlayMode HbIconAnimation::playMode() const
 
 void HbIconAnimation::setPlayMode(HbIconAnimationDefinition::PlayMode playMode)
 {
-    this->mPlayMode = playMode;
+    mPlayMode = playMode;
 }
 
 void HbIconAnimation::delayedEmitStarted()
@@ -321,7 +335,8 @@ HbIconAnimationImage::HbIconAnimationImage(
     mImageRenderer(renderer),
     mIconFileName(iconFileName),
     mType(type),
-    mTimerEntry(0)
+    mTimerEntry(0),
+    mDoNotResetLoopCount(false)
 {
     // This class supports these types
     Q_ASSERT(mType == MNG || mType == GIF);
@@ -335,6 +350,10 @@ HbIconAnimationImage::HbIconAnimationImage(
 
     // Set default size based on the first frame
     setDefaultSize(mCurrentFrame.size());
+
+    // Get the loop count. -1 means infinite loop.
+    mLoopCount = mImageRenderer->loopCount();
+    mCustomLoopCountSet = false;
 
     // Do not start the timer or initiate any signal emission here.
     // Do it in start() instead, since mFresh is true by default.
@@ -382,6 +401,17 @@ void HbIconAnimationImage::start()
         mImageRenderer = 0;
         mImageRenderer = new QImageReader(mIconFileName, mType == MNG ? "MNG" : "GIF");
 
+        if (mDoNotResetLoopCount) {
+            mDoNotResetLoopCount = false;
+        } else {
+            // Reset the loop count.
+            if (mCustomLoopCountSet) {
+                mLoopCount = mCustomLoopCount;
+            } else {
+                mLoopCount = mImageRenderer->loopCount();
+            }
+        }
+
         // New image reader starts from the first frame. Handle animation update.
         notifyAnimationStarted();
         handleAnimationUpdated();
@@ -408,6 +438,9 @@ void HbIconAnimationImage::stop()
             QImage img = mImageRenderer->read();
             // Reached last frame?
             if (!mImageRenderer->canRead()) {
+                // Must get rid of the old pixmap first, in case of very large frames
+                // keeping both the old and new frame in memory would not succeed.
+                mCurrentFrame = QPixmap(); // This call is not superfluous.
                 mCurrentFrame = QPixmap::fromImage(img);
                 mLastFrame = mCurrentFrame;
                 break;
@@ -468,6 +501,23 @@ QPixmap HbIconAnimationImage::currentFrame() const
     }
 }
 
+void HbIconAnimationImage::setLoopCount(int loopCount)
+{
+    // By default we use whatever value QImageReader::loopCount() returned.
+    // However we also offer the possibility to override it manually at any
+    // time.
+    mLoopCount = mCustomLoopCount = loopCount;
+    mCustomLoopCountSet = true;
+}
+
+bool HbIconAnimationImage::loopCountSet(int *loopCount)
+{
+    if (loopCount && mCustomLoopCountSet) {
+        *loopCount = mCustomLoopCount;
+    }
+    return mCustomLoopCountSet;
+}
+
 void HbIconAnimationImage::handleAnimationUpdated()
 {
     bool finished = false;
@@ -486,6 +536,11 @@ void HbIconAnimationImage::handleAnimationUpdated()
 
     // Store the new frame in the current frame pixmap
     if (!img.isNull()) {
+        // Must get rid of the old pixmap first, in case of very large frames
+        // keeping both the old and new frame in memory would not succeed.
+        // (with the OpenVG paint engine QPixmap will create a new QImage if
+        // the pixel format is different and it will be different here...)
+        mCurrentFrame = QPixmap(); // This call is not superfluous.
         mCurrentFrame = QPixmap::fromImage(img);
     }
     // Reached the last frame. Store it so it can be used by stop().
@@ -502,7 +557,16 @@ void HbIconAnimationImage::handleAnimationUpdated()
     emit animationUpdated();
 
     if (finished) {
-        notifyAnimationFinished();
+        if (mLoopCount == 0) {
+            notifyAnimationFinished();
+        } else {
+            finished = false;
+            if (mLoopCount > 0) {
+                --mLoopCount;
+            }
+            mDoNotResetLoopCount = true;
+            start();
+        }
     }
 }
 
@@ -511,7 +575,9 @@ HbIconAnimationFrameSet::HbIconAnimationFrameSet(
     HbIconAnimation(animator, iconName),
     mFrames(frames),
     mCurrentFrameIndex(0),
-    mTimerEntry(0)
+    mTimerEntry(0),
+    mManualLoopingSet(false),
+    mManualLooping(false)
 {
     // Do not start the timer or initiate any signal emission here.
     // Do it in start() instead, since mFresh is true by default.
@@ -615,6 +681,24 @@ QPixmap HbIconAnimationFrameSet::currentFrame() const
     }
 }
 
+void HbIconAnimationFrameSet::setLoopCount(int loopCount)
+{
+    // Here we only support manually enabling/disabling infinite looping.
+    // (so effectively loop count should be -1 or 0) Positive values are
+    // treated as do-not-loop, i.e. zero. This is because explicit loop
+    // counts are not supported by axml.
+    mManualLoopingSet = true;
+    mManualLooping = loopCount < 0; // -1 means loop for ever
+}
+
+bool HbIconAnimationFrameSet::loopCountSet(int *loopCount)
+{
+    if (loopCount && mManualLoopingSet) {
+        *loopCount = mManualLooping ? -1 : 0;
+    }
+    return mManualLoopingSet;
+}
+
 void HbIconAnimationFrameSet::moveToNextFrame()
 {
     if (mCurrentFrameIndex >= 0 && mCurrentFrameIndex < mFrames.count()) {
@@ -656,7 +740,11 @@ void HbIconAnimationFrameSet::animationTimeout()
     // and looping is enabled. Change to the last valid frame and
     // finish if looping is disabled.
     if (mCurrentFrameIndex >= mFrames.count()) {
-        if (playMode() == HbIconAnimationDefinition::Loop) {
+        bool looping = playMode() == HbIconAnimationDefinition::Loop;
+        if (mManualLoopingSet) {
+            looping = mManualLooping;
+        }
+        if (looping) {
             mCurrentFrameIndex = 0;
         } else {
             finished = true;

@@ -326,9 +326,7 @@ void HbGridLayoutPrivate::removeItem(QGraphicsLayoutItem *item, int index, bool 
         AnimationData *itemData = mAnimatedItems.at(i);
         if (itemData->item == item->graphicsItem()) {
             stopAnimation(itemData);
-        } 
-        
-        if (itemData->startItem == item) {
+        } else if (itemData->startItem == item) {
             itemData->startItem = 0;
         }
     }
@@ -449,9 +447,9 @@ void HbGridLayoutPrivate::_q_timerUpdate(bool updateProgress)
                     QRectF extRect(data->startScenePos, data->item->boundingRect().size());
                     HbEffect::start(data->item, "gridviewitem", "reposition", q_ptr, "effectFinished", QVariant(), extRect);
                 } else {
-	                data->startDelay -= ANIMATION_DELAY_RESOLUTION;
+                    data->startDelay -= ANIMATION_DELAY_RESOLUTION;
                     stopTimer = false;
-			    }
+                }
             } else {
                 QPointF delta = data->startPos - data->item->pos();
                 data->item->setTransform(QTransform::fromTranslate(delta.x(), delta.y()), false);

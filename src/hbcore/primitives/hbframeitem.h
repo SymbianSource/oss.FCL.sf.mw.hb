@@ -66,6 +66,7 @@ public:
 protected:
     void changeEvent(QEvent *event);
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint) const;
+    QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
 private:
     Q_DISABLE_COPY(HbFrameItem)

@@ -26,32 +26,51 @@
 #include "hbinputvirtualkeyboard.h"
 
 /*!
-\proto
+@stable
+@hbcore
 \class HbVirtualKeyboard
-\brief Abstract base class for virtual keyboards.
+\brief The HbVirtualKeyboard class is an abstract base class for virtual keyboards.
 
-This class is an abstract base class for virtual keyaboards. It is
-not reponsible for the visual appearance of the keyboard, but contains methods that HbVkbHost
-class needs when interacting with the keyboard. The actual Qt widget inheriting from this
-class will fill and layout the keyboard contents.
+This class is an abstract base class for virtual keyboards. It is not responsible
+for the visual appearance of the keyboard, but contains methods that the HbVkbHost
+class needs when interacting with the keyboard. The concrete widget inheriting
+from this class will fill and define the layout for the keyboard contents.
 
-The virtual keyboard host calls aboutToOpen() method when it is about to open the keyboard
+The virtual keyboard host calls aboutToOpen() when it is about to open the keyboard
 and aboutToClose() when it is about to close it. Similarly, it calls keyboardOpened()
-and keyboardClosed() methods when open and close operations have been completed.
+and keyboardClosed() when the open and close operations have been completed.
 
 Every time the host runs keyboard related animations, it calls keyboardAnimationFrame()
-method after each frame so that that the keyboard widget has possibility to run local animation
-effects inside the widget if needed.
+after each frame so that that the keyboard widget has the possibility of running
+local animation effects inside the widget if needed.
+
+See \ref vkbHandling "virtual keyboard handling guide" for more information
 
 \sa HbVkbHost
+*/
+
+
+/*!
+\enum HbVirtualKeyboard::HbVkbAnimationType
+Specifies known virtual keyboard animation types.
+*/
+
+/*!
+\var HbVirtualKeyboard::HbVkbAnimOpen
+Animation type for virtual keyboard opening.
+*/
+
+/*!
+\var HbVirtualKeyboard::HbVkbAnimClose
+Animation type for virtual keyboard closing.
 */
 
 /*!
 \fn void HbVirtualKeyboard::aboutToOpen(HbVkbHost *host)
 
-HbVkbHost calls this method right before keyboard becomes visible.
-Virtual keyboard widget can then do any last minute initializations
-if needed. The default implementation is empty.
+HbVkbHost calls this function right before the keyboard becomes visible.
+The virtual keyboard widget can then do any last minute initializations
+if needed.
 
 \sa HbVkbHost
 */
@@ -59,9 +78,8 @@ if needed. The default implementation is empty.
 /*!
 \fn void HbVirtualKeyboard::aboutToClose(HbVkbHost *host)
 
-HbVkbHost calls this method right before keyboard becomes visible.
-Virtual keyboard widget can then do any cleaning operations it needs to do.
-The default implemntation is empty.
+HbVkbHost calls this function right before keyboard is closed.
+The virtual keyboard widget can then do any cleaning operations it needs to do.
 
 \sa HbVkbHost
 */
@@ -69,8 +87,8 @@ The default implemntation is empty.
 /*!
 \fn void HbVirtualKeyboard::keyboardOpened(HbVkbHost *host)
 
-HbVkbHost calls this method when the keyboard open operation is finished and the keyboard is
-visible on the screen in its final position. The default implementation is empty.
+HbVkbHost calls this function when the keyboard opening operation is finished
+and the keyboard is visible on the screen in its final position.
 
 \sa HbVkbHost
 */
@@ -78,28 +96,40 @@ visible on the screen in its final position. The default implementation is empty
 /*!
 \fn void HbVirtualKeyboard::keyboardClosed(HbVkbHost *host)
 
-HbVkbHost calls this method when keyboard closing operation is finished and the keyboard is not
-visible on the screen anymore. The deafult implementation is empty.
+HbVkbHost calls this function when the keyboard closing operation is finished
+and the keyboard is no longer visible on the screen.
 */
 
 /*!
-\fn void HbVirtualKeyboard::keyboardMinimized(HbVkbHost *host)
-
-HbVkbHost calls this method when keyboard minimizing operation is finished and only the close bar
-is visible on the keypad. The deafult implementation is empty.
+\fn QSizeF HbVirtualKeyboard::preferredKeyboardSize()
+Returns the size of the preferred keyboard.
 */
-
-/*!
-\fn QSizeF HbVirtualKeyboard::minimizedKeyboardSize()
-The vkb host queries the size of minimized keyboard through this method.
-*/
-
+ 
 /*!
 \fn void HbVirtualKeyboard::keyboardAnimationFrame(HbVkbAnimationType type, qreal x)
 
-Vkb host calls this method when keyboard animation frame is drawn. Keyboard widget may then
-animate its contents if needed. Parameter type specifies animation type and value
-x is animation phase (between 0.0 and 1.0). The default implementation is empty.
+HbVkbHost calls this function when the keyboard animation frame is drawn.
+The keyboard widget may then animate its contents if needed. Parameter \a type
+specifies the animation type and value \a x is the animation phase (between 0.0 and 1.0).
+*/
+
+/*!
+\fn HbKeyboardType HbVirtualKeyboard::keyboardType() const
+
+Returns the keyboard type. See file \c hbinputdef.h for the possible HbKeyboardType values. 
+The default implementation returns HbKeyboardNone.
+*/
+
+/*!
+\fn QWidget * HbVirtualKeyboard::asWidget()
+
+Returns a QWidget pointer to the virtual keyboard widget.
+*/
+
+/*!
+\fn QGraphicsWidget * HbVirtualKeyboard::asGraphicsWidget()
+
+Returns a QGraphicsWidget pointer to the virtual keyboard widget.
 */
 
 // End of file

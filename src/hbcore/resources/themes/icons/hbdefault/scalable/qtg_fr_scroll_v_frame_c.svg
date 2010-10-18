@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="10px" version="1.1" viewBox="0 0 10 10" width="10px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
-<rect fill="none" height="10" width="10"/>
-<rect fill-opacity="0.35" height="10" stroke-opacity="0.35" width="6" x="2"/>
-<rect fill="none" height="10" width="10"/>
-<rect fill-opacity="0.1" height="10" stroke-opacity="0.1" width="1" x="2"/>
-<rect fill-opacity="0.1" height="10" stroke-opacity="0.1" width="1" x="7"/>
+<svg baseProfile="tiny" height="15px" version="1.1" viewBox="0 0 15 15" width="15px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<g>
+<rect fill="#FFFFFF" fill-rule="evenodd" height="15" width="15"/>
+<rect fill="#A5A5A5" fill-rule="evenodd" height="15" width="12" x="1.5"/>
+<rect fill-opacity="0.1" height="15" stroke-opacity="0.1" width="1.499" x="1.5"/>
+<rect fill-opacity="0.1" height="15" stroke-opacity="0.1" width="1.499" x="12.001"/>
+</g>
 </svg>

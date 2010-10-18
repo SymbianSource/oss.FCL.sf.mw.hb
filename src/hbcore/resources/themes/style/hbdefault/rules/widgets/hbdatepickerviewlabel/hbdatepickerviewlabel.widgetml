@@ -1,0 +1,8 @@
+<hbwidget version="0.1" type="HbDatePickerViewLabel">
+	<layout name="default" type="mesh">
+		<meshitem src="text" srcEdge="TOP" dst="" dstEdge="TOP" />
+		<meshitem src="text" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+		<meshitem src="text" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+		<meshitem src="text" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+	</layout>
+</hbwidget>

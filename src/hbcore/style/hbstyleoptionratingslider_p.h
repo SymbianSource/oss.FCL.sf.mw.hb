@@ -32,21 +32,21 @@
 class HB_CORE_PRIVATE_EXPORT HbStyleOptionRatingSlider : public  HbStyleOption
 {
 public:
-	HbStyleOptionRatingSlider();
-	HbStyleOptionRatingSlider(const HbStyleOptionRatingSlider &other);
-	~HbStyleOptionRatingSlider();
+    HbStyleOptionRatingSlider();
+    HbStyleOptionRatingSlider(const HbStyleOptionRatingSlider &other);
+    ~HbStyleOptionRatingSlider();
 public:
     enum StyleOptionType { Type = HbSO_RatingSlider };
     enum StyleOptionVersion { Version = 1 };
 
-	int progressValue;
-	bool inverted;
-	int noOfIntervals;
-	int noOfStars;
-	QString unRatedGraphicsName;
-	QString ratedGraphicsName;
+    int progressValue;
+    bool inverted;
+    int noOfIntervals;
+    int noOfStars;
+    QString unRatedGraphicsName;
+    QString ratedGraphicsName;
     bool disableState;
-	bool pressedState;
+    bool pressedState;
 };
 
 #endif 

@@ -23,9 +23,8 @@
 **
 ****************************************************************************/
 
-#include "hbgestures_p.h"
 #include "hbswipegesture.h"
-#include "hbswipegesture_p.h"
+#include "hbgestures_p.h"
 #include "hbglobal_p.h"
 #include <QPointF>
 #include <QVariant>
@@ -121,6 +120,7 @@ HbSwipeGesture::HbSwipeGesture(QObject *parent)
 
 {   
     d_ptr->mSceneSwipeAngle = 0;
+    d_ptr->mTime.start();
 }
 
 /*!
@@ -191,45 +191,4 @@ qreal HbSwipeGesture::sceneSwipeAngle() const
 void HbSwipeGesture::setSceneSwipeAngle(qreal value)
 {
     d_ptr->mSceneSwipeAngle = value;
-}
-
-
-/*!
-    \deprecated
-    Returns the speed.
-*/
-qreal HbSwipeGesture::speed() const
-{    
-    HB_DEPRECATED("HbSwipeGesture::speed is deprecated");
-    return 1;
-}
-
-/*!
-    \deprecated
-    Sets the speed.
-*/
-void HbSwipeGesture::setSpeed(qreal speed)
-{
-    Q_UNUSED (speed);
-    HB_DEPRECATED("HbSwipeGesture::setSpeed is deprecated");
-}
-
-/*!
-    \deprecated
-    Returns the touchPointCount.
-*/
-int HbSwipeGesture::touchPointCount() const
-{
-    HB_DEPRECATED("HbSwipeGesture::touchPointCount is deprecated");
-    return 0;
-}
-
-/*!
-    \deprecated
-    Sets the touchPointCount.
-*/
-void HbSwipeGesture::setTouchPointCount(int touchPointCount)
-{
-    HB_DEPRECATED("HbSwipeGesture::setTouchPointCount is deprecated");
-    Q_UNUSED(touchPointCount)
 }

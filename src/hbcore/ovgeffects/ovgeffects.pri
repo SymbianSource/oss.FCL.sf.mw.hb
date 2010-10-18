@@ -33,9 +33,9 @@ DEPENDPATH += $$PWD
 contains(DEFINES, HB_EFFECTS_OPENVG) {
     QT *= openvg
     !isEmpty(QMAKE_LIBS_OPENVG) {
-        LIBS += $$QMAKE_LIBS_OPENVG
+        LIBS += $$QMAKE_LIBS_OPENVG $$QMAKE_LIBS_EGL
     } else {
-        symbian: LIBS += -llibopenvg -llibopenvgu
+        symbian: LIBS += -llibopenvg -llibopenvgu -llibegl
         else:win32-msvc*: LIBS += -llibopenvg
         else: LIBS += -lopenvg
     }

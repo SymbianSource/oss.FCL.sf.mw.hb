@@ -57,18 +57,22 @@ struct HbIconLoadingParams {
     QString cleanIconName;
     // Resolved filename for the icon
     QString iconFileName;
-    // Pixmap where the icon is rasterized
-    QPixmap canvasPixmap;
+    // Image where the icon is rasterized
+    QImage image; // cannot use QPixmap, must support non-gui threads too
     // Icon's rendering mode ( Hardware / Software )
     HbRenderingMode renderMode;
 };
+
+Q_DECLARE_METATYPE(HbIconLoadingParams)
 
 class HB_AUTOTEST_EXPORT HbIconImplCreator
 {
 public:
     static HbIconImpl *createIconImpl(HbSharedIconInfo &iconImplInfo,
                                       HbIconLoadingParams &params);
+
+    static HbIconImpl *createIconImpl(const QPixmap &pixmap,
+                                      HbIconLoadingParams &params);
 };
 
 #endif  //HBICONIMPLCREATOR_P_H
-

@@ -61,12 +61,22 @@ const char *last_lang_key = "lastlang";
 const char *last_file_count_key = "lastfilecount";
 const char *last_output_dir_key = "lastoutdir";
 
+// Using invokeMethod with QueuedConnection is not good enough as it can
+// cause starvation for Symbian active objects (at least in Qt versions
+// before 4.7.2) so the theme change notification would get delayed until
+// an entire regeneration cycle is finished, which is not acceptable. So
+// use a QTimer with a small timeout instead. A small delay is beneficial
+// anyway to divide the load a bit better so perf does not drop that much
+// in apps while regeneration is on-going.
+#define NEXT_STAGE(obj, func) QTimer::singleShot(10, this, SLOT(func()))
+
 HbSplashGenerator::HbSplashGenerator()
     : mMainWindowLocked(false),
       mProcessQueuePending(false),
       mForceRegen(false),
       mMainWindow(0),
-      mFirstRegenerate(true)
+      mFirstRegenerate(true),
+      mSaveSplFailed(false)
 {
 #if defined(Q_OS_SYMBIAN)
     CCoeEnv::Static()->FsSession().CreatePrivatePath(EDriveC);
@@ -107,7 +117,7 @@ static void log(const QString &msg, const QString &theme = QString(), int orient
 {
     const char *fmt = PRE " %s ('%s' '%s')";
     QString oriName = orientationName(static_cast<Qt::Orientation>(orientation));
-    qDebug(fmt, qPrintable(msg), qPrintable(theme), qPrintable(oriName));
+    splDebug(fmt, qPrintable(msg), qPrintable(theme), qPrintable(oriName));
 }
 
 // To be called on startup and after each fully completed regeneration.
@@ -123,12 +133,14 @@ int HbSplashGenerator::updateOutputDirContents(const QString &outDir)
 void HbSplashGenerator::start(bool forceRegen)
 {
     mForceRegen = forceRegen;
+    // Let's have a certain delay for better load balancing during
+    // boot. It is not strictly required, though.
     QTimer::singleShot(5000, this, SLOT(doStart()));
 }
 
 void HbSplashGenerator::doStart()
 {
-    qDebug() << PRE << "accessing theme";
+    splDeb() << PRE << "accessing theme";
     // Start listening to the theme-change-finished signal.
     HbTheme *theme = hbInstance->theme();
     connect(theme, SIGNAL(changeFinished()), SLOT(regenerate()));
@@ -144,6 +156,12 @@ void HbSplashGenerator::doStart()
         }
     }
 
+    // Regenerate screens, if needed.
+    scheduleRegen();
+}
+
+void HbSplashGenerator::scheduleRegen()
+{
     // Regenerate screens on startup only when the theme, the language, the
     // number of files in the splash screen directory, or the splash screen
     // directory path is different than the recorded values. (or when
@@ -152,7 +170,7 @@ void HbSplashGenerator::doStart()
     QString lastLang = mSettings->value(QLatin1String(last_lang_key)).toString();
     int lastFileCount = mSettings->value(QLatin1String(last_file_count_key)).toInt();
     QString lastOutputDir = mSettings->value(QLatin1String(last_output_dir_key)).toString();
-    QString currentTheme = theme->name();
+    QString currentTheme = hbInstance->theme()->name();
     QString currentLang = QLocale::system().name();
     QString currentOutputDir = hbsplash_output_dir();
     int currentFileCount = updateOutputDirContents(currentOutputDir);
@@ -164,7 +182,8 @@ void HbSplashGenerator::doStart()
             || currentLang != lastLang
             || currentFileCount != lastFileCount
             || currentOutputDir != lastOutputDir) {
-        QMetaObject::invokeMethod(this, "regenerate", Qt::QueuedConnection);
+        NEXT_STAGE(this, regenerate);
+        mForceRegen = false;
     }
 }
 
@@ -174,6 +193,17 @@ void HbSplashGenerator::uncachedRegenerate()
     // parsed again.
     mParsedSplashmls.clear();
     regenerate();
+}
+
+inline void delete_splash_screens()
+{
+    QDir outDir(hbsplash_output_dir());
+    if (outDir.exists()) {
+        QStringList names = outDir.entryList(QStringList() << "*", QDir::Files);
+        foreach(const QString & name, names) {
+            outDir.remove(name);
+        }
+    }
 }
 
 void HbSplashGenerator::regenerate()
@@ -186,17 +216,12 @@ void HbSplashGenerator::regenerate()
             QTime queuePrepTime;
             queuePrepTime.start();
             // Delete existing splash screens. This is important because apps
-            // should never pick up a screen with the previous theme or
-            // language. If the generation of the new screens (at least the
-            // empty view) has not finished when a new app is started then it is
-            // better to show no splash screen at all.
-            QDir outDir(hbsplash_output_dir());
-            if (outDir.exists()) {
-                QStringList names = outDir.entryList(QStringList() << "*", QDir::Files);
-                foreach(const QString & name, names) {
-                    outDir.remove(name);
-                }
-            }
+            // should never pick up a screen with the previous theme or language
+            // (not even when generating screens with the new theme fails). If
+            // the generation of the new screens (at least the empty view) has
+            // not finished when a new app is started then it is better to show
+            // no splash screen at all.
+            delete_splash_screens();
             // Clear the queue, generating screens with a non-current theme is
             // not possible anyway.
             mQueue.clear();
@@ -214,14 +239,28 @@ void HbSplashGenerator::regenerate()
             mQueue.enqueue(QueueItem(themeName, Qt::Horizontal));
             queueAppSpecificItems(themeName, Qt::Vertical);
             queueAppSpecificItems(themeName, Qt::Horizontal);
-            qDebug() << PRE << "queue preparation time (ms):" << queuePrepTime.elapsed();
-            QMetaObject::invokeMethod(this, "processQueue", Qt::QueuedConnection);
+            mSaveSplFailed = false;
+            // If a previous regenerate is on-going, the mainwindow is locked
+            // and we will not get to process the new queue entries before the
+            // one screen, that is in progress, is done. However that one last
+            // screen must not be rendered and written to file. To indicate
+            // this, use a flag in the first queue entry.
+            //
+            // Note that removing the metacalls or timers is not an option as
+            // that would lead to possibly leaving the mainwindow locked (and we
+            // must never unlock it "manually" as it may be locked by some other
+            // entity, e.g. the statusbar generator), so we have to let the last
+            // screen to finish normally (excluding rendering and storage).
+            mQueue.head().mFirstInRegen = true;
+            splDeb() << PRE << "queue preparation time (ms):" << queuePrepTime.elapsed();
+            NEXT_STAGE(this, processQueue);
         } catch (const std::bad_alloc &) {
             cleanup();
         }
     }
 }
 
+// This function is for the splashviewer tool only, do not use from elsewhere.
 void HbSplashGenerator::regenerateOne(const QString &splashmlFileName, const QString &customTrDir)
 {
     mQueue.clear();
@@ -236,7 +275,7 @@ void HbSplashGenerator::regenerateOne(const QString &splashmlFileName, const QSt
     mQueue.enqueue(item); // generate it regardless of the fixed orientation setting
     item.mOrientation = Qt::Horizontal;
     mQueue.enqueue(item);
-    QMetaObject::invokeMethod(this, "processQueue", Qt::QueuedConnection);
+    NEXT_STAGE(this, processQueue);
 }
 
 QImage HbSplashGenerator::renderView()
@@ -257,13 +296,13 @@ QImage HbSplashGenerator::renderView()
     image.fill(QColor(Qt::transparent).rgba());
     QPainter painter(&image);
     mMainWindow->render(&painter);
-    qDebug() << PRE << "rendering time (ms):" << t.elapsed();
+    splDeb() << PRE << "rendering time (ms):" << t.elapsed();
     return image;
 }
 
 void HbSplashGenerator::processQueue()
 {
-    qDebug() << PRE << "processQueue()";
+    splDeb() << PRE << "processQueue()";
     // If the queue is empty then the splash regeneraton is complete so store
     // the current theme and language names as the last fully processed ones in
     // the settings and stop.
@@ -272,17 +311,36 @@ void HbSplashGenerator::processQueue()
         mSettings->setValue(last_theme_key, hbInstance->theme()->name());
         mSettings->setValue(last_lang_key, QLocale::system().name());
         QString outDir = hbsplash_output_dir();
-        mSettings->setValue(last_file_count_key, updateOutputDirContents(outDir));
+        // Notify the server and get the number of generated files...
+        int fileCount = updateOutputDirContents(outDir);
+        // ...but store zero if some file writing failed at some point
+        // so there will be a regeneration on next boot at least.
+        if (mSaveSplFailed) {
+            qWarning() << PRE << "some files not ok, ignoring file count";
+            fileCount = 0;
+            // Waiting until next boot is not always the best solution so try
+            // again a bit later. This has to be limited, though, to prevent
+            // continously flooding the system with regenerate requests in case
+            // of an unusable drive. So retry only for a limited number of
+            // times, if all else fails we will try again on next boot.
+            static int retriesLeft = 3;
+            if (retriesLeft-- > 0) {
+                QTimer::singleShot(60000, this, SLOT(scheduleRegen())); // 1 min
+            }
+        } else {
+            splDeb() << PRE << "all files ok";
+        }
+        mSettings->setValue(last_file_count_key, fileCount);
         mSettings->setValue(last_output_dir_key, outDir);
         emit finished();
-        qDebug() << PRE << "processQueue() over";
+        splDeb() << PRE << "processQueue() over";
         return;
     }
     // If a previous splash generation is still in progress or a compositor is
     // working then do nothing.
     if (!lockMainWindow()) {
         mProcessQueuePending = true;
-        qDebug() << PRE << "still busy  processQueue() over";
+        splDeb() << PRE << "still busy  processQueue() over";
         return;
     }
     try {
@@ -293,20 +351,23 @@ void HbSplashGenerator::processQueue()
 
         ensureMainWindow();
         mMainWindow->setOrientation(mItem.mOrientation, false);
-        qDebug() << PRE << "mainwindow init time (ms):" << mItemTime.elapsed();
+        splDeb() << PRE << "mainwindow init time (ms):" << mItemTime.elapsed();
 
         QTime setupTime;
         setupTime.start();
         setupAppSpecificWindow();
-        finishWindow();
-        qDebug() << PRE << "content setup time(ms):" << setupTime.elapsed();
+        splDeb() << PRE << "content setup time (ms):" << setupTime.elapsed();
 
-        QMetaObject::invokeMethod(this, "processWindow", Qt::QueuedConnection);
+        // The async call chain goes like this:
+        // processQueue -> finishWindow -> processWindow -> processQueue -> ...
+        // finishWindow() cannot be called directly from here because that would
+        // result in asserts in QGraphicsScene with certain Qt versions.
+        NEXT_STAGE(this, finishWindow);
 
     } catch (const std::bad_alloc &) {
         cleanup();
     }
-    qDebug() << PRE << "processQueue() over";
+    splDeb() << PRE << "processQueue() over";
 }
 
 HbMainWindow *HbSplashGenerator::ensureMainWindow()
@@ -317,7 +378,9 @@ HbMainWindow *HbSplashGenerator::ensureMainWindow()
         mMainWindow = new HbMainWindow(0, Hb::WindowFlagFixedVertical);
         // Make sure that at least the 1st phase of the delayed
         // construction is done right now.
-        HbMainWindowPrivate::d_ptr(mMainWindow)->_q_delayedConstruction();
+        HbMainWindowPrivate *mwd = HbMainWindowPrivate::d_ptr(mMainWindow);
+        mwd->_q_delayedConstruction();
+        mwd->mStatusBar->startClockTimer(); // may not start otherwise as it gets no visibility events
     }
     return mMainWindow;
 }
@@ -325,9 +388,11 @@ HbMainWindow *HbSplashGenerator::ensureMainWindow()
 void HbSplashGenerator::processWindow()
 {
     // Take the screenshot, remove content, and move on to the next request in the queue.
-    log("processWindow()  rendering splash screen", mItem.mThemeName, mItem.mOrientation);
-    takeScreenshot();
-    qDebug() << PRE << "total time for screen (ms):" << mItemTime.elapsed();
+    if (!newRegenPending()) {
+        log("processWindow()  rendering splash screen", mItem.mThemeName, mItem.mOrientation);
+        takeScreenshot();
+        splDeb() << PRE << "total time for screen (ms):" << mItemTime.elapsed();
+    }
 
     QList<HbView *> views = mMainWindow->views();
     foreach(HbView * view, views) {
@@ -337,7 +402,7 @@ void HbSplashGenerator::processWindow()
     clearTranslators();
 
     unlockMainWindowInternal();
-    QMetaObject::invokeMethod(this, "processQueue", Qt::QueuedConnection);
+    NEXT_STAGE(this, processQueue);
     log("processWindow() over", mItem.mThemeName, mItem.mOrientation);
 }
 
@@ -356,15 +421,20 @@ void HbSplashGenerator::takeScreenshot()
         QTime t;
         t.start();
         QString splashFile = splashFileName();
-        qDebug() << PRE << "saving to" << splashFile;
+        splDeb() << PRE << "saving to" << splashFile;
         if (saveSpl(splashFile, image, mItem.mFlagsToStore)) {
 #if !defined(Q_OS_SYMBIAN) && defined(QT_DEBUG)
             image.save(splashFile + QLatin1String(".png"));
 #endif
         } else {
             qWarning() << PRE << "file write failed for" << splashFile;
+            mSaveSplFailed = true;
+            // After setting the fail flag, clear the queue to stop processing
+            // further screens because file writes would probably fail anyway.
+            // Instead, processQueue() will schedule a retry at a later time.
+            mQueue.clear();
         }
-        qDebug() << PRE << "save time (ms):" << t.elapsed();
+        splDeb() << PRE << "save time (ms):" << t.elapsed();
         log("takeScreenshot() over", mItem.mThemeName, mItem.mOrientation);
     } catch (const std::bad_alloc &) {
         cleanup();
@@ -375,11 +445,29 @@ QString HbSplashGenerator::splashFileName()
 {
     QString outDirName = hbsplash_output_dir();
     QDir dir(outDirName);
+#ifdef Q_OS_SYMBIAN
+    // Do not use QDir::mkpath() on Symbian. It is not able to create the
+    // 'private' directory itself in case it does not exist (which is possible
+    // during first boot because splashgen is started relatively early and the
+    // eMMC may be totally empty at that point). RFs::MkDirAll() works better in
+    // this respect.
+    QString nativeOutPath = QDir::toNativeSeparators(outDirName);
+    if (!nativeOutPath.endsWith('\\')) {
+        nativeOutPath.append('\\');
+    }
+    TPtrC nativeOutPathDes(static_cast<const TUint16 *>(nativeOutPath.utf16()),
+                           nativeOutPath.length());
+    TInt err = CCoeEnv::Static()->FsSession().MkDirAll(nativeOutPathDes);
+    if (err != KErrNone && err != KErrAlreadyExists) {
+        qWarning() << PRE << "MkDirAll failed with" << err << "for" << nativeOutPath;
+    }
+#else
     if (!dir.exists()) {
-        if (!QDir(".").mkdir(outDirName)) {
-            qWarning() << PRE << "mkdir failed for" << outDirName;
+        if (!QDir(".").mkpath(outDirName)) {
+            qWarning() << PRE << "mkpath failed for" << outDirName;
         }
     }
+#endif
     // "splash_<orientation>_<appid>_<screenid>"
     QString splashFile = dir.filePath("splash_");
     splashFile.append(orientationName(mItem.mOrientation));
@@ -409,9 +497,22 @@ bool HbSplashGenerator::saveSpl(const QString &nameWithoutExt, const QImage &ima
         f.write((char *) &bpl, sizeof(quint32));
         f.write((char *) &fmt, sizeof(qint32));
         f.write((char *) &extra, sizeof(quint32));
-        f.write((const char *) image.bits(), bpl * h);
+#ifdef HB_SPLASH_COMPRESSION
+        QTime t;
+        t.start();
+        QByteArray compData = qCompress((const uchar *) image.bits(), bpl * h);
+        quint32 len = compData.size();
+        splDeb() << PRE << "compressed" << bpl * h << "to" << len << "in" << t.elapsed() << "ms";
+        f.write((char *) &len, sizeof(quint32));
+        qint64 wcount = f.write(compData.constData(), len);
+#else
+        quint32 len = 0; // 0 compressed length indicates uncompressed data
+        f.write((char *) &len, sizeof(quint32));
+        len = bpl * h;
+        qint64 wcount = f.write((const char *) image.bits(), len);
+#endif
         f.close();
-        return true;
+        return wcount == len;
     }
     return false;
 }
@@ -443,7 +544,8 @@ QDebug operator<<(QDebug dbg, const HbSplashGenerator::QueueItem &item)
 HbSplashGenerator::QueueItem::QueueItem()
     : mOrientation(Qt::Vertical),
       mHideBackground(false),
-      mFlagsToStore(0)
+      mFlagsToStore(0),
+      mFirstInRegen(false)
 {
 }
 
@@ -451,7 +553,8 @@ HbSplashGenerator::QueueItem::QueueItem(const QString &themeName, Qt::Orientatio
     : mThemeName(themeName),
       mOrientation(orientation),
       mHideBackground(false),
-      mFlagsToStore(0)
+      mFlagsToStore(0),
+      mFirstInRegen(false)
 {
 }
 
@@ -482,17 +585,17 @@ void HbSplashGenerator::queueAppSpecificItems(const QString &themeName, Qt::Orie
             // Skip if a file with the same name has already been processed from
             // a different location.
             if (processedFileNames.contains(entry)) {
-                qDebug() << PRE << "skipping splashml (already found at other location)" << dir.filePath(entry);
+                splDeb() << PRE << "skipping splashml (already found at other location)" << dir.filePath(entry);
                 continue;
             }
             processedFileNames.insert(entry);
             QString fullName = dir.filePath(entry);
-            qDebug() << PRE << "parsing splashml" << fullName;
+            splDeb() << PRE << "parsing splashml" << fullName;
             if (mParsedSplashmls.contains(fullName)) {
                 QueueItem item(mParsedSplashmls.value(fullName));
                 item.mThemeName = themeName;
                 item.mOrientation = orientation;
-                qDebug() << PRE << "splashml already parsed  queuing request" << item;
+                splDeb() << PRE << "splashml already parsed  queuing request" << item;
                 addSplashmlItemToQueue(item);
                 continue;
             }
@@ -505,7 +608,7 @@ void HbSplashGenerator::queueAppSpecificItems(const QString &themeName, Qt::Orie
                 // Add the full path to the filename. The docml is supposed to
                 // be in the same directory as the splashml.
                 item.mDocmlFileName = dir.filePath(item.mDocmlFileName);
-                qDebug() << PRE << "queuing request" << item;
+                splDeb() << PRE << "queuing request" << item;
                 addSplashmlItemToQueue(item);
                 mParsedSplashmls.insert(fullName, item);
             } else {
@@ -651,7 +754,7 @@ QObject *CustomDocumentLoader::createObject(const QString &type, const QString &
 {
     QObject *obj = HbDocumentLoader::createObject(type, name);
     if (!obj) {
-        qDebug() << PRE << "unsupported object" << type << name;
+        splDeb() << PRE << "unsupported object" << type << name;
         // Cannot let parsing fail because of unknown custom widgets
         // so provide an empty HbWidget (or HbView if the splashml
         // prefers that).
@@ -700,12 +803,12 @@ void HbSplashGenerator::setupAppSpecificWindow()
         }
     }
     sections << mItem.mForcedSections;
-    qDebug() << PRE << "loading" << mItem.mDocmlFileName << "common section";
+    splDeb() << PRE << "loading" << mItem.mDocmlFileName << "common section";
     bool ok;
     loader.load(mItem.mDocmlFileName, &ok);
     if (ok && !sections.isEmpty()) {
         foreach(const QString & section, sections) {
-            qDebug() << PRE << "loading" << mItem.mDocmlFileName << "section" << section;
+            splDeb() << PRE << "loading" << mItem.mDocmlFileName << "section" << section;
             loader.load(mItem.mDocmlFileName, section, &ok);
         }
     }
@@ -715,7 +818,7 @@ void HbSplashGenerator::setupAppSpecificWindow()
         // Find the root view and add it to the mainwindow.
         QGraphicsWidget *widget = loader.findWidget(mItem.mDocmlWidgetName);
         if (widget) {
-            qDebug() << PRE << "widget created from" << mItem;
+            splDeb() << PRE << "widget created from" << mItem;
             mMainWindow->addView(widget);
         } else {
             qWarning() << PRE << "widget creation failed from" << mItem;
@@ -736,7 +839,7 @@ void HbSplashGenerator::setupNameBasedWidgetProps(HbDocumentLoader &loader)
         }
         HbWidget *widget = qobject_cast<HbWidget *>(loader.findWidget(req.mTargetWidgetName));
         if (widget) {
-            qDebug() << PRE << "setting background item" << req.mFrameGraphicsName
+            splDeb() << PRE << "setting background item" << req.mFrameGraphicsName
                      << "for" << req.mTargetWidgetName;
             widget->setBackgroundItem(
                 new HbFrameItem(req.mFrameGraphicsName, req.mFrameGraphicsType),
@@ -747,6 +850,9 @@ void HbSplashGenerator::setupNameBasedWidgetProps(HbDocumentLoader &loader)
 
 void HbSplashGenerator::finishWindow()
 {
+    QTime prepTime;
+    prepTime.start();
+
     // There must be a view always in order to support view-specific settings.
     if (mMainWindow->views().isEmpty()) {
         mMainWindow->addView(new HbWidget);
@@ -826,6 +932,11 @@ void HbSplashGenerator::finishWindow()
 
     // Hide dynamic content from status bar (clock, indicators).
     setStatusBarElementsVisible(mMainWindow, false);
+
+    splDeb() << PRE << "time spent in finishWindow() (ms):" << prepTime.elapsed();
+
+    // Continue with rendering the graphics view in processWindow().
+    NEXT_STAGE(this, processWindow);
 }
 
 void HbSplashGenerator::setStatusBarElementsVisible(HbMainWindow *mw, bool visible)
@@ -862,7 +973,7 @@ void HbSplashGenerator::addTranslator(const QString &name)
         // may still pick up another suitable file based on this name.
         if (translator->load(fullName)) {
             QCoreApplication::installTranslator(translator);
-            qDebug() << PRE << "translator installed:" << fullName;
+            splDeb() << PRE << "translator installed:" << fullName;
             ok = true;
             break;
         }
@@ -913,6 +1024,11 @@ void HbSplashGenerator::unlockMainWindow()
     // also queues a call to processQueue() if needed.
     unlockMainWindowInternal();
     if (mProcessQueuePending) {
-        QMetaObject::invokeMethod(this, "processQueue", Qt::QueuedConnection);
+        NEXT_STAGE(this, processQueue);
     }
+}
+
+bool HbSplashGenerator::newRegenPending() const
+{
+    return mQueue.isEmpty() ? false : mQueue.head().mFirstInRegen;
 }

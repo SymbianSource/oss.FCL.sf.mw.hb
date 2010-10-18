@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HBTITLEBAR_H_H
-#define HBTITLEBAR_H_H
+#ifndef HBTITLEBAR_P_P_H
+#define HBTITLEBAR_P_P_H
 
 #include "hbtitlebar_p.h"
 #include <hbwidget_p.h>
@@ -61,4 +61,4 @@ public:
 };
 
 
-#endif // HBTITLEBAR_H_H
+#endif // HBTITLEBAR_P_P_H

@@ -8,14 +8,20 @@ HbMenu
 
 HbMenu::content
 {
-	max-width: expr(var(hb-param-screen-short-edge)-9un);
-	min-width: expr((var(hb-param-screen-short-edge)-9un)/2);
-	max-height: 43un;
+    min-width: expr((var(hb-param-screen-short-edge)*3)/5);
+    max-width: expr(var(hb-param-screen-short-edge)-9un);
+    max-height: expr(var(hb-param-text-height-primary)*6+var(hb-param-margin-gene-top)*6+var(hb-param-margin-gene-bottom)*6);
 	size-policy-vertical: expanding;
 	size-policy-horizontal: expanding;
 }
 
 HbMenu[menuType="1"]::content
 {
-	min-width: expr(var(hb-param-screen-short-edge)-9un);
+	min-width: expr(var(hb-param-screen-short-edge)-9un);    
+}
+
+HbMenu[menuType="2"]::content
+{
+    min-width: expr((var(hb-param-screen-short-edge)-9un)/2);    
+    max-height: expr(var(hb-param-text-height-secondary)*6+var(hb-param-margin-gene-top)*6+var(hb-param-margin-gene-bottom)*6);
 }

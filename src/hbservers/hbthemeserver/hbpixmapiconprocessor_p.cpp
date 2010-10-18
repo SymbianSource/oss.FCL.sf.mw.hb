@@ -92,11 +92,9 @@ int HbPixmapIconProcessor::sharedIconDataCost() const
  */
 HbSharedIconInfo HbPixmapIconProcessor::sharedIconData()const
 {
-    HbSharedIconInfo data;
-    data.type = INVALID_FORMAT;
     const QImage image = pixmap.toImage();
 
-    if (!image.isNull()) {
+    if (!image.isNull() && (data.type == INVALID_FORMAT)) {
         GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
         try {
             //alloc function of memory manager can throw
@@ -127,8 +125,8 @@ bool HbPixmapIconProcessor::createIconData(const QString& iconPath)
     } else if (iconType == "PIC") {
         isIconCreated = renderPicToPixmap(iconPath);
     } else if (iconType == "NVG") {
-#if defined (HB_NVG_CS_ICON)    
-		isIconCreated = renderNvgToPixmap(iconPath);
+#if defined (HB_NVG_CS_ICON)
+        isIconCreated = renderNvgToPixmap(iconPath);
 #endif //HB_NVG_CS_ICON
     } else {
         isIconCreated = renderOtherFormatsToPixmap(iconPath);
@@ -141,26 +139,65 @@ bool HbPixmapIconProcessor::createIconData(const QString& iconPath)
             pixmap = pixmap.transformed(t);
         }
 
-        // Apply mode
-        if (iconKey.mode != QIcon::Normal) {
-            QStyleOption opt(0);
-            opt.palette = QApplication::palette();
-            pixmap = QApplication::style()->generatedIconPixmap(iconKey.mode, pixmap, &opt);
-        }
-        /* Apply color if valid*/
-
-        if (iconKey.color.isValid() && (iconKey.mode != QIcon::Disabled)) {
+        // Apply color if valid
+        if (iconKey.color.isValid()) {
             if (!pixmap.isNull()) {
                 QPixmap mask = pixmap.alphaChannel();
                 pixmap.fill(iconKey.color);
                 pixmap.setAlphaChannel(mask);
             }
         }
+        // Apply mode
+        if (iconKey.mode != QIcon::Normal) {
+            QStyleOption opt(0);
+            opt.palette = QApplication::palette();
+            pixmap = QApplication::style()->generatedIconPixmap(iconKey.mode, pixmap, &opt);
+        }
     }
 
     return isIconCreated;
 }
 
+#if defined (HB_NVG_CS_ICON)
+
+bool HbPixmapIconProcessor::renderNvgToPixmap(const QString& iconPath)
+{
+    bool success = false;
+    HbNvgRasterizer * nvgRasterizer = HbNvgRasterizer::global();
+
+    bool isDefaultSize =  iconKey.size.isNull();
+    HbIconSource *source = HbThemeServerUtils::getIconSource(iconPath);
+    if (!source) {
+        return success;
+    }
+    QByteArray *sourceByteArray = source->byteArray();
+    if( !sourceByteArray ) {
+        return success;
+    }
+    QByteArray nvgArray = *sourceByteArray;
+    QSizeF renderSize = source->defaultSize();
+    defaultSize = renderSize.toSize();
+    if (!isDefaultSize) {
+        renderSize.scale(iconKey.size,iconKey.aspectRatioMode);
+    }
+
+    QSize iconSize = renderSize.toSize();
+
+    QImage image(iconSize, QImage::Format_ARGB32_Premultiplied);
+    QImage::Format imageFormat = image.format();
+    image.fill(0);
+
+    int stride = image.bytesPerLine();
+    void * rasterizedData = image.bits();
+    success = nvgRasterizer->rasterize(nvgArray, iconSize,
+                                        iconKey.aspectRatioMode,
+                                        rasterizedData, stride,imageFormat);
+
+    pixmap = QPixmap::fromImage(image);
+    return success;
+}
+
+#endif
 /*!
     \fn HbPixmapIconProcessor::renderSvgToPixmap()
     \a iconpath
@@ -196,7 +233,7 @@ bool HbPixmapIconProcessor::renderSvgToPixmap(const QString& iconPath)
         painter.end();
         isIconCreated = true;
     }
-    
+
     source->releaseSvgRenderer();
     return isIconCreated;
 }
@@ -268,7 +305,7 @@ bool HbPixmapIconProcessor::renderOtherFormatsToPixmap(const QString& iconPath)
     }
 
     HbIconSource *source = HbThemeServerUtils::getIconSource(iconPath);
-    pixmap = *source->pixmap();
+    pixmap = QPixmap::fromImage(*source->image());
 
     if (pixmap.isNull()) {
         return isIconCreated;
@@ -309,7 +346,7 @@ bool HbPixmapIconProcessor::renderOtherFormatsToPixmap(const QString& iconPath)
     isIconCreated = true;
 
     // Delete original pixmap if its size is large
-    source->deletePixmapIfLargerThan(PIXMAP_SIZE_LIMIT);
+    source->deleteImageIfLargerThan(IMAGE_SIZE_LIMIT);
 
     return isIconCreated;
 }
@@ -339,18 +376,45 @@ bool HbPixmapIconProcessor::createMultiPieceIconData(const QVector<HbSharedIconI
 
 
     for (int i = 0; i < multiPieceIconParams.multiPartIconList.count(); i++) {
+#if defined (HB_NVG_CS_ICON)
+        if ((multiPieceIconInfo[i].type != INVALID_FORMAT) && multiPieceIconInfo[i].type == NVG) {
+                
+                GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
+                const QByteArray nvgData  = QByteArray::fromRawData((char*)manager->base() + multiPieceIconInfo[i].nvgData.offset,
+                        multiPieceIconInfo[i].nvgData.dataSize);
+                QSize contentSize = QSize(multiPieceIconInfo[i].nvgData.width, multiPieceIconInfo[i].nvgData.height);
+                HbNvgRasterizer * nvgRasterizer = HbNvgRasterizer::global();
 
-        if ((multiPieceIconInfo[i].type != INVALID_FORMAT) && multiPieceIconInfo[i].type == OTHER_SUPPORTED_FORMATS) {
-            GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
-            QImage image((const uchar*)
+                QImage image(contentSize, QImage::Format_ARGB32_Premultiplied);
+                if(nvgRasterizer->rasterize(nvgData, contentSize,
+                                    (Qt::AspectRatioMode)multiPieceIconParams.aspectRatioMode,
+                                    image)) {
+                    QPixmap tempPixmap = QPixmap::fromImage(image);
+                    painter.drawPixmap(
+                            multiPieceIconParams.multiPartIconData.targets[i].topLeft(),
+                            tempPixmap,
+                            tempPixmap.rect());
+                } else {
+                    // consolidated pixmap creation falied.
+                    painter.end();
+                    return false;
+                }
+            } else {
+#endif
+            if ((multiPieceIconInfo[i].type != INVALID_FORMAT) && multiPieceIconInfo[i].type == OTHER_SUPPORTED_FORMATS) {
+                GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
+                QImage image((const uchar*)
                          ((char *)manager->base() + multiPieceIconInfo[i].pixmapData.offset),
-                         multiPieceIconParams.multiPartIconData.pixmapSizes[i].width(), 
+                         multiPieceIconParams.multiPartIconData.pixmapSizes[i].width(),
                          multiPieceIconParams.multiPartIconData.pixmapSizes[i].height(),
                          multiPieceIconInfo[i].pixmapData.format);
 
-            QPixmap pixmap = QPixmap::fromImage((image));            
-            painter.drawPixmap(multiPieceIconParams.multiPartIconData.targets[i].topLeft(), pixmap, pixmap.rect());
+                QPixmap pixmap = QPixmap::fromImage((image));
+                painter.drawPixmap(multiPieceIconParams.multiPartIconData.targets[i].topLeft(), pixmap, pixmap.rect());
+            }
+#if defined (HB_NVG_CS_ICON)
         }
+#endif
     }
 
     painter.end();
@@ -360,162 +424,10 @@ bool HbPixmapIconProcessor::createMultiPieceIconData(const QVector<HbSharedIconI
         finalPixmap = finalPixmap.transformed(t);
     }
     setPixmap(finalPixmap);
+    
     return true;
 }
 
-#if defined (HB_NVG_CS_ICON)
 
-VGIColorBufferFormat HbPixmapIconProcessor::mapToVgiDisplayFormat( QImage::Format imageFormat ) const
-{ 
-    VGIColorBufferFormat format; 
-    switch(imageFormat) 
-    { 
-    case QImage::Format_Mono:                  
-    case QImage::Format_RGB32:                 
-    case QImage::Format_ARGB32:       
-            format = VGI_COLOR_BUFFER_FORMAT_ARGB8888;
-            break;
-    case QImage::Format_ARGB32_Premultiplied: 
-            format = VGI_COLOR_BUFFER_FORMAT_ARGB8888_PRE;
-            break;
-    case QImage::Format_RGB16:                 
-    case QImage::Format_ARGB8565_Premultiplied: 
-    case QImage::Format_RGB666:                
-    case QImage::Format_ARGB6666_Premultiplied: 
-    case QImage::Format_RGB555:                
-    case QImage::Format_ARGB8555_Premultiplied: 
-            break; 
-    case QImage::Format_RGB888: 
-            format = VGI_COLOR_BUFFER_FORMAT_RGB888; 
-            break;                
-    case QImage::Format_RGB444:                
-    case QImage::Format_ARGB4444_Premultiplied: 
-    case QImage::Format_Invalid:               
-        break; 
-    } 
-    return format; 
-}
 
-/**
- * HbNvgIconProcessor::renderNvgToPixmap()
- * This is used to render NVG data to a pixmap using the Software OpenVG
- * \a iconPath
- */
-bool HbPixmapIconProcessor::renderNvgToPixmap(const QString& iconPath)
-{
-    bool isIconCreated = false;
-    
-    CNvgEngine* nvgengine = 0;
-    TRAPD(error, nvgengine = CNvgEngine::NewL());
-    if (error != KErrNone) {
-        return isIconCreated;
-    }
-    QScopedPointer<CNvgEngine> nvgEngine(nvgengine); 
-    
-    bool isDefaultSize =  iconKey.size.isNull();
-    HbIconSource *source = HbThemeServerUtils::getIconSource(iconPath);
-    QByteArray *sourceByteArray = source->byteArray();
-    if( !sourceByteArray ) {
-        return false;
-    }
-    QByteArray byteArray = *sourceByteArray;
-    QSizeF renderSize = source->defaultSize();
-    defaultSize = renderSize.toSize();
-    if (!isDefaultSize) {
-        renderSize.scale(iconKey.size,iconKey.aspectRatioMode);
-    }
-    size = renderSize.toSize();          
-    TSize surfaceSize(TSize(size.width(), size.height()));
-
-/*    QImage img(size,QImage::Format_ARGB32_Premultiplied);
-    
-    VGIColorBufferFormat format;
-    TInt stride = img.bytesPerLine(); 
-    TUint8* imageBuffer = img.bits(); // get the pointer to image buffer. 
-    // Map Qimage display modes to the VGI display modes. 
-    format = mapToVgiDisplayFormat(img.format()); 
-    qDebug()<<"Format = " <<format; */
-    
-    QScopedPointer<CFbsBitmap> bitmapData(new CFbsBitmap());    
-    
-    TInt err = bitmapData.data()->Create(surfaceSize, EColor16MA);    
-    if(err != KErrNone) {      
-        return isIconCreated;
-    }
-    
-    
-    //Reset the surface incase already present
-    VGISymbianTerminate();
-    
-    // Surface creation
-    /*TInt*/ err =  VGISymbianInitialize( surfaceSize, VGI_COLORSPACE_SRGB );
-    if( err != KErrNone) {
-        return isIconCreated;
-    }
-    
-    HbNvgAspectRatioSettings settings = mapKeyAspectRatioToNvgAspectRatio(iconKey.aspectRatioMode);
-    nvgEngine.data()->SetPreserveAspectRatio(settings.nvgAlignStatusAndAspectRatio, settings.type);
-    // Rendering onto active surface
-    TPtr8 data ((unsigned char*)byteArray.data(), byteArray.length(), byteArray.length());
-    err = nvgEngine.data()->DrawNvg(data, surfaceSize, 0, 0);    
-    if(err !=KErrNone) {  
-        return isIconCreated;
-    }
-    
-    //Copy the data from the surface
-/*    err = VGICopyToTarget(format, stride, imageBuffer, 0, NULL, VGI_COPY_TRANSPARENT_PIXELS); 
-#ifdef __DEBUG    
-	qDebug() << "error code for VGICopyToTarget()"<< err;
-#endif
-    //Get Pixmap from the Qimage.
-    pixmap = QPixmap::fromImage(img); */
-
-    err = VGISymbianCopyToBitmap(bitmapData.data(), 0, VGI_COPY_TRANSPARENT_PIXELS);
-    if(err !=KErrNone) { 
-        return isIconCreated;
-    }
-    //Get Pixmap from the Symbian Native format.
-    pixmap = QPixmap::fromSymbianCFbsBitmap(bitmapData.data());
-    
-    isIconCreated = true;    
-        
-    //Clean Up
-    VGISymbianTerminate();
-    return isIconCreated;
-}
-
-/*!
-    \fn HbPixmapIconProcessor::mapKeyAspectRatioToNvgAspectRatio()
-    \a aspectRatio
- */
-HbNvgAspectRatioSettings HbPixmapIconProcessor::mapKeyAspectRatioToNvgAspectRatio(
-                                                Qt::AspectRatioMode aspectRatio) const
-{
-    HbNvgAspectRatioSettings settings;
-    switch(aspectRatio) {  
-    
-    case Qt::IgnoreAspectRatio: {
-        settings.nvgAlignStatusAndAspectRatio = ENvgPreserveAspectRatio_None;
-        settings.type = ENvgMeet; 
-        break;
-    }
-    case Qt::KeepAspectRatio: {
-        settings.nvgAlignStatusAndAspectRatio = ENvgPreserveAspectRatio_XmidYmid;
-        settings.type = ENvgMeet;
-        break;
-        }
-    case Qt::KeepAspectRatioByExpanding: {
-        settings.nvgAlignStatusAndAspectRatio = ENvgPreserveAspectRatio_XmidYmid;
-        settings.type = ENvgSlice;
-        break;
-        } 
-    default: {
-        settings.nvgAlignStatusAndAspectRatio = ENvgPreserveAspectRatio_XmidYmid;
-        settings.type = ENvgMeet;
-        break;
-        }        
-    }
-    return settings;
-}
-#endif //HB_NVG_CS_ICON
 

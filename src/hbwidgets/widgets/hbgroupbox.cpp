@@ -100,8 +100,10 @@ void HbGroupBoxPrivate::setGroupBoxType( GroupBoxType type )
     // set dynamic property based on type
     q->setProperty("groupBoxType",(int)type);
 
-    if ( mGroupBoxType == type ) 
+    if ( mGroupBoxType == type ) {
+        q->updatePrimitives();
         return;
+    }
 
     mGroupBoxType = type;
   
@@ -303,6 +305,7 @@ void HbGroupBox::setHeading( const QString &text )
         if( d->mHeadingWidget ){
             delete d->mHeadingWidget;
             d->mHeadingWidget = 0;
+            HbStyle::setItemName( d->mHeadingWidget, QString());
             if( d->mContentWidget ) {
                 d->setGroupBoxType( GroupBoxRichLabel );
             }else{
@@ -310,7 +313,7 @@ void HbGroupBox::setHeading( const QString &text )
             }
         }        
     }
-    repolish();
+    //repolish();
 }
 
 /*!
@@ -433,6 +436,7 @@ void HbGroupBox::setCollapsed( bool collapsed )
                 #endif
                 HbStyle::setItemName( d->mContentWidget , "contentwidget");
                 d->mContentWidget->setVisible(true);
+                //polish is needed in case groupbox is collapsed before show.
                 repolish();
             }
             d->mHeadingWidget->updatePrimitives();
@@ -455,7 +459,7 @@ bool HbGroupBox::isCollapsed( ) const
     Q_D ( const HbGroupBox );
     if(d->mGroupBoxType == GroupBoxCollapsingContainer)
         return d->collapsed;
-		
+        
     return false;
 }
 
@@ -494,7 +498,7 @@ bool HbGroupBox::marqueeHeading( ) const
     Q_D( const HbGroupBox );
     if(d->mHeadingWidget && d->mGroupBoxType == GroupBoxSimpleLabel)
         return d->mHeadingWidget->marqueeEnabled;
-		
+        
     return false;
 }
 
@@ -523,11 +527,13 @@ bool HbGroupBox::marqueeHeading( ) const
 void HbGroupBox::setContentWidget( HbWidget *widget )
 {
     Q_D( HbGroupBox );
-   
-    if(!d->mContentWidget)
-        d->createContentWidget();
     
+    bool doPolish = false; 
     if(widget){
+        // create the mContentWidget if its not there.
+        if(!d->mContentWidget)
+            d->createContentWidget();
+        doPolish = widget != d->mContentWidget->mContent;
         d->mContentWidget->setContentWidget(widget);
         if(d->mHeadingWidget){
             d->setGroupBoxType(GroupBoxCollapsingContainer);
@@ -538,15 +544,21 @@ void HbGroupBox::setContentWidget( HbWidget *widget )
         d->mContentWidget->updatePrimitives();
 
     }else{
-        delete d->mContentWidget;
-        d->mContentWidget = 0;
-        if(d->mHeadingWidget){
-            d->setGroupBoxType(GroupBoxSimpleLabel);
-        }else{
-            d->setGroupBoxType(GroupBoxTypeUnknown);
+        // delete mContentWidget if widget is null.
+        if( d->mContentWidget ){
+            delete d->mContentWidget;
+            d->mContentWidget = 0;
+            HbStyle::setItemName( d->mContentWidget, QString());
+            if(d->mHeadingWidget){
+                d->setGroupBoxType(GroupBoxSimpleLabel);
+            }else{
+                d->setGroupBoxType(GroupBoxTypeUnknown);
+            }
         }
     }
-    repolish();
+    if(doPolish){
+        repolish();
+    }
 }
 
 /*!
@@ -554,7 +566,7 @@ void HbGroupBox::setContentWidget( HbWidget *widget )
 
     Returns groupbox content widget
     
-    There is no default content widget.	
+    There is no default content widget. 
 
     GroupBox takes care of the ownership of the content widget being set
 
@@ -584,21 +596,21 @@ QGraphicsItem* HbGroupBox::primitive(HbStyle::Primitive primitive) const
     Q_D( const HbGroupBox );
 
     switch (primitive) {
-        case HbStyle::P_GroupBoxHeading_icon:
-        case HbStyle::P_GroupBoxHeading_text:
-        case HbStyle::P_GroupBoxHeading_background:
+        case HbStylePrivate::P_GroupBoxHeading_icon:
+        case HbStylePrivate::P_GroupBoxHeading_text:
+        case HbStylePrivate::P_GroupBoxHeading_background:
              if(d->mHeadingWidget){
                 return d->mHeadingWidget->primitive(primitive);
                 }
             break;
-        case HbStyle::P_GroupBoxContent_background:
+        case HbStylePrivate::P_GroupBoxContent_background:
             if(d->mContentWidget)
                 return d->mContentWidget->primitive(primitive);
             break;
         default:
             return 0;
     }
-    return 0;	
+    return 0;   
 }
 
 /*!

@@ -35,6 +35,7 @@
 #include <qmath.h>
 
 #include <QDebug>
+#include <QMetaObject>
 
 const int Hb_Recycle_Buffer_Shrink_Threshold = 2;
 
@@ -526,7 +527,6 @@ void HbTreeItemContainer::animationFinished(const HbEffect::EffectStatus &status
     Q_D(HbTreeItemContainer);
 
     HbAbstractViewItem *item = static_cast<HbAbstractViewItem *>(status.item);
-    item->setFlag(QGraphicsItem::ItemSendsGeometryChanges, false);
    
     // Remove item from mAnimatedItems list.
     int itemCount = d->mAnimatedItems.count();
@@ -566,8 +566,10 @@ void HbTreeItemContainer::animationFinished(const HbEffect::EffectStatus &status
             newPos.setY(newPos.y() - item->preferredHeight());
             setPos(newPos);
         }
+        d->adjustContent();
     } else {
-        item->deleteLater();
+        item->hide();
+        QMetaObject::invokeMethod(item, "deleteLater", Qt::QueuedConnection);
     }
 }
 

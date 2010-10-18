@@ -23,18 +23,18 @@
 **
 ****************************************************************************/
 
+#include "hbpangesture.h"
+#include "hbpangesturelogic_p.h"
+#include "hbgestures_p.h"
+
+#include "hbnamespace_p.h"
+#include <hbdeviceprofile.h>
+
 #include <QEvent>
 #include <QGestureRecognizer>
 #include <QGraphicsView>
 #include <QMouseEvent>
 #include <QGraphicsScene>
-
-#include <hbdeviceprofile.h>
-
-#include "hbpangesture.h"
-#include "hbpangesture_p.h"
-#include "hbpangesturelogic_p.h"
-#include "hbnamespace_p.h"
 
 /*!
    @hbcore
@@ -54,7 +54,6 @@
 */
 HbPanGestureLogic::HbPanGestureLogic()
 {
-    mCurrentTime = QTime();
 }
 
 HbPanGestureLogic::~HbPanGestureLogic() {}
@@ -68,9 +67,22 @@ HbPanGestureLogic::~HbPanGestureLogic() {}
 bool HbPanGestureLogic::isMouseEvent(QEvent::Type eventType)
 {
     return eventType == QEvent::MouseButtonPress ||
-           eventType == QEvent::MouseMove ||
-           eventType == QEvent::MouseButtonDblClick ||
-           eventType == QEvent::MouseButtonRelease;
+            eventType == QEvent::MouseMove ||
+            eventType == QEvent::MouseButtonDblClick ||
+            eventType == QEvent::MouseButtonRelease;
+}
+
+/*!
+    \internal
+    \brief
+    \return
+
+*/
+bool HbPanGestureLogic::isTouchEvent(QEvent::Type eventType)
+{
+    return eventType == QEvent::TouchBegin ||
+            eventType == QEvent::TouchEnd ||
+            eventType == QEvent::TouchUpdate;
 }
 
 /*!
@@ -87,15 +99,18 @@ void HbPanGestureLogic::resetGesture(HbPanGesture *gesture)
     gesture->d_ptr->mSceneLastOffset              = QPointF(0,0);
     gesture->d_ptr->mSceneOffset                  = QPointF(0,0);
     gesture->d_ptr->mSceneDeltaSinceLastTimeStamp = QPointF(0,0);
-    gesture->d_ptr->mAxisX.clear();
-    gesture->d_ptr->mAxisY.clear();
-    gesture->d_ptr->mSceneAxisX.clear();
-    gesture->d_ptr->mSceneAxisY.clear();
+    gesture->d_ptr->mAxisX.resetRecorder();
+    gesture->d_ptr->mAxisY.resetRecorder();
+    gesture->d_ptr->mSceneAxisX.resetRecorder();
+    gesture->d_ptr->mSceneAxisY.resetRecorder();
 
     gesture->setLastOffset(QPointF());
     gesture->setOffset(QPointF(0,0));
     gesture->setAcceleration(0);
     gesture->setStartPos(QPointF());
+
+    gesture->d_ptr->mIgnoreMouseEvents = false;
+    gesture->d_ptr->mFollowedTouchPointId = -1;
 }
 
 /*!
@@ -104,28 +119,23 @@ void HbPanGestureLogic::resetGesture(HbPanGesture *gesture)
     \return
 
 */
-QGestureRecognizer::Result HbPanGestureLogic::handleMousePress(
-        Qt::GestureState gestureState,
+QGestureRecognizer::Result HbPanGestureLogic::handlePress(
+        Qt::GestureState,
         HbPanGesture *gesture,
         QObject *watched,
-        QMouseEvent *me )
+        const QPointF &globalPos,
+        qint64 currentTime )
 {
-    // Just ignore situations that are not interesting at all.
-    if ( !( gestureState == Qt::NoGesture && me->button() == Qt::LeftButton ) )
-    {
-        return QGestureRecognizer::Ignore;
-    }
-    
-    gesture->setHotSpot( me->globalPos() );
-    gesture->setStartPos( me->globalPos() );
+    QPointF scenePos = HbGestureUtils::mapToScene(watched, globalPos);
+
+    gesture->setHotSpot( globalPos );
+    gesture->setStartPos( globalPos );
     gesture->setOffset( QPointF( 0,0 ) );
     gesture->setLastOffset( QPointF( 0,0 ) );
-    QPointF scenePos = HbGestureUtils::mapToScene(watched, me->globalPos());
     gesture->d_ptr->mSceneStartPos       = scenePos;
-    gesture->d_ptr->mSceneOffset         = HbGestureUtils::mapToScene(watched, QPointF(0,0));
-    gesture->d_ptr->mSceneLastOffset     = HbGestureUtils::mapToScene(watched, QPointF(0,0));
-    gesture->d_ptr->mLastTimeStamp = mCurrentTime;
-          
+    gesture->d_ptr->mSceneOffset         = QPointF( 0,0 );
+    gesture->d_ptr->mSceneLastOffset     = QPointF( 0,0 );
+    gesture->d_ptr->mLastTimeStamp = currentTime;
 
     gesture->d_ptr->mThresholdSquare = HbDefaultPanThreshold * HbDeviceProfile::current().ppmValue();
     gesture->d_ptr->mThresholdSquare = gesture->d_ptr->mThresholdSquare * gesture->d_ptr->mThresholdSquare;
@@ -136,13 +146,14 @@ QGestureRecognizer::Result HbPanGestureLogic::handleMousePress(
     gesture->d_ptr->mAxisY.resetRecorder(velocityThreshold);
     gesture->d_ptr->mSceneAxisX.resetRecorder(velocityThreshold);
     gesture->d_ptr->mSceneAxisY.resetRecorder(velocityThreshold);
-    gesture->d_ptr->mAxisX.record( me->globalPos().x(), mCurrentTime );
-    gesture->d_ptr->mAxisY.record( me->globalPos().y(), mCurrentTime );
-    gesture->d_ptr->mSceneAxisX.record( scenePos.x(), mCurrentTime );
-    gesture->d_ptr->mSceneAxisY.record( scenePos.y(), mCurrentTime );
+    gesture->d_ptr->mAxisX.record( globalPos.x(), currentTime );
+    gesture->d_ptr->mAxisY.record( globalPos.y(), currentTime );
+    gesture->d_ptr->mSceneAxisX.record( scenePos.x(), currentTime );
+    gesture->d_ptr->mSceneAxisY.record( scenePos.y(), currentTime );
 
     return QGestureRecognizer::MayBeGesture;
 }
+
 
 /*!
     \internal
@@ -150,18 +161,20 @@ QGestureRecognizer::Result HbPanGestureLogic::handleMousePress(
     \return
 
 */
-QGestureRecognizer::Result HbPanGestureLogic::handleMouseMove(
+QGestureRecognizer::Result HbPanGestureLogic::handleMove(
         Qt::GestureState gestureState,
         HbPanGesture *gesture,
         QObject *watched,
-        QMouseEvent *me )
+        const QPointF &globalPos,
+        qint64 currentTime )
 {
-    if ( !me->buttons().testFlag(Qt::LeftButton) )
-    {
-        return QGestureRecognizer::Ignore;
-    }
+    QPointF scenePos = HbGestureUtils::mapToScene(watched,globalPos);
 
-    QPointF offset = me->globalPos() - gesture->startPos().toPoint();
+    gesture->d_ptr->mLastTimeStamp = currentTime;
+    gesture->d_ptr->mAxisX.record( globalPos.x(), currentTime );
+    gesture->d_ptr->mAxisY.record( globalPos.y(), currentTime );
+    gesture->d_ptr->mSceneAxisX.record( scenePos.x(), currentTime );
+    gesture->d_ptr->mSceneAxisY.record( scenePos.y(), currentTime );
 
     QGraphicsView* view = qobject_cast<QGraphicsView*>(watched->parent());
     if (view) {
@@ -172,6 +185,9 @@ QGestureRecognizer::Result HbPanGestureLogic::handleMouseMove(
         }
     }
 
+    QPointF offset = globalPos - gesture->startPos().toPoint();
+    QPointF sceneOffset = scenePos - gesture->d_ptr->mSceneStartPos;
+
     if (gestureState == Qt::NoGesture && (offset.x() * offset.x() + offset.y() * offset.y()) <= gesture->d_ptr->mThresholdSquare) {
         return QGestureRecognizer::MayBeGesture;
     }
@@ -179,21 +195,20 @@ QGestureRecognizer::Result HbPanGestureLogic::handleMouseMove(
     // Hotspot is updated on the press and on events after the gesture started.
     // Here we are checking the previously set gestureState.
     if (gestureState == Qt::GestureStarted || gestureState == Qt::GestureUpdated) {
-        gesture->setHotSpot( me->globalPos() );
+        gesture->setHotSpot( globalPos );
     }
 
     gesture->setLastOffset( gesture->offset().toPoint() );
-    gesture->setOffset( offset );
     gesture->d_ptr->mSceneLastOffset = gesture->d_ptr->mSceneOffset;
-    gesture->d_ptr->mSceneOffset =
-            HbGestureUtils::mapToScene(watched, me->globalPos()) - gesture->d_ptr->mSceneStartPos;
-    gesture->d_ptr->mLastTimeStamp = mCurrentTime;
+    if (gestureState == Qt::NoGesture) {
+        qreal threshold = HbDefaultTapRadius * HbDeviceProfile::current().ppmValue();
 
-    QPointF scenePos = HbGestureUtils::mapToScene(watched, me->globalPos());
-    gesture->d_ptr->mAxisX.record( me->globalPos().x(), mCurrentTime );
-    gesture->d_ptr->mAxisY.record( me->globalPos().y(), mCurrentTime );
-    gesture->d_ptr->mSceneAxisX.record( scenePos.x(), mCurrentTime );
-    gesture->d_ptr->mSceneAxisY.record( scenePos.y(), mCurrentTime );
+        gesture->setOffset(QPointF (qBound(-threshold, offset.x(), threshold), qBound(-threshold, offset.y(), threshold)));
+        gesture->d_ptr->mSceneOffset = QPointF (qBound(-threshold, sceneOffset.x(), threshold), qBound(-threshold, sceneOffset.y(), threshold));
+    } else {
+        gesture->setOffset( offset );
+        gesture->d_ptr->mSceneOffset = sceneOffset;
+    }       
 
     return QGestureRecognizer::TriggerGesture;
 }
@@ -204,27 +219,54 @@ QGestureRecognizer::Result HbPanGestureLogic::handleMouseMove(
     \return
 
 */
-QGestureRecognizer::Result HbPanGestureLogic::handleMouseRelease(
+QGestureRecognizer::Result HbPanGestureLogic::handleRelease(
         Qt::GestureState gestureState,
         HbPanGesture *gesture,
         QObject *watched,
-        QMouseEvent *me )
-{   
-    Q_UNUSED(me->globalPos());
-    Q_UNUSED(gesture);
-    Q_UNUSED(watched);
-	
-    gesture->d_ptr->mLastTimeStamp = mCurrentTime;
-		
-    if ( gestureState == Qt::GestureStarted || gestureState == Qt::GestureUpdated )
-    {
+        const QPointF &globalPos,
+        qint64 currentTime)
+{
+    gesture->d_ptr->mLastTimeStamp = currentTime;
+
+    if (gestureState == Qt::GestureStarted || gestureState == Qt::GestureUpdated) {
+        gesture->setLastOffset( gesture->offset().toPoint() );
+        gesture->d_ptr->mSceneLastOffset = gesture->d_ptr->mSceneOffset;
+
+        if(gestureState == Qt::GestureStarted) {
+            QPointF offset = globalPos - gesture->startPos().toPoint();
+            QPointF sceneOffset = HbGestureUtils::mapToScene(watched, globalPos) - gesture->d_ptr->mSceneStartPos;
+            gesture->setOffset( offset );
+            gesture->d_ptr->mSceneOffset = sceneOffset;
+        }
+
         return QGestureRecognizer::FinishGesture;
-    }
-    else
-    {
+    } else {
+        QPointF offset = globalPos - gesture->startPos().toPoint();
+        QPointF sceneOffset = HbGestureUtils::mapToScene(watched, globalPos) - gesture->d_ptr->mSceneStartPos;
+
+        bool thresholdExceeded = (offset.x() * offset.x() + offset.y() * offset.y()) > gesture->d_ptr->mThresholdSquare;
+        if (thresholdExceeded) {
+            QGraphicsView* view = qobject_cast<QGraphicsView*>(watched->parent());
+            if (view) {
+                QGraphicsScene* scene = view->scene();
+                if (scene && scene->property(HbPrivate::OverridingGesture.latin1()).isValid() &&
+                    scene->property(HbPrivate::OverridingGesture.latin1()).toInt() != Qt::PanGesture) {
+
+                    return QGestureRecognizer::CancelGesture;
+                }
+            }
+            qreal threshold = HbDefaultTapRadius * HbDeviceProfile::current().ppmValue();
+            gesture->setLastOffset( QPointF (qBound(-threshold, offset.x(), threshold), qBound(-threshold, offset.y(), threshold)) );
+            gesture->d_ptr->mSceneLastOffset = QPointF (qBound(-threshold, sceneOffset.x(), threshold), qBound(-threshold, sceneOffset.y(), threshold));
+            gesture->setOffset( offset );
+            gesture->d_ptr->mSceneOffset = sceneOffset;
+            return QGestureRecognizer::FinishGesture;
+        }
+
         return QGestureRecognizer::CancelGesture;
     }
 }
+
 
 /*!
     \internal
@@ -237,28 +279,107 @@ QGestureRecognizer::Result HbPanGestureLogic::recognize(
         HbPanGesture *gesture,
         QObject *watched,
         QEvent *event,
-        QTime currentTime)
+        qint64 currentTime)
 {
-    // Record the time right away.
-    mCurrentTime = currentTime;
-    
     if ( isMouseEvent(event->type()) )
     {
+        if (gesture->d_ptr->mIgnoreMouseEvents) {
+            return QGestureRecognizer::Ignore;
+        }
         QMouseEvent* me = static_cast<QMouseEvent*>(event);
+
+        if( !(me->button() == Qt::LeftButton || me->buttons().testFlag(Qt::LeftButton)) ) {
+            return QGestureRecognizer::Ignore;
+        }
+
         switch(event->type())
         {
         case QEvent::MouseButtonDblClick:
         case QEvent::MouseButtonPress:
-            return handleMousePress(gestureState, gesture, watched, me);
-
+            // Just ignore situations that are not interesting at all.
+            if ( gestureState != Qt::NoGesture )
+            {
+                return QGestureRecognizer::Ignore;
+            }
+            return handlePress(gestureState, gesture, watched, me->globalPos(), currentTime);
         case QEvent::MouseMove:
-            return handleMouseMove(gestureState, gesture, watched, me);
-
+            return handleMove(gestureState, gesture, watched, me->globalPos(), currentTime);
         case QEvent::MouseButtonRelease:
-            return handleMouseRelease(gestureState, gesture, watched, me);
-
+            return handleRelease(gestureState, gesture, watched, me->globalPos(), currentTime);
         default: break;
         }
     }
+    if (isTouchEvent(event->type()) && watched->isWidgetType() ) {
+        QTouchEvent *te = static_cast<QTouchEvent *>(event);
+        QTouchEvent::TouchPoint currentTouchPoint = followedTouchPoint(te, gesture);
+
+        switch(event->type()) {
+        case QEvent::TouchBegin:
+            // Store panning finger id
+            gesture->d_ptr->mFollowedTouchPointId = currentTouchPoint.id();
+            return handlePress(gestureState, gesture, watched, currentTouchPoint.screenPos(), currentTime);
+
+        case QEvent::TouchUpdate:
+            // If we get touch updates, we can ignore mouse events.
+            gesture->d_ptr->mIgnoreMouseEvents = true;
+
+            // followed finger has been released
+            if (currentTouchPoint.state() == Qt::TouchPointReleased) {
+                // Store panning finger id. There is always one available,
+                // otherwise this would be TouchEnd
+                gesture->d_ptr->mFollowedTouchPointId = (currentTouchPoint = getNextTouchPoint(te)).id();
+                (void) handlePress(gestureState, gesture, watched, currentTouchPoint.screenPos(), currentTime);
+
+                // This was a finger switch -> do not trigger update
+                return gestureState == Qt::NoGesture ? QGestureRecognizer::MayBeGesture : QGestureRecognizer::Ignore;
+
+            } else if (currentTouchPoint.state() == Qt::TouchPointMoved) {
+                return handleMove(gestureState, gesture, watched, currentTouchPoint.screenPos(), currentTime);
+            }
+            break;
+        case QEvent::TouchEnd:
+            gesture->d_ptr->mIgnoreMouseEvents = false;
+            return handleRelease(gestureState, gesture, watched, currentTouchPoint.screenPos(), currentTime);
+        default:
+            break;
+        }
+    }
     return QGestureRecognizer::Ignore;
+}
+
+/*!
+    \internal
+    \brief
+    \return
+
+*/
+QTouchEvent::TouchPoint HbPanGestureLogic::followedTouchPoint(QTouchEvent *te, HbPanGesture *gesture)
+{
+    if (gesture->d_ptr->mFollowedTouchPointId == -1) {
+        return getNextTouchPoint(te);
+    } else {
+        QList<QTouchEvent::TouchPoint>::const_iterator it;
+        for (it = te->touchPoints().constBegin(); it != te->touchPoints().constEnd(); ++it) {
+            if( (*it).id() == gesture->d_ptr->mFollowedTouchPointId )
+                return *it;
+        }
+    }
+    return QTouchEvent::TouchPoint();
+}
+
+/*!
+    \internal
+    \brief
+    \return
+
+*/
+QTouchEvent::TouchPoint HbPanGestureLogic::getNextTouchPoint(QTouchEvent *te)
+{
+    QList<QTouchEvent::TouchPoint>::const_iterator it;
+    for (it = te->touchPoints().constBegin(); it != te->touchPoints().constEnd(); ++it) {
+        if( (*it).state() != Qt::TouchPointReleased )
+            return *it;
+    }
+    Q_ASSERT(false);
+    return QTouchEvent::TouchPoint();
 }

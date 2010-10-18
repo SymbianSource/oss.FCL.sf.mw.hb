@@ -214,7 +214,7 @@ HbInputPredictionFeature HbAutoComplete::features() const
 */
 QString HbAutoComplete::vendorIdString() const
 {
-    return HbAutoCompleteVendorIdString;	
+    return HbAutoCompleteVendorIdString;    
 }
 
 /*!
@@ -250,9 +250,9 @@ void HbAutoComplete::setExtraUserDictionary(int aId)
     d->mActiveCollection = 0;
 
     d->mActiveDictionary = HbExtraDictionaryFactory::instance()->createDictionary(aId);
-	if (d->mActiveDictionary) {
-		d->mActiveDictionary->setHostEngine(this);
-	}
+    if (d->mActiveDictionary) {
+        d->mActiveDictionary->setHostEngine(this);
+    }
     clear();
 }
 

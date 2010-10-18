@@ -40,6 +40,8 @@ class HbListView;
 class HbIndicatorInterface;
 class HbListWidgetItem;
 class HbIndicatorMenuContent;
+class HbMainWindow;
+
 class HbIndicatorListItem : public HbListViewItem
 {
     Q_OBJECT
@@ -67,6 +69,9 @@ protected:
 private:
     mutable bool mUpdateListSize;
     mutable QSizeF mSize;
+
+    qreal mPreferredHeight;
+    HbIndicatorMenuContent *mContent;
 };
 
 static const int IndicatorTypes = 3;
@@ -88,7 +93,9 @@ public:
     static HbIndicatorInterface *indicatorFromIndex(
         const QModelIndex &modelIndex);
 
-    void handleAboutToShow();
+    void handleAboutToShow(HbMainWindow *mainWindow);
+
+    Qt::Orientation orientation() const;
 
 signals:
     void aboutToClose();
@@ -120,6 +127,7 @@ private:
                                            //where the indicator should be added.
     HbListView *mIndicatorList;
     QStandardItemModel indicatorModel;
+    Qt::Orientation mOrientation;
 };
 
 #endif // HBINDICATORMENUCONTENT_P_H

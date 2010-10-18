@@ -26,7 +26,8 @@
 #include "hbinpututils.h"
 
 /*!
-\alpha
+@stable
+@hbcore
 \class HbInputLanguage
 \brief Holds Input language value.
 
@@ -42,7 +43,7 @@ This class also implements a set of language related convenience methods.
 // Localized language names.
 //
 const ushort HbLangNameEnglish[] = {'E', 'n', 'g', 'l', 'i', 's', 'h', 0};
-const ushort HbLangNameLithuanian[] = {'L', 'i', 'e', 't', 'u', 'v', 0x0173, 0};
+const ushort HbLangNameLithuanian[] = {'L', 'i', 'e', 't', 'u', 'v', 'i', 0x0173, 0};
 const ushort HbLangNameMalay[] = {'M', 'e', 'l', 'a', 'y', 'u', 0};
 const ushort HbLangNamePolish[] = {'P', 'o', 'l', 's', 'k', 'i', 0};
 const ushort HbLangNamePortuguese[] = {'P', 'o', 'r', 't', 'u', 'g', 0x00ea, 's', 0};
@@ -64,7 +65,7 @@ const ushort HbLangNameIndonesian[] = {'I', 'n', 'd', 'o', 'n', 'e', 's', 'i', '
 const ushort HbLangNameItalian[] = {'I', 't', 'a', 'l', 'i', 'a', 'n', 'o', 0};
 const ushort HbLangNameLatvian[] = {'L', 'a', 't', 'v', 'i', 'e', 0x0161, 'u', 0};
 const ushort HbLangNameCroatian[] = {'C', 'r', 'o', 'a', 't', 'i', 'a', 'n', 0};
-const ushort HbLangNameGerman[] = {'D', 'e', 'u', 't', 'c', 'h', 0};
+const ushort HbLangNameGerman[] = {'D', 'e', 'u', 't', 's', 'c', 'h', 0};
 const ushort HbLangNameHungarian[] = {'M', 'a', 'g', 'y', 'a', 'r', 0};
 const ushort HbLangNameBulgarian[] = {0x0411, 0x044a, 0x043b, 0x0433, 0x0430, 0x0440, 0x0441, 0x043a, 0x0438, 0};
 const ushort HbLangNameFinnish[] = {'S', 'u', 'o', 'm', 'i', 0};

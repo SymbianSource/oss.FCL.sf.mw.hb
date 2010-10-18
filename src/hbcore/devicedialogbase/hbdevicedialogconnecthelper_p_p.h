@@ -27,25 +27,24 @@
 #define HBDEVICEDIALOGCONNECTHELPER_P_P_H
 
 #include <e32base.h>
-#include <hbdevicedialogconnecthelper_p_p.h>
 
 class HbDeviceDialogConnectHelper;
 
 class HbDeviceDialogConnectHelperPrivate : public CActive
-{ 
+{
 public:
     HbDeviceDialogConnectHelperPrivate(HbDeviceDialogConnectHelper *wrapper);
     ~HbDeviceDialogConnectHelperPrivate();
 
     void connect();
-    
+
 protected: // From CActive
     void RunL();
     void DoCancel();
-       
-private: 
+
+private:
     HbDeviceDialogConnectHelper *q_ptr;
-    RHbDeviceDialogClientSession mClientSession;     
+    RHbDeviceDialogClientSession mClientSession;
     bool mSessionConnected;
 };
 

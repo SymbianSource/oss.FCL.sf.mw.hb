@@ -49,7 +49,7 @@ QSizeF HbIconTextObject::intrinsicSize(QTextDocument *doc, int posInDocument,
 
     // TODO: optimize this
     HbIcon icon = animator->icon();
-    qreal iconHeight = fm.height() * smiley.scaleFactor;
+    qreal iconHeight = fm.height() * smiley.engine->smileyScaleFactor();
 
     if(icon.height() != iconHeight) {
         icon.setHeight(iconHeight);
@@ -135,6 +135,7 @@ void HbSmileyEnginePrivate::setDocument(QTextDocument *doc)
 
 void HbSmileyEnginePrivate::insertSmiley( QTextCursor cursor, const QString& name)
 {
+    Q_Q(HbSmileyEngine);
     QTextCharFormat hbiconFormat;
     QTextCursor *tmpCursor = new QTextCursor(cursor);
     hbiconFormat.setObjectType(HbIconTextFormat);
@@ -143,7 +144,7 @@ void HbSmileyEnginePrivate::insertSmiley( QTextCursor cursor, const QString& nam
     HbIconAnimator *animator = lookupAnimator(name);
     smiley.cursor = tmpCursor;
     smiley.animator = animator;
-    smiley.scaleFactor = mScaleFactor;
+    smiley.engine = q;
 
     hbiconFormat.setProperty(HbIconTextObject::HbSmileyData, qVariantFromValue(smiley));
 
@@ -160,13 +161,8 @@ void HbSmileyEnginePrivate::insertSmileys( QTextCursor cursor, bool insertOne)
     QTextCursor initialCursor = cursor;
     initialCursor.beginEditBlock();
 
-    QString regexpStr;
-    foreach (QString pattern, mSmileyTheme.patterns()) {
-        regexpStr += QRegExp::escape(pattern) + "|";
-    }
-    regexpStr.remove(regexpStr.count()-1, 1);
+    const QRegExp &rx = mSmileyTheme.regExp();
 
-    QRegExp rx(regexpStr);
     cursor = mDocument->find(rx, cursor);
     while ( !cursor.isNull()){
         insertSmiley(cursor, mSmileyTheme.smiley(cursor.selectedText()));
@@ -253,18 +249,7 @@ void HbSmileyEnginePrivate::_q_animationProgressed()
     Q_Q(HbSmileyEngine);
     HbIconAnimator *animator = qobject_cast<HbIconAnimator *>(q->sender());
     Q_ASSERT(animator);
-
-    foreach(QTextCursor *cursor, mAnimatorToCursors.value(animator)) {
-        QTextCursor tmpCursor(*cursor);
-        tmpCursor.setPosition(tmpCursor.position()+1, QTextCursor::KeepAnchor);
-
-        // update a bogus property, which will trigger a paint
-        QTextCharFormat format;
-        format.setProperty(HbIconTextObject::HbSmileyData+1, QString("Dummy"));
-        mEdited = false;
-        tmpCursor.mergeCharFormat(format);
-        mEdited = true;
-    }
+    q->updateSmileys(mAnimatorToCursors.value(animator));
 }
 
 void HbSmileyEnginePrivate::_q_documentContentsChanged(int position, int charsRemoved, int charsAdded)
@@ -363,9 +348,15 @@ void HbSmileyEngine::setSmileyScaleFactor(qreal scaleFactor)
 {
     Q_D(HbSmileyEngine);
     if (d->mScaleFactor != scaleFactor) {
-        // Note: it is assumed that the scale factor is not changed on the fly hence we do not need to redraw the smileyes.
         d->mScaleFactor = scaleFactor;
+        updateSmileys(d->mCursorToAnimator.keys());
     }
+}
+
+qreal HbSmileyEngine::smileyScaleFactor() const
+{
+    Q_D(const HbSmileyEngine);
+    return d->mScaleFactor;
 }
 
 void HbSmileyEngine::startAnimation()
@@ -402,6 +393,31 @@ void HbSmileyEngine::insertSmiley(const QTextCursor& cursor)
 {
     Q_D(HbSmileyEngine);
     d->insertSmileys(cursor,true);
+}
+
+void HbSmileyEngine::updateSmileys(QList<QTextCursor*> cursors)
+{
+    Q_D(HbSmileyEngine);
+
+    if(cursors.isEmpty()) {
+        return;
+    }
+
+    QTextCursor* initialCursor = cursors.first();
+    initialCursor->beginEditBlock();
+
+    foreach(QTextCursor *cursor, cursors) {
+        QTextCursor tmpCursor(*cursor);
+        tmpCursor.setPosition(tmpCursor.position()+1, QTextCursor::KeepAnchor);
+
+        // update a bogus property, which will trigger a paint
+        QTextCharFormat format;
+        format.setProperty(HbIconTextObject::HbSmileyData+1, QString("Dummy"));
+        d->mEdited = false;
+        tmpCursor.mergeCharFormat(format);
+        d->mEdited = true;
+    }
+    initialCursor->endEditBlock();
 }
 
 #include "moc_hbsmileyengine_p.cpp"

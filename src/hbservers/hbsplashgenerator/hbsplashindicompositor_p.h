@@ -39,12 +39,18 @@ QT_BEGIN_NAMESPACE
 class QTimer;
 QT_END_NAMESPACE
 
+#ifdef Q_OS_SYMBIAN
+#include <e32property.h>
+class CFbsBitmap;
+#endif
+
 class HbSplashIndicatorCompositor : public QObject, public HbSplashCompositorInterface
 {
     Q_OBJECT
 
 public:
     HbSplashIndicatorCompositor(HbSplashGenerator *gen);
+    ~HbSplashIndicatorCompositor();
     void release();
     void composeToBitmap(void *bitmap, Qt::Orientation orientation, int splashExtraFlags);
 
@@ -57,6 +63,9 @@ private:
     void queueRender(bool lazy = false);
     void doRender(HbMainWindow *mw, QImage *statusBarImage, QRect *statusBarRect);
     bool eventFilter(QObject *obj, QEvent *event);
+#ifdef Q_OS_SYMBIAN
+    void publishAsBitmap(const QImage &image, CFbsBitmap **bitmap, RProperty *prop);
+#endif
 
     HbSplashGenerator *mGenerator;
     bool mSleeping;
@@ -66,6 +75,12 @@ private:
     QRect mStatusBarRectPrt;
     QRect mStatusBarRectLsc;
     QTimer *mRenderTimer;
+#ifdef Q_OS_SYMBIAN
+    CFbsBitmap *mStatusBarBitmapPrt;
+    CFbsBitmap *mStatusBarBitmapLsc;
+    RProperty mStatusBarBitmapHandlePropPrt;
+    RProperty mStatusBarBitmapHandlePropLsc;
+#endif
 };
 
 #endif

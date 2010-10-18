@@ -58,13 +58,13 @@ HbHardwareInputPlugin::~HbHardwareInputPlugin()
 //
 QInputContext* HbHardwareInputPlugin::create(const QString& key)
 {
-	if (key == QString("HbHardware12key")) {
-		return new HbHardware12key();
-	} else if (key == QString("HbHardwareQwerty")) {
+    if (key == QString("HbHardware12key")) {
+        return new HbHardware12key();
+    } else if (key == QString("HbHardwareQwerty")) {
         return new HbHardwareQwerty();
-	} else {
-		return 0;
-	}
+    } else {
+        return 0;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -73,14 +73,14 @@ QInputContext* HbHardwareInputPlugin::create(const QString& key)
 // ---------------------------------------------------------------------------
 //
 QString HbHardwareInputPlugin::description(const QString& key)
-{	
-	if (key == QString("HbHardware12key")) {
-		return QString("HW phone keypad input");
+{   
+    if (key == QString("HbHardware12key")) {
+        return QString("HW phone keypad input");
     } else if (key == QString("HbHardwareQwerty")) {
         return QString("HW phone Qwerty keypad input");
-	} else {
-		return QString("");
-	}
+    } else {
+        return QString("");
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -90,13 +90,13 @@ QString HbHardwareInputPlugin::description(const QString& key)
 //
 QString HbHardwareInputPlugin::displayName(const QString& key)
 {
-	if (key == QString("HbHardware12key")) {
-		return QString("HW 12-key");
+    if (key == QString("HbHardware12key")) {
+        return QString("HW 12-key");
     } else if (key == QString("HbHardwareQwerty")) {
         return QString("HW phone Qwerty keypad input");
-	} else {
-		return QString("");
-	}
+    } else {
+        return QString("");
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -106,10 +106,10 @@ QString HbHardwareInputPlugin::displayName(const QString& key)
 //
 QStringList HbHardwareInputPlugin::keys() const
 {
-	QStringList keys;
-	keys.append(QString("HbHardware12key"));
-	keys.append(QString("HbHardwareQwerty"));
-	return keys;
+    QStringList keys;
+    keys.append(QString("HbHardware12key"));
+    keys.append(QString("HbHardwareQwerty"));
+    return keys;
 }
 
 // ---------------------------------------------------------------------------
@@ -119,7 +119,7 @@ QStringList HbHardwareInputPlugin::keys() const
 //
 QStringList HbHardwareInputPlugin::languages(const QString& /*key*/)
 {
-	return QStringList();
+    return QStringList();
 }
 
 //

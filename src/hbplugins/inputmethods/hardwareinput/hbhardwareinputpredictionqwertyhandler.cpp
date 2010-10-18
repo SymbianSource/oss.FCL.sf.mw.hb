@@ -162,16 +162,16 @@ bool HbHardwareInputPredictionQwertyHandlerPrivate::buttonReleased(const QKeyEve
     case Qt::Key_Down:{
         q->actionHandler(HbInputModeHandler::HbInputModeActionLaunchCandidatePopup);
         break;
-		}
-	case Qt::Key_Space:{
-		if (event->modifiers() & Qt::ControlModifier){
-			if (HbInputSettingProxy::instance()->predictiveInputStatus()) {
-					HbInputSettingProxy::instance()->setPredictiveInputStatus(0);
-				} else {
-					HbInputSettingProxy::instance()->setPredictiveInputStatus(1);
-				}
-			break;
-			}
+        }
+    case Qt::Key_Space:{
+        if (event->modifiers() & Qt::ControlModifier){
+            if (HbInputSettingProxy::instance()->predictiveInputStatus()) {
+                    HbInputSettingProxy::instance()->setPredictiveInputStatus(0);
+                } else {
+                    HbInputSettingProxy::instance()->setPredictiveInputStatus(1);
+                }
+            break;
+            }
         }
     default: {
             int currentTextCase = focusObject->editorInterface().textCase();

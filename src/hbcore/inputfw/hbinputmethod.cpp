@@ -43,7 +43,7 @@
 #include "hbinputvkbhostbridge.h"
 
 /*!
-@alpha
+@stable
 @hbcore
 \class HbInputMethod
 \brief A base class for input method implementations.
@@ -189,7 +189,7 @@ bool HbInputMethod::initializeFramework(QApplication &app)
     connect(&app, SIGNAL(aboutToQuit()), HbPredictionFactory::instance(), SLOT(shutDown()));
     connect(&app, SIGNAL(aboutToQuit()), HbExtraDictionaryFactory::instance(), SLOT(shutdown()));
 
-    HbInputMethod *master = HbInputMethodNull::Instance();
+    HbInputMethodNull *master = HbInputMethodNull::Instance();
 
     if (!master) {
         return false;
@@ -203,6 +203,16 @@ bool HbInputMethod::initializeFramework(QApplication &app)
     // which we are passing.
     if (proxy != app.inputContext()) {
         app.setInputContext(proxy);
+    }
+
+    if (master->delayedPanelRequest()) {
+        master->setDelayedPanelRequest(false);
+        QInputContext* ic = qApp->inputContext();
+        if (ic) {
+            QEvent *openEvent = new QEvent(QEvent::RequestSoftwareInputPanel);
+            ic->filterEvent(openEvent);
+            delete openEvent;
+        }
     }
 
     return true;
@@ -328,29 +338,12 @@ void HbInputMethod::globalSecondaryInputLanguageChanged(const HbInputLanguage &n
 }
 
 /*!
-This slot is connected to the setting proxy activeKeyboard attribute. It will
-activate proper state when the signal is received.
+\deprecated HbInputMethod::activeKeyboardChanged(HbKeyboardType)
+    is deprecated. No need to call this outside of framework.
 */
 void HbInputMethod::activeKeyboardChanged(HbKeyboardType newKeyboard)
 {
-    if (!isActiveMethod() || !HbInputSettingProxy::instance()->orientationChangeCompleted()) {
-        return;
-    }
-
-    Q_D(HbInputMethod);
-
-    d->mInputState.setKeyboard(newKeyboard);
-    HbInputMethod *stateHandler = d->findStateHandler(d->mInputState);
-    if (stateHandler) {
-        d->inputStateToEditor(d->mInputState);
-        if (stateHandler != this) {
-            // Context switch needed.
-            d->contextSwitch(stateHandler);
-        } else {
-            // Same method handles new state, just report the state change.
-            inputStateActivated(d->mInputState);
-        }
-    }
+    Q_UNUSED(newKeyboard);
 }
 
 /*!
@@ -413,15 +406,32 @@ void HbInputMethod::setFocusWidget(QWidget *widget)
 
         // Losing focus.
         if (d->mFocusObject && unfocus) {
-            focusLost(false);
-            d->hideMainWindow();
+            bool isNextFocusToEditor = false;
+            //The Qt framework sets the focused widget twice as and when there is a change
+            //of focus. First time it sets the focus to NULL and second time it sets the focus
+            //to the actual widget. But, we need to know if there is a focus switch to an editor
+            //And we do a focusLost(false) only if the current focused widget is NULL.
+            QWidget *newFocusedWidget = QApplication::focusWidget();
+            if (newFocusedWidget && newFocusedWidget->testAttribute(Qt::WA_InputMethodEnabled)) {
+                if (newFocusedWidget->testAttribute(Qt::WA_WState_Created)
+                    && newFocusedWidget->isEnabled()) {
+                        isNextFocusToEditor = true;
+                    }
+            }
+            // inform plugin about the focus shift.
+            focusLost(isNextFocusToEditor);
+            // hide mainwindow only incase qApp has focus on a non-editor field.
+            if (!isNextFocusToEditor)
+                d->hideMainWindow();
+
             delete d->mFocusObject;
             d->mFocusObject = 0;
+            d->proxy()->QInputContext::setFocusWidget(0);
         }
 
         return;
     }
-		
+        
     // attach focuswidget to prxoy inputcontext as proxy is 
     // the only inputcotext known to qt framework.
     d->proxy()->QInputContext::setFocusWidget(widget);
@@ -467,14 +477,16 @@ void HbInputMethod::setFocusWidget(QWidget *widget)
     // Delete previous focus object.
     if (d->mFocusObject) {
         refreshHost = true;
-        disconnect(d->mFocusObject, SIGNAL(editorDeleted()), this, SLOT(editorDeleted()));
+        disconnect(d->mFocusObject->object(), SIGNAL(destroyed(QObject *)), this, SLOT(editorDeleted(QObject *)));
     }
     delete d->mFocusObject;
     d->mFocusObject = 0;
 
     // Attach focus.
-    d->mFocusObject = new HbInputFocusObject(widget);
+    d->mFocusObject = d->createAndSetupFocusObject(widget);
     connect(widget, SIGNAL(destroyed(QObject *)), this, SLOT(editorDeleted(QObject *)));
+    connect(d->mFocusObject, SIGNAL(aboutToChangeOrientation()), this, SLOT(_q_startOrientationSequence()));
+    connect(d->mFocusObject, SIGNAL(orientationChanged()), this, SLOT(_q_endOrientationSequence()));
 
     d->setFocusCommon();
 
@@ -496,11 +508,10 @@ void HbInputMethod::widgetDestroyed(QWidget *widget)
 {
     Q_D(HbInputMethod);
 
-    if (d->mFocusObject && d->mFocusObject->object() == widget) {
+    if (d->proxy()->focusWidget() == widget) {
         delete d->mFocusObject;
         d->mFocusObject = 0;
-        // passing to actual QInputContext which is attached to Qt framework.
-        // which will internally set QInputContext::focusWidget to Null.
+        // update QInputContext internal focusWidget pointer.
         d->proxy()->QInputContext::widgetDestroyed(widget);
         d->proxy()->QInputContext::setFocusWidget(0);
     }
@@ -556,6 +567,8 @@ void HbInputMethod::setFocusObject(HbInputFocusObject *focusObject)
     // Attach focus.
     d->mFocusObject = focusObject;
     connect(d->mFocusObject->object(), SIGNAL(destroyed(QObject *)), this, SLOT(editorDeleted(QObject *)));
+    connect(d->mFocusObject, SIGNAL(aboutToChangeOrientation()), this, SLOT(_q_startOrientationSequence()));
+    connect(d->mFocusObject, SIGNAL(orientationChanged()), this, SLOT(_q_endOrientationSequence()));
 
     d->setFocusCommon();
 
@@ -740,39 +753,20 @@ void HbInputMethod::updateState()
 }
 
 /*!
-Receives the screen orientation signal. Will determine correct input state for new
-orientation and find state handler for it.
+\deprecated HbInputMethod::orientationChanged(Qt::Orientation)
+    is deprecated. No need to call this from outside of the framework.
 */
 void HbInputMethod::orientationChanged(Qt::Orientation orientation)
 {
-    Q_D(HbInputMethod);
     Q_UNUSED(orientation);
-
-    if (d->mOldFocusObject) {
-        setFocusObject(d->mOldFocusObject);
-        d->mOldFocusObject = 0;
-    }
-
 }
 
 /*!
-This slot is connected to setting proxy's orientation change warning signal. The default
-base class implementation is empty.
-
-\sa HbInputSettingProxy
+\deprecated HbInputMethod::orientationAboutToChange()
+    is deprecated. No need to call this from outside of the framework.
 */
 void HbInputMethod::orientationAboutToChange()
 {
-    Q_D(HbInputMethod);
-	if(isActiveMethod()) {
-		reset();
-	}
-    d->inputStateToEditor(d->mInputState);
-    if (d->mFocusObject) {
-        d->mOldFocusObject = d->mFocusObject;
-        d->mFocusObject = 0;
-    }
-    HbVkbHostBridge::instance()->closeKeypad(true);
 }
 
 /*!
@@ -818,6 +812,19 @@ void HbInputMethod::unlockFocus()
 }
 
 /*!
+Returns true if focus is locked. If focus is locked, input framework will ignore 
+all the incoming focus events completely until focus is unlocked.
+
+\sa lockFocus
+\sa unlockFocus
+*/
+bool HbInputMethod::isFocusLocked()
+{
+    Q_D(HbInputMethod);
+    return d->mFocusLocked;
+}
+
+/*!
 Removes input method focus and asks active input plugin to close its active UI-components
 (such as touch keypads). This may be needed in some special cases where the underlying
 application wants to make sure that there are no input related elements on the screen.
@@ -846,7 +853,8 @@ void HbInputMethod::forceUnfocus()
 }
 
 /*!
-Wrapper.
+Returns true if automatic condititions for automatic upper case are met at
+current cursor position. Returns false if there isn't active editor.
 */
 bool HbInputMethod::automaticTextCaseNeeded() const
 {
@@ -885,10 +893,11 @@ void HbInputMethod::editorDeleted(QObject *obj)
     Q_D(HbInputMethod);
     Q_UNUSED(obj);
 
-    focusLost();
+    focusLost(false);
     d->hideMainWindow();
     delete d->mFocusObject;
     d->mFocusObject = 0;
+    d->mFocusLocked = false;
 
     reset();
 }
@@ -902,6 +911,8 @@ HbInputMethodDescriptor HbInputMethod::descriptor() const
 {
     return HbInputModeCache::instance()->descriptor(this);
 }
+
+#include "moc_hbinputmethod.cpp"
 
 // End of file
 

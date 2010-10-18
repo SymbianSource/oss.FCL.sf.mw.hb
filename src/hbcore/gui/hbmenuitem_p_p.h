@@ -28,11 +28,12 @@
 
 #include "hbglobal.h"
 #include "hbwidget_p.h"
-#include "hbstyleoptionmenuitem_p.h"
 
 class HbMenu;
 class HbMenuItem;
-class QGraphicsItem;
+QT_BEGIN_NAMESPACE
+class QGraphicsObject;
+QT_END_NAMESPACE
 
 class HbMenuItemPrivate : public HbWidgetPrivate
 {
@@ -43,16 +44,27 @@ public:
 
     virtual ~HbMenuItemPrivate();
 
-    bool createPrimitives(HbStyleOptionMenuItem const &option);
-    void updatePrimitives();
+    void createPrimitives();
+    void recreatePrimitives();
+    bool evaluateRecreateNecessary();
 
     QAction *action;
     HbMenu *menu;
 
-    QGraphicsItem *textItem;
-    QGraphicsItem *arrowItem;
-    QGraphicsItem *checkItem;
-    QGraphicsItem *separatorItem;    
+    QGraphicsObject *mTextItem;
+    QGraphicsObject *mArrowItem;
+    QGraphicsObject *mCheckItem;
+    QGraphicsObject *mSeparatorItem;
+    QGraphicsObject *mFrame;
+
+    bool             mIndicateFocus;
+    bool             mRecycled;
+
+    bool             mCheckChanged;
+    bool             mTextChanged;
+
+    bool             mOldCheckState;
+    QString          mOldText;
 
     void _q_updateItem(bool forcedUpdate = false);
 
@@ -63,10 +75,6 @@ private:
         return item->d_func();
     }
 
-    QGraphicsItem *mFocusItem;
-    QGraphicsItem *mFrame;
-    bool mChecked;
-    bool mRecycled;
     friend class HbMenu;
     friend class HbMenuPrivate;
     friend class HbMenuListView;

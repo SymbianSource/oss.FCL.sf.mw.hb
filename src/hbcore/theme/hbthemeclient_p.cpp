@@ -59,47 +59,48 @@ bool HbThemeClient::connectToServer()
  *
  * Returns HbIconInfo structure to the clients. This basically contains information about the shared
  * icon resources on server's shared memory
- *
- * \a iconPath
- * \a size
- * \a aspectRatioMode
- * \a mode
- * \a mirrored
- * \a options
- * \a color
- *
-
  */
-HbSharedIconInfo HbThemeClient::getSharedIconInfo(const QString& iconPath ,
-                                                  const QSizeF &size,
-                                                  Qt::AspectRatioMode aspectRatioMode,
-                                                  QIcon::Mode mode,
-                                                  bool mirrored,
-                                                  HbIconLoader::IconLoaderOptions options,
-                                                  const QColor &color,
-                                                  HbRenderingMode renderMode)
+HbSharedIconInfo HbThemeClient::getSharedIconInfo(const IconReqInfo &reqInfo)
 {
 #ifdef Q_OS_SYMBIAN
     Q_D(HbThemeClient);
-    return d->getSharedIconInfo(iconPath,
-                                size,
-                                aspectRatioMode,
-                                mode,
-                                mirrored,
-                                options,
-                                color,
-                                renderMode);
+    return d->getSharedIconInfo(reqInfo);
 #else
-    Q_UNUSED(iconPath);
-    Q_UNUSED(size);
-    Q_UNUSED(aspectRatioMode);
-    Q_UNUSED(mode);
-    Q_UNUSED(mirrored);
-    Q_UNUSED(options);
-    Q_UNUSED(color);
-    Q_UNUSED(renderMode);
-
+    Q_UNUSED(reqInfo);
     return HbSharedIconInfo();
+#endif
+}
+
+/**
+   Asynchronous version.
+ */
+void HbThemeClient::getSharedIconInfo(const IconReqInfo &reqInfo,
+                                      HbAsyncIconInfoCallback callback,
+                                      void *callbackParam)
+{
+#ifdef Q_OS_SYMBIAN
+    Q_D(HbThemeClient);
+    d->getSharedIconInfo(reqInfo, callback, callbackParam);
+#else
+    Q_UNUSED(reqInfo);
+    Q_UNUSED(callback);
+    Q_UNUSED(callbackParam);
+#endif
+}
+
+/**
+   Cancels one or more previous async requests. All requests using the
+   same callback are canceled.
+ */
+void HbThemeClient::cancelGetSharedIconInfo(HbAsyncIconInfoCallback callback,
+                                            void *callbackParam)
+{
+#ifdef Q_OS_SYMBIAN
+    Q_D(HbThemeClient);
+    d->cancelGetSharedIconInfo(callback, callbackParam);
+#else
+    Q_UNUSED(callback);
+    Q_UNUSED(callbackParam);
 #endif
 }
 
@@ -111,15 +112,16 @@ HbSharedIconInfo HbThemeClient::getSharedIconInfo(const QString& iconPath ,
 QByteArray HbThemeClient::getSharedBlob(const QString &name)
 {
 #ifdef Q_OS_SYMBIAN
-    HbSharedIconInfo info = getSharedIconInfo(
-        name,
-        QSizeF(),
-        Qt::KeepAspectRatio,
-        QIcon::Normal,
-        false,
-        HbIconLoader::NoOptions,
-        QColor(),
-        ESWRendering);
+    IconReqInfo reqInfo;
+    reqInfo.iconPath = name;
+    reqInfo.size = QSizeF();
+    reqInfo.aspectRatioMode = Qt::KeepAspectRatio;
+    reqInfo.mode = QIcon::Normal;
+    reqInfo.mirrored = false;
+    reqInfo.options = HbIconLoader::NoOptions;
+    reqInfo.color = QColor();
+    reqInfo.renderMode = ESWRendering;
+    HbSharedIconInfo info = getSharedIconInfo(reqInfo);
     return info.type == BLOB
         ? QByteArray::fromRawData(HbMemoryUtils::getAddress<char>(
                                       HbMemoryManager::SharedMemory,
@@ -168,7 +170,8 @@ HbSharedIconInfo HbThemeClient::getMultiPartIconInfo(const QStringList &multiPar
  * \a priority  layer priority
  */
 HbCss::StyleSheet *HbThemeClient::getSharedStyleSheet(const QString &filePath,
-                                                      HbLayeredStyleLoader::LayerPriority priority)
+                                                      HbLayeredStyleLoader::LayerPriority priority,
+                                                      bool &fileExists)
 {
     HbCss::StyleSheet *styleSheet = 0;
 #ifdef Q_OS_SYMBIAN
@@ -190,14 +193,28 @@ HbCss::StyleSheet *HbThemeClient::getSharedStyleSheet(const QString &filePath,
                                                                  offset);
         } else {
             Q_D(HbThemeClient);
-            styleSheet = d->getSharedStyleSheet(filePathFixed, priority);
+            styleSheet = d->getSharedStyleSheet(filePathFixed, priority, fileExists);
         }
     }
 #else
     Q_UNUSED(filePath);
     Q_UNUSED(priority);
+    Q_UNUSED(fileExists);
 #endif
     return styleSheet;
+}
+
+/**
+ * HbThemeClient::getSharedMissedHbCss()
+ */
+HbVector<uint> *HbThemeClient::getSharedMissedHbCss()
+{
+    HbVector<uint> *list = 0;
+#ifdef Q_OS_SYMBIAN
+    Q_D(HbThemeClient);
+    list = d->getSharedMissedHbCss();
+#endif
+    return list;
 }
 
 /**
@@ -205,10 +222,14 @@ HbCss::StyleSheet *HbThemeClient::getSharedStyleSheet(const QString &filePath,
  * \a filePath  layout definition filepath. Only acceptable path separator is '/'.
  * \a layout  layout name
  * \a section section name
+ * \a fileExists on return will be true if the file exists, otherwise false. Note that
+ *      the file may exist but the LayoutDefinition variable may return null, meaning
+ *      the layout should be loaded client-side.
  */
 HbWidgetLoader::LayoutDefinition *HbThemeClient::getSharedLayoutDefs(const QString &filePath,
                                                                      const QString &layout,
-                                                                     const QString &section)
+                                                                     const QString &section,
+                                                                     bool &fileExists)
 {
     HbWidgetLoader::LayoutDefinition *layoutDefinition = 0;
 #ifdef Q_OS_SYMBIAN
@@ -227,13 +248,14 @@ HbWidgetLoader::LayoutDefinition *HbThemeClient::getSharedLayoutDefs(const QStri
                        HbMemoryManager::SharedMemory, offset);
         } else {
             Q_D(HbThemeClient);
-            layoutDefinition = d->getSharedLayoutDefs(filePathFixed, layout, section);
+            layoutDefinition = d->getSharedLayoutDefs(filePathFixed, layout, section, fileExists);
         }
     }
 #else
     Q_UNUSED(filePath);
     Q_UNUSED(layout);
     Q_UNUSED(section);
+    Q_UNUSED(fileExists);
 #endif
     return layoutDefinition;
 }
@@ -324,41 +346,27 @@ bool HbThemeClient::addSharedEffect(const QString& filePath)
 
 /**
  * HbThemeClient::unloadIcon()
- *
- * \a iconPath
- * \a size
- * \a aspectRatioMode
- * \a mode
- * \a mirrored
- * \a options
- * \a color
-
  */
-void HbThemeClient::unloadIcon(const QString& iconPath ,
-                               const QSizeF &size,
-                               Qt::AspectRatioMode aspectRatioMode,
-                               QIcon::Mode mode,
-                               bool mirrored,
-                               const QColor &color,
-                               HbRenderingMode renderMode)
+void HbThemeClient::unloadIcon(const IconReqInfo &reqInfo)
 {
 #ifdef Q_OS_SYMBIAN
     Q_D(HbThemeClient);
-    return d->unloadIcon(iconPath,
-                         size,
-                         aspectRatioMode,
-                         mode,
-                         mirrored,
-                         color,
-                         renderMode);
+    return d->unloadIcon(reqInfo);
 #else
-    Q_UNUSED(iconPath);
-    Q_UNUSED(size);
-    Q_UNUSED(aspectRatioMode);
-    Q_UNUSED(mode);
-    Q_UNUSED(mirrored);
-    Q_UNUSED(color);
-    Q_UNUSED(renderMode);
+    Q_UNUSED(reqInfo);
+#endif
+}
+
+/**
+ * HbThemeClient::batchUnloadIcon()
+ */
+void HbThemeClient::batchUnloadIcon(const QVector<IconReqInfo> &reqInfos)
+{
+#ifdef Q_OS_SYMBIAN
+    Q_D(HbThemeClient);
+    return d->batchUnloadIcon(reqInfos);
+#else
+    Q_UNUSED(reqInfos);
 #endif
 }
 

@@ -30,7 +30,6 @@
 #include <hbgridviewitem.h>
 
 class HbColorGridViewItemPrivate;
-class HbStyleOptionColorGridViewItem;
 
 class HbColorGridViewItem : public HbGridViewItem
 {
@@ -44,8 +43,6 @@ public:
     void updateChildItems();
     void updatePrimitives();
 
-    QGraphicsItem * primitive(HbStyle::Primitive primitive) const;
-    void initStyleOption(HbStyleOptionColorGridViewItem *option) const;
     enum { Type = HbPrivate::ItemType_ColorGridViewItem};
     int type() const { return Type; }
     enum { ColorRole = Qt::UserRole + 1 };
@@ -53,6 +50,7 @@ protected:
     HbColorGridViewItem(HbColorGridViewItemPrivate &dd, QGraphicsItem *parent);
     HbColorGridViewItem(const HbColorGridViewItem &source);
     virtual void resizeEvent ( QGraphicsSceneResizeEvent * event );
+    void initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbColorGridViewItem)

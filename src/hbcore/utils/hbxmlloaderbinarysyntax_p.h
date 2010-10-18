@@ -63,6 +63,7 @@ private:
     bool parseSetSizePolicy();
     bool parseSetSizeHint();
     bool parseSetToolTip();
+    bool parseSetBackground();
     bool parseCreateAnchorLayout();
     bool parseAddAnchorLayoutItem();
     bool parseSetAnchorLayoutMapping();

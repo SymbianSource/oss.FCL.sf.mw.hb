@@ -31,11 +31,13 @@
 #include "hbabstractitemcontainer_p.h"
 
 #include <hbnamespace.h>
+#include <hbnamespace_p.h>
 #include <hbstyle.h>
-#include <hbstyleoptiontreeviewitem_p.h>
 #include <hbwidgetfeedback.h>
 #include <hbtapgesture.h>
 #include <hbeffect.h>
+
+#include <hbstyleiconprimitivedata.h>
 
 #include <QPersistentModelIndex>
 #include <QVariant>
@@ -49,16 +51,27 @@
 
     The HbTreeViewItem class provides an item that is used by the HbTreeView class to
     visualize content within single model index. The item can only be used with HbTreeView
-    or with objects derived from HbTreeView. By default the HbTreeViewItem supports
-    all the same content that HbListViewItem supports. In addition to this it is able to 
-    visualize parent items.
+    or with objects derived from HbTreeView. 
+    
+    HbTreeViewItem supports following model item types in Hb::ItemTypeRole role of data model
+    \li Hb::StandardItem
+    \li Hb::ParentItem. Parent item visualizes collapsed/expanded state of parent item with "subitem-indicator" item.
+    \li Hb::SeparatorItem
+    HbAbstractViewItem documentation provides details how these item types distinguish from each other. 
+
+    HbTreeViewItem supports all the same data content in child items as HbListViewItem does. 
+    Parent item visualizes by default expanded/collapsed icon and content of "text-1" primitive item. This is defined in HbTreeViewItem WidgetML file.
+    Handling Qt::BackgroundRole item data role takes place in base class HbAbstractViewItem.
 
     \b Subclassing
 
     See HbListViewItem for commmon view item subclassing reference. 
 
     \primitives
-    \primitive{subitem-indicator} HbIconItem representing the expand/collapse icon in an HbTreeViewItem that has child items.
+    \primitive{subitem-indicator} HbIconItem with item name "subitem-indicator" representing the expand/collapse icon in an HbTreeViewItem that has child items.
+
+    \sa HbListViewItem
+    \sa HbAbstractViewItem
 */
 
 
@@ -112,10 +125,10 @@ void HbTreeViewItemPrivate::updateExpandItem()
 {
     Q_Q(HbTreeViewItem);
 
-    HbStyleOptionTreeViewItem styleOption;
-    q->initStyleOption(&styleOption);
+    HbStyleIconPrimitiveData iconPrimitiveData;
+    q->initPrimitiveData(&iconPrimitiveData, mExpandItem);
 
-    q->style()->updatePrimitive(mExpandItem, HbStyle::P_TreeViewItem_expandicon, &styleOption);
+    q->style()->updatePrimitive(mExpandItem, &iconPrimitiveData, q);
 }
 
 void HbTreeViewItemPrivate::tapTriggered(QGestureEvent *event)
@@ -126,6 +139,7 @@ void HbTreeViewItemPrivate::tapTriggered(QGestureEvent *event)
 
     if (gesture->state() == Qt::GestureFinished 
         && gesture->tapStyleHint() == HbTapGesture::Tap) {
+        q->scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
 
         QPointF position = event->mapToGraphicsScene(gesture->hotSpot());
         position = q->mapFromScene(position);
@@ -238,7 +252,8 @@ void HbTreeViewItem::updateChildItems()
 
     if (model && model->hasChildren(d->mIndex) && sd->mUserExpandable) {
         if (!d->mExpandItem) {
-            d->mExpandItem = style()->createPrimitive(HbStyle::P_TreeViewItem_expandicon, this);
+            d->mExpandItem = style()->createPrimitive(HbStyle::PT_IconItem, QLatin1String("subitem-indicator"), 0);
+            d->mExpandItem->setParentItem(this); // To enable asynchronous icon loading.
             d->mItemsChanged = true;
         }
     } else {
@@ -286,7 +301,7 @@ void HbTreeViewItem::setExpanded(bool expanded)
     if (d->mExpanded != expanded) {
         d->mExpanded = expanded;
 
-		if (sd->mItemView != 0) {
+        if (sd->mItemView != 0) {
             HbTreeView *treeView = qobject_cast<HbTreeView *>(sd->mItemView);
             if (treeView) {
                 treeView->setExpanded(this->modelIndex(), expanded);
@@ -336,18 +351,36 @@ void HbTreeViewItem::setTransientState(const QHash<QString, QVariant> &state)
 }
 
 /*!
-    Initialize option with the values from this HbTreeViewItem. 
-
-    This method is useful for subclasses when they need a HbStyleOptionTreeViewItem, 
-    but don't want to fill in all the information themselves.
+  Initializes the HbTreeViewItem primitive data. 
+  
+  This function calls HbWidgetBase::initPrimitiveData().
+  \a primitiveData is data object, which is populated with data. \a primitive is the primitive.
 */
-void HbTreeViewItem::initStyleOption(HbStyleOptionTreeViewItem *option) const
+void HbTreeViewItem::initPrimitiveData(HbStylePrimitiveData     *primitiveData, 
+                                       const QGraphicsObject    *primitive)
 {
-    Q_D(const HbTreeViewItem);
+    Q_ASSERT_X(primitive && primitiveData, "HbTreeViewItem::initPrimitiveData" , "NULL data not permitted");
+    Q_D(HbTreeViewItem);
 
-    HbListViewItem::initStyleOption(option);
-
-    option->expanded = d->mExpanded;
+    HbWidgetBase::initPrimitiveData(primitiveData, primitive);
+    if (    primitiveData->type == HbStylePrimitiveData::SPD_Icon
+        &&  primitive == d->mExpandItem) {
+        QString iconName;
+        if (d->mExpanded) {
+            if (testAttribute(Hb::InsidePopup)) {
+                iconName = QLatin1String("qtg_mono_collapse");
+            } else {
+                iconName = QLatin1String("qtg_small_collapse");
+            }
+        } else {
+            if (testAttribute(Hb::InsidePopup)) {
+                iconName = QLatin1String("qtg_mono_expand");
+            } else {
+                iconName = QLatin1String("qtg_small_expand");
+            }
+        }
+        hbstyleprimitivedata_cast<HbStyleIconPrimitiveData*>(primitiveData)->iconName = iconName;
+    }
 }
 
 /*!
@@ -381,8 +414,8 @@ bool HbTreeViewItem::isUserExpandable() const
     \reimp
     
     In the base class the multiselection mode selection area is the whole item. In HbTreeView this is not
-    possible because of the expansion icon. For the HbTreeView the selection area in multiselection mode is 
-    defined by the primitive HbStyle::P_ItemViewItem_touchmultiselection
+    possible because of the expansion icon. For the HbTreeView the selection is area of
+    primitive with item name "multiselection-toucharea".
 */
 bool HbTreeViewItem::selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const
 {

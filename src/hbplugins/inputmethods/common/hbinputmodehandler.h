@@ -72,7 +72,8 @@ public:
         HbInputModeActionFocusRecieved, // focus received state
         HbInputModeActionFocusLost, // focus lost state
         HbInputModeActionCancelButtonPress,
-		HbInputModeActionCloseSpellQuery
+        HbInputModeActionCloseSpellQuery,
+        HbInputModeActionRestorePreviousState
        // more..
     };
 
@@ -91,7 +92,7 @@ public:
     virtual void commitAndUpdate(const QString& string, int replaceFrom = 0, int replaceLength = 0, bool isAsync = false);
     void sendAndUpdate(QEvent &event);
     virtual void setKeymap(const HbKeymap* keymap);
-	void togglePrediction();
+    void togglePrediction();
 
 signals:
     // incase one mode handler is not capable of processing the events.
@@ -187,15 +188,16 @@ public:
     void commitExactWord();
     virtual void candidatePopupClosed(QString activatedWord, int closingKey);
     virtual void showExactWordPopupIfNeeded();
-    void closeSpellQueryDialog();
     void spellQueryDialogClosed(QObject *savedFocusObject,HbInputSpellQuery::HbSpellCloseReason closeReason,const QString &string);
     void setAutocompletionStatus(bool status);  
+    void setLanguage(HbInputLanguage& language);
 public slots:
     // different utility popup callbacks
     virtual void inputQueryPopupClosed(QString activatedWord, int closingKey);    
     void sctCharacterSelected(QString character);
     void smileySelected(QString smiley);
     void launchSpellQueryDialog();
+    void closeSpellQueryDialog();
 signals://some useful signals related to popups
     void launchInputQueryPopup(QString editWord);
 

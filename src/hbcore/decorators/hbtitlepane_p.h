@@ -65,7 +65,7 @@ protected:
     HbTitlePane(HbTitlePanePrivate &dd, QGraphicsItem *parent = 0);
 
     void initStyleOption(HbStyleOptionTitlePane *option) const;
-	
+    
     void gestureEvent(QGestureEvent *event);
     void polish(HbStyleParameters &params);
     bool eventFilter(QObject *object, QEvent *event);

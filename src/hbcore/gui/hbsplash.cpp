@@ -25,17 +25,18 @@
 
 #include "hbsplash_p.h"
 #include "hbsplash_direct_symbian_p.h"
+#include "hbsplashdefs_p.h"
 #include <QDir>
 #include <QFile>
 #include <QTime>
 #include <QScopedPointer>
+#include <QScopedArrayPointer>
 
 #ifdef Q_OS_SYMBIAN
 #include <e32std.h>
 #include <f32file.h>
 #include <fbs.h>
 #include "hborientationstatus_p.h"
-#include "hbsplashdefs_p.h"
 #endif
 
 /*!
@@ -75,7 +76,9 @@ struct Params {
     HbSplash::AllocFunc allocFunc;
     void *allocFuncParam;
     quint32 extra;
-    bool forceFile;
+    bool forceFile; // supported only in load_symbian()
+    bool async; // only supported when forceFile == false
+    void *clientPtr;
 };
 
 struct File {
@@ -100,11 +103,11 @@ qint64 File::read(char *buf, qint64 size)
 
 static uchar *readSpl(File &f, Params &params)
 {
-    quint32 w = 0, h = 0, bpl = 0;
+    quint32 w = 0, h = 0, bpl = 0, compressedSz = 0;
     QImage::Format fmt = QImage::Format_Invalid;
     // Have to read the header in one piece in order to minimize the
     // number of read() calls.
-    const int headerLength = sizeof(quint32) * 5;
+    const int headerLength = sizeof(quint32) * 6;
     char headerBuf[headerLength];
     qMemSet(headerBuf, 0, headerLength);
     f.read(headerBuf, headerLength);
@@ -113,7 +116,8 @@ static uchar *readSpl(File &f, Params &params)
     h = *headerPtr++;
     bpl = *headerPtr++;
     fmt = (QImage::Format) * headerPtr++;
-    params.extra = *headerPtr;
+    params.extra = *headerPtr++;
+    compressedSz = *headerPtr;
     if (fmt != QImage::Format_ARGB32_Premultiplied) {
         qWarning("[hbsplash] Image format for %s is not ARGB32_PRE (is %d instead)",
                  qPrintable(f.mFullName), fmt);
@@ -124,25 +128,49 @@ static uchar *readSpl(File &f, Params &params)
     }
     qint64 sz = h * bpl;
     uchar *data = 0;
-    if (w > 0 && h > 0 && bpl > 0 && sz > 0 && sz <= image_bytes_limit) {
+    if (w > 0 && h > 0 && bpl > 0 && sz > 0
+        && sz <= image_bytes_limit
+        && compressedSz <= image_bytes_limit) {
         try {
+            QScopedArrayPointer<uchar> dataGuard;
             if (params.allocFunc) {
                 data = params.allocFunc(w, h, bpl, fmt, params.allocFuncParam);
+                // In this case the data ptr is owned by the client so dataGuard
+                // will not hold anything.
             } else {
                 data = new uchar[sz];
+                dataGuard.reset(data);
             }
             if (data) {
-                qint64 bytesRead = f.read(reinterpret_cast<char *>(data), sz);
-                if (bytesRead != sz) {
-                    qWarning("[hbsplash] File %s is invalid", qPrintable(f.mFullName));
-                    if (!params.allocFunc) {
-                        delete[] data;
+                if (compressedSz > 0) {
+                    QScopedArrayPointer<uchar> compressedData(new uchar[compressedSz]);
+                    qint64 bytesRead = f.read(reinterpret_cast<char *>(compressedData.data()), compressedSz);
+                    if (bytesRead != compressedSz) {
+                        qWarning("[hbsplash] File %s is invalid", qPrintable(f.mFullName));
+                        data = 0;
+                    } else {
+                        QByteArray uncompData = qUncompress(compressedData.data(), compressedSz);
+                        if (uncompData.size() == sz) {
+                            qMemCopy(data, uncompData.constData(), sz);
+                        } else {
+                            qWarning("[hbsplash] Bad data (size %d, expected %d)", uncompData.size(), (int) sz);
+                            data = 0;
+                        }
                     }
-                    data = 0;
+                } else {
+                    qint64 bytesRead = f.read(reinterpret_cast<char *>(data), sz);
+                    if (bytesRead != sz) {
+                        qWarning("[hbsplash] File %s is invalid", qPrintable(f.mFullName));
+                        data = 0;
+                    }
+                }
+                if (data) {
+                    dataGuard.take();
                 }
             }
         } catch (const std::bad_alloc &) {
-            qWarning("[hbsplash] Failed to allocate image buffer");
+            qWarning("[hbsplash] Failed to allocate image buffers");
+            data = 0; // when compressedData alloc fails this still needs to be nulled out
         }
     } else {
         qWarning("[hbsplash] Image in file %s is too big", qPrintable(f.mFullName));
@@ -172,17 +200,24 @@ public:
                              const QString &appId,
                              const QString &screenId);
 
-    uchar *getSplashFromBitmap(const QString &ori,
-                               const QString &appId,
-                               const QString &screenId,
-                               Params &params);
+    void getSplashFromBitmapAsync(const QString &ori,
+                                  const QString &appId,
+                                  const QString &screenId,
+                                  const Params &params);
+
+    uchar *waitForBitmap();
 
 private:
+    TPckg<TInt> mBitmapHandlePckg;
+    TInt mBitmapHandle;
     RMutex mMutex;
     bool mMutexOk;
+    TRequestStatus mRequestStatus;
+    Params mParams;
 };
 
 HbSplashSrvClient::HbSplashSrvClient()
+    : mBitmapHandlePckg(mBitmapHandle)
 {
     _LIT(KHbSplashStartMutex, "hbsplstart");
     mMutexOk = mMutex.OpenGlobal(KHbSplashStartMutex) == KErrNone;
@@ -211,12 +246,12 @@ bool HbSplashSrvClient::Connect()
     bool ok = false;
     while (maxTries--) {
         TInt err = CreateSession(hbsplash_server_name, ver);
-        qDebug("[hbsplash] CreateSession result: %d", err);
+        splDebug("[hbsplash] CreateSession result: %d", err);
         if (err == KErrNone) {
             ok = true;
             break;
         } else if (err == KErrNotFound || err == KErrServerTerminated) {
-            qDebug("[hbsplash] server not running");
+            splDebug("[hbsplash] server not running");
             TFindServer findServer(hbsplash_server_name);
             TFullName name;
             if (findServer.Next(name) != KErrNone) {
@@ -240,7 +275,7 @@ bool HbSplashSrvClient::Connect()
                     qWarning("[hbsplash] Rendezvous failed (%d)", status.Int());
                     break;
                 }
-                qDebug("[hbsplash] server started");
+                splDebug("[hbsplash] server started");
             }
         } else {
             break;
@@ -270,62 +305,87 @@ bool HbSplashSrvClient::getSplashFileHandle(RFile &f,
     return f.AdoptFromServer(fsHandle, fileHandle) == KErrNone;
 }
 
-uchar *HbSplashSrvClient::getSplashFromBitmap(const QString &ori,
-        const QString &appId,
-        const QString &screenId,
-        Params &params)
+void HbSplashSrvClient::getSplashFromBitmapAsync(const QString &ori,
+                                                 const QString &appId,
+                                                 const QString &screenId,
+                                                 const Params &params)
 {
-    TPtrC oriDes(static_cast<const TUint16 *>(ori.utf16()), ori.length());
-    TPtrC appIdDes(static_cast<const TUint16 *>(appId.utf16()), appId.length());
-    TPtrC screenIdDes(static_cast<const TUint16 *>(screenId.utf16()), screenId.length());
-    TInt bitmapHandle;
-    TPckg<TInt> bitmapHandlePckg(bitmapHandle);
-    TIpcArgs args(&oriDes, &appIdDes, &screenIdDes, &bitmapHandlePckg);
-    if (SendReceive(HbSplashSrvGetSplashData, args) == KErrNone) {
-        QScopedPointer<CFbsBitmap> bmp(new CFbsBitmap);
-        if (bmp->Duplicate(bitmapHandle) == KErrNone) {
-            TSize size = bmp->SizeInPixels();
-            TDisplayMode mode = bmp->DisplayMode();
-            if (size.iWidth > 0 && size.iHeight > 0 && mode == EColor16MAP) {
-                int bpl = CFbsBitmap::ScanLineLength(size.iWidth, mode);
-                const QImage::Format fmt = QImage::Format_ARGB32_Premultiplied;
-                int len = bpl * size.iHeight;
-                uchar *data = 0;
-                try {
-                    if (params.allocFunc) {
-                        data = params.allocFunc(size.iWidth, size.iHeight,
-                                                bpl, fmt, params.allocFuncParam);
-                    } else {
-                        data = new uchar[len];
-                    }
-                    if (data) {
-                        memcpy(data, bmp->DataAddress(), len);
-                        *params.w = size.iWidth;
-                        *params.h = size.iHeight;
-                        *params.bpl = bpl;
-                        *params.fmt = fmt;
-                        qDebug("[hbsplash] bitmap data received");
-                        return data;
-                    }
-                } catch (const std::bad_alloc &) {
-                    qWarning("[hbsplash] Failed to allocate image buffer");
+    // The request is async so we have to make sure the data does not disappear
+    // by the time the server wants to use it. There can only be one active
+    // request and we require this to be called from the main thread so just use
+    // some static vars.
+    static QString sOri;
+    static QString sAppId;
+    static QString sScreenId;
+    sOri = ori;
+    sAppId = appId;
+    sScreenId = screenId;
+    TPtrC oriDes(static_cast<const TUint16 *>(sOri.utf16()), sOri.length());
+    TPtrC appIdDes(static_cast<const TUint16 *>(sAppId.utf16()), sAppId.length());
+    TPtrC screenIdDes(static_cast<const TUint16 *>(sScreenId.utf16()), sScreenId.length());
+    TIpcArgs args(&oriDes, &appIdDes, &screenIdDes, &mBitmapHandlePckg);
+    // Take a copy of the params, we will need the pointers, allocFunc, etc.
+    mParams = params;
+    mRequestStatus = KRequestPending;
+    SendReceive(HbSplashSrvGetSplashData, args, mRequestStatus);
+}
+
+uchar *HbSplashSrvClient::waitForBitmap()
+{
+    User::WaitForRequest(mRequestStatus);
+    if (mRequestStatus.Int() != KErrNone) {
+        qWarning("[hbsplash] async request failed (%d)", mRequestStatus.Int());
+        return 0;
+    }
+    QScopedPointer<CFbsBitmap> bmp(new CFbsBitmap);
+    TInt dupError = bmp->Duplicate(mBitmapHandle);
+    if (dupError == KErrNone) {
+        TSize size = bmp->SizeInPixels();
+        TDisplayMode mode = bmp->DisplayMode();
+        if (size.iWidth > 0 && size.iHeight > 0 && mode == EColor16MAP) {
+            int bpl = CFbsBitmap::ScanLineLength(size.iWidth, mode);
+            const QImage::Format fmt = QImage::Format_ARGB32_Premultiplied;
+            int len = bpl * size.iHeight;
+            uchar *data = 0;
+            try {
+                if (mParams.allocFunc) {
+                    data = mParams.allocFunc(size.iWidth, size.iHeight,
+                                             bpl, fmt, mParams.allocFuncParam);
+                } else {
+                    data = new uchar[len];
                 }
-            } else {
-                qWarning("[hbsplash] Invalid bitmap (%d %d %d)",
-                         size.iWidth, size.iHeight, mode);
+                if (data) {
+                    // The data copying cannot really be avoided here
+                    // because there is nobody to manage the CFbsBitmap
+                    // pointer and clients are typically interested in the
+                    // raw pixel data in a platform-independent form.
+                    qMemCopy(data, bmp->DataAddress(), len);
+                    *mParams.w = size.iWidth;
+                    *mParams.h = size.iHeight;
+                    *mParams.bpl = bpl;
+                    *mParams.fmt = fmt;
+                    splDebug("[hbsplash] bitmap data received");
+                    return data;
+                }
+            } catch (const std::bad_alloc &) {
+                qWarning("[hbsplash] Failed to allocate image buffer");
             }
         } else {
-            qWarning("[hbsplash] Cannot duplicate bitmap");
+            qWarning("[hbsplash] Invalid bitmap (%d %d %d)",
+                     size.iWidth, size.iHeight, mode);
         }
+    } else {
+        qWarning("[hbsplash] Cannot duplicate bitmap handle %d (%d)",
+                 mBitmapHandle, dupError);
     }
     return 0;
 }
 
 static uchar *load_symbian(Params &params)
 {
-    HbSplashSrvClient client;
-    if (!client.Connect()) {
-        return false;
+    QScopedPointer<HbSplashSrvClient> client(new HbSplashSrvClient);
+    if (!client->Connect()) {
+        return 0;
     }
 
     QString oriStr(orientationId(params.flags));
@@ -337,19 +397,31 @@ static uchar *load_symbian(Params &params)
     }
 
     uchar *data = 0;
+    bool async = false;
     if (!params.forceFile) {
-        data = client.getSplashFromBitmap(oriStr, appIdStr, params.screenId, params);
+        client->getSplashFromBitmapAsync(oriStr, appIdStr, params.screenId, params);
+        if (params.async) {
+            params.clientPtr = client.data();
+            client.take();
+            async = true;
+            splDebug("[hbsplash] request sent (async)");
+        } else {
+            data = client->waitForBitmap();
+            splDebug("[hbsplash] request finished (sync)");
+        }
     } else {
         File f;
         f.mFullName = "[unavailable]";
-        if (client.getSplashFileHandle(f.mFile, oriStr, appIdStr, params.screenId)) {
-            qDebug("[hbsplash] got handle from server");
+        if (client->getSplashFileHandle(f.mFile, oriStr, appIdStr, params.screenId)) {
+            splDebug("[hbsplash] got handle from server");
             data = readSpl(f, params);
             f.mFile.Close();
         }
     }
 
-    client.Close();
+    if (!async) {
+        client->Close();
+    }
     return data;
 }
 
@@ -439,7 +511,7 @@ static uchar *load_generic(Params &params)
 uchar *HbSplash::load(int &w, int &h, int &bpl, QImage::Format &fmt,
                       HbSplashScreen::Flags flags,
                       const QString &appId, const QString &screenId,
-                      AllocFunc allocFunc, void *allocFuncParam)
+                      AllocFunc allocFunc, void *allocFuncParam, bool async)
 {
     Params params;
     params.w = &w;
@@ -452,10 +524,32 @@ uchar *HbSplash::load(int &w, int &h, int &bpl, QImage::Format &fmt,
     params.allocFunc = allocFunc;
     params.allocFuncParam = allocFuncParam;
     params.forceFile = false; // use CFbsBitmap-based sharing on Symbian
+    params.async = async;
+    params.clientPtr = 0;
 #ifdef Q_OS_SYMBIAN
-    return load_symbian(params);
+    uchar *data = load_symbian(params);
+    return async ? reinterpret_cast<uchar *>(params.clientPtr) : data;
 #else
     return load_generic(params);
+#endif
+}
+
+uchar *HbSplash::finishAsync(uchar *handle)
+{
+#ifdef Q_OS_SYMBIAN
+    if (!handle) {
+        return 0;
+    }
+    HbSplashSrvClient *client = reinterpret_cast<HbSplashSrvClient *>(handle);
+    // May or may not be ready at this point, so block if needed.
+    splDebug("[hbsplash] retrieving async result");
+    uchar *data = client->waitForBitmap();
+    client->Close();
+    delete client;
+    return data;
+#else
+    Q_UNUSED(handle);
+    return 0;
 #endif
 }
 

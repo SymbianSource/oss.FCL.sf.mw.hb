@@ -41,38 +41,42 @@ QT_END_NAMESPACE
 
 class HB_WIDGETS_EXPORT HbSelectionDialog : public HbDialog
 {
-	Q_OBJECT
+    Q_OBJECT
     Q_PROPERTY(HbAbstractItemView::SelectionMode selectionMode READ selectionMode WRITE setSelectionMode)
     Q_PROPERTY(QStringList items READ stringItems WRITE setStringItems)
     Q_PROPERTY(QList<QVariant> selectedItems READ selectedItems WRITE setSelectedItems)
-    
+    Q_PROPERTY(QString selectionTitle READ selectionTitle WRITE setSelectionTitle)
 public:
-	enum { Type = Hb::ItemType_SelectionDialog };
-	int type() const { return Type; }
-	
-	explicit HbSelectionDialog(QGraphicsItem* parent=0);
+    enum { Type = Hb::ItemType_SelectionDialog };
+    int type() const { return Type; }
+    
+    explicit HbSelectionDialog(QGraphicsItem* parent=0);
     ~HbSelectionDialog();
         
     void setSelectionMode(HbAbstractItemView::SelectionMode mode);
     HbAbstractItemView::SelectionMode selectionMode() const;
     
-	void setStringItems(const QStringList &items,int currentIndex = 0);
+    void setStringItems(const QStringList &items,int currentIndex = 0);
     QStringList stringItems() const;
-	
-    void setWidgetItems(const QList<HbListWidgetItem*> &items,bool transferOwnership = false,int currentIndex = 0);
-	QList<HbListWidgetItem*> widgetItems() const;
     
-	void setModel(QAbstractItemModel* model);
-	QAbstractItemModel* model() const;
-	
+    void setWidgetItems(const QList<HbListWidgetItem*> &items,bool transferOwnership = false,int currentIndex = 0);
+    QList<HbListWidgetItem*> widgetItems() const;
+    
+    void setModel(QAbstractItemModel* model);
+    QAbstractItemModel* model() const;
+    
     QList<QVariant> selectedItems() const;
     void setSelectedItems(const QList<QVariant> items);
 
     QModelIndexList selectedModelIndexes() const;
 
+    QString selectionTitle() const;
+    void setSelectionTitle(const QString& title);
+
 protected:
     void showEvent(QShowEvent *event);
-
+signals:
+    void selectionChanged();
 private:
     Q_DISABLE_COPY(HbSelectionDialog)
     Q_DECLARE_PRIVATE_D(d_ptr, HbSelectionDialog)

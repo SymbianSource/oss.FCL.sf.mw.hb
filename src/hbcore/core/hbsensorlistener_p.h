@@ -44,7 +44,7 @@ class HbSensorListenerObserver
 {
 public:
     virtual void sensorOrientationChanged(Qt::Orientation newOrientation) = 0;
-    virtual void sensorStatusChanged(bool status, bool notify) = 0;
+    virtual void sensorStatusChanged(bool status, bool resetOrientation) = 0;
     virtual ~HbSensorListenerObserver() {}
 };
 
@@ -63,7 +63,7 @@ public:
     Qt::Orientation orientation() const;
 
     void setSensorOrientation(Qt::Orientation dataOrientation);
-    void enableSensors(bool enable, bool notify);
+    void enableSensors(bool enable, bool notify = true, bool resetOrientation = false);
     bool isEnabled() const;
 
 

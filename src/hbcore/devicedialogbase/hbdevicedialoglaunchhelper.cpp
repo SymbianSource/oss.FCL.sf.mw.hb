@@ -29,11 +29,7 @@
 #include <apacmdln.h>
 #include <e32cmn.h>
 
-/*!
-    HbDeviceDialogLaunchHelper
-    \internal
-*/
-class HbDeviceDialogLaunchHelperPrivate : public CActive
+NONSHARABLE_CLASS(HbDeviceDialogLaunchHelperPrivate) : public CActive
     {
 public:
     HbDeviceDialogLaunchHelperPrivate();

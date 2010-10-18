@@ -120,7 +120,7 @@ void HbDockWidget::setWidget( QGraphicsWidget *widget )
         d->mWidget = widget;
         if ( d->mWidget != 0 ) {
             d->mWidget->setParentItem(this);
-            style()->setItemName( d->mWidget, "content" );
+            HbStyle::setItemName( d->mWidget, "content" );
             QMetaObject::invokeMethod( &d->core, "visibilityChanged", Qt::QueuedConnection );
         }
     }

@@ -258,9 +258,9 @@ qreal HbListLayout::smallestItemHeight() const
 }
 
 /*!
-	\reimp
-	
-	Invalidates the smallest item cache.
+    \reimp
+    
+    Invalidates the smallest item cache.
 */
 void HbListLayout::invalidate()
 {

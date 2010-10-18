@@ -22,7 +22,7 @@ HbComboListViewItem::text-1{
 }
 
 HbComboListViewItem::frame{
-	border-width: var(hb-param-background-popup-secondary);
+	border-width: var(hb-param-background-list-popup);
 }
 
 

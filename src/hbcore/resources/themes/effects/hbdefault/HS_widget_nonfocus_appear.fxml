@@ -1,0 +1,18 @@
+<layers>
+	<visual src="Item" />
+	<filter name="brightness_contrast" type="brightness_contrast">
+		<param name="opacity">1.0</param>
+		<param name="brightness" type="anim">
+			<duration>0.3</duration>
+			<style>linear</style>
+			<keyframe at="0.0">0</keyframe>
+			<keyframe at="1.0">-0.2</keyframe>
+		</param>
+		<param name="contrast" type="anim">
+			<duration>0.3</duration>
+			<style>linear</style>
+			<keyframe at="0.0">1.0</keyframe>
+			<keyframe at="1.0">0.6</keyframe>
+		</param>
+	</filter>
+</layers>

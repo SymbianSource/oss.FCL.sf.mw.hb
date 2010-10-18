@@ -51,6 +51,7 @@ public:
     inline int type() const { return Type; }
     int level() const;
     bool isCharging() const;
+    void chargingEvent(bool start);
 
 public slots:
     virtual void createPrimitives();

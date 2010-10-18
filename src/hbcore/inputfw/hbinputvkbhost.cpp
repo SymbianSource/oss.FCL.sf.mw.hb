@@ -31,7 +31,8 @@
 const char HbVkbHostPropertyName[] = "HbVkbHost";
 
 /*!
-\proto
+@stable
+@hbcore
 \class HbVkbHost
 \brief Virtual keyboard host base class.
 
@@ -56,6 +57,8 @@ it doesn't find a suitable host, it uses the default host.
 
 Application developer can override the default vkb host if needed but in typical cases
 there is no need to care about vkb hosting system in application code.
+
+See \ref vkbHandling "virtual keyboard handling guide" for more information
 
 \sa HbVirtualKeyboard
 \sa HbEditorInterface

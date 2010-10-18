@@ -37,17 +37,75 @@
 #include "hbstyleoptionindicatorbutton_p.h"
 
 #if defined(Q_OS_SYMBIAN)
+#include <e32property.h>
 #include "hbindicatorsym_p.h"
+#include "hbdevicedialogsym_p.h"
+const TUid PropertyCategoryUid = {0x20022FC5};
+const TUint EventKey = 0x6e457674; // 'nEvt';
 #else
 #include "hbindicatorwin32_p.h"
 #endif // defined(Q_OS_SYMBIAN)
 
 static const char noteIndicatorType[] = {"com.nokia.hb.indicatormenu/1.0"};
 
+#if defined(Q_OS_SYMBIAN)
+
+class HbIndicatorButtonStatusPrivate  : public CActive
+{
+public:
+    HbIndicatorButtonStatusPrivate(HbIndicatorButtonPrivate* indicatorButtonPrivate);
+    ~HbIndicatorButtonStatusPrivate();
+
+public: // from CActive
+    void RunL();
+    void DoCancel();
+
+private:
+    HbIndicatorButtonPrivate* mIndicatorButtonPrivate;
+    RProperty mProperty;
+};
+
+HbIndicatorButtonStatusPrivate::HbIndicatorButtonStatusPrivate(
+    HbIndicatorButtonPrivate* indicatorButtonPrivate) : CActive(CActive::EPriorityStandard),
+    mIndicatorButtonPrivate(indicatorButtonPrivate)
+{
+    CActiveScheduler::Add(this);
+    iStatus = KRequestPending;
+    mProperty.Attach(PropertyCategoryUid, EventKey);
+    mProperty.Subscribe(iStatus);
+    SetActive();
+}
+
+HbIndicatorButtonStatusPrivate::~HbIndicatorButtonStatusPrivate()
+{
+    Cancel();
+    mProperty.Close();
+}
+
+void HbIndicatorButtonStatusPrivate::RunL()
+{
+    int newValue(0);
+    if (mProperty.Get(newValue) == KErrNone) {
+        mIndicatorButtonPrivate->setNewEvent(newValue == 0 ? false : true);
+    }
+    mProperty.Subscribe(iStatus);
+    SetActive();
+}
+
+void HbIndicatorButtonStatusPrivate::DoCancel()
+{
+    mProperty.Cancel();
+}
+
+#endif // defined(Q_OS_SYMBIAN)
+
 HbIndicatorButtonPrivate::HbIndicatorButtonPrivate() :
     mHandleIcon(0), mDefaultAction(0), mNewEventAction(0), mProgressAction(0), mDeviceDialog(0), 
     mProgressAnimationFound(false), mNewEventIcon(0), mNewEvent(false), mStyle(0), mIndicatorMenuOpen(false),
     mTouchArea(0)
+#if defined(Q_OS_SYMBIAN)
+    ,mIndicatorButtonStatusPrivate(0)
+#endif // defined(Q_OS_SYMBIAN)
 {
 
 }
@@ -55,6 +113,10 @@ HbIndicatorButtonPrivate::HbIndicatorButtonPrivate() :
 HbIndicatorButtonPrivate::~HbIndicatorButtonPrivate()
 {
     delete mDeviceDialog;
+
+#if defined(Q_OS_SYMBIAN)    
+    delete mIndicatorButtonStatusPrivate;
+#endif // defined(Q_OS_SYMBIAN)
 }
 
 void HbIndicatorButtonPrivate::init()
@@ -65,8 +127,8 @@ void HbIndicatorButtonPrivate::init()
         "qtg_anim_mono_loading.axml");
     
     // add default actions
-    mDefaultAction = new HbAction(HbIcon("qtg_mono_options_menu"), "IndicatorMenu", q);
-    mNewEventAction = new HbAction(HbIcon("qtg_mono_new_event"), "IndicatorMenu", q);
+    mDefaultAction = new HbAction(HbIcon("qtg_mono_options_menu"), "", q);
+    mNewEventAction = new HbAction(HbIcon("qtg_mono_new_event"), "", q);
 
     QString iconName("qtg_anim_mono_loading_1");
     if (mProgressAnimationFound) {
@@ -74,7 +136,7 @@ void HbIndicatorButtonPrivate::init()
     }
     HbIcon icon(iconName);
     icon.setFlags(HbIcon::Colorized);
-    mProgressAction = new HbAction(icon, "IndicatorMenu", q);
+    mProgressAction = new HbAction(icon, "", q);
 }
 
 void HbIndicatorButtonPrivate::showIndicatorMenu()
@@ -88,12 +150,17 @@ void HbIndicatorButtonPrivate::showIndicatorMenu()
     mIndicatorMenuOpen = true;
 
     updateIcon();
+   
+#if defined(Q_OS_SYMBIAN) 
+    RProperty::Set(PropertyCategoryUid, EventKey, 0);
+#endif // defined(Q_OS_SYMBIAN)
 }
 
 void HbIndicatorButtonPrivate::addIndicators(const QList<IndicatorClientInfo> &clientInfo)
 {
     for (int i = 0; i < clientInfo.size(); ++i) {
-        if (clientInfo.at(i).hasMenuData) {
+        if (clientInfo.at(i).hasMenuData 
+            || clientInfo.at(i).category == HbIndicatorInterface::ProgressCategory) {
             mIndicators.prepend(clientInfo.at(i));
             if (clientInfo.at(i).category == HbIndicatorInterface::NotificationCategory) {
                 mNewEvent = true;
@@ -110,6 +177,20 @@ void HbIndicatorButtonPrivate::removeIndicators(const QList<IndicatorClientInfo>
         int index = findIndicator(clientInfo.at(i));
         if (index >= 0) {
             mIndicators.removeAt(index);
+        }
+    }
+
+    updateIcon();
+}
+
+void HbIndicatorButtonPrivate::updateIndicators(const QList<IndicatorClientInfo> &clientInfo)
+{
+    for (int i = 0; i < clientInfo.size(); ++i) {
+        int index = findIndicator(clientInfo.at(i));
+        if (index >= 0) {
+            if (mIndicators[index].category == HbIndicatorInterface::NotificationCategory) {
+                mNewEvent = true;
+            }
         }
     }
 
@@ -183,6 +264,12 @@ void HbIndicatorButtonPrivate::setStyle()
     }
 }
 
+void HbIndicatorButtonPrivate::setNewEvent(bool newEvent)
+{
+    mNewEvent = newEvent;
+    updateIcon();
+}
+
 HbIndicatorButton::HbIndicatorButton(QGraphicsItem *parent) 
     : HbToolButton(*new HbIndicatorButtonPrivate, parent)
 {
@@ -206,9 +293,21 @@ void HbIndicatorButton::delayedConstruction()
 
     connect(this, SIGNAL(pressed()), this, SLOT(handlePress()));
     connect(this, SIGNAL(released()), this, SLOT(handleRelease()));
-
-    d->mDeviceDialog = new HbDeviceDialog(HbDeviceDialog::ImmediateResourceReservationFlag);
+    
+    
+    d->mDeviceDialog = new HbDeviceDialog();
+#if defined(Q_OS_SYMBIAN)
+    ((HbDeviceDialogPrivate*)HbDeviceDialogPrivate::d_ptr(d->mDeviceDialog))->connect();
+#endif
     connect(d->mDeviceDialog, SIGNAL(deviceDialogClosed()), this, SLOT(resetBackground()));
+
+    connect(d->mDefaultAction, SIGNAL(triggered()), this, SLOT(showIndicatorMenu()));
+    connect(d->mNewEventAction, SIGNAL(triggered()), this, SLOT(showIndicatorMenu()));
+    connect(d->mProgressAction, SIGNAL(triggered()), this, SLOT(showIndicatorMenu()));
+   
+#if defined(Q_OS_SYMBIAN)
+    d->mIndicatorButtonStatusPrivate = new HbIndicatorButtonStatusPrivate(d);
+#endif // defined(Q_OS_SYMBIAN)
 }
 
 void HbIndicatorButton::showHandleIndication(bool show)
@@ -244,14 +343,12 @@ void HbIndicatorButton::currentViewChanged(HbView *view)
 void HbIndicatorButton::createPrimitives()
 {
     Q_D(HbIndicatorButton);
-    d->mHandleIcon = style()->createPrimitive(HbStyle::P_IndicatorButton_handleindication, this);
+    d->mHandleIcon = HbStylePrivate::createPrimitive(HbStylePrivate::P_IndicatorButton_handleindication, this);
     d->mHandleIcon->setVisible(false);
-    d->mNewEventIcon = style()->createPrimitive(HbStyle::P_IndicatorButton_eventindication, this);
-    d->mTouchArea = style()->createPrimitive(HbStyle::P_IndicatorButton_toucharea, this);
-    QGraphicsObject *touchArea = static_cast<QGraphicsObject*>(d->mTouchArea);
-    touchArea->grabGesture(Qt::TapGesture);
+    d->mNewEventIcon = HbStylePrivate::createPrimitive(HbStylePrivate::P_IndicatorButton_eventindication, this);
+    d->mTouchArea = HbStylePrivate::createPrimitive(HbStylePrivate::P_IndicatorButton_toucharea, this);
     ungrabGesture(Qt::TapGesture);
-    d->setBackgroundItem(HbStyle::P_IndicatorButton_background);
+    d->setBackgroundItem(HbStylePrivate::P_IndicatorButton_background);
 }
 
 void HbIndicatorButton::updatePrimitives()
@@ -259,10 +356,10 @@ void HbIndicatorButton::updatePrimitives()
     Q_D(HbIndicatorButton);
     HbStyleOptionIndicatorButton option;
     initStyleOption(&option);
-    style()->updatePrimitive(backgroundItem(), HbStyle::P_IndicatorButton_background, &option);
-    style()->updatePrimitive(d->mHandleIcon, HbStyle::P_IndicatorButton_handleindication, &option);
-    style()->updatePrimitive(d->mNewEventIcon, HbStyle::P_IndicatorButton_eventindication, &option);
-    style()->updatePrimitive(d->mTouchArea, HbStyle::P_IndicatorButton_toucharea, &option);
+    HbStylePrivate::updatePrimitive(backgroundItem(), HbStylePrivate::P_IndicatorButton_background, &option);
+    HbStylePrivate::updatePrimitive(d->mHandleIcon, HbStylePrivate::P_IndicatorButton_handleindication, &option);
+    HbStylePrivate::updatePrimitive(d->mNewEventIcon, HbStylePrivate::P_IndicatorButton_eventindication, &option);
+    HbStylePrivate::updatePrimitive(d->mTouchArea, HbStylePrivate::P_IndicatorButton_toucharea, &option);
     HbToolButton::updatePrimitives();
 }
 
@@ -282,6 +379,12 @@ void HbIndicatorButton::activateAll(const QList<IndicatorClientInfo> &clientInfo
 {
     Q_D(HbIndicatorButton);
     d->mIndicators.clear();
+    d->addIndicators(clientInfo);
+}
+
+void HbIndicatorButton::update(const QList<IndicatorClientInfo> &clientInfo)
+{
+    Q_D(HbIndicatorButton);
     d->addIndicators(clientInfo);
 }
 
@@ -339,11 +442,15 @@ void HbIndicatorButton::handlePress()
 
 void HbIndicatorButton::handleRelease()
 {
-    Q_D(HbIndicatorButton);
-    d->showIndicatorMenu();
 #ifdef HB_EFFECTS
     HbEffect::start(this, "decorator", "released");
 #endif
     updatePrimitives();
+}
+
+void HbIndicatorButton::showIndicatorMenu()
+{
+    Q_D(HbIndicatorButton);
+    d->showIndicatorMenu();
 }
 

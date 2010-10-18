@@ -34,6 +34,7 @@
 
 const TInt tfxPurpose = Qt::Window;
 #endif //Q_OS_SYMBIAN
+const QString nullEffect = "NULL";
 
 #ifdef HBTHEMESYSTEMEFFECT_DEBUG
 const char *dbgRegister = "REGISTER ";
@@ -164,19 +165,18 @@ void HbThemeSystemEffectMap::registerEffects(RWsSession &wsSession,
     TPtrC baseResourceDir = baseEffectsFolder.utf16();
 #ifdef HBTHEMESYSTEMEFFECT_DEBUG
     qDebug() << "HbThemeSystemEffectMap::registerEffects effect folder:" << mEffectsFolder
-            << "base theme effect folder:" << baseEffectsFolder;
+             << "base theme effect folder:" << baseEffectsFolder;
 #endif //HBTHEMESYSTEMEFFECT_DEBUG
     while (mapIt.hasNext()) {
         mapIt.next();
         // Register entry
         TInt tfxAction = tfxTransitionAction(mapIt.key().mEffectId);
-        // If no effect files defined, unregister effect
-        if (mapIt.value().mOutgoingFile.isEmpty()
-                && mapIt.value().mIncomingFile.isEmpty()) {
-            wsSession.UnregisterEffect(tfxAction, tfxPurpose, mapIt.key().mAppUid);
-        } else {
-            TPtrC outgoingEffect = mapIt.value().mOutgoingFile.utf16();
-            TPtrC incomingEffect = mapIt.value().mIncomingFile.utf16();
+        QString incomingFile = mapIt.value().mIncomingFile;
+        QString outgoingFile = mapIt.value().mOutgoingFile;
+        // Do not register if no effect files are defined
+        if (isValidEffectEntry(incomingFile, outgoingFile)) {
+            TPtrC outgoingEffect = outgoingFile.utf16();
+            TPtrC incomingEffect = incomingFile.utf16();
             TPtrC resourceDir = mapIt.value().mFromBaseTheme ? baseResourceDir : themeResourceDir;
             TBitFlags effectFlags;
             if (mapIt.value().mIncomingHasPriority) {
@@ -212,4 +212,21 @@ TInt HbThemeSystemEffectMap::tfxTransitionAction(SystemEffectId id) const
     return tfxTransitionAction;
 }
 #endif //Q_OS_SYMBIAN
+
+bool HbThemeSystemEffectMap::isValidEffectEntry(QString &incomingFile, QString &outgoingFile) const
+{
+    bool outgoingEmpty = outgoingFile.isEmpty();
+    bool incomingEmpty = incomingFile.isEmpty();
+    bool validEntry = !(outgoingEmpty && incomingEmpty);
+    if (validEntry) {
+        // If no effect should be displayed on transition, register with "NULL" string
+        if (outgoingEmpty) {
+            outgoingFile = nullEffect;
+        }
+        if (incomingEmpty) {
+            incomingFile = nullEffect;
+        }
+    }
+    return validEntry;
+}
 

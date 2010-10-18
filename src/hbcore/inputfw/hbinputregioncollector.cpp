@@ -34,7 +34,7 @@
 #include "hbdeviceprofile.h"
 
 /*!
-\proto
+@stable
 \class HbInputRegionCollector
 \brief Installs a filter on a HbWidget and observes for a change in position, size and visibility
 of the attached widget. As soon as it detects a change in size, position or visibility it calculates
@@ -46,32 +46,6 @@ that the application is not having any HbMainWindow.
 */
 
 /// @cond
-
-class HbWidgetFilterList
-{
-public:
-    HbWidgetFilterList(HbWidget *w)
-        : mWidget(w), mIsVisible(false) {
-    }
-    bool operator ==(const HbWidgetFilterList &other) const {
-        return mWidget == other.mWidget;
-    }
-    QPointer <HbWidget> mWidget;
-    // visibility is needed as the time when we get show event inside eventFilter
-    // widget is not visible.
-    bool mIsVisible;
-};
-
-class HbInputRegionCollectorPrivate
-{
-public:
-    HbInputRegionCollectorPrivate()
-        : mEnabled(false), mModalDialogs(0) {}
-    QList < HbWidgetFilterList > mInputWidgets;
-    bool mEnabled;
-    int mModalDialogs;
-};
-
 
 /*!
 Creates a static instance of HbInputRegionCollector.

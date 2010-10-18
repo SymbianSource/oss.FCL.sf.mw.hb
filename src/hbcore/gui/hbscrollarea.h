@@ -118,6 +118,10 @@ public:
 
     void scrollContentsTo (const QPointF &newPosition, int time = 0);
 
+    QPainterPath shape() const;
+    QRectF boundingRect() const;
+    using QGraphicsWidget::setGeometry;
+    void setGeometry(const QRectF& rect);
 protected:
     HbScrollArea(HbScrollAreaPrivate &dd, QGraphicsItem *parent);    
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event);
@@ -131,8 +135,9 @@ protected:
     virtual bool eventFilter(QObject *obj, QEvent *event);
     virtual void connectNotify(const char *signal);
     virtual void disconnectNotify(const char *signal);
+    void initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive);
 #ifdef HB_GESTURE_FW
-    virtual void gestureEvent(QGestureEvent *event);    
+    virtual void gestureEvent(QGestureEvent *event);
 #endif
 
 signals:
@@ -152,6 +157,7 @@ protected slots:
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbScrollArea)
     Q_PRIVATE_SLOT(d_func(), void _q_thumbPositionChanged(qreal value, Qt::Orientation orientation))
+    Q_PRIVATE_SLOT(d_func(), void _q_thumbPositionChanged2(qreal value, int orientation))
     Q_PRIVATE_SLOT(d_func(), void _q_groovePressed(qreal value, Qt::Orientation orientation))
     Q_PRIVATE_SLOT(d_func(), void _q_thumbPressed())
     Q_PRIVATE_SLOT(d_func(), void _q_thumbReleased())

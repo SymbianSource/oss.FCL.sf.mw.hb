@@ -54,9 +54,6 @@
     have been loaded first time.
 */
 
-// Created widget gets a property added containing the device dialog type.
-static const char deviceDialogTypePropertyName[] = "HbDevDlgPlugManXX";
-
 // Constructor
 HbDeviceDialogPluginManager::HbDeviceDialogPluginManager(Flags flags, QObject *parent) :
     QObject(parent), mNameCache(pluginKeys)
@@ -132,7 +129,10 @@ HbDeviceDialogInterface *HbDeviceDialogPluginManager::createWidget(const QString
         if (pluginInstance) {
             HbDeviceDialogPluginInterface *pluginIf =
                 qobject_cast<HbDeviceDialogPluginInterface*>(pluginInstance);
-            widgetIf = pluginIf->createDeviceDialog(deviceDialogType, parameters);
+            try {
+                widgetIf = pluginIf->createDeviceDialog(deviceDialogType, parameters);
+            } catch (const std::bad_alloc &) {
+            }
             if (widgetIf) {
                 pluginInfo.mWidgets.append(widgetIf);
                 pluginInfo.mRefCount++;

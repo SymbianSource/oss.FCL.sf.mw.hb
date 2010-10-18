@@ -48,7 +48,7 @@ HbStyleOptionRatingSlider::HbStyleOptionRatingSlider(const HbStyleOptionRatingSl
     unRatedGraphicsName(other.unRatedGraphicsName),
     ratedGraphicsName(other.ratedGraphicsName),
     disableState(false),
-	pressedState(false)
+    pressedState(false)
 
 {
     type = Type;

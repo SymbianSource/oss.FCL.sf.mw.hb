@@ -30,6 +30,8 @@
 #include "hbsymbianvariantconverter_p.h"
 #include "hbsymbianvariant.h"
 
+_LIT(KPanicDeviceDialogNotSupportedType, "CHbDeviceDialog: Not supported type");
+
 void HbSymbianVariantConverter::toQtVariant(const CHbSymbianVariant* source, 
                                             QVariant& result )
 {
@@ -104,7 +106,7 @@ void HbSymbianVariantConverter::toQtVariant(const CHbSymbianVariant* source,
         {
             CDesC16ArrayFlat* srcArray = source->Value<CDesC16ArrayFlat>();
             QStringList stringList;
-            for(TInt i = 0; i < srcArray->MdcaCount(); i++) {
+            for (TInt i = 0; i < srcArray->MdcaCount(); ++i) {
                 stringList.append(QString::fromUtf16(srcArray->MdcaPoint(i).Ptr(), srcArray->MdcaPoint(i).Length()));
             }
             result.setValue(stringList);
@@ -130,7 +132,7 @@ void HbSymbianVariantConverter::toQtVariantMap(const CHbSymbianVariantMap &aSymb
                                                QVariantMap& aQvMap)
 {
     MDesCArray& keys = aSymbianVariantMap.Keys();
-    for(TInt i = 0; i < keys.MdcaCount() ; i++) {
+    for (TInt i = 0; i < keys.MdcaCount() ; ++i) {
         TPtrC ptr = keys.MdcaPoint(i);
         QString key = QString::fromUtf16(ptr.Ptr(), ptr.Length());
         QVariant variant;
@@ -209,15 +211,16 @@ CHbSymbianVariant* HbSymbianVariantConverter::fromQtVariantL(QVariant& aVariant)
         {
             QStringList stringList = aVariant.value<QStringList>();
             QStringList::iterator i;
-            CPtrCArray* descriptorArray = 0;
+            CPtrCArray* descriptorArray = new (ELeave) CPtrCArray(stringList.count());
+            CleanupStack::PushL(descriptorArray);
             for (i = stringList.begin(); i != stringList.end(); ++i) {
-            descriptorArray = new CPtrCArray(stringList.count());
                 TPtrC listItem(static_cast<const TUint16*>((*i).utf16()),
                         (*i).length());
                 descriptorArray->AppendL(listItem);
             }
             MDesCArray* arrayInterface = static_cast<MDesCArray*>(descriptorArray);
             return_value = CHbSymbianVariant::NewL(arrayInterface, CHbSymbianVariant::EDesArray);
+            CleanupStack::PopAndDestroy(descriptorArray);
         }
         break;
         case QVariant::UInt:
@@ -234,7 +237,7 @@ CHbSymbianVariant* HbSymbianVariantConverter::fromQtVariantL(QVariant& aVariant)
         break;
         default:
         {
-            User::Panic(_L("CHbDeviceDialog: Not supported type"), aVariant.type());
+            User::Panic(KPanicDeviceDialogNotSupportedType, aVariant.type());
         }
         break;
     }
@@ -244,6 +247,7 @@ CHbSymbianVariant* HbSymbianVariantConverter::fromQtVariantL(QVariant& aVariant)
 CHbSymbianVariantMap *HbSymbianVariantConverter::fromQVariantMapL(QVariantMap& aQvMap)
 {
     CHbSymbianVariantMap* map = CHbSymbianVariantMap::NewL();
+    CleanupStack::PushL(map);
     QVariantMap::const_iterator i;
     for (i = aQvMap.constBegin(); i != aQvMap.constEnd(); ++i){
       QString keyString = i.key();
@@ -253,6 +257,7 @@ CHbSymbianVariantMap *HbSymbianVariantConverter::fromQVariantMapL(QVariantMap& a
       CHbSymbianVariant* symbianVariant = fromQtVariantL(value);
       map->Add(descriptor, symbianVariant);
     }
+    CleanupStack::Pop(map);
     return map;
 }
 

@@ -22,8 +22,8 @@
 ** Nokia at developer.feedback@nokia.com.
 **
 ****************************************************************************/
-#ifndef HBDEVICENOTIFICATIONDIALOG_P_H_
-#define HBDEVICENOTIFICATIONDIALOG_P_H_
+#ifndef HBDEVICENOTIFICATIONDIALOG_P_H
+#define HBDEVICENOTIFICATIONDIALOG_P_H
 
 #include "hbdevicenotificationdialog.h"
 #include "hbdialog.h"
@@ -58,4 +58,4 @@ protected:
     bool mShowing;
 };
 
-#endif //HBDEVICENOTIFICATIONDIALOG_P_H_
+#endif //HBDEVICENOTIFICATIONDIALOG_P_H

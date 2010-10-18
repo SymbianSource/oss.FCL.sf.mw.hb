@@ -44,9 +44,8 @@ public:
     void emitSliderReleased();
     void setProgressValue(int value);
     void emitSliderMoved(int newValue);
-	   void setEnableFlag(bool flag);
+    void setEnableFlag(bool flag);
     QRectF boundingRect() const;
-    HbStyle* style() const;
     QGraphicsItem* parentGraphicsItem() const;
     HbWidget* parentGraphicsWidget() const;
     int progressValue()const;
@@ -55,12 +54,15 @@ public:
     bool invertedAppearance() const ;
     QString toolTipText() const;
     Qt::Alignment textAlignment() const;
-    bool textVisible()const{ return (mTooltipText=="")? false:true ;};
+    bool textVisible()const;
+    bool mToolTipTextVisibleUser;
 
     Qt::Orientation orientation();
     void setRange(int minimum, int maximum);
+    void updateProgressTrack();
+    void updateSliderTrack();
 private:
-    QGraphicsItem *mSliderGraphicItem;
+    QGraphicsObject *mSliderGraphicItem;
     int mSliderValue;
     bool mDownState;
     QString mTooltipText;

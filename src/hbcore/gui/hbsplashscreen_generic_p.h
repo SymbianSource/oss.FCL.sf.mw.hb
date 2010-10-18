@@ -36,6 +36,14 @@ public:
     virtual ~HbSplashScreenInterface() {}
     virtual void start(HbSplashScreen::Flags flags) = 0;
     virtual void release() = 0;
+    virtual void doQtPhase() { }
+};
+
+class HbSplashScreenExt
+{
+public:
+    static bool needsQt();
+    static void doQtPhase();
 };
 
 class HbSplashScreenGeneric : public QWidget, public HbSplashScreenInterface

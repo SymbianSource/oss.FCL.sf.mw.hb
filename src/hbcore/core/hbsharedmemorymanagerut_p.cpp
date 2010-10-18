@@ -33,8 +33,6 @@
 
 #define HB_THEME_SHARED_AUTOTEST_CHUNK "hbthemesharedautotest"
 
-HbSharedMemoryManagerUt * HbSharedMemoryManagerUt::memManager = 0;
-
 /**
  * initialize
  */
@@ -52,9 +50,7 @@ bool HbSharedMemoryManagerUt::initialize()
         }
         writable = true;
         if ( !success ) {
-#ifdef THEME_SERVER_TRACES
-            qDebug() << "HbSharedMemoryManager:: Could not initialize shared memory chunk";
-#endif //THEME_SERVER_TRACES
+            THEME_GENERIC_DEBUG() << "HbSharedMemoryManager:: Could not initialize shared memory chunk";
             delete chunk; 
             chunk = 0;
         }
@@ -70,19 +66,20 @@ bool HbSharedMemoryManagerUt::initialize()
             mainAllocator->initialize(chunk, chunkHeader->mainAllocatorOffset);
             subAllocator->initialize(chunk, chunkHeader->subAllocatorOffset, mainAllocator);
         } else {
+            memset(chunkHeader, 0, sizeof(HbSharedChunkHeader));
             chunkHeader->mainAllocatorOffset = sizeof(HbSharedChunkHeader);
             // Clear also allocator identifier so that they will not try to re-connect
-            int *mainAllocatorIdentifier = reinterpret_cast<int *>(static_cast<char *>(base()) + chunkHeader->mainAllocatorOffset);
+            quint32 *mainAllocatorIdentifier = reinterpret_cast<quint32 *>(static_cast<char *>(base()) + chunkHeader->mainAllocatorOffset);            
             *mainAllocatorIdentifier = 0;
             mainAllocator->initialize(chunk, chunkHeader->mainAllocatorOffset);
             chunkHeader->subAllocatorOffset = alloc(SPACE_NEEDED_FOR_MULTISEGMENT_ALLOCATOR);
-            int *subAllocatorIdentifier = reinterpret_cast<int *>(static_cast<char *>(base()) + chunkHeader->subAllocatorOffset);
+            quint32 *subAllocatorIdentifier = reinterpret_cast<quint32 *>(static_cast<char *>(base()) + chunkHeader->subAllocatorOffset);
             *subAllocatorIdentifier = 0;
             subAllocator->initialize(chunk, chunkHeader->subAllocatorOffset, mainAllocator);
             chunkHeader->identifier = INITIALIZED_CHUNK_IDENTIFIER;
 
             // Create empty shared cache for unit test purposes
-            HbSharedCache *cachePtr = createSharedCache(0, 0, 0);
+            HbSharedCache *cachePtr = createSharedCache(0, 0, 0, -1);
             if (cachePtr) {
                 const QString &appName = HbMemoryUtils::getCleanAppName();
                 if (appName == THEME_SERVER_NAME) {
@@ -92,8 +89,8 @@ bool HbSharedMemoryManagerUt::initialize()
                 }
             }
         }
-		success = true;
-	}
+        success = true;
+    }
 
     return success;
 }
@@ -118,30 +115,5 @@ HbSharedMemoryManagerUt::~HbSharedMemoryManagerUt()
 void HbSharedMemoryManagerUt::setWritable( bool readWrite )
 {
     writable = readWrite;
-}
-
-/**
- * to get instance of HbSharedMemoryManagerUt
- */
-HbMemoryManager * HbSharedMemoryManagerUt::instance()
-{
-    if( !memManager ){
-        memManager = new HbSharedMemoryManagerUt();
-        if( !memManager->initialize() ) {
-            qWarning( "HbSharedMemoryManager:Could not initialize shared memory" );
-            delete memManager;
-            memManager = 0;
-        }
-    }
-    return memManager;
-}
-
-/**
- * to release instance of HbSharedMemoryManagerUt
- */
-void HbSharedMemoryManagerUt::releaseInstance()
-{
-    delete memManager;
-    memManager = 0;
 }
 

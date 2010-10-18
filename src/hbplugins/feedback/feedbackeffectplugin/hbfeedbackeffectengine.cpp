@@ -38,8 +38,9 @@
 #include <hbmainwindow.h>
 #include <hbabstractedit.h>
 #include "hbmenucontainer_p.h"
-#include "hbinputvirtualrocker.h"
 #include <hbnamespace_p.h>
+#include <hbglobal_p.h> // remove with HB_DEPRECATED
+#include <hbratingslider.h>
 
 /*
     Constructor
@@ -57,7 +58,9 @@ HbFeedbackEffectEngine::~HbFeedbackEffectEngine()
     if(instantFeedback)
         delete instantFeedback;
     foreach(HbContinuousFeedback *feedback, continuousFeedbacks) {
-        feedback->stop();
+        // This implementation expects the platform to stop the feedback on application exit.
+        // At this point the winId might not point to an active window, so cancelling
+        // the ongoing continuous feedbacks could lead to application crash.
         delete feedback;
     }
 
@@ -105,8 +108,8 @@ QString HbFeedbackEffectEngine::effectOverrideProperty(Hb::InstantInteraction in
     case Hb::InstantSelectionChanged:
         propertyName = "selectionChangedFeedbackEffect";
         break;
-    case Hb::InstantMultitouchActivated:
-        propertyName = "multitouchActivatedFeedbackEffect";
+    case Hb::InstantAdvancedGestureActivated:
+        propertyName = "advancedGestureActivatedFeedbackEffect";
         break;
     default:
         propertyName = "defaultFeedbackEffect";
@@ -178,8 +181,8 @@ QString HbFeedbackEffectEngine::modalitiesOverrideProperty(Hb::InstantInteractio
     case Hb::InstantSelectionChanged:
         propertyName = "selectionChangedFeedbackModalities";
         break;
-    case Hb::InstantMultitouchActivated:
-        propertyName = "multitouchActivatedFeedbackModalities";
+    case Hb::InstantAdvancedGestureActivated:
+        propertyName = "advancedGestureActivatedFeedbackModalities";
         break;
     default:
         propertyName = "defaultFeedbackModalities";
@@ -388,10 +391,24 @@ void HbFeedbackEffectEngine::clicked(const HbWidget *widget)
         cancelContinuousFeedback(widget);
     }
 
-    if(widgetOverridesEffect( widget, interaction)) {
+    if(widgetOverridesEffect(widget, interaction)) {
         effect = overrider.newInstantEffect;
-    } else {
+    }
+    else {
         effect = HbFeedbackEffectUtils::instantOnRelease(widget, modifiers());
+    }
+
+    // Lists in arrange mode do not react on click
+    if (const HbListViewItem *listViewItem = qobject_cast<const HbListViewItem *>(widget)) {
+        const HbAbstractItemView* itemView = listViewItem->itemView();
+        if (const HbListView * listView = qobject_cast<const HbListView *>(itemView)) {
+            if(listView->arrangeMode()) {
+                effect = HbFeedback::None;
+            }
+        }
+    }
+    else if (widget->type() == HbPrivate::ItemType_IndicatorButton) {
+        effect = HbFeedback::None;
     }
 
     if(widgetOverridesModalities(widget,interaction)) {
@@ -444,37 +461,6 @@ void HbFeedbackEffectEngine::draggedOver(const HbWidget *widget)
             if (edit->cursorPosition() != previousCursorPosition) {
                 effect = HbFeedbackEffectUtils::instantOnEditorHighlight(edit, previousCursorPosition) ;
                 previousCursorPosition = edit->cursorPosition();
-            }
-        }
-        else if (const HbInputVirtualRocker *trackPoint = qobject_cast<const HbInputVirtualRocker *>(widget)) {
-            if (trackPoint && trackPoint->mainWindow() && trackPoint->mainWindow()->scene() &&
-                trackPoint->mainWindow()->scene()->focusItem()) {
-
-                QGraphicsItem* graphicsItem = trackPoint->mainWindow()->scene()->focusItem();
-
-                if (graphicsItem->isWidget()) {
-                    if (static_cast<QGraphicsWidget*>(graphicsItem)->inherits("HbAbstractEdit")) {
-                        if (HbAbstractEdit* edit = static_cast<HbAbstractEdit*>(graphicsItem)) {
-                            if (edit->cursorPosition() != previousCursorPosition) {
-                                effect = HbFeedbackEffectUtils::instantOnEditorHighlight(edit, previousCursorPosition);
-                                previousCursorPosition = edit->cursorPosition();
-                            }
-                        }
-                    }
-                    else if (static_cast<QGraphicsWidget*>(graphicsItem)->inherits("QGraphicsWebView") )
-                    {
-                        // This takes care of the case when the track point is used on a QGraphicsWebView (for e.g. cWRT)
-                        QVariant v;
-                        v = graphicsItem->scene()->inputMethodQuery( Qt::ImCursorPosition );
-                        if ( v.isValid() && v.canConvert<int>()) {
-                            int currentCursorPosition = v.toInt();
-                            if (currentCursorPosition != previousCursorPosition) {
-                                effect = HbFeedbackEffectUtils::instantOnEditorHighlight(trackPoint, previousCursorPosition);
-                                previousCursorPosition = currentCursorPosition;
-                            }
-                        }
-                    }
-                }
             }
         } else {
             effect = HbFeedbackEffectUtils::instantOnDrag(widget, modifiers());
@@ -621,18 +607,18 @@ void HbFeedbackEffectEngine::selectionChanged(const HbWidget *widget)
 }
 
 /*
-    Called by the feedback manager when multitouch is activated.
+    Called by the feedback manager when a touch gesture with more than one finger is detected.
 */
-void HbFeedbackEffectEngine::multitouchActivated(const HbWidget *widget)
+void HbFeedbackEffectEngine::advancedGestureActivated(const HbWidget *widget)
 {
     HbFeedback::InstantEffect effect = HbFeedback::None ;
     HbFeedback::Modalities modalities = 0 ;
-    Hb::InstantInteraction interaction = Hb::InstantMultitouchActivated;
+    Hb::InstantInteraction interaction = Hb::InstantAdvancedGestureActivated;
 
     if(widgetOverridesEffect( widget, interaction)) {
         effect = overrider.newInstantEffect;
     } else {
-        effect = HbFeedback::MultitouchActivate;
+        effect = HbFeedback::AdvancedGestureActivate;
     }
 
     if(widgetOverridesModalities(widget,interaction)) {
@@ -691,10 +677,19 @@ void HbFeedbackEffectEngine::continuousTriggered(const HbWidget *widget, Hb::Con
         {
         case HbFeedbackEffectUtils::Slider:
             {
-                if (!HbFeedbackEffectUtils::isSliderMoveContinuous(widget)) {
-                    if(!widgetOverridesModalities(widget,interaction)) {
-                        modalities = HbFeedback::Audio | HbFeedback::Tactile;
+                if(!widgetOverridesModalities(widget,interaction)) {
+                    modalities = HbFeedback::Audio | HbFeedback::Tactile;
+                }
+
+                if (const HbRatingSlider *ratingSlider = qobject_cast<const HbRatingSlider *>(widget)) {
+                    int sliderValue = ratingSlider->currentRating();
+                    if (sliderValue != previousSliderValue) {
+                        playInstantFeedback(widget, HbFeedback::SensitiveSlider, modalities);
                     }
+                    previousSliderValue = sliderValue;
+                    feedbackPlayed = true;
+                }
+                else if (!HbFeedbackEffectUtils::isSliderMoveContinuous(widget)) {
                     playInstantFeedback(widget, HbFeedback::SensitiveSlider, modalities);
                     feedbackPlayed = true;
                 }
@@ -711,7 +706,10 @@ void HbFeedbackEffectEngine::continuousTriggered(const HbWidget *widget, Hb::Con
             if (widget->type() == HbPrivate::ItemType_MenuListView) {
                 feedbackPlayed = true;
             }
-            if(widget->type() == Hb::ItemType_TumbleView)
+            if(widget->type() == Hb::ItemType_TumbleView
+                // The condition below should be a temporary fix until the date picker widget returns a
+                // more specific item type that the current ItemType_HbWidget
+                || QString(widget->metaObject()->className()) == "HbDatePickerView")
             {
                 if (const HbAbstractItemView * itemView = qobject_cast<const HbAbstractItemView *>(widget)) {
                     feedbackPlayed = true;

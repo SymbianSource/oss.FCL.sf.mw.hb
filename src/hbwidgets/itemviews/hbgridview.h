@@ -42,6 +42,12 @@ class HB_WIDGETS_EXPORT HbGridView: public HbAbstractItemView
 public:
     explicit HbGridView(QGraphicsItem *parent = 0);
     virtual ~HbGridView();
+
+    enum { Type = Hb::ItemType_GridView };
+    virtual int type() const {
+        return Type;
+    }
+
     HbAbstractViewItem *itemAt(int row, int column) const;
     void scrollTo(const QModelIndex &index, ScrollHint hint = EnsureVisible);
 

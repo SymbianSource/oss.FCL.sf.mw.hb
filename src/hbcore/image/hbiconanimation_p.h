@@ -84,6 +84,9 @@ public:
     virtual QSizeF renderSize() const;
     virtual void setRenderSize(const QSizeF &size);
 
+    virtual void setLoopCount(int loopCount);
+    virtual bool loopCountSet(int *loopCount = 0);
+
     bool mirrored() const;
     void setMirrored(bool mirrored);
 
@@ -206,6 +209,9 @@ public:
 
     QPixmap currentFrame() const;
 
+    void setLoopCount(int loopCount);
+    bool loopCountSet(int *loopCount = 0);
+
 private slots:
     void handleAnimationUpdated();
 
@@ -215,8 +221,12 @@ private:
     int mType;
     int mTimerInterval;
     HbTimerSignalEntry *mTimerEntry;
+    bool mDoNotResetLoopCount;
     QPixmap mCurrentFrame;
     QPixmap mLastFrame;
+    int mLoopCount;
+    bool mCustomLoopCountSet;
+    int mCustomLoopCount;
 };
 
 class HbIconAnimationFrameSet : public HbIconAnimation
@@ -257,6 +267,9 @@ public:
 
     QPixmap currentFrame() const;
 
+    void setLoopCount(int loopCount);
+    bool loopCountSet(int *loopCount = 0);
+
 public slots:
     void animationTimeout();
 
@@ -272,6 +285,8 @@ private:
     bool mMirrored;
 
     HbTimerSignalEntry *mTimerEntry;
+    bool mManualLoopingSet;
+    bool mManualLooping;
 };
 
 

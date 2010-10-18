@@ -42,7 +42,11 @@
 
 #include <QTimer>
 #include <QTime>
+#if QT_VERSION >= 0x040700
+#include <qelapsedtimer.h>
+#endif
 
+class HbStyleFramePrimitiveData;
 class HbScrollBar;
 class QEasingCurve;
 class QPanGesture;
@@ -52,11 +56,20 @@ class HB_CORE_PRIVATE_EXPORT HbScrollAreaPrivate: public HbWidgetPrivate
     Q_DECLARE_PUBLIC( HbScrollArea )
 
 public:
-    HbScrollAreaPrivate();
+    enum ScrollBarsUsed
+    {
+        NoScrollBars = 0,
+        VerticalScrollBar = 1,
+        HorizontalScrollBar = 2,
+        BothScrollBars = HorizontalScrollBar | VerticalScrollBar
+    };
+
+    HbScrollAreaPrivate(HbScrollAreaPrivate::ScrollBarsUsed scrollBarsUsed = BothScrollBars);
     virtual ~HbScrollAreaPrivate();
 
     void init();
-    void doLazyInit();
+    void createScrollBars(Qt::Orientation scrollbar);
+    virtual void doLazyInit();
 
     bool mScrollFeedbackOngoing;
     bool mBoundaryReached;
@@ -90,6 +103,7 @@ public:
     void _q_animateScrollTimeout();
     void _q_hideScrollBars();
     void _q_thumbPositionChanged(qreal value, Qt::Orientation orientation);
+    void _q_thumbPositionChanged2(qreal value, int orientation);
     void _q_groovePressed(qreal value, Qt::Orientation orientation);
     void _q_thumbPressed();
     void _q_thumbReleased();
@@ -97,6 +111,9 @@ public:
     //void bounceBackValueChanged(qreal value);
     virtual void updateScrollMetrics();
     void prepareScrollBars();
+
+    qreal timeDifferenceBetweenFrame(qreal difference);
+    void resetFrameVariables();
 
     void setContentPosition( const QPointF &newPosition );
 
@@ -108,15 +125,16 @@ public:
 
     void adjustContent();
 
-    virtual void ensureVisible(QPointF position, qreal xMargin, qreal yMargin);
+    virtual void ensureVisible(const QPointF &position, qreal xMargin, qreal yMargin);
 
-    void startTargetAnimation (QPointF delta, const int time);
+    void startTargetAnimation (const QPointF &delta, const int time);
 
     void createPrimitives();
     void updatePrimitives();
-    void updateIndicators(QPointF newPosition);
+    void updateIndicators(const QPointF &newPosition);
 
     void hideChildComponents();
+    void reCalculateCachedValue() const;
 
     virtual void setContentPosition( qreal value, Qt::Orientation orientation, bool animate );
 
@@ -161,8 +179,11 @@ public:
 
     QPointF mScrollSpeed; // in pixels per ms
     int mScrollTimerId;
+#if QT_VERSION >= 0x040700
+    QElapsedTimer mScrollElapsedTime;
+#else
     QTime mScrollElapsedTime;
-    qreal mLastElapsedTime;
+#endif
 
     bool mTargetAnimationInProgress;
     qreal mElapsedTimeInAnimation;
@@ -175,31 +196,31 @@ public:
 
     bool mFrictionEnabled;
     bool mResetAlignment;
+    ScrollBarsUsed mScrollBarsUsed;
+    qreal mUnderFramCount;
+    qreal mOverFramCount;
 
     HbScrollArea::ClampingStyle mClampingStyle;
     HbScrollArea::ScrollingStyle mScrollingStyle;    
 
-    // TODO/Q: All circular array related members could go
-    // to circular array class if so wanted.
-
-    // circular array to keep track of last N event positions
-    // this is used to compute the velocity at the end
-    // of a panning action when the scrollingStyle is PanFollowOn
+#if QT_VERSION >= 0x040700
+    QElapsedTimer mDragElapsedTime;
+#else
     QTime mDragElapsedTime;
-    QPointF mEventPositionQueue[10];
-    qreal mEventTimeQueue[10];
-    uint mEventPositionQueueSize;
-    uint mEventPositionQueueLastIndex;
-    bool mEventPositionQueueIsFull;
+#endif
     Qt::LayoutDirection mLayoutDirection;
 
     Qt::Alignment mAlignment;
     bool mContinuationIndicators;
     bool mEmitPositionChangedSignal;
-    QGraphicsItem *continuationIndicatorTopItem;
-    QGraphicsItem *continuationIndicatorBottomItem;
-    QGraphicsItem *continuationIndicatorLeftItem;
-    QGraphicsItem *continuationIndicatorRightItem;    
+    mutable bool mClearCachedRect;    
+    mutable QRectF mBoundingRect;
+    mutable QPainterPath mShape;
+    bool mLazyInitDone;
+    QGraphicsObject *continuationIndicatorTopItem;
+    QGraphicsObject *continuationIndicatorBottomItem;
+    QGraphicsObject *continuationIndicatorLeftItem;
+    QGraphicsObject *continuationIndicatorRightItem;
 
 private:
     // Private access for the fute application to enable setting tweaking
@@ -217,7 +238,7 @@ private:
     qreal mSpringStrength;
     qreal mSpringDampingFactor;
     qreal mFrictionPerMilliSecond;
-    bool mMultiFlickEnabled;
+    bool mMultiFlickEnabled;    
 };
 
 #endif // HBSCROLLAREA_P_H

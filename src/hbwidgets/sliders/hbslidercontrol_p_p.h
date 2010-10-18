@@ -36,6 +36,7 @@ class HbSliderHandle;
 class HbToolTip;
 class QGraphicsItem;
 class HbSliderTickmarksLabel;
+class HbTouchArea;
 
 class HbSliderControlPrivate : public HbAbstractSliderControlPrivate
 {
@@ -52,6 +53,7 @@ public:
     virtual HbSliderHandle *createHandle();
     virtual QGraphicsItem *createGroove();
     virtual QGraphicsItem *createProgressGroove();
+    int calculateSliderPosition( QPointF position );
 
    
     HbSliderHandle *handle;
@@ -80,7 +82,8 @@ public:
     QGraphicsItem *grooveTouchArea;
     bool enableProgressTrack;
     bool userDefinedTooltipAlign;
-
+    HbTouchArea *tooltipArea;
+    qreal tooltipBorderHeight;
 
 private:
     // not to pollute HbSliderControl (which may become public in the future)

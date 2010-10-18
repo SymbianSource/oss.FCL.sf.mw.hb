@@ -38,6 +38,7 @@
 #include "hbscreen_p.h"
 #include "hbviewactionmanager_p.h"
 #include "hbglobal_p.h"
+#include "hbevent.h"
 #include <QPointer>
 
 /*!
@@ -271,6 +272,18 @@ HbViewPrivate::~HbViewPrivate()
 }
 
 /*!
+    \internal
+ */
+void HbViewPrivate::delayedConstruction()
+{
+   //view content is drawn already on screen.Try to
+   //create the content of options menu now.
+    if (menu) {
+        HbMenuPrivate::d_ptr(menu)->delayedLayout();
+    }
+}
+
+/*!
     Constructs a view with the given \a parent.
 */
 HbView::HbView(QGraphicsItem *parent) :
@@ -408,8 +421,13 @@ HbToolBar *HbView::toolBar() const
 {
     Q_D(const HbView);
     if (!d->toolBar) {
-        HbView *that = const_cast<HbView *>(this);
-        that->setToolBar(new HbToolBar);
+        HbViewPrivate* p = const_cast<HbViewPrivate*>(d);
+        p->toolBar = new HbToolBar;
+        // duplicates functionality of HbMainWindowPrivate::_q_viewToolBarChanged as a perf optimisation
+        if ( mainWindow() && mainWindow()->currentView() == this ) {
+            HbMainWindowPrivate::d_ptr(mainWindow())->addToolBarToLayout(p->toolBar);
+        }
+
     }
     return d->toolBar;
 }
@@ -534,6 +552,9 @@ void HbView::setWidget(QGraphicsWidget *widget)
                 d->mLayout = 0;
             }
         }
+        // remove view switch effects the item might be part of
+        HbEffect::cancel(this);
+
         delete d->widget;
         d->widget = widget;
     }
@@ -723,49 +744,53 @@ void HbView::setViewFlags(HbView::HbViewFlags flags)
     HbView::HbViewFlags originalFlags(d->mViewFlags);
     d->mViewFlags = flags;
     if (mainWindow()) {
-
-        // Statusbar-animation
-        bool statusBarAnimating = false;
-        HbStatusBar *statusBar = HbMainWindowPrivate::d_ptr(mainWindow())->mStatusBar;
-        if ((d->mViewFlags & HbView::ViewStatusBarHidden) && !(originalFlags & HbView::ViewStatusBarHidden)) {
+        bool isCurrentView(mainWindow()->currentView() == this);
+        if (isCurrentView) {
+            // Statusbar-animation
+            bool statusBarAnimating = false;
+            HbStatusBar *statusBar = HbMainWindowPrivate::d_ptr(mainWindow())->mStatusBar;
+            if ((d->mViewFlags & HbView::ViewStatusBarHidden) && !(originalFlags & HbView::ViewStatusBarHidden)) {
 #ifdef HB_EFFECTS
             HbEffect::start(statusBar, "statusbar", "disappear", this, "statusBarEffectFinished");
 #endif // HB_EFFECTS
             statusBarAnimating = true;
         } else if (!(d->mViewFlags & HbView::ViewStatusBarHidden) && (originalFlags & HbView::ViewStatusBarHidden)) {
 #ifdef HB_EFFECTS
+            statusBar->setVisible(true);
             HbEffect::start(statusBar, "statusbar", "appear", this, "statusBarEffectFinished");
 #endif // HB_EFFECTS
             statusBarAnimating = true;
-        }
-
-        // Titlebar-animation
-        bool titleBarAnimating = false;
-        HbTitleBar *titleBar = HbMainWindowPrivate::d_ptr(mainWindow())->mTitleBar;
-        if ((d->mViewFlags & HbView::ViewTitleBarHidden) && !(originalFlags & HbView::ViewTitleBarHidden)) {
-#ifdef HB_EFFECTS
-            HbEffect::start(titleBar, "titlebar", "disappear", this, "titleBarEffectFinished");
-#endif // HB_EFFECTS
-            titleBarAnimating = true;
-        } else if (!(d->mViewFlags & HbView::ViewTitleBarHidden) && (originalFlags & HbView::ViewTitleBarHidden)) {
-#ifdef HB_EFFECTS
-            HbEffect::start(titleBar, "titlebar", "appear", this, "titleBarEffectFinished");
-#endif // HB_EFFECTS
-            titleBarAnimating = true;
-        }
-
-        if (!statusBarAnimating) {
-            statusBar->setVisible(!(d->mViewFlags & HbView::ViewStatusBarHidden));
-            statusBar->propertiesChanged();
-        }
-        if (!titleBarAnimating) {
-            titleBar->setVisible(!(d->mViewFlags & HbView::ViewTitleBarHidden));
-            if (d->mNavigationActionSet) {
-                titleBar->setNavigationAction(d->mNavigationAction);
-            } else {
-                titleBar->setDefaultNavigationAction();
             }
-            titleBar->propertiesChanged();
+
+            // Titlebar-animation
+            bool titleBarAnimating = false;
+            HbTitleBar *titleBar = HbMainWindowPrivate::d_ptr(mainWindow())->mTitleBar;
+            if ((d->mViewFlags & HbView::ViewTitleBarHidden) && !(originalFlags & HbView::ViewTitleBarHidden)) {
+#ifdef HB_EFFECTS
+                HbEffect::start(titleBar, "titlebar", "disappear", this, "titleBarEffectFinished");
+#endif // HB_EFFECTS
+                titleBarAnimating = true;
+            } else if (!(d->mViewFlags & HbView::ViewTitleBarHidden) && (originalFlags & HbView::ViewTitleBarHidden)) {
+#ifdef HB_EFFECTS
+                titleBar->setVisible(true);
+                HbEffect::start(titleBar, "titlebar", "appear", this, "titleBarEffectFinished");
+#endif // HB_EFFECTS
+                titleBarAnimating = true;
+            }
+
+            if (!statusBarAnimating && !titleBarAnimating) {
+                statusBar->setVisible(!(d->mViewFlags & HbView::ViewStatusBarHidden));
+                statusBar->propertiesChanged();
+            }
+            if (!titleBarAnimating && !statusBarAnimating) {
+                titleBar->setVisible(!(d->mViewFlags & HbView::ViewTitleBarHidden));
+                if (d->mNavigationActionSet) {
+                    titleBar->setNavigationAction(d->mNavigationAction);
+                } else {
+                    titleBar->setDefaultNavigationAction();
+                }
+                titleBar->propertiesChanged();
+            }
         }
         if (d->toolBar) {
             d->toolBar->updatePrimitives();
@@ -793,7 +818,7 @@ void HbView::setViewFlags(HbView::HbViewFlags flags)
         int visibilityFlags = HbView::ViewTitleBarMinimized | HbView::ViewTitleBarFloating
                               | HbView::ViewTitleBarMinimizable | HbView::ViewStatusBarHidden | HbView::ViewStatusBarFloating
                               | HbView::ViewTitleBarHidden | HbView::ViewDisableRelayout;
-        if ((d->mViewFlags & visibilityFlags) != (originalFlags & visibilityFlags)) {
+        if (isCurrentView && (d->mViewFlags & visibilityFlags) != (originalFlags & visibilityFlags)) {
             HbMainWindowPrivate::d_ptr(mainWindow())->mClippingItem->decoratorVisibilityChanged();
         }
     }
@@ -810,8 +835,9 @@ the HbView::ViewTitleBarHidden flag.
 void HbView::setTitleBarVisible(bool visible)
 {
     Q_D(HbView);
-    if (visible) {
-        setViewFlags(d->mViewFlags &~ HbView::ViewTitleBarHidden);
+
+    if (visible) {        
+        setViewFlags(d->mViewFlags &~ HbView::ViewTitleBarHidden);        
     } else {
         setViewFlags(d->mViewFlags | HbView::ViewTitleBarHidden);
     }
@@ -891,6 +917,7 @@ bool HbView::event(QEvent *event)
  */
 void HbView::changeEvent(QEvent *event)
 {
+    Q_D(const HbView);
 
     // We're listening for layout direction changes, because the screen needs to be
     // repolished, if the layout direction changes and the titlebar is minimizable.
@@ -902,6 +929,11 @@ void HbView::changeEvent(QEvent *event)
         HbMainWindow *mw = mainWindow();
         if (mw && mw->currentView() == this) {
             HbMainWindowPrivate::d_ptr(mw)->mClippingItem->decoratorVisibilityChanged();
+        }
+    } else if(event->type() == HbEvent::ThemeChanged) {
+        HbMainWindow *mw = mainWindow();
+        if (d->toolBar && mw && mw->currentView() != this) {
+            d->toolBar->changeEvent(event);
         }
     }
 
@@ -1028,6 +1060,9 @@ HbAction *HbView::navigationAction() const
   unset and no new one will be set.
 
   Ownership of \a action is not taken.
+
+  \note The navigation button will not display text that is assigned to the
+  action.
 
   \sa navigationAction()
  */

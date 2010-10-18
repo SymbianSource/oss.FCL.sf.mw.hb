@@ -51,8 +51,8 @@ signals:
 
 public:
     HbInputDialogPrivate* d;
-    QGraphicsItem *mLabel1;
-    QGraphicsItem *mLabel2; 
+    QGraphicsObject *mLabel1;
+    QGraphicsObject *mLabel2; 
     HbLineEdit *mEdit1;
     HbLineEdit *mEdit2;
     bool mAdditionalRowVisible;

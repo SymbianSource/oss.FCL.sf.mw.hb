@@ -31,8 +31,8 @@
 class HB_CORE_EXPORT HbStyleLoader
 {
 public:
-	static bool registerFilePath(const QString &filePath);
-	static bool unregisterFilePath(const QString &filePath); 
+    static bool registerFilePath(const QString &filePath);
+    static bool unregisterFilePath(const QString &filePath); 
 };
 
 #endif // HBSTYLELOADER_H

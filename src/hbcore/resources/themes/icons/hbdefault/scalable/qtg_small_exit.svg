@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g>
+<g>
+<rect fill="none" height="30.002" width="30.002" y="0"/>
+<polygon fill-opacity="0.6" points="27.11,21.926 20.186,15.001 27.108,8.078 21.925,2.894 15.001,9.817 8.077,2.894 2.893,8.077    9.817,15.002 2.894,21.926 8.077,27.111 15.001,20.187 21.925,27.109  "/>
+<polygon fill="url(#SVGID_1_)" points="25.917,8.049 21.954,4.086 15.001,11.039 8.049,4.086 4.085,8.048 11.039,15.001    4.085,21.955 8.046,25.918 15.001,18.964 21.954,25.917 25.917,21.955 18.964,15.001  "/>
+<g>
+<polygon fill="#FFFFFF" fill-opacity="0.4" points="4.064,8.087 11.007,15.033 4.085,21.955 4.683,22.555     12.181,15 5.26,8.084 8.057,5.287 7.458,4.687   " stroke-opacity="0.4"/>
+<polygon fill="#FFFFFF" fill-opacity="0.4" points="21.943,4.043 15,10.984 8.043,4.063 7.441,4.662     14.94,12.159 21.93,5.221 25.338,8.628 25.937,8.029   " stroke-opacity="0.4"/>
+</g>
+<rect fill="none" height="30.002" width="30.002" y="0.001"/>
+<defs>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="15.0005" x2="15.0005" y1="4.0859" y2="25.9185">
+<stop offset="0" style="stop-color:#B3704D"/>
+<stop offset="1" style="stop-color:#5A2633"/>
+</linearGradient>
+</defs>
+</g>
+</g>
+</svg>

@@ -72,12 +72,17 @@ enum HbKeyboardTypeFlag {
     HbKeyboardHardwareLandcape                          = HbKeyboardQwerty, /**< Hardware keyboard for landscape mode. */
     HbKeyboardVirtual12Key                  = 0x00000001 | HbTouchInputMask,    /**< Deprecated, use HbKeyboardTouchPortrait instead. */
     HbKeyboardTouchPortrait                             = HbKeyboardVirtual12Key,           /**< Touch keyboard for portrait mode. */
-    HbKeyboardVirtualQwerty                 = 0x00000002 | HbTouchInputMask | HbQwertyKeyboardMask, /**< Touchscreen version of qwerty keyboard */
+    HbKeyboardVirtualQwerty                 = 0x00000002 | HbTouchInputMask| HbQwertyKeyboardMask, /**< Touchscreen version of qwerty keyboard */
     HbKeyboardTouchLandscape                            = HbKeyboardVirtualQwerty, /**< Touch keyboard for landscape mode. */
     HbKeyboardSctPortrait                   = 0x00000003 | HbTouchInputMask,                       /**< Special character selection keypad for portrait view */
-    HbKeyboardSctLandscape                  = 0x00000004 | HbTouchInputMask | HbQwertyKeyboardMask, /**< Special character selection keypad for landscape view */
-    HbKeyboardHwr                           = 0x00000005 | HbTouchInputMask | HbHwrKeyboardMask,   /**< Hand writing recognition keypad */
-    HbKeyboardVirtual12KeyLabels            = 0x00000006 | HbTouchInputMask                        /**< Key labels for virtual 12 key keyboard */
+    HbKeyboardSctLandscape                  = 0x00000004 | HbTouchInputMask| HbQwertyKeyboardMask, /**< Special character selection keypad for landscape view */
+    HbKeyboardHwr                           = 0x00000005 | HbTouchInputMask| HbHwrKeyboardMask,    /**< Hand writing recognition keypad */
+    HbKeyboardVirtual12KeyLabels            = 0x00000006 | HbTouchInputMask,                       /**< Key labels for virtual 12 key keyboard */
+
+    HbKeyboardVirtual12KeyEmail             = 0x00000008 | HbTouchInputMask,                       /**< Touchscreen version of conventional phone keypad in URL editor*/
+    HbKeyboardVirtual12KeyUrl               = 0x00000009 | HbTouchInputMask,                       /**< Touchscreen version of qwerty keyboard in Email editor */
+    HbKeyboardSctEmail                      = 0x0000000A | HbTouchInputMask,                       /**< Url Special character selection keypad for portrait view */
+    HbKeyboardSctUrl                        = 0x0000000B | HbTouchInputMask                        /**< Email Special character selection keypad for portrait view */
 };
 
 Q_DECLARE_FLAGS(HbKeyboardType, HbKeyboardTypeFlag)
@@ -264,6 +269,26 @@ enum HbTypingCorrectionLevel {
     HbTypingCorrectionLevelLow,
     HbTypingCorrectionLevelMedium,
     HbTypingCorrectionLevelHigh
+};
+
+/*!
+Writing speed of hwr.
+*/
+enum HbHwrWritingSpeed {
+    HbHwrSpeedVerySlow,
+    HbHwrSpeedSlow,
+    HbHwrSpeedNormal,
+    HbHwrSpeedFast,
+    HbHwrSpeedVeryFast
+};
+
+/*!
+Dedicated input mode of cangjie.
+*/
+enum HbCangjieDetailMode {
+    HbCangjieEasy,
+    HbCangjieNormal,
+    HbCangjieAdvanced
 };
 
 const int HbInputMinKeypressTimeout = 400;

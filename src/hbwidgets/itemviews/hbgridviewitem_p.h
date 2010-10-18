@@ -33,7 +33,7 @@
 class HbGridViewItem;
 class HbGridViewPrivate;
 
-class QGraphicsItem;
+class QGraphicsObject;
 
 class HbGridViewItemPrivate: public HbAbstractViewItemPrivate
 {
@@ -46,8 +46,8 @@ public:
     void init();
 
     // below variables store items that are inside GridViewItem
-    QGraphicsItem *mIconItem;
-    QGraphicsItem *mTextItem;
+    QGraphicsObject *mIconItem;
+    QGraphicsObject *mTextItem;
 
     bool isTextValid(const QVariant& text) const;
     bool isIconValid(const QVariant& icon) const;

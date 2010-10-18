@@ -36,7 +36,7 @@
 #include <QFile>
 #endif
 #include "hbsharedcache_p.h"
-
+#include "hbsharedmemorymanagerut_p.h"
 #ifdef HB_BIN_CSS
 #include "hbcssconverterutils_p.h"
 #endif // HB_BIN_CSS
@@ -50,9 +50,7 @@ static const int freeIdentifier =    0x40000000;
 static const int reallocIdentifier = 0xC0000000;
 #endif
 
-HbSharedMemoryManager *HbSharedMemoryManager::memManager = 0;
-
-#ifdef HB_HAVE_PROTECTED_CHUNK // Symbian, protected chunk
+#if defined(HB_HAVE_PROTECTED_CHUNK) && defined(Q_OS_SYMBIAN)
 HbSharedMemoryWrapper::HbSharedMemoryWrapper(const QString &key, QObject *parent) :
     wrapperError(QSharedMemory::NoError),        
     key(key),
@@ -253,9 +251,7 @@ bool HbSharedMemoryManager::initialize()
         writable = false;
     }
     if ( !success ) {
-#ifdef THEME_SERVER_TRACES
-        qDebug() << "HbSharedMemoryManager:: Could not initialize shared memory chunk";
-#endif //THEME_SERVER_TRACES
+        THEME_GENERIC_DEBUG() << "HbSharedMemoryManager:: Could not initialize shared memory chunk";
         delete chunk; 
         chunk = 0;
     }
@@ -287,18 +283,18 @@ bool HbSharedMemoryManager::initialize()
             chunkHeader->mainAllocatorOffset = memoryFileSize ? ALIGN(memoryFileSize)
                                                               : sizeof(HbSharedChunkHeader);
             // Clear also allocator identifier so that they will not try to re-connect
-            int *mainAllocatorIdentifier = address<int>(chunkHeader->mainAllocatorOffset);
+            quint32 *mainAllocatorIdentifier = address<quint32>(chunkHeader->mainAllocatorOffset);
             *mainAllocatorIdentifier = 0;
             mainAllocator->initialize(chunk, chunkHeader->mainAllocatorOffset);
             chunkHeader->subAllocatorOffset = alloc(SPACE_NEEDED_FOR_MULTISEGMENT_ALLOCATOR);
-            int *subAllocatorIdentifier = address<int>(chunkHeader->subAllocatorOffset);
+            quint32 *subAllocatorIdentifier = address<quint32>(chunkHeader->subAllocatorOffset);
             *subAllocatorIdentifier = 0;
             subAllocator->initialize(chunk, chunkHeader->subAllocatorOffset, mainAllocator);
             chunkHeader->identifier = INITIALIZED_CHUNK_IDENTIFIER;
             
             if (!binCSSConverterApp) {
                 if (memoryFileSize == 0) {
-                    cachePtr = createSharedCache(0, 0, 0);
+                    cachePtr = createSharedCache(0, 0, 0, -1);
                 }
             }
         }
@@ -325,7 +321,7 @@ bool HbSharedMemoryManager::initialize()
  * This function throws std::bad_alloc in case of OOM condition, else
  * proper offset in case of a successful memory allocation
  */
-int HbSharedMemoryManager::alloc(int size)
+qptrdiff HbSharedMemoryManager::alloc(int size)
 {
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
 // some code copied, but much more readable this way
@@ -376,7 +372,7 @@ int HbSharedMemoryManager::alloc(int size)
 
 #else // normal alloc without reporting
     if (isWritable() && size > 0) {
-        int offset = -1;
+        qptrdiff offset = -1;
 #ifdef USE_SUBALLOCATOR
         if (size <= MAXIMUM_ALLOC_SIZE_FOR_SUBALLOCATOR) {
             offset = subAllocator->alloc(size);
@@ -409,11 +405,11 @@ int HbSharedMemoryManager::alloc(int size)
 /**
  * free
  */
-void HbSharedMemoryManager::free(int offset)
+void HbSharedMemoryManager::free(qptrdiff offset)
 {
     // don't do anything when freeing NULL (pointer)offset
     if (isWritable() && (offset > 0)) {
-        int metaData = *address<int>(offset - sizeof(int));
+        qptrdiff metaData = *address<qptrdiff>(offset - sizeof(qptrdiff));
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
         int size = 0;
         if (metaData & MAIN_ALLOCATOR_IDENTIFIER) {
@@ -446,23 +442,23 @@ void HbSharedMemoryManager::free(int offset)
  * 
  * This function can throw if alloc fails
  */
-int HbSharedMemoryManager::realloc(int offset, int newSize)
+qptrdiff HbSharedMemoryManager::realloc(qptrdiff offset, int newSize)
 {
-    int newOffset = -1;
+    qptrdiff newOffset = -1;
     if (isWritable()) {
 #ifdef HB_THEME_SERVER_FULL_MEMORY_REPORT
         if (offset > 0) { // if offset == -1, just do normal alloc and not report realloc
             fullAllocationHistory.append(QPair<quint32, quint32>(newSize | reallocIdentifier, offset));
         }
 #endif
-	    newOffset = alloc(newSize);
+        newOffset = alloc(newSize);
         int allocatedSize = ALIGN(newSize);
         if (offset > 0) {
 #ifdef HB_BIN_CSS
             HbCssConverterUtils::cellMoved(offset, newOffset);
 #endif
             unsigned char *scrPtr = address<unsigned char>(offset);
-            int metaData = *address<int>(offset - sizeof(int));
+            qptrdiff metaData = *address<qptrdiff>(offset - sizeof(qptrdiff));
             if (metaData & MAIN_ALLOCATOR_IDENTIFIER) {
                 int oldSize = mainAllocator->allocatedSize(offset);
                 memcpy(address<unsigned char>(newOffset), scrPtr, qMin(oldSize, allocatedSize));
@@ -505,7 +501,7 @@ void *HbSharedMemoryManager::base()
  * constructor
  */
 HbSharedMemoryManager::HbSharedMemoryManager()
-    : writable(true),
+    : HbMemoryManager(true),
      mainAllocator(new HbSplayTreeAllocator),
      subAllocator(new HbMultiSegmentAllocator),
      chunk(0)
@@ -519,7 +515,7 @@ HbSharedMemoryManager::HbSharedMemoryManager()
 }
 
 HbSharedCache *HbSharedMemoryManager::createSharedCache(
-    const char *offsetMapData, int size, int offsetItemCount, int sharedCacheOffset)
+    const char *dataArray, int size, int offsetItemCount, int globalParametersOffset, qptrdiff sharedCacheOffset)
 {
     HbSharedCache *cache = 0;
     HbSharedChunkHeader *chunkHeader = static_cast<HbSharedChunkHeader*>(chunk->data());
@@ -527,7 +523,7 @@ HbSharedCache *HbSharedMemoryManager::createSharedCache(
         free(chunkHeader->sharedCacheOffset);
         chunkHeader->sharedCacheOffset = 0;
     }
-    if (!offsetMapData) {
+    if (!dataArray) {
         size = 0;
     }
 
@@ -539,7 +535,7 @@ HbSharedCache *HbSharedMemoryManager::createSharedCache(
 
     if (sharedCacheOffset >= 0) {
         cache = new (address<char>(sharedCacheOffset)) HbSharedCache();
-        cache->addOffsetMap(offsetMapData, size, offsetItemCount);
+        cache->setContent(dataArray, size, offsetItemCount, globalParametersOffset);
         chunkHeader->sharedCacheOffset = sharedCacheOffset;
     }
     return cache;
@@ -586,33 +582,6 @@ HbSharedMemoryManager::~HbSharedMemoryManager()
 }
 
 /**
- * to get instance of HbSharedMemoryManager
- */
-HbMemoryManager *HbSharedMemoryManager::instance()
-{
-    if (!memManager) {
-        memManager = new HbSharedMemoryManager();
-        if (!memManager->initialize()) {
-#ifdef THEME_SERVER_TRACES
-            qWarning( "HbSharedMemoryManager:Could not initialize shared memory" );
-#endif
-            delete memManager;
-            memManager = 0;
-        }
-    }
-    return memManager;
-}
-
-/**
- * release the HbSharedMemoryManager-instance.
- */
-void HbSharedMemoryManager::releaseInstance()
-{
-    delete memManager;
-    memManager = 0;
-}
-
-/**
  * gets the free memory reported by main allocator
  */
 int HbSharedMemoryManager::freeSharedMemory()
@@ -633,10 +602,8 @@ int HbSharedMemoryManager::allocatedSharedMemory()
 int HbSharedMemoryManager::loadMemoryFile(const QString &filePath)
 {
     int loadedSize = 0;
-
-#ifdef CSSBIN_TRACES
-    qDebug() << "loading: " << filePath;
-#endif
+    THEME_CSSBIN_DEBUG() << "loading: " << filePath;
+    
     QFile file(filePath);
     if(file.open(QFile::ReadOnly)) {
         qint64 fileSize = file.size();
@@ -644,9 +611,7 @@ int HbSharedMemoryManager::loadMemoryFile(const QString &filePath)
         file.close();
         loadedSize = (int)fileSize;
     }
-#ifdef CSSBIN_TRACES
-    qDebug() << "Loading memory file status: " << (loadedSize > 0 ? "no error" : file.errorString());
-#endif
+    THEME_CSSBIN_DEBUG() << "Loading memory file status: " << (loadedSize > 0 ? "no error" : file.errorString());
     return loadedSize;
 }
 
@@ -685,7 +650,7 @@ void HbSharedMemoryManager::createReport()
 
     QFile file(filePath);
     if (!file.open(QFile::WriteOnly | QFile::Append | QFile::Text)) {
-        qWarning() << "Create shared memory report error - can't write to file " << filePath;
+        hbWarning() << "Create shared memory report error - can't write to file " << filePath;
         return;
     }
 
@@ -791,7 +756,53 @@ void HbSharedMemoryManager::createReport()
 #endif
     file.close();
     if (file.error()) {
-        qWarning() << "Create shared memory report error - error with file " << filePath;
+        hbWarning() << "Create shared memory report error - error with file " << filePath;
     }
 }
 #endif
+
+/**
+* helper function to know whether process is a shared container unittest
+*/
+#ifndef HB_BIN_CSS
+
+#define SHARED_CONTAINER_UNITTEST_PREFIX "unittest_hbsharedcontainer_"
+#define SHARED_MEMORYMANAGER_UNITTEST_PREFIX "unittest_hbsharedmemory"
+
+static inline bool isSharedContainerUnitTest()
+{
+    static bool isSharedContainerUnit = false;
+    // to avoid string operations multiple times in each call
+    static bool appNameNotTested=true;
+
+    if(!appNameNotTested)
+        return isSharedContainerUnit;
+
+    appNameNotTested = false;
+    const QString& appName = HbMemoryUtils::getCleanAppName();
+
+    isSharedContainerUnit = false;
+    if ( appName.startsWith(SHARED_CONTAINER_UNITTEST_PREFIX) ||
+         appName.startsWith(SHARED_MEMORYMANAGER_UNITTEST_PREFIX) ) {
+        isSharedContainerUnit = true;
+    }
+
+    return isSharedContainerUnit;
+}
+#endif // HB_BIN_CSS
+
+/**
+ * Allocates and initializes a new HbSharedMemoryManager
+ */
+HbSharedMemoryManager* HbSharedMemoryManager::create()
+{
+#ifndef HB_BIN_CSS
+    // Check for shared container unit test
+    if ( isSharedContainerUnitTest() ) {
+        return HbSharedMemoryManagerUt::create();
+    }
+#endif
+        
+    // Normal case
+    return new HbSharedMemoryManager();
+}

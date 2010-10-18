@@ -30,17 +30,17 @@
 class HbHardwareInputBasic12KeyHandlerPrivate;
 class HbHardwareInputBasic12KeyHandler: public HbInputBasicHandler
 {
-	Q_OBJECT
+    Q_OBJECT
 public:
-	HbHardwareInputBasic12KeyHandler(HbInputAbstractMethod* inputMethod);
-	~HbHardwareInputBasic12KeyHandler();
+    HbHardwareInputBasic12KeyHandler(HbInputAbstractMethod* inputMethod);
+    ~HbHardwareInputBasic12KeyHandler();
 
-	bool isComposing() const;
-	bool actionHandler(HbInputModeAction action);
-	bool filterEvent(const QKeyEvent * event);
+    bool isComposing() const;
+    bool actionHandler(HbInputModeAction action);
+    bool filterEvent(const QKeyEvent * event);
 
 private:
-	Q_DECLARE_PRIVATE(HbHardwareInputBasic12KeyHandler)
+    Q_DECLARE_PRIVATE(HbHardwareInputBasic12KeyHandler)
     Q_DISABLE_COPY(HbHardwareInputBasic12KeyHandler)
 };
 

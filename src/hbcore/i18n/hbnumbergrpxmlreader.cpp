@@ -36,31 +36,31 @@ using namespace HbNumberGrpXmlReaderHelp;
 */ 
 HbNumberGrpXmlReader::HbNumberGrpXmlReader( int localeId )
 {
-	locale.setNum(localeId);
-	locale.insert(0, "C");
-	found = false;
-	done = false;
-	phase = 0;
-	decimal = "";
-	pattern = ""; 
-	group = "";
+    locale.setNum(localeId);
+    locale.insert(0, "C");
+    found = false;
+    done = false;
+    phase = 0;
+    decimal = "";
+    pattern = ""; 
+    group = "";
 
-	QFile xmlFile(NumberGroupingFile);
+    QFile xmlFile(NumberGroupingFile);
 
-	if ( xmlFile.exists() )	{
-		QXmlInputSource source(&xmlFile);
-		QXmlSimpleReader reader; 
-		reader.setContentHandler(this);  
-		reader.parse(source) ;
-	}	
-} 	
+    if ( xmlFile.exists() ) {
+        QXmlInputSource source(&xmlFile);
+        QXmlSimpleReader reader; 
+        reader.setContentHandler(this);  
+        reader.parse(source) ;
+    }   
+}   
 
 /*!
     \return pattern for grouping 
 */ 
 QString HbNumberGrpXmlReader::getPattern()
 {
-	return pattern;
+    return pattern;
 }
 
 /*!
@@ -68,7 +68,7 @@ QString HbNumberGrpXmlReader::getPattern()
 */ 
 QString HbNumberGrpXmlReader::getGroup()
 {
-	return group;
+    return group;
 }
 
 /*!
@@ -76,7 +76,7 @@ QString HbNumberGrpXmlReader::getGroup()
 */ 
 QString HbNumberGrpXmlReader::getDecimal()
 {
-	return decimal;
+    return decimal;
 }
 
 /*!
@@ -104,26 +104,26 @@ bool HbNumberGrpXmlReader::startDocument()
     \return true 
 */ 
 bool HbNumberGrpXmlReader::startElement( const QString &,
-				   const QString &,
-				   const QString &qName,
-				   const QXmlAttributes & )
+                   const QString &,
+                   const QString &qName,
+                   const QXmlAttributes & )
 {
-	if ( done ) {
-		return true;
-	}
+    if ( done ) {
+        return true;
+    }
 
-	if ( found ) {		
-		if ( qName == DecimalStr ) {
-			phase = 1;
-		} else if ( qName == GroupStr ) {
-			phase = 2;
-		} else if ( qName == PatternStr ) {
-			phase = 3;
-		}
-	} else if ( locale == qName ) {
-		found = true;
-	}
-    return true;	
+    if ( found ) {      
+        if ( qName == DecimalStr ) {
+            phase = 1;
+        } else if ( qName == GroupStr ) {
+            phase = 2;
+        } else if ( qName == PatternStr ) {
+            phase = 3;
+        }
+    } else if ( locale == qName ) {
+        found = true;
+    }
+    return true;    
 }
 
 /*!
@@ -140,8 +140,8 @@ bool HbNumberGrpXmlReader::characters( const QString &text )
 
     QString tmpText;
 
-	// This little trick is needed because of limitation in XML reader
-	// XML reader doesn't read space character corretly
+    // This little trick is needed because of limitation in XML reader
+    // XML reader doesn't read space character corretly
     if ( text.at(0).toAscii() == 32 ) {  // " "
         tmpText = ' ';    
     } else {
@@ -149,17 +149,17 @@ bool HbNumberGrpXmlReader::characters( const QString &text )
     }
     
     if ( found ) {
-		if ( phase == 1 ) {  //handle Decimal
-			decimal = tmpText;
-		} else if ( phase == 2 ) { // handle group
-			group = tmpText;
-		} else if ( phase == 3 ) { // handle pattern
-			 pattern = tmpText;
-		} else {}
-		
-		phase = 0;
+        if ( phase == 1 ) {  //handle Decimal
+            decimal = tmpText;
+        } else if ( phase == 2 ) { // handle group
+            group = tmpText;
+        } else if ( phase == 3 ) { // handle pattern
+             pattern = tmpText;
+        } else {}
+        
+        phase = 0;
     }
-    return true;	
+    return true;    
 }
 
 /*!
@@ -172,11 +172,11 @@ bool HbNumberGrpXmlReader::endElement( const QString &,
         const QString &,
         const QString &qName )
 {
-	if ( locale == qName ) {
-		done = true;
-	}
+    if ( locale == qName ) {
+        done = true;
+    }
 
-	return true;
+    return true;
 }
 
 /*!

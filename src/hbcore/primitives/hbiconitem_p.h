@@ -34,21 +34,27 @@
 #include <QBrush>
 #include <QObject>
 
-class HbIconItemPrivate : public HbWidgetBasePrivate
+class HB_CORE_PRIVATE_EXPORT HbIconItemPrivate : public HbWidgetBasePrivate
 {
     Q_DECLARE_PUBLIC(HbIconItem)
 
 public:
     HbIconItemPrivate(const HbIcon &icon);
     ~HbIconItemPrivate();
+
     void clearStoredIconContent();
     void updateIconItem();
     void updateIconParams();
     void recalculateBoundingRect() const;
     void setThemedColor(const QColor &color);
+
+    typedef bool (*AsyncCallbackFilter)(HbIconItem *target, void *param);
+    void setAsyncCallbackFilter(AsyncCallbackFilter filter, void *filterParam);
+
     static HbIconItemPrivate *d_ptr(HbIconItem *item) {
         return item->d_func();
     }
+
     HbIcon mIcon;
     HbIconAnimator mAnimator;
     Qt::Alignment mAlignment;
@@ -61,6 +67,10 @@ public:
     mutable QRectF mBoundingRect;
     mutable QRectF mAdjustedRect;
     mutable bool mClearCachedRect;
+    bool mIconScalingEnabled;
+    bool mAsync;
+    AsyncCallbackFilter mAsyncFilter;
+    void *mAsyncFilterParam;
     static bool outlinesEnabled;
 };
 

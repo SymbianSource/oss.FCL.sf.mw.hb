@@ -41,6 +41,7 @@ const qreal HbDeltaHeight = 2.0;
 HbInputAbstractMethod::HbInputAbstractMethod()
 {
     mVanillQwertySwitch = new HbAction(QString("QTY"));
+    mIsFocusOnVanillaQtEditor = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -163,7 +164,7 @@ void HbInputAbstractMethod::getCandidatePositionAndSize(HbCandidateList *candida
 
 bool HbInputAbstractMethod::isSctModeActive() const
 {
-	return false;
+    return false;
 }
 
 
@@ -174,16 +175,16 @@ HbKeyboardType HbInputAbstractMethod::currentKeyboardType() const
 
 void HbInputAbstractMethod::focusReceived()
 {
-    bool isVannilaApp = false;
+    mIsFocusOnVanillaQtEditor = false;
     QInputContext* context = qApp->inputContext();
     if (context && context->focusWidget()) {
         QWidget *focusedWidget = context->focusWidget();
         if (!focusedWidget->inherits("HbMainWindow")) {
-            isVannilaApp = true;
+            mIsFocusOnVanillaQtEditor = true;
         }
     }
     
-    if(isVannilaApp && focusObject() ) {
+    if(mIsFocusOnVanillaQtEditor && focusObject() ) {
         QList<HbAction*> customActions= focusObject()->editorInterface().actions();
         if(!customActions.contains(mVanillQwertySwitch)) {
             disconnect(mVanillQwertySwitch, SIGNAL(triggered(bool)));
@@ -193,25 +194,36 @@ void HbInputAbstractMethod::focusReceived()
     }
 }
 
-void HbInputAbstractMethod::switchKeypad(bool isActive)
+
+void HbInputAbstractMethod::focusLost()
 {
-    Q_UNUSED(isActive);
-    HbKeyboardType keyboard = HbInputSettingProxy::instance()->activeKeyboard();
-    if (keyboard == HbKeyboardVirtual12Key) {
-        HbInputSettingProxy::instance()->setActiveKeyboard(HbKeyboardVirtualQwerty);
-    } else if (keyboard == HbKeyboardVirtualQwerty) {
-        HbInputSettingProxy::instance()->setActiveKeyboard(HbKeyboardVirtual12Key);
+    
+    if(mIsFocusOnVanillaQtEditor &&  focusObject()) {
+        QList<HbAction*> customActions= focusObject()->editorInterface().actions();
+        if(customActions.contains(mVanillQwertySwitch)) {
+            disconnect(mVanillQwertySwitch, SIGNAL(triggered(bool)));
+            disconnect(mVanillQwertySwitch, SIGNAL(triggered(bool)), this, SLOT(switchKeypad(bool)));
+            focusObject()->editorInterface().removeAction(mVanillQwertySwitch);            
+        }
     }
 }
 
-// EOF
+void HbInputAbstractMethod::switchKeypad(bool isActive)
+{
+    Q_UNUSED(isActive);
+    HbInputState state = inputState();
+    if (currentKeyboardType() == HbKeyboardVirtual12Key) {
+        state.setKeyboard(HbKeyboardVirtualQwerty);
+        activateState(state);
+    } else if (currentKeyboardType() == HbKeyboardVirtualQwerty) {
+        state.setKeyboard(HbKeyboardVirtual12Key);
+        activateState(state);
+    }
+}
 
-
-
-   
 QChar HbInputAbstractMethod ::previousChar()
 {
-	return QChar();
+    return QChar();
 }
 
 

@@ -33,7 +33,10 @@
 class CHbDeviceMessageBoxPrivate;
 class MHbDeviceMessageBoxObserver;
 
-class CHbDeviceMessageBoxSymbian : public CBase
+class CHbDeviceMessageBoxSymbian
+#if !defined(HB_DOXYGEN)
+: public CBase
+#endif // !defined(HB_DOXYGEN)
 {
 public:
     enum TType {
@@ -53,7 +56,7 @@ public:
 
     IMPORT_C static CHbDeviceMessageBoxSymbian* NewL(TType aType = ENone,
         MHbDeviceMessageBoxObserver *aObserver = 0);
-    IMPORT_C ~CHbDeviceMessageBoxSymbian();
+    IMPORT_C virtual ~CHbDeviceMessageBoxSymbian();
 
     IMPORT_C static TButtonId QuestionL(const TDesC& aText,
         const TDesC& aAcceptButtonText, const TDesC& aRejectButtonText);
@@ -100,6 +103,7 @@ public:
 
 private:
     friend class CHbDeviceMessageBoxPrivate;
+    friend class HbDeviceDialogsExtensionSymbian;
     CHbDeviceMessageBoxSymbian();
     CHbDeviceMessageBoxPrivate* d;
 };

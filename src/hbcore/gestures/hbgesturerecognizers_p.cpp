@@ -25,15 +25,18 @@
 
 #include "hbgestures_p.h"
 #include "hbgesturerecognizers_p.h"
-#include "hbpangesture.h"
+
 #include "hbtapgesture.h"
+#include "hbpangesture.h"
 #include "hbtapandholdgesture.h"
-#include "hbpinchgesture.h"
 #include "hbswipegesture.h"
+#include "hbpinchgesture.h"
+
+#include "hbnamespace_p.h"
 
 #include <QGesture>
-#include <QTime>
 #include <QGraphicsObject>
+#include <QDebug>
 
 //#define RECOGNIZERS_DEBUG
 #ifdef RECOGNIZERS_DEBUG
@@ -41,6 +44,8 @@
 #else
 #define DEBUG if (0) qDebug
 #endif
+
+#define GESTURE_D(Class, ptr) Class##Private * const d = static_cast<Class *>(ptr)->d_func()
 
 ////////////////////////////////////////////////////////////////////////////
 // Pan gesture
@@ -74,8 +79,14 @@ HbPanGestureRecognizer::~HbPanGestureRecognizer()
     \return
 
 */
-QGesture* HbPanGestureRecognizer::create(QObject *)
+QGesture* HbPanGestureRecognizer::create(QObject *target)
 {
+    if (target && target->isWidgetType()) {
+        static_cast<QWidget *>(target)->setAttribute(Qt::WA_AcceptTouchEvents);
+    }
+    if (qobject_cast<QGraphicsObject *>(target)){
+        return 0;
+    }
     return new HbPanGesture;
 }
 
@@ -92,7 +103,9 @@ QGestureRecognizer::Result HbPanGestureRecognizer::recognize(QGesture *state, QO
     // this is to enable testability within logic classes.
     // QGesture contains gesture state, which cannot be modified by
     // anything else, but QGestureManager itself.
-    return HbPanGestureLogic::recognize(state->state(), static_cast<HbPanGesture *>(state), watched, event, QTime::currentTime());
+    GESTURE_D(HbPanGesture, state);
+    Q_ASSERT(d->mTime.isValid());
+    return HbPanGestureLogic::recognize(state->state(), static_cast<HbPanGesture *>(state), watched, event, d->mTime.elapsed());
 }
 
 /*!
@@ -103,6 +116,8 @@ QGestureRecognizer::Result HbPanGestureRecognizer::recognize(QGesture *state, QO
 */
 void HbPanGestureRecognizer::reset(QGesture *state)
 {
+    GESTURE_D(HbPanGesture, state);
+    d->mTime.restart();
     HbPanGestureLogic::resetGesture(static_cast<HbPanGesture *>(state));
     QGestureRecognizer::reset(state);
 }
@@ -139,8 +154,10 @@ HbTapGestureRecognizer::~HbTapGestureRecognizer()
     \return
 
 */
-QGesture* HbTapGestureRecognizer::create(QObject *)
+QGesture* HbTapGestureRecognizer::create(QObject *target)
 {    
+    if(qobject_cast<QGraphicsObject *>(target))
+        return 0;
     return new HbTapGesture;
 }
 
@@ -157,7 +174,27 @@ QGestureRecognizer::Result HbTapGestureRecognizer::recognize(QGesture *state, QO
     // this is to enable testability within logic classes.
     // QGesture contains gesture state, which cannot be modified by
     // anything else, but QGestureManager itself.
-    return HbTapGestureLogic::recognize( state->state(), static_cast<HbTapGesture *>(state), watched, event );
+    QGestureRecognizer::Result result = HbTapGestureLogic::recognize( state->state(),
+                                                                      static_cast<HbTapGesture *>(state),
+                                                                      watched, event );
+
+    // If a widget sets override property to scene but gets deleted
+    // or event is filtered => clear the property here always on
+    // gesture transition from active to inactive
+    if (result == QGestureRecognizer::CancelGesture ||
+        result == QGestureRecognizer::FinishGesture ||
+        (state->state() != Qt::NoGesture && result == QGestureRecognizer::MayBeGesture)) {
+        QGraphicsView* view = qobject_cast<QGraphicsView*>(watched->parent());
+        if (view) {
+            QGraphicsScene* scene = view->scene();
+            if (scene && scene->property(HbPrivate::OverridingGesture.latin1()).isValid() &&
+                scene->property(HbPrivate::OverridingGesture.latin1()).toUInt() == state->gestureType()) {
+                scene->setProperty(HbPrivate::OverridingGesture.latin1(), QVariant());
+            }
+        }
+    }
+
+    return result;
 }
 
 /*!
@@ -207,8 +244,11 @@ HbTapAndHoldGestureRecognizer::~HbTapAndHoldGestureRecognizer()
     \return
 
 */
-QGesture* HbTapAndHoldGestureRecognizer::create(QObject *)
+QGesture* HbTapAndHoldGestureRecognizer::create(QObject *target)
 {    
+    if (qobject_cast<QGraphicsObject *>(target)){
+        return 0;
+    }
     return new HbTapAndHoldGesture;
 }
 
@@ -277,8 +317,8 @@ QGesture* HbPinchGestureRecognizer::create(QObject *target)
     if (target && target->isWidgetType()) {
         static_cast<QWidget *>(target)->setAttribute(Qt::WA_AcceptTouchEvents);
     }
-    if (QGraphicsObject *o = qobject_cast<QGraphicsObject *>(target)){
-        o->setAcceptTouchEvents(true);
+    if (qobject_cast<QGraphicsObject *>(target)){
+        return 0;
     }
     return new HbPinchGesture;
 }
@@ -343,8 +383,11 @@ HbSwipeGestureRecognizer::~HbSwipeGestureRecognizer()
     \return
 
 */
-QGesture* HbSwipeGestureRecognizer::create(QObject *)
+QGesture* HbSwipeGestureRecognizer::create(QObject *target)
 {
+    if(qobject_cast<QGraphicsObject*>(target)) {
+        return 0;
+    }
     return new HbSwipeGesture;
 }
 
@@ -361,7 +404,9 @@ QGestureRecognizer::Result HbSwipeGestureRecognizer::recognize(QGesture *state, 
     // this is to enable testability within logic classes.
     // QGesture contains gesture state, which cannot be modified by
     // anything else, but QGestureManager itself.
-    return HbSwipeGestureLogic::recognize(state->state(), static_cast<HbSwipeGesture *>(state), watched, event, QTime::currentTime());
+    GESTURE_D(HbSwipeGesture, state);
+    Q_ASSERT(d->mTime.isValid());
+    return HbSwipeGestureLogic::recognize(state->state(), static_cast<HbSwipeGesture *>(state), watched, event, d->mTime.elapsed());
 }
 
 /*!
@@ -372,6 +417,8 @@ QGestureRecognizer::Result HbSwipeGestureRecognizer::recognize(QGesture *state, 
 */
 void HbSwipeGestureRecognizer::reset(QGesture *state)
 {
+    GESTURE_D(HbSwipeGesture, state);
+    d->mTime.restart();
     HbSwipeGestureLogic::resetGesture(static_cast<HbSwipeGesture *>(state));
     QGestureRecognizer::reset(state);
 }

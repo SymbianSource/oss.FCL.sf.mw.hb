@@ -53,7 +53,7 @@ public:
     explicit HbFontSpec(HbFontSpec::Role role);
 
     HbFontSpec(const HbFontSpec &other);
-	HbFontSpec(const QString fontName); 
+    HbFontSpec(const QString fontName); 
     HbFontSpec &operator=(const HbFontSpec &other);
 
     ~HbFontSpec();
@@ -72,8 +72,8 @@ public:
     bool operator==(const HbFontSpec &other) const;
     bool operator!=(const HbFontSpec &other) const;
 
-	QString typefaceFamily() const;
-	void setTypefaceFamily(QString fontName);
+    QString typefaceFamily() const;
+    void setTypefaceFamily(QString fontName);
 private:
     HbFontSpecPrivate *d;
 };

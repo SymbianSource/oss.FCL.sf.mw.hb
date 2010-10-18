@@ -95,37 +95,39 @@ void HbSensorListener::checkCenrepValue()
     CRepository *repository = 0;
     TRAPD(err, repository = CRepository::NewL(KHbSensorCenrepUid));
     if (err) {
-        qWarning("HbSensorListener::checkCenrepValue; repository->NewL fails, error code = %d", err);
+        hbWarning("HbSensorListener::checkCenrepValue; repository->NewL fails, error code = %d", err);
     } else {
         TInt value = 0;
         TInt err = repository->Get(KHbSensorCenrepKey, value);
         if (err == KErrNone) {
             cenrepValueChanged(value, false);
         } else {
-            qWarning("HbSensorListener::checkCenrepValue: repository->Get fails, error code = %d", err);
+            hbWarning("HbSensorListener::checkCenrepValue: repository->Get fails, error code = %d", err);
         }
     delete repository;
     }
     if (!mNotifyHandler) {
         TRAPD(err, mNotifyHandler = HbSensorNotifyHandler::NewL(*this));
         if (err) {
-            qWarning("HbSensorListener::HbSensorListener: HbSensorNotifyHandler::NewL failed = %d", err);
+            hbWarning("HbSensorListener::HbSensorListener: HbSensorNotifyHandler::NewL failed = %d", err);
         } else {
             TRAPD(err, mNotifyHandler->startObservingL());
             if (err) {
-                qWarning("HbSensorListener::HbSensorListener: mNotifyHandler->startObservingL failed = %d", err);
+                hbWarning("HbSensorListener::HbSensorListener: mNotifyHandler->startObservingL failed = %d", err);
             }
         }
     }
 #else
-    QSettings mSettings("Nokia", "HbStartUpDeskTopSensors");
-    bool enable = mSettings.value("SensorsEnabled").toBool();
+    QSettings settings("Nokia", "Hb");
+    settings.beginGroup("Sensors");
+    bool enable = settings.value("SensorsEnabled").toBool();
     mSettingsEnabled = enable;
     enableSensors(enable, false);
+    settings.endGroup();
 #endif
 }
 
-void HbSensorListener::enableSensors(bool enable, bool notify)
+void HbSensorListener::enableSensors(bool enable, bool notify, bool resetOrientation)
 {
     mEnabled = enable;
 #ifdef Q_OS_SYMBIAN
@@ -134,7 +136,7 @@ void HbSensorListener::enableSensors(bool enable, bool notify)
     mSettingsEnabled = enable;
 #endif
     if (notify) {
-        mObserver.sensorStatusChanged(enable, true);
+        mObserver.sensorStatusChanged(enable, resetOrientation);
     }
 }
 
@@ -163,13 +165,18 @@ void HbSensorListener::cenrepValueChanged(TInt aValue, bool notify)
 {
     bool enable = (aValue == 0) ? false : true;
     mSettingsEnabled = enable;
-    enableSensors(enable, notify);
+    // When sensors are disabled in cenrep, reset orientation
+    enableSensors(enable, notify, !enable);
 }
 #endif
 
 void HbSensorListener::startSensorChannel()
 {
 #ifdef Q_OS_SYMBIAN
+    if(!mSettingsEnabled) {
+         return;
+    }
+    
     CSensrvChannelFinder *sensrvChannelFinder = CSensrvChannelFinder::NewLC();
 
     RSensrvChannelInfoList channelInfoList;
@@ -189,7 +196,7 @@ void HbSensorListener::startSensorChannel()
                 if (!err) {
                     TRAP_IGNORE(mSensrvChannel->StartDataListeningL(this, 1, 1, 0));
                 } else {
-                    qWarning("HbSensorListener::startSensorChannel fails, error code = %d", err);
+                    hbWarning("HbSensorListener::startSensorChannel fails, error code = %d", err);
                 }
             }
         }
@@ -198,7 +205,7 @@ void HbSensorListener::startSensorChannel()
         CleanupStack::Pop(&channelInfoList);
         CleanupStack::PopAndDestroy(sensrvChannelFinder);
     } else {
-        qWarning("HbSensorListener::startSensorChannel fails, error code = %d", err);
+        hbWarning("HbSensorListener::startSensorChannel fails, error code = %d", err);
     }
 #endif
 }

@@ -86,6 +86,7 @@ public:
 signals:
 
     void itemCreated(HbAbstractViewItem *item);
+    void itemAboutToBeDeleted(HbAbstractViewItem *item);
 
 protected:
 

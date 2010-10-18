@@ -36,6 +36,7 @@
 //       match the cases of the corresponding directories in Symbian 4.
 #include <VG/openvg.h>
 #include <vg/vgcontext_symbian.h>
+#include "hbnvgrasterizer_p.h"
 #endif //HB_NVG_CS_ICON
 
 QT_BEGIN_NAMESPACE
@@ -45,14 +46,6 @@ class QPixmap;
 QT_END_NAMESPACE
 
 class HbThemeServerSymbian;
-
-#if defined (HB_NVG_CS_ICON)
-struct HbNvgAspectRatioSettings
-{
-    TNvgAlignStatusType nvgAlignStatusAndAspectRatio;
-    TNvgMeetOrSliceType type;
-};
-#endif //HB_NVG_CS_ICON
 
 class HbPixmapIconProcessor : public HbIconProcessor
 {
@@ -72,17 +65,15 @@ public :
                                   HbMultiIconParams &multiPieceIconParams);
 
 private :
+#if defined (HB_NVG_CS_ICON)
+    bool renderNvgToPixmap(const QString& iconPath);
+#endif
     bool renderSvgToPixmap(const QString& iconPath);
     bool renderPicToPixmap(const QString& iconPath);
     bool renderOtherFormatsToPixmap(const QString& iconPath);
 
-#if defined (HB_NVG_CS_ICON)
-    VGIColorBufferFormat mapToVgiDisplayFormat(QImage::Format imageFormat) const;
-    bool renderNvgToPixmap(const QString& iconPath);
-    HbNvgAspectRatioSettings mapKeyAspectRatioToNvgAspectRatio(
-	                                                Qt::AspectRatioMode aspectRatio) const;
-#endif //HB_NVG_CS_ICON
 private:
+    mutable HbSharedIconInfo data;
     QPixmap pixmap;
 };
 

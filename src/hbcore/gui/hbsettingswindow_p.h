@@ -38,6 +38,7 @@ class HbSettingsWindow : public QWidget
 
 public:
     static HbSettingsWindow *instance();
+    static bool exists();
     ~HbSettingsWindow();
 
 public slots:

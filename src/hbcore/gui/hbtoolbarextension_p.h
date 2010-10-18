@@ -52,15 +52,15 @@ public:
     void setExtensionAction(HbAction *action);
 
     void _q_orientationChanged();
+    void _q_toolbarOrientationChanged();
     void _q_animateButtonClicked();
-
+    virtual void doSetFrameType(HbPopup::FrameType newFrameType);
 public:
     QList<HbToolButton *> mToolButtons;
     QGraphicsGridLayout *mLayout;
     HbAction *extensionAction;
     Qt::Alignment mAlignment;
     bool mDefaultContentWidget;
-    qreal mMargins;
     int   mRowsPortrait;
     int   mRowsLandscape;
     int   mColsPortrait;

@@ -37,6 +37,7 @@ class HbAnchorPrivate
 public:
     HbAnchorPrivate();
     void setInitialLength( qreal length );
+    void normalizeHints();
 
     QGraphicsLayoutItem *mStartItem;
     Hb::Edge mStartEdge;
@@ -48,6 +49,10 @@ public:
     qreal mMinValue;
     qreal mPrefValue;
     qreal mMaxValue;
+
+    qreal mEffectiveMinimum;
+    qreal mEffectivePreferred;
+    qreal mEffectiveMaximum;
 
     QSizePolicy::Policy mPolicy;
 

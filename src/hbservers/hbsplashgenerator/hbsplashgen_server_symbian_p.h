@@ -48,7 +48,8 @@ public:
 
 private slots:
     void onOutputDirContentsUpdated(const QString &dir, const QStringList &entries);
-    void dropCachedData();
+    void onRegenStarted();
+    void onRegenEnded();
 
 private:
     HbSplashGenServerSymbian *mServer;

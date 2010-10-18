@@ -56,65 +56,75 @@ private:
 public:
     void connectObservingObject(QObject *observer);
     void disconnectObservingObject(QObject *observer);
+
     HbInputLanguage globalInputLanguage() const;
-    void availableHwKeyboard(QList<HbKeyboardType>& listOfAvailableKeyboards) const;
+    void setGlobalInputLanguage(const HbInputLanguage &language);
+
     HbInputLanguage globalSecondaryInputLanguage() const;
-    HbKeyboardType activeKeyboard() const;
-    HbKeyboardType activeHwKeyboard() const;
-    HbKeyboardType activeTouchKeyboard() const;
-    void setGlobalInputLanguage(const HbInputLanguage &langauge);
     void setGlobalSecondaryInputLanguage(const HbInputLanguage &language);
-    void setActiveKeyboard(HbKeyboardType keyboard);
-    void setActiveHwKeyboard(HbKeyboardType keyboard);
-    void setActiveTouchKeyboard(HbKeyboardType keyboard);
+
     bool predictiveInputStatus(HbKeyboardSettingFlags keyboardType) const;
     void setPredictiveInputStatus(HbKeyboardSettingFlags keyboardType, bool newStatus);
+
     bool predictiveInputStatusForActiveKeyboard() const;
     void setPredictiveInputStatusForActiveKeyboard(bool newStatus);
+
+    void availableHwKeyboard(QList<HbKeyboardType> &listOfAvailableKeyboards) const;
+
+    HbKeyboardType activeKeyboard(Qt::Orientation orientation) const;
+    void setActiveKeyboard(HbKeyboardType keyboard);
+
     HbInputDigitType globalDigitType() const;
     void setGlobalDigitType(HbInputDigitType digitType);
+
     bool automaticTextCasingForQwerty();
     void setAutomaticTextCasingForQwerty(bool status);
-    void setCharacterPreviewForQwerty(bool previewEnabled);
+
     bool isCharacterPreviewForQwertyEnabled();
-    HbInputMethodDescriptor activeCustomInputMethod() const;
-    void setActiveCustomInputMethod(const HbInputMethodDescriptor &inputMethod);
-    Qt::Orientation screenOrientation();
-    void setScreenOrientation(Qt::Orientation screenOrientation);
-    void notifyScreenOrientationChange();
-    bool orientationChangeCompleted() const;
-    void initializeOrientation(Qt::Orientation screenOrientation);
+    void setCharacterPreviewForQwerty(bool previewEnabled);
+
     bool regionalCorrectionEnabled();
     void enableRegionalCorrection(bool status);
-    void setKeypressTimeout(int timeout);
+
     int keypressTimeout() const;
-    void setAutocompletionStatus(HbKeyboardSettingFlags keyboardType, bool newStatus);
+    void setKeypressTimeout(int timeout);
+
     bool isAutocompletionEnabled(HbKeyboardSettingFlags keyboardType) const;
-    void setTypingCorrectionLevel(HbTypingCorrectionLevel level);
+    void setAutocompletionStatus(HbKeyboardSettingFlags keyboardType, bool newStatus);
+
     HbTypingCorrectionLevel typingCorrectionLevel() const;
-    void setPrimaryCandidateMode(HbPrimaryCandidateMode mode);
+    void setTypingCorrectionLevel(HbTypingCorrectionLevel level);
+
     HbPrimaryCandidateMode primaryCandidateMode() const;
+    void setPrimaryCandidateMode(HbPrimaryCandidateMode mode);
+
     HbInputMethodDescriptor preferredInputMethod(Qt::Orientation orientation) const;
-    HbInputMethodDescriptor preferredInputMethod() const;
-    QByteArray preferredInputMethodCustomData(Qt::Orientation orientation) const;
     void setPreferredInputMethod(Qt::Orientation orientation, const HbInputMethodDescriptor &inputMethod, const QByteArray &customData = QByteArray());
+    QByteArray preferredInputMethodCustomData(Qt::Orientation orientation) const;
+
+    HbHwrWritingSpeed hwrWritingSpeed() const;
+    void setHwrWritingSpeed(HbHwrWritingSpeed speed);
+
+    HbCangjieDetailMode detailedCangjieMode() const;
+    void setDetailedCangjieMode(HbCangjieDetailMode cangjieDetail);
+
+    bool useWesternDefaultKeypadForChinese() const;
+    void setWesternDefaultKeypadForChinese(bool useWestern);
 
 signals:
     void globalInputLanguageChanged(const HbInputLanguage &newLanguage);
     void globalSecondaryInputLanguageChanged(const HbInputLanguage &newLanguage);
-    void activeKeyboardChanged(HbKeyboardType newKeyboard);
-    void activeHwKeyboardChanged(HbKeyboardType newKeyboard);
-    void activeTouchKeyboardChanged(HbKeyboardType newKeyboard);
     void predictiveInputStateChanged(HbKeyboardSettingFlags keyboardType, bool newState);
     void automaticTextCasingStateForQwertyChanged(bool newState);
     void characterPreviewStateForQwertyChanged(bool newState);
-    void orientationAboutToChange();
-    void orientationChanged(Qt::Orientation orientation);
     void regionalCorretionStatusChanged(bool newStatus);
     void keypressTimeoutChanged(int newTimeout);
     void autocompletionStateChanged(HbKeyboardSettingFlags keyboardType, bool newState);
     void typingCorrectionLevelChanged(HbTypingCorrectionLevel newLevel);
     void primaryCandidateModeChanged(HbPrimaryCandidateMode newMode);
+    void hwrWritingSpeedChanged(HbHwrWritingSpeed speed);
+    void detailedCangjieModeChanged(HbCangjieDetailMode);
+    void chineseDefaultKeypadChanged(bool toWestern);
 
 public slots:
     void togglePrediction();

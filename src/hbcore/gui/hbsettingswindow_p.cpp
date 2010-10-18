@@ -72,14 +72,20 @@ static HbMainWindow *getWindow(int index)
     return window;
 }
 
+static QPointer<HbSettingsWindow> settingsWindowGlobal = 0;
+
 HbSettingsWindow *HbSettingsWindow::instance()
 {
-    static QPointer<HbSettingsWindow> window = 0;
-    if (!window) {
-        window = new HbSettingsWindow;
-        window->setAttribute(Qt::WA_DeleteOnClose);
+    if (!settingsWindowGlobal) {
+        settingsWindowGlobal = new HbSettingsWindow;
+        settingsWindowGlobal->setAttribute(Qt::WA_DeleteOnClose);
     }
-    return window;
+    return settingsWindowGlobal;
+}
+
+bool HbSettingsWindow::exists()
+{
+    return !settingsWindowGlobal.isNull();
 }
 
 HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
@@ -97,7 +103,6 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
     mGeneralSettingsForSensorsComboBox = new QComboBox(this); //krazy:exclude=qclasses
     mUnsetOrientationButton = new QPushButton(tr("&Unset orientation"), this); //krazy:exclude=qclasses
 
-    mLights = true;
     HbIcon icon("qtg_mono_light");
     mLightsButton = new QPushButton(icon.pixmap(), "", this); //krazy:exclude=qclasses
     mAnimationButton = new QPushButton(tr("&Animation on"), this); //krazy:exclude=qclasses
@@ -147,7 +152,7 @@ HbSettingsWindow::HbSettingsWindow(QWidget *parent) : QWidget(parent)
     sensorLayout->addRow(mLightsButton);
     sensorLayout->addRow(mAnimationButton);
 
-    mainGroup->setLayout(sensorLayout);
+    sensorGroup->setLayout(sensorLayout);
     boxLayout->addWidget(sensorGroup);
 
     QGroupBox *globalGroup = new QGroupBox(tr("Global debug drawing"), this); //krazy:exclude=qclasses
@@ -320,20 +325,21 @@ void HbSettingsWindow::changeSensorValue(int index)
         mSensorComboBox->removeItem(2);
     }
 
-    QSettings mSettings("Nokia", "HbStartUpDeskTopSensors");
+    QSettings settings("Nokia", "Hb");
+    settings.beginGroup("Sensors");
     switch (index) {
     case 0:
         HbMainWindowOrientation::instance()->mSensorListener->setSensorOrientation(Qt::Horizontal);
-        mSettings.setValue("Orientation", 1);
+        settings.setValue("Orientation", 1);
         break;
     case 1:
         HbMainWindowOrientation::instance()->mSensorListener->setSensorOrientation(Qt::Vertical);
-        mSettings.setValue("Orientation", 2);
+        settings.setValue("Orientation", 2);
         break;
     case 2: //Empty
         break;
     case 3: //Initialize
-        if (mSettings.value("Orientation").toInt() == 1) {
+        if (settings.value("Orientation").toInt() == 1) {
             mSensorComboBox->setCurrentIndex(0);
         } else {
             mSensorComboBox->setCurrentIndex(1);
@@ -342,17 +348,20 @@ void HbSettingsWindow::changeSensorValue(int index)
     default:
         break;
     }
+    settings.endGroup();
 }
 
 void HbSettingsWindow::changeGSettingsForSensors(int index)
 {
-    QSettings mSettings("Nokia", "HbStartUpDeskTopSensors");
+    QSettings settings("Nokia", "Hb");
+    settings.beginGroup("Sensors");
     if (index == 3) { //Initialize
-        mGeneralSettingsForSensorsComboBox->setCurrentIndex(mSettings.value("SensorsEnabled").toBool());
+        mGeneralSettingsForSensorsComboBox->setCurrentIndex(settings.value("SensorsEnabled").toBool());
     } else {
-        mSettings.setValue("SensorsEnabled", (bool)index);
+        settings.setValue("SensorsEnabled", (bool)index);
         HbMainWindowOrientation::instance()->mSensorListener->enableSensors(index, true);
     }
+    settings.endGroup();
 }
 
 void HbSettingsWindow::unsetOrientation()
@@ -366,21 +375,25 @@ void HbSettingsWindow::unsetOrientation()
 
 void HbSettingsWindow::toggleLights()
 {
-    HbIcon icon("qtg_mono_light");
+    HbIcon icon;
+    if (mLights) {
+        mLights = false;
+        icon.setIconName("qtg_mono_light_off");
+        } else {
+        mLights = true;
+        icon.setIconName("qtg_mono_light");
+    }
+    mLightsButton->setIcon(icon.pixmap());
+
     QList<HbMainWindow *> mainWindowList = hbInstance->allMainWindows();
     for (int i = 0; i < mainWindowList.count(); ++i) {
         if (mLights) {
-            icon.setIconName("qtg_mono_light_off");
-            mainWindowList[i]->broadcastEvent(HbEvent::SleepModeEnter);
-            mLights = false;
-            mainWindowList[i]->setForegroundBrush(QBrush(Qt::black, Qt::Dense1Pattern));
-        } else {
-            icon.setIconName("qtg_mono_light");
             mainWindowList[i]->broadcastEvent(HbEvent::SleepModeExit);
-            mLights = true;
             mainWindowList[i]->setForegroundBrush(Qt::NoBrush);
+        } else {
+            mainWindowList[i]->broadcastEvent(HbEvent::SleepModeEnter);
+            mainWindowList[i]->setForegroundBrush(QBrush(Qt::black, Qt::Dense1Pattern));
         }
-        mLightsButton->setIcon(icon.pixmap());
     }
 }
 

@@ -29,7 +29,7 @@
 #include "hblistviewitem_p.h"
 #include "hbtreeviewitem.h"
 
-class QGraphicsItem;
+class QGraphicsObject;
 
 class HbTreeViewItemShared : public HbListViewItemShared
 {
@@ -66,7 +66,7 @@ public:
     void updateExpandItem();
 
     virtual void tapTriggered(QGestureEvent *event);
-    QGraphicsItem *mExpandItem;
+    QGraphicsObject *mExpandItem;
 
 public:
 

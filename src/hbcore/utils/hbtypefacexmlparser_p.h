@@ -37,10 +37,10 @@ QT_BEGIN_NAMESPACE
 class QIODevice;
 QT_END_NAMESPACE
 
-#ifdef Q_OS_SYMBIAN	
-	#define TYPEFACE_RESOURCE_FOLDER "z:\\resource\\fonts"
+#ifdef Q_OS_SYMBIAN 
+    #define TYPEFACE_RESOURCE_FOLDER "z:\\resource\\fonts"
 #else
-	#define TYPEFACE_RESOURCE_FOLDER HB_RESOURCES_DIR
+    #define TYPEFACE_RESOURCE_FOLDER HB_RESOURCES_DIR
 #endif
 
 class HB_AUTOTEST_EXPORT HbTypefaceXmlParser : public QXmlStreamReader
@@ -65,18 +65,18 @@ public:
     bool readMapping(QString &role, QString &family, QString &aliasFamily, bool &isBold);
     bool readMetric(int &textHeight, int &size, int &baseline);
     const QString metricsTypefaceFamily() const;
-	bool readAndPositionTypefaceSet();
+    bool readAndPositionTypefaceSet();
     void close();
 
 private:
     bool readMapItem(QString &role, QString &family, QString &aliasFamily, bool &isBold);
     bool readMetricItem(int &textHeight, int &size, int &baseline);
-	bool matchLanguageAndCountry() const;
+    bool matchLanguageAndCountry() const;
 
 private:
-	QString mFilePath;
-	QFile *mFile;
-	QString mCurrentFamily;
+    QString mFilePath;
+    QFile *mFile;
+    QString mCurrentFamily;
 };
 
 #endif // HBTYPEFACEXMLPARSER_P_H

@@ -34,58 +34,41 @@ HbVgImageIconRenderer::HbVgImageIconRenderer(VGImage img, const QSize &size, HbI
       iconMode(QIcon::Normal),
       specialCaseApplied(false),
       rendersize(size),
-      addedToStates(false),
       opacityPaint(VG_INVALID_HANDLE),
       lastOpacity(1.0),
       iconImpl(impl)
 {
-    eglStates = HbEglStates::global();
-    eglStates->ref();
 }
 
 HbVgImageIconRenderer::~HbVgImageIconRenderer()
 {
     if (vgImage) {
-        eglStates->removeVGImage(&vgImage);
+        vgDestroyImage(vgImage);
     }
-    eglStates->deref(eglStates);
 }
 
 void HbVgImageIconRenderer::applyIconProperties()
 {
     if (!specialCaseApplied) {
-        if (iconMode == QIcon::Disabled) {
-            VGImage modifiedVgImage = vgCreateImage((VGImageFormat)  VG_sARGB_8888_PRE,
-                                                    rendersize.width(), rendersize.height(), VG_IMAGE_QUALITY_NONANTIALIASED);
-
-            VGImageFormat imageFormat =
-                (VGImageFormat)vgGetParameteri(vgImage, VG_IMAGE_FORMAT);
-
-            VGfloat matrix[20] = {0.1700, 0.1700, 0.1700, 0,
-                                  0.5721, 0.5721, 0.5721, 0,
-                                  0.0577, 0.0577, 0.0577, 0,
-                                  0, 0, 0, 1,
-                                  0, 0, 0, 0
-                                 };
-
-            vgColorMatrix(modifiedVgImage, vgImage, matrix);
-            vgDestroyImage(vgImage);
-            vgImage = modifiedVgImage;
-        }
-
-        if (iconColor.isValid() && iconMode != QIcon::Disabled) {
-            VGImage resultImage = vgCreateImage((VGImageFormat)  VG_sARGB_8888_PRE,
-                                                rendersize.width(), rendersize.height(), VG_IMAGE_QUALITY_NONANTIALIASED);
-
+        if (iconColor.isValid()) {
+            VGImage tmpImage = vgCreateImage(VG_sARGB_8888_PRE,
+                                             rendersize.width(), rendersize.height(),
+                                             VG_IMAGE_QUALITY_NONANTIALIASED);
             VGfloat matrix[20] = {0, 0, 0, 0,
                                   0, 0, 0, 0,
                                   0, 0, 0, 0,
                                   0, 0, 0, 1,
                                   (VGfloat)iconColor.red() / 255.0, (VGfloat)iconColor.green() / 255.0, (VGfloat)iconColor.blue() / 255.0, 0
                                  };
-            vgColorMatrix(resultImage, vgImage, matrix);
-            vgDestroyImage(vgImage);
-            vgImage = resultImage;
+            vgColorMatrix(tmpImage, vgImage, matrix);
+            if (tmpImage != vgImage) {
+                vgDestroyImage(vgImage);
+                vgImage = tmpImage;
+            }
+        }
+
+        if (iconMode == QIcon::Disabled) {
+            vgImage = disabledImage(vgImage, rendersize);
         }
         specialCaseApplied = true;
     }
@@ -99,13 +82,8 @@ bool HbVgImageIconRenderer::draw(QPainter *painter, const QPointF &topLeft, cons
 
     if (vgImage == VG_INVALID_HANDLE) {
         vgImage = vgImageCreator(iconImpl , painter);
-        addedToStates = false;
     }
 
-    if (!addedToStates && vgImage != VG_INVALID_HANDLE) {
-        eglStates->addVGImage(&vgImage);
-        addedToStates = true;
-    }
 
     if (vgImage != VG_INVALID_HANDLE) {
         QPainterPath oldPath;
@@ -202,6 +180,20 @@ bool HbVgImageIconRenderer::draw(QPainter *painter, const QPointF &topLeft, cons
     return false;
 }
 
+VGImage HbVgImageIconRenderer::disabledImage(VGImage originalImage, const QSize &size)
+{
+    VGImage modifiedVgImage = vgCreateImage(VG_sARGB_8888_PRE,
+                                            size.width(), size.height(),
+                                            VG_IMAGE_QUALITY_NONANTIALIASED);
+    VGfloat matrix[20] = {0.1700, 0.1700, 0.1700, 0,
+                          0.5721, 0.5721, 0.5721, 0,
+                          0.0577, 0.0577, 0.0577, 0,
+                          0, 0, 0, 1,
+                          0, 0, 0, 0};
+    vgColorMatrix(modifiedVgImage, originalImage, matrix);
+    vgDestroyImage(originalImage);
+    return modifiedVgImage;
+}
 
 void HbVgImageIconRenderer::updatePainterTransformation(QPainter *painter, const QPointF &pos)
 {

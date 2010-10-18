@@ -23,9 +23,9 @@
 **
 ****************************************************************************/
 
-#include "hbgestures_p.h"
 #include "hbpangesture.h"
-#include "hbpangesture_p.h"
+
+#include "hbgestures_p.h"
 #include "hbvelocitycalculator_p.h"
 
 #include <QPointF>
@@ -127,7 +127,9 @@
 */
 HbPanGesture::HbPanGesture(QObject *parent) : QPanGesture(parent), d_ptr(new HbPanGesturePrivate)
 {
-    d_ptr->q_ptr = this;
+    d_ptr->mIgnoreMouseEvents = false;
+    d_ptr->mTime.start();
+    d_ptr->mFollowedTouchPointId = -1;
 }
 
 /*!
@@ -137,9 +139,9 @@ HbPanGesture::HbPanGesture(QObject *parent) : QPanGesture(parent), d_ptr(new HbP
 
 */
 HbPanGesture::HbPanGesture( HbPanGesturePrivate &dd, QObject *parent )
-    : QPanGesture(parent), d_ptr( &dd )
+    : QPanGesture(parent), d_ptr(&dd)
 {
-    d_ptr->q_ptr = this;
+    hbWarning("Shared private not supported for HbPanGesture");
 }
 
 /*!
@@ -180,7 +182,7 @@ void HbPanGesture::setStartPos(const QPointF &startPos)
 QPointF HbPanGesture::velocity() const
 {
     Q_D(const HbPanGesture);
-    return HbVelocityCalculator( d->mAxisX, d->mAxisY ).velocity(QTime::currentTime());
+    return HbVelocityCalculator( d->mAxisX, d->mAxisY ).velocity( d->mLastTimeStamp );
 }
 
 /*!

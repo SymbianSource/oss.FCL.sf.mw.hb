@@ -36,8 +36,12 @@
 
 const int HbExtraDictMaxFrequency = 255;
 
+const QString RomanHundreds[10] = {"C","CC","CCC","CD","D","DC","DCC","DCCC","CM","M"};
+const QString RomanTens[9] = {"X","XX","XXX","XL","L","LX","LXX","LXXX","XC"};
+const QString RomanOnes[9] = {"I","II","III","IV","V","VI","VII","VIII","IX"};
+
 /*!
-@proto
+@stable
 @hbcore
 \class HbExtraUserDictionary
 \brief A generic implementation of HbUserDictionary class.
@@ -99,15 +103,48 @@ bool HbExtraUserDictionaryPrivate::createSharedBlock(int aSize)
 
 QString HbExtraUserDictionaryPrivate::name() const
 {
-    QString num;
-    num.setNum(id);
-
+    
+    QString num(convertToRomanNumerals(id));
     return QString(KExtraUserDictKeyBase) + num;
 }
 
 QString HbExtraUserDictionaryPrivate::fileName() const
 {
     return HbInputSettingProxy::extraDictionaryPath() + QDir::separator() + name() + QString(KExtraFileExt);
+}
+
+QString HbExtraUserDictionaryPrivate::convertToRomanNumerals(int id) const
+{
+    int numId = id; 
+    QString retNum;
+    
+    // Append Roman Thousand's to the string
+    int index = 10;
+    int count = numId/1000;
+    for (int i = 0; i < count; i++) {
+        retNum.append(RomanHundreds[index-1]);
+    }
+
+    // Append Roman Hundred's to the string
+    numId = numId % 1000;
+    index = numId / 100;
+    if (index) {
+        retNum.append(RomanHundreds[index - 1]);
+    }
+
+    // Append Roman Ten's to the string
+    numId = numId % 100;
+    index = numId / 10;
+    if (index) {
+        retNum.append(RomanTens[index - 1]);
+    }
+    // Append Roman single digit numerals to the string
+    numId = numId % 10;
+    index = numId / 1;
+    if (index) {
+        retNum.append(RomanOnes[index - 1]);
+    }
+    return retNum;
 }
 
 bool HbExtraUserDictionaryPrivate::save(QString fileName)

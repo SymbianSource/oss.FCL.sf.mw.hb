@@ -37,17 +37,16 @@
 #include <QPainter>
 #include <QAbstractTextDocumentLayout>
 #include <QApplication>
+#include <QWidget>
+#include <QStyleOptionGraphicsItem>
 
-const int KMinimumLetersToShow = 4;
+const qreal KMinimumRichTextWidth = 6.0;
 
 static const QString KDefaultColorThemeName = "qtc_view_normal";
 
 HbRichTextItemPrivate::HbRichTextItemPrivate() :
-    mAlignment(Qt::AlignLeft|Qt::AlignVCenter),
-    mTextOption(mAlignment),
-    mDontPrint(false),
-    mDontClip(false),
-    mRtf(0)
+        mTextOption(Qt::AlignLeft|Qt::AlignVCenter),
+        mRtf(0)
 {
 }
 
@@ -62,7 +61,7 @@ void HbRichTextItemPrivate::init()
 {
     Q_Q(HbRichTextItem);
 
-    q->setFlag(QGraphicsItem::ItemClipsToShape, !mDontClip);
+    q->setFlag(QGraphicsItem::ItemClipsToShape, true);
     q->setFlag(QGraphicsItem::ItemIsSelectable, false);
     q->setFlag(QGraphicsItem::ItemIsFocusable,  false);
 
@@ -77,54 +76,13 @@ void HbRichTextItemPrivate::init()
 
 void HbRichTextItemPrivate::clear()
 {
-    delete mRtf;
 }
 
-int HbRichTextItemPrivate::textFlagsFromTextOption() const
+void HbRichTextItemPrivate::setDocumentWidth(qreal newWidth)
 {
-    int flags = (int)mAlignment;
-
-    switch(mTextOption.wrapMode()) {
-    case QTextOption::NoWrap:
-        flags |= Qt::TextSingleLine;
-        break;
-    case QTextOption::WordWrap:
-        flags |=Qt::TextWordWrap;
-        break;
-    case QTextOption::ManualWrap:
-        break;
-    case QTextOption::WrapAnywhere:
-        flags |=Qt::TextWrapAnywhere;
-        break;
-    case QTextOption::WrapAtWordBoundaryOrAnywhere:
-        flags |=Qt::TextWordWrap | Qt::TextWrapAnywhere;
-        break;
-    }
-
-    if(mDontClip)  flags |= Qt::TextDontClip;
-    if(mDontPrint) flags |= Qt::TextDontPrint;
-
-    return flags;
-}
-
-bool HbRichTextItemPrivate::setLayoutDirection(Qt::LayoutDirection newDirection)
-{
-    Qt::Alignment oldAlign = mTextOption.alignment();
-    Qt::Alignment alignment = QStyle::visualAlignment(newDirection, mAlignment);
-    mTextOption.setAlignment(alignment);
-    mTextOption.setTextDirection(newDirection);
-    mRtf->setDefaultTextOption(mTextOption);
-
-    return alignment!=oldAlign;
-}
-
-void HbRichTextItemPrivate::setSize(const QSizeF &newSize)
-{
-    if(mRtf->size()!=newSize) {
-        Q_Q(HbRichTextItem);
-        mRtf->setTextWidth(newSize.width());
+    if (!qFuzzyCompare(mRtf->textWidth(), newWidth)) {
+        mRtf->setTextWidth(newWidth);
         calculateOffset();
-        q->update();
     }
 }
 
@@ -134,11 +92,12 @@ void HbRichTextItemPrivate::calculateOffset()
     Q_Q(HbRichTextItem);
 
     qreal diff;
-    if(mAlignment.testFlag(Qt::AlignTop)) {
+    Qt::Alignment align = mTextOption.alignment();
+    if (align.testFlag(Qt::AlignTop)) {
         diff = 0.0;
     } else {
         diff = q->geometry().height() - mRtf->size().height();
-        if(!mAlignment.testFlag(Qt::AlignBottom)) {
+        if (!align.testFlag(Qt::AlignBottom)) {
             // default align Qt::AlignVCenter if no flags are set
             diff*=0.5;
         }
@@ -147,10 +106,164 @@ void HbRichTextItemPrivate::calculateOffset()
     diff = qMax(diff, (qreal)0.0);
 #endif
 
-    if(diff!=mOffset.y()) {
+    if (diff!=mOffset.y()) {
         mOffset.setY(diff);
         q->prepareGeometryChange();
     }
+}
+
+QSizeF HbRichTextItemPrivate::minimumSizeHint(const QSizeF &/*constraint*/) const
+{
+    QSizeF result(KMinimumRichTextWidth, 0);
+
+    QTextBlock textBlock = mRtf->begin();
+    if (textBlock.isValid() && textBlock.layout()->lineCount() > 0) {
+        QTextLine line = textBlock.layout()->lineAt(0);
+        result.setHeight(line.height());
+    } else {
+        QFontMetricsF metrics(mRtf->defaultFont());
+        result.setHeight(metrics.height());
+    }
+
+    qreal doubleDocMargin = mRtf->documentMargin() * (qreal)2.0;
+    result.rheight() += doubleDocMargin;
+    result.rwidth() += doubleDocMargin;
+
+    return result;
+}
+
+void HbRichTextItemPrivate::clearPrefSizeCache()
+{
+    mPrefSize.setWidth(-1);
+    mMinWidthForAdjust = QWIDGETSIZE_MAX;
+    mMaxWidthForAdjust = -1;
+}
+
+QSizeF HbRichTextItemPrivate::preferredSizeHint(const QSizeF &constraint) const
+{
+    if (mPrefSizeConstraint==constraint && mPrefSize.isValid()) {
+        return mPrefSize;
+    }
+    mPrefSizeConstraint=constraint;
+
+    QSizeF result;
+
+    if (constraint.width()<=0) {
+        mRtf->setTextWidth(QWIDGETSIZE_MAX);
+    } else {
+        QTextOption::WrapMode wrapMode = mTextOption.wrapMode();
+        // optimization when there is no automatic wrap there is no reason
+        // to setTextWidth with width constraint (width measure is not needed)
+        if (wrapMode!=QTextOption::NoWrap
+            && wrapMode!=QTextOption::ManualWrap) {
+            mRtf->setTextWidth(constraint.width());
+        }
+    }
+    result = mRtf->size();
+    mMaxWidthForAdjust = result.width();
+    result.setWidth(mRtf->idealWidth());
+    mMinWidthForAdjust = result.width();
+    mDefaultPrefHeight = result.height();
+    mPrefSize = result;
+
+    return result;
+}
+
+bool HbRichTextItemPrivate::isAdjustHeightNeeded(qreal newWidth,
+                                                 qreal prefHeight,
+                                                 qreal minHeight,
+                                                 qreal maxHeight)
+{
+    // first check if wrapping of text is not active
+    QTextOption::WrapMode wrapMode = mTextOption.wrapMode();
+    if (wrapMode==QTextOption::NoWrap
+        || wrapMode==QTextOption::ManualWrap) {
+        return false;
+    }
+
+    // preferred height was set from outside of this class so there is mo reason to adjust it
+    if (mPrefSizeConstraint.height()>0) {
+        return false;
+    }
+
+    // check if adjusted size has been already calculated
+    // new width is bigger than last estimated range of same height
+    if ((mMaxWidthForAdjust>=newWidth
+         // new width is smaller than last estimated range of same height
+         && newWidth>=mMinWidthForAdjust)) {
+        return false;
+    }
+
+    if (!mPrefSize.isValid()) {
+        // this means that preferred size is set outside of class by setPreferredSize
+        // so sizeHint(Qt::Preferredsize) was not called and size adjustment is useless
+        return false;
+    }
+
+    // new text width was set in setGeometry here it is not needed
+    Q_ASSERT_X(qFuzzyCompare(mRtf->textWidth(), newWidth),
+               "HbRichTextItemPrivate::isAdjustHeightNeeded",
+               QString("mRtf->textWidth()=%1, newWidth=%2")
+                    .arg(mRtf->textWidth())
+                    .arg(newWidth).toAscii().data());
+
+    // if preconditions are met test if current height is enough
+    QSizeF newAdjust = mRtf->size();
+
+    if (qFuzzyCompare(newAdjust.height(), mPrefSize.height())) {
+        // height is same as last time update range of same height
+        mMaxWidthForAdjust = qMax(mMaxWidthForAdjust, newWidth);
+        mMinWidthForAdjust = qMin(mMinWidthForAdjust, newWidth);
+        return false;
+    }
+
+    // new height was calculated create new range for which
+    // current mPrefSize.height is valid
+    mMaxWidthForAdjust = newWidth;
+    mMinWidthForAdjust = mRtf->idealWidth();
+
+    // store new height, don't change width
+    mPrefSize.setHeight(newAdjust.height());
+
+    Q_ASSERT_X(mPrefSizeConstraint.width()>0 || mPrefSize.width()>=mMinWidthForAdjust,
+               "HbRichTextItemPrivate::isAdjustHeightNeeded",
+               QString("Fail for (%1<%2) string: \"%3\"")
+               .arg(mPrefSize.width())
+               .arg(mMinWidthForAdjust)
+               .arg(mText).toAscii().data());
+
+    if (qFuzzyCompare(qBound(minHeight, mPrefSize.height(), maxHeight),
+                      prefHeight)) {
+        // updateGeometry has no effect
+        return false;
+    }
+
+    // all conditions for calling updateGeometry are meet
+    return true;
+}
+
+/*
+    returns true if updateGeometry is needed
+ */
+bool HbRichTextItemPrivate::restoreDefaultHeightHint()
+{
+    if (mPrefSizeConstraint.height()>0) {
+        return false;
+    }
+
+    if (mPrefSizeConstraint.width()>0) {
+        clearPrefSizeCache();
+        return true;
+    }
+
+    if (mPrefSize.height()==mDefaultPrefHeight) {
+        return true;
+    }
+
+    mPrefSize.setHeight(mDefaultPrefHeight);
+    mMinWidthForAdjust = mPrefSize.width();
+    mMaxWidthForAdjust = QWIDGETSIZE_MAX;
+    return true;
 }
 
 /*!
@@ -170,7 +283,7 @@ void HbRichTextItemPrivate::calculateOffset()
  */
 
 HbRichTextItem::HbRichTextItem(QGraphicsItem *parent) :
-    HbWidgetBase(*new HbRichTextItemPrivate, parent)
+        HbWidgetBase(*new HbRichTextItemPrivate, parent)
 {
     Q_D(HbRichTextItem);
     d->init();
@@ -180,7 +293,7 @@ HbRichTextItem::HbRichTextItem(QGraphicsItem *parent) :
     Constructor which set content using \a html format.
  */
 HbRichTextItem::HbRichTextItem(const QString &html, QGraphicsItem *parent) :
-    HbWidgetBase(*new HbRichTextItemPrivate, parent)
+        HbWidgetBase(*new HbRichTextItemPrivate, parent)
 {
     Q_D(HbRichTextItem);
     d->init();
@@ -191,7 +304,7 @@ HbRichTextItem::HbRichTextItem(const QString &html, QGraphicsItem *parent) :
     Constructor for internal use only
  */
 HbRichTextItem::HbRichTextItem(HbRichTextItemPrivate &dd, QGraphicsItem *parent) :
-    HbWidgetBase(dd, parent)
+        HbWidgetBase(dd, parent)
 {
     Q_D(HbRichTextItem);
     d->init();
@@ -217,6 +330,8 @@ void HbRichTextItem::setText(const QString &text)
     if (d->mText != text) {
         d->mText = text;
         d->mRtf->setHtml(text);
+        d->clearPrefSizeCache();
+        update();
         updateGeometry();
     }
 }
@@ -229,7 +344,7 @@ void HbRichTextItem::setText(const QString &text)
 
 QString HbRichTextItem::text() const
 {
-    Q_D( const HbRichTextItem );
+    Q_D(const HbRichTextItem);
     return d->mText;
 }
 
@@ -240,16 +355,15 @@ QString HbRichTextItem::text() const
  */
 void HbRichTextItem::setAlignment(Qt::Alignment alignment)
 {
-    Q_D( HbRichTextItem );
-	d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextAlign, true);
-    alignment &= Qt::AlignVertical_Mask | Qt::AlignHorizontal_Mask;
-    if( d->mAlignment!=alignment ) {
+    Q_D(HbRichTextItem);
+    d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextAlign, true);
+    alignment = d->combineAlignment(alignment, d->mTextOption.alignment());
+    if (d->mTextOption.alignment()!=alignment) {
         prepareGeometryChange();
-        d->mAlignment = alignment;
+        d->mTextOption.setAlignment(alignment);
+        d->mRtf->setDefaultTextOption(d->mTextOption);
         d->calculateOffset();
-        if(d->setLayoutDirection(layoutDirection())) {
-            update();
-        }
+        update();
     }
 }
 
@@ -260,39 +374,39 @@ void HbRichTextItem::setAlignment(Qt::Alignment alignment)
  */
 Qt::Alignment HbRichTextItem::alignment() const
 {
-    Q_D( const HbRichTextItem );
-    return d->mAlignment;
+    Q_D(const HbRichTextItem);
+    return d->mTextOption.alignment();
 }
 
 /*!
     \reimp
  */
 void HbRichTextItem::paint(QPainter *painter, 
-                            const QStyleOptionGraphicsItem *option, 
-                            QWidget *widget)
+                           const QStyleOptionGraphicsItem *option,
+                           QWidget *widget)
 {
-    Q_UNUSED(option);
     Q_UNUSED(widget);
 
     Q_D(HbRichTextItem);
 
-    // Save painter's state
-    QRegion oldClipRegion = painter->clipRegion();
-    QTransform oldTransform = painter->transform();
-
-    if(!d->mDontPrint) {
-        if(!d->mDontClip) {
-            painter->setClipRect(contentsRect(), Qt::IntersectClip);
-        }
-        painter->translate(d->mOffset);
-        QAbstractTextDocumentLayout::PaintContext context;
-        context.palette.setColor(QPalette::Text, textDefaultColor());
-        d->mRtf->documentLayout()->draw(painter, context);
+    if (option->exposedRect.isEmpty()) {
+        // nothing to paint
+        return;
     }
 
-    // Restore painter's state
-    painter->setClipRegion(oldClipRegion);
-    painter->setTransform(oldTransform);
+    painter->translate(d->mOffset);
+
+    QAbstractTextDocumentLayout::PaintContext context;
+    context.clip = option->exposedRect;
+    // painter was translated so it should be compensated
+    context.clip.translate(-d->mOffset);
+
+    context.palette.setColor(QPalette::Text, textDefaultColor());
+
+    d->mRtf->documentLayout()->draw(painter, context);
+
+    // restore painter
+    painter->translate(-d->mOffset);
 }
 
 /*!
@@ -306,8 +420,21 @@ void HbRichTextItem::setGeometry(const QRectF & rect)
 
     HbWidgetBase::setGeometry(rect);
 
-    if(rect.isValid()) {
-        d->setSize(rect.size());
+    // this call is needed since there is possible scenario
+    // when size was not changed after updateGeometry and sizeHint calls
+    d->setDocumentWidth(size().width());
+
+    if (parentLayoutItem() && parentLayoutItem()->isLayout()) {
+        // rect.size can't be used here since size can be limited inside of
+        // called method HbWidgetBase::setGeometry(rect) so size is used which
+        // holds current size
+        if (d->isAdjustHeightNeeded(size().width(),
+                                    preferredHeight(),
+                                    minimumHeight(),
+                                    maximumHeight())) {
+            updateGeometry();
+            return;
+        }
     }
 }
 
@@ -318,12 +445,12 @@ QRectF HbRichTextItem::boundingRect () const
 {
     Q_D(const HbRichTextItem);
 
-    QRectF result(d->mOffset, d->mRtf->size());
+    QRectF result(d->mRtf->documentLayout()->frameBoundingRect(d->mRtf->rootFrame()));
+    result.translate(d->mOffset);
 
-    if(!d->mDontClip) {
+    if (flags().testFlag(QGraphicsItem::ItemClipsToShape)) {
         // clip
-        result = result.intersect(QRectF(QPointF(),
-                                          size()));
+        result = result.intersect(contentsRect());
     }
     return result;
 }
@@ -332,16 +459,17 @@ QRectF HbRichTextItem::boundingRect () const
     \reimp
     Relayouts text according to new size.
  */
-void HbRichTextItem::resizeEvent(QGraphicsSceneResizeEvent *event)
+void HbRichTextItem::resizeEvent(QGraphicsSceneResizeEvent * /*event*/)
 {
     Q_D(HbRichTextItem);
 
-    d->setSize(event->newSize());
+    d->setDocumentWidth(size().width());
+    d->calculateOffset();
 }
 
 /*!
     \reimp
-    This impelementation detects layout direction changes, font changes and theme changes.
+    This implementation detects layout direction changes, font changes and theme changes.
  */
 void HbRichTextItem::changeEvent(QEvent *event)
 {
@@ -350,13 +478,15 @@ void HbRichTextItem::changeEvent(QEvent *event)
     switch(event->type()) {
     case QEvent::LayoutDirectionChange: {
             prepareGeometryChange();
-            d->setLayoutDirection(layoutDirection());
+            d->mTextOption.setTextDirection(layoutDirection());
+            d->mRtf->setDefaultTextOption(d->mTextOption);
             update();
         }
         break;
 
     case QEvent::FontChange: {
             d->mRtf->setDefaultFont(font());
+            d->clearPrefSizeCache();
             updateGeometry();
         }
         break;
@@ -367,7 +497,7 @@ void HbRichTextItem::changeEvent(QEvent *event)
         if (event->type() == HbEvent::ThemeChanged) {
             Q_D(HbRichTextItem);
             d->mDefaultColor = QColor();
-            if(!d->mColor.isValid()) { 
+            if (!d->mColor.isValid()) {
                 update();
             }
         }
@@ -387,29 +517,12 @@ QSizeF HbRichTextItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) co
     QSizeF result;
     switch(which) {
     case Qt::MinimumSize: {
-            QTextBlock textBlock = d->mRtf->begin();
-            if(textBlock.isValid() && textBlock.layout()->lineCount() > 0) {
-                QTextLine line = textBlock.layout()->lineAt(0);
-                result.setHeight(line.height());
-                int cursorPos(KMinimumLetersToShow);
-                result.setWidth( line.cursorToX(&cursorPos) );
-
-                qreal doubleDocMargin = d->mRtf->documentMargin() * (qreal)2.0;
-                result.rheight() += doubleDocMargin;
-                result.rwidth() += doubleDocMargin;
-            } else {
-                result = HbWidgetBase::sizeHint(which, constraint);
-            }
+            result = d->minimumSizeHint(constraint);
         }
         break;
 
     case Qt::PreferredSize: {
-            if(constraint.width()<=0) {
-                d->mRtf->adjustSize();
-            } else {
-                d->mRtf->setTextWidth(constraint.width());
-            }
-            result = d->mRtf->size();
+            result = d->preferredSizeHint(constraint);
         }
         break;
 
@@ -429,14 +542,17 @@ QSizeF HbRichTextItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) co
 void HbRichTextItem::setTextWrapping(Hb::TextWrapping mode)
 {
     Q_D(HbRichTextItem);
-	d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextWrapMode, true);
+    d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextWrapMode, true);
     QTextOption::WrapMode textWrapMode = static_cast<QTextOption::WrapMode>(mode);
 
-    if(d->mTextOption.wrapMode()!=textWrapMode) {
+    if (d->mTextOption.wrapMode()!=textWrapMode) {
         prepareGeometryChange();
         d->mTextOption.setWrapMode(textWrapMode);
         d->mRtf->setDefaultTextOption(d->mTextOption);
-        updateGeometry();
+        d->calculateOffset();
+        if (d->restoreDefaultHeightHint()) {
+            updateGeometry();
+        }
     }
 }
 
@@ -464,7 +580,7 @@ Hb::TextWrapping HbRichTextItem::textWrapping() const
  */
 QColor HbRichTextItem::textDefaultColor() const
 {
-    Q_D( const HbRichTextItem );
+    Q_D(const HbRichTextItem);
 
     if (d->mColor.isValid()) { // Means user has set text color
         return d->mColor;
@@ -513,11 +629,7 @@ void HbRichTextItem::setTextDefaultColor(const QColor &color)
  */
 void HbRichTextItem::setTextVisible(bool isVisible)
 {
-    Q_D(HbRichTextItem);
-    if( d->mDontPrint == isVisible ) {
-        d->mDontPrint = !isVisible;
-        update();
-    }
+    setVisible(isVisible);
 }
 
 /*!
@@ -525,22 +637,15 @@ void HbRichTextItem::setTextVisible(bool isVisible)
  */
 bool HbRichTextItem::isTextVisible() const
 {
-    Q_D(const HbRichTextItem);
-    return !d->mDontPrint;
+    return isVisible();
 }
 
 /*!
  * Enables (default) or disables text clipping when item geometry is too small.
  */
-void HbRichTextItem::setTextClip(bool cliping)
+void HbRichTextItem::setTextClip(bool clipping)
 {
-    Q_D(HbRichTextItem);
-    if( d->mDontClip == cliping ) {
-        prepareGeometryChange();
-        d->mDontClip = !cliping;
-        setFlag(QGraphicsItem::ItemClipsToShape, cliping);
-        update();
-    }
+    setFlag(QGraphicsItem::ItemClipsToShape, clipping);
 }
 
 /*!
@@ -548,8 +653,7 @@ void HbRichTextItem::setTextClip(bool cliping)
  */
 bool HbRichTextItem::isTextClip() const
 {
-    Q_D(const HbRichTextItem);
-    return !d->mDontClip;
+    return flags().testFlag(ItemClipsToShape);
 }
 
 // end of file

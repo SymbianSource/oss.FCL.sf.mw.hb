@@ -41,7 +41,8 @@ public:
 
     enum StatusFlag{
         NoFlags = 0x00,
-        ShowingDialog = 0x01
+        ShowingDialog = 0x01,
+        ShowingScreenSaver = 0x02
     };
     Q_DECLARE_FLAGS(StatusFlags, StatusFlag)
 

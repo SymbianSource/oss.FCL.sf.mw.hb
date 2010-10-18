@@ -34,6 +34,7 @@ PUBLIC_HEADERS += $$PWD/hbdevicemessagebox.h
 PUBLIC_HEADERS += $$PWD/hbdevicenotificationdialogsymbian.h
 PUBLIC_HEADERS += $$PWD/hbdevicemessageboxsymbian.h
 PUBLIC_HEADERS += $$PWD/hbdeviceprogressdialogsymbian.h
+RESTRICTED_HEADERS += $$PWD/hbdevicedialogsextensionsymbian_r.h
 
 PRIVATE_HEADERS += $$PWD/hbdevicenotificationdialog_p.h $$PWD/hbdeviceprogressdialog_p.h $$PWD/hbdevicemessagebox_p.h
 
@@ -44,5 +45,6 @@ symbian {
 SOURCES += $$PWD/hbdevicenotificationdialogsymbian.cpp
 SOURCES += $$PWD/hbdevicemessageboxsymbian.cpp
 SOURCES += $$PWD/hbdeviceprogressdialogsymbian.cpp
+SOURCES += $$PWD/hbdevicedialogsextensionsymbian.cpp
 }
 

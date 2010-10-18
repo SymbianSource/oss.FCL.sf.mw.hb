@@ -32,15 +32,14 @@
 #include "hbinputmethoddescriptor.h"
 #include "hbinputlanguage.h"
 
-const int HbProxyDataRequiredVersion = 18;
-const QString KInputSettingProxyKey("HbInputSettingProxy");
+const int HbProxyDataRequiredVersion = 25;
+const char HbInputSettingsSharedMemoryKey[] = "HbInputSettingProxy";
 const unsigned int HbActiveMethodNameMax = 255;
 const unsigned int HbActiveMethodKeyMax = 64;
 
-class HbScClassifier;
 class HbInputSettingProxy;
 
-class HbSettingProxyInputMethodDescriptor
+class HB_CORE_PRIVATE_EXPORT HbSettingProxyInputMethodDescriptor
 {
 public:
     HbSettingProxyInputMethodDescriptor();
@@ -61,31 +60,27 @@ public:
     char customData[HbActiveMethodKeyMax * 2];
 };
 
-
 // REMEMBER to increase HbProxyDataRequiredVersion every time you add fields
 // to this class or change related constants!
 struct HbSettingProxyInternalData {
-    int iVersion;
-    int iReferences;
-    HbInputLanguage iGlobalPrimaryInputLanguage;
-    HbInputLanguage iGlobalSecondaryInputLanguage;
-    HbKeyboardType iActiveKeyboard;
-    HbKeyboardType iHwKeyboard;
-    HbKeyboardType iTouchKeyboard;
-    HbKeyboardSettingFlags iPredictiveInputState;
-    HbInputDigitType iDigitType;
-    bool iQwertyTextCasing;
-    bool iQwertyCharacterPreview;
-    Qt::Orientation iScreenOrientation;
-    bool iOrientationChangeCompleted;
-    bool iFlipStatus;
-    bool iRegionalCorrectionStatus;
-    int iKeypressTimeout;
-    HbKeyboardSettingFlags iAutocompletion;
-    HbTypingCorrectionLevel iTypingCorrectionLevel;
-    HbPrimaryCandidateMode iPrimaryCandidateMode;
-    HbSettingProxyInputMethodDescriptor iPreferredMethodHorizontal;
-    HbSettingProxyInputMethodDescriptor iPreferredMethodVertical;
+    int version;
+    HbInputLanguage globalPrimaryInputLanguage;
+    HbInputLanguage globalSecondaryInputLanguage;
+    HbKeyboardSettingFlags predictiveInputState;
+    HbInputDigitType digitType;
+    bool qwertyTextCasing;
+    bool qwertyCharacterPreview;
+    bool flipStatus;
+    bool regionalCorrectionStatus;
+    int keypressTimeout;
+    HbKeyboardSettingFlags autocompletion;
+    HbTypingCorrectionLevel typingCorrectionLevel;
+    HbPrimaryCandidateMode primaryCandidateMode;
+    HbSettingProxyInputMethodDescriptor preferredMethodHorizontal;
+    HbSettingProxyInputMethodDescriptor preferredMethodVertical;
+    HbHwrWritingSpeed hwrSpeed;
+    HbCangjieDetailMode cangjieMode;
+    bool useWesternDefaultKeypadForChinese;
 };
 
 class HB_CORE_PRIVATE_EXPORT HbInputSettingProxyPrivate
@@ -95,26 +90,21 @@ class HB_CORE_PRIVATE_EXPORT HbInputSettingProxyPrivate
 public:
     HbInputSettingProxyPrivate();
     ~HbInputSettingProxyPrivate();
-    QString dataFileNameAndPath();
-    QString dataFilePath();
+    static QString dataFileNameAndPath();
+    static QString dataFilePath();
     void initializeDataArea();
-    bool load();
-    void save();
+    static void writeDefaultValuesToData(HbSettingProxyInternalData* data);
+    static bool load(HbSettingProxyInternalData *data);
+    static void save(HbSettingProxyInternalData *data);
     void shutdownDataArea();
     HbSettingProxyInternalData *proxyData() const;
 
-    void flipToggle();
-    bool flipStatus();
-    void setFlipStatus(bool flipStatus);
-
-    void handleDeviceSpecificOriantationAndFlipChange();
-
     void lock() const {
-        iSharedMemory->lock();
+        mSharedMemory->lock();
     }
 
     void unlock() const {
-        iSharedMemory->unlock();
+        mSharedMemory->unlock();
     }
 
     QString stringFromProxyDataElement(QChar *string) const;
@@ -122,12 +112,7 @@ public:
 
 public:
     HbInputSettingProxy *q_ptr;
-    QSharedMemory *iSharedMemory;
-    QString iSaveFile;
-    // iTopScs saves the most used (currently, may change to latest
-    // used later) special characters on top of the special character
-    // table
-    QVector<HbScClassifier> iTopScs;  // Move to shared memory later....
+    QSharedMemory *mSharedMemory;
 };
 
 #endif // HB_INPUT_SETTING_PROXY_P_H

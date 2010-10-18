@@ -31,6 +31,7 @@
 #include <QMetaType>
 #include <QString>
 #include <QStringList>
+#include <QRegExp>
 
 class HbSmileyThemePrivate;
 
@@ -62,6 +63,7 @@ public:
 
     QStringList patterns(const QString &smiley) const;
     QStringList patterns() const;
+    const QRegExp& regExp() const;
 
     operator QVariant() const;
 

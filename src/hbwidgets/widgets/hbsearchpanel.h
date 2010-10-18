@@ -59,6 +59,8 @@ public:
     QString criteria() const;
     void setCriteria(const QString &text);
 
+    bool eventFilter(QObject *watched, QEvent *event);
+
 
 signals:
     void searchOptionsClicked();

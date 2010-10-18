@@ -39,36 +39,37 @@ DESTDIR = $${HB_BUILD_DIR}/plugins/inputmethods
 
 HEADERS += hardwareinputplugin.h \
            hbhardware12key.h \
-	   hbhardwareqwerty.h \
+           hbhardwareqwerty.h \
            hbhardwareinputbasic12keyhandler.h \
-	   hbhardwareinputbasicqwertyhandler.h \
-	   hbhardwareinputnumericqwertyhandler.h \
-	   hbhardwareinputpredictionqwertyhandler.h \
-           ..\common\hbinputbasichandler_p.h \
-           ..\common\hbinputmodehandler.h \
-           ..\common\hbinputmodehandler_p.h \
+           hbhardwareinputbasicqwertyhandler.h \
+           hbhardwareinputnumericqwertyhandler.h \
+           hbhardwareinputpredictionqwertyhandler.h \
+           ../common/hbinputbasichandler_p.h \
+           ../common/hbinputmodehandler.h \
+           ../common/hbinputmodehandler_p.h \
            hbhardwareinputnumeric12keyhandler.h \
-           ..\common\hbinputnumerichandler_p.h \
+           ../common/hbinputnumerichandler_p.h \
            hbhardwareinputprediction12keyhandler.h \
-           ..\common\hbinputpredictionhandler_p.h	
+           ../common/hbinputpredictionhandler_p.h   
 SOURCES += hardwareinputplugin.cpp \
            hbhardware12key.cpp \
-	   hbhardwareqwerty.cpp \
+           hbhardwareqwerty.cpp \
            hbhardwareinputbasic12keyhandler.cpp \
-	   hbhardwareinputbasicqwertyhandler.cpp \
-	   hbhardwareinputnumericqwertyhandler.cpp \
-	   hbhardwareinputpredictionqwertyhandler.cpp \
-           ..\common\hbinputbasichandler.cpp \
-           ..\common\hbinputmodehandler.cpp \
+           hbhardwareinputbasicqwertyhandler.cpp \
+           hbhardwareinputnumericqwertyhandler.cpp \
+           hbhardwareinputpredictionqwertyhandler.cpp \
+           ../common/hbinputbasichandler.cpp \
+           ../common/hbinputmodehandler.cpp \
            hbhardwareinputnumeric12keyhandler.cpp \
-           ..\common\hbinputnumerichandler.cpp \
+           ../common/hbinputnumerichandler.cpp \
            hbhardwareinputprediction12keyhandler.cpp \
-           ..\common\hbinputpredictionhandler.cpp
+           ../common/hbinputpredictionhandler.cpp
 
 symbian {
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL
     TARGET.UID3 = 0x2002681D
+    MMP_RULES += SMPSAFE
 
     hbhardwareinput.sources = HbHardwareInput.dll
     hbhardwareinput.path = /resource/plugins/inputmethods

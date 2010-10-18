@@ -28,11 +28,13 @@
 
 #include <e32base.h>
 #include <hbthemecommon_p.h>
+
 // To enable/disable debug messages for theme listener
 #undef THEME_LISTENER_TRACES
+
 struct TIconParams
 {
-    TBuf<256> fileName;
+    TFileName fileName;
     TReal width;
     TReal height;
     TUint8 aspectRatioMode;
@@ -46,8 +48,8 @@ struct TIconParams
 
 struct TMultiIconSymbParams
 {
-    TBuf<256> multiPartIconId;
-    TBuf<256> multiPartIconList[9];
+    TFileName multiPartIconId;
+    TFileName multiPartIconList[9];
     TRect sources[9];
     TRect targets[9];
     TSize pixmapSizes[9];
@@ -59,11 +61,11 @@ struct TMultiIconSymbParams
     TInt rgba;
     TBool colorflag;
     TInt renderMode;
- };
+};
 
 struct TIconListParams
 {
-    TBuf<256> iconList[9];
+    TFileName iconList[9];
     QSizeF sizeList[9];
     TInt aspectRatioMode;
     TInt mode;
@@ -104,6 +106,10 @@ const TUint32 KHbBaseThemeCenrepKey  = 0x1;
  */
 const TUint32 KHbDefaultThemeCenrepKey  = 0x2;
 
+/**
+ * During batch unload, send up to this number of icon data in one
+ * batch (i.e. one server request).
+ */
+const int BATCH_SIZE_LIMIT = 8;
 
 #endif // HBTHEMECOMMON_SYMBIAN_P_H
-

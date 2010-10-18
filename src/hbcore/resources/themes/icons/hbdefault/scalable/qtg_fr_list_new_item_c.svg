@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
 <svg baseProfile="tiny" height="10px" version="1.1" viewBox="0 0 10 10" width="10px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
-<rect fill="none" height="10" width="10"/>
-<rect fill="#3F89A9" height="10" width="6" x="2"/>
+<g>
 <rect fill="none" height="10" width="10" x="0"/>
+<polygon fill="url(#SVGID_1_)" points="7.998,0 0,0 0,10 7.998,10 7.998,1.58  "/>
+<polygon points="7.998,0 6.998,0 6.998,10 7.998,10 7.998,1.58  "/>
+<defs>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="3.9985" x2="3.9985" y1="-10.1704" y2="20.1583">
+<stop offset="0" style="stop-color:#39393A"/>
+<stop offset="1" style="stop-color:#000000"/>
+</linearGradient>
+</defs>
+</g>
 </svg>

@@ -32,42 +32,120 @@
 
     \class HbWidgetFeedback
 
-    \brief Widget Feedback API is used by widgets for providing feedback information for the feedback framework.
-
-    For widgets to support feedback features, a widget needs to call method triggered() with Hb::InstantInteraction parameter
-    \li Hb::InstantPressed when a widget is pressed down
-    \li Hb::InstantReleased when a press is released
-    \li Hb::InstantClicked when an widget is pressed and released immediately
-    \li Hb::InstantKeyRepeated when an widget sends key repeats and is pressed down
-    \li Hb::InstantLongPressed when an widget is kept pressed for a while
-    \li Hb::InstantDraggedOver when the finger is dragged on top of an widget
-    \li Hb::InstantFlicked when a current widget is flicked using a flick gesture
-    \li Hb::InstantBoundaryReached when the boundary of a scroll area is reached
-    \li Hb::InstantRotated90Degrees every time the multitouch area passes 90 degrees of rotation
-    \li Hb::InstantPopupOpened when a popup, for example a note, tooltip or menu, is opened
-    \li Hb::InstantPopupClosed when a popup, for example a note, tooltip or menu, is closed
-    \li between Hb::InstantUser and Hb::InstantMax when a custom widget is being interacted with a custom interaction
+    \brief The HbWidgetFeedback class provides an interface for widgets
+    to inform the feedback framework about user interactions in order
+    to trigger feedback effects.
     
-    Widget needs to call method continuousTriggered() and continuousStopped() with Hb::ContinuousInteraction parameter
-    \li Hb::ContinuousScrolled when an widget area is scrolled by quickly flicking or continuously panning the finger
-    \li Hb::ContinuousDragged when user is dragging a widget like moving slider handle
-    \li Hb::ContinuousPinched when an widget is being zoomed or rotated with two fingers
-    \li between Hb::ContinuousUser and Hb::ContinuousMax when a custom widget is being interacted with a continuous custom interaction
-
-    The information provided by HbFeedbackManager is forwarded to the feedback engines.
+    The HbWidgetFeedback class is for use in widget implementations.
+    It is not relevant when you are simply using existing widgets in
+    an application.
     
-    Widget should only call interaction methods when <i>user actually interacts with the widget</i> and not for example 
-    when an application resets widget states by calling an widget API or when a progress bar is moved during a file transfer. 
-    We don't want to initiate haptic and sound feedback effects when the device is not getting any real user interaction.
+    As a widget developer, you may want to give feedback when the user
+    interacts with your widget. Audio signals or vibration are examples of
+    possible feedback effects. To trigger the feedback effects supported by
+    the feedback framework, you must inform the feedback framework about
+    the detected user interaction and its specific type.
+    
+    Interactions are divided into two main types:
+    
+    <ul>
+    <li><b>Instant interactions.</b> Short user actions, such as clicking
+    a button or changing a selection on a list. A typical feedback effect
+    for these interactions is a fire-and-forget type of event, where
+    the physical response is played from beginning to end.</li>
+    <li><b>Continuous interactions.</b> Longer user actions, such as scrolling
+    or dragging. Playing the feedback for these interactions continues until
+    explicitly stopped.</li>
+    </ul>
+    
+    HbWidgetFeedback provides static methods for informing the feedback
+    framework about user interactions:
+    \link HbWidgetFeedback::triggered() triggered() \endlink for instant interactions,
+    and \link HbWidgetFeedback::continuousTriggered() continuousTriggered() \endlink
+    and \link HbWidgetFeedback::continuousStopped() continuousStopped() \endlink
+    for continuous interactions. Information on the target widget of the interaction
+    and the interaction type is passed in the method parameters. The feedback framework
+    makes decisions about the actual effects, based on the widget type, situation,
+    and specific interaction type.
+    
+    A widget should only call interaction methods when the user actually
+    interacts with the widget, and not when the widget state changes for some
+    other reason. For example, feedback effects are not desirable when
+    an application resets widget states by calling the widget API, or when
+    a progress bar is moved during a file transfer.
+    
+    How you use this class or whether you need to use it at all depends on 
+    what kind of widget you are developing:
+    
+    <b>Standard widgets.</b> If you are developing a standard %Hb widget, 
+    such as HbPushButton, HbComboBox, and so on, you should use this class,
+    %HbWidgetFeedback, for triggering feedback effects upon user interaction.
+    See the use case below for details.
+    
+    <b>Custom widgets that derive from a standard widget.</b> If you are 
+    developing a custom widget that derives from one of the standard
+    %Hb widgets (such as HbPushButton, HbComboBox, and so on),
+    the base class widget most probably has predefined feedback effects,
+    and you do not need to do anything. The base class takes care of triggering
+    the default effects upon user interaction.
+    
+    <b>Custom widgets that derive directly from HbWidget.</b> If your custom
+    widget derives directly from HbWidget, and not through any of the standard
+    %Hb widgets, you should not use %HbWidgetFeedback. The recommended way
+    to define feedback for your widget is to use classes HbInstantFeedback and
+    HbContinuousFeedback.
+    
+    \section _usecases_hbwidgetfeedback Using HbWidgetFeedback
+    
+    \subsection _uc_standardhb_hbwidgetfeedback Supporting feedback effects in a standard widget
+    
+    Call the HbWidgetFeedback methods in a standard widget when the user
+    interacts with the widget. Choose the correct method according to
+    the interaction style: instant or continuous.
+            
+    To support instant feedback features in a standard %Hb widget, call 
+    HbWidgetFeedback::triggered() with a suitable Hb::InstantInteraction
+    parameter to specify the interaction type, whenever you detect any
+    user interaction that is instant by nature. For example:
+    
+    \code
+    // The widget has been pressed down and released
+    HbWidgetFeedback::triggered(this, Hb::InstantClicked);
+    \endcode
+    
+    See Hb::InstantInteraction for the list of all predefined instant
+    interactions.
+    
+    Whenever you detect any of the specified continuous user interactions in
+    your standard %Hb widget, or when the continuous interaction ends, call
+    either HbWidgetFeedback::continuousTriggered() or HbWidgetFeedback::continuousStopped()
+    with the suitable Hb::ContinuousInteraction parameter. For example:
+    
+    \code
+    // User has started moving the slider handle.
+    HbWidgetFeedback::continuousTriggered(this, Hb::ContinuousDragged);
+    \endcode
+    
+    \code
+    // User has stopped moving the slider handle.
+    HbWidgetFeedback::continuousStopped(this, Hb::ContinuousDragged);
+    \endcode
+    
+    See Hb::ContinuousInteraction for the list of all predefined
+    continuous interactions.
+        
+
+    \sa HbInstantFeedback, HbContinuousFeedback
 */
 
 /*!
-    Mediates instant interaction information from widgets to feedback manager 
-    that forwards it to all active feedback plugins.
+    Passes information about an instant interaction from the widget to the
+    feedback manager, which forwards it to all active feedback plugins.
 
-    \param widget the widget being interacted with
-    \param interaction the interaction
-    \param modifiers optional specifiers to the interaction
+    \param widget Target widget of the interaction
+    \param interaction The instant interaction type
+    \param modifiers Optional Hb::InteractionModifier flags with more detailed
+    information about the interaction
 */
 void HbWidgetFeedback::triggered(const HbWidget *widget, Hb::InstantInteraction interaction, Hb::InteractionModifiers modifiers)
 {
@@ -78,12 +156,13 @@ void HbWidgetFeedback::triggered(const HbWidget *widget, Hb::InstantInteraction 
 }
 
 /*!
-    Mediates continuous interaction information from widgets to feedback manager 
-    that forwards it to all active feedback plugins.
+    Passes information about a started continuous interaction from the
+    widget to the feedback manager, which forwards it to all active feedback
+    plugins.
 
-    \param widget the widget being interacted with
-    \param interaction the continuous interaction in progress
-    \param delta supplies the direction and distance of the interaction
+    \param widget Target widget of the interaction
+    \param interaction The continuous interaction type
+    \param delta The direction and distance of the interaction
 */
 void HbWidgetFeedback::continuousTriggered(const HbWidget *widget, Hb::ContinuousInteraction interaction, QPointF delta)
 {
@@ -94,13 +173,13 @@ void HbWidgetFeedback::continuousTriggered(const HbWidget *widget, Hb::Continuou
 }
 
 /*!
-    Mediates information about stopped continuous interaction from widget 
-    to feedback manager that forwards it to all active feedback plugins.
-    This methods is needed for knowing when to stop continuous feedback
+    Passes information about the stopped continuous interaction from the
+    widget to the feedback manager, which forwards it to all active feedback
+    plugins. This method is needed for stopping the continuous feedback
     effects started by the continuous interaction.
 
-    \param widget the widget being interacted with
-    \param interaction the continuous interaction in progress
+    \param widget Target widget of the interaction
+    \param interaction The continuous interaction type
 */
 void HbWidgetFeedback::continuousStopped(const HbWidget *widget, Hb::ContinuousInteraction interaction)
 {

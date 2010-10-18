@@ -68,6 +68,7 @@ class HbInputFocusObject;
 class HbInputSettingList;
 class HbInputMethodDescriptor;
 class HbInputSettingWidget;
+class HbInputSettingPopup;
 
 const qreal VerticalSpacing = 0.0, HorizontalSpacing = 0.0; //vertical and horizontal spacing for buttons in layout
 
@@ -161,16 +162,14 @@ public:
     HbInputFocusObject  *mFocusedObject;
     QObject *mCurrentFocusedObject;
     bool mFlickAnimation;
-    bool mSettingsListOpen;
+    int mSettingsDialogsOpen;
     bool mAnimateWhenDialogCloses;
     HbQwertyKeyboardSize mKeyboardSize;
     int mCloseHandleHeight;
     int mCloseHandleWidth;
     QGraphicsWidget *mCloseHandle;
-    HbView *mSettingView;
-    HbView *mCurrentView;
     bool mKeyboardDimmed;
-    HbInputSettingWidget *mSettingWidget;
+    HbInputSettingPopup *mSettingPopup;
 };
 
 #endif //HB_INPUT_VKB_WIDGET_PRIVATE_H

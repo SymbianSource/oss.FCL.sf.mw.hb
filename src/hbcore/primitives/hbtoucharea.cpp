@@ -174,7 +174,7 @@ QSizeF HbTouchArea::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
         return QSizeF(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
     } else {
         // Touch area should not enforce a size
-		return QSizeF(0, 0);
+        return QSizeF(0, 0);
     }
 }
 

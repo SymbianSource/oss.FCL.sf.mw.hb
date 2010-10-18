@@ -55,7 +55,10 @@
     internal
 */
 HbAnchorPrivate::HbAnchorPrivate()
-    : mStartItem(0), mStartId(), mEndItem(0), mEndId(), mMinValue(0), mPrefValue(0), mMaxValue(QWIDGETSIZE_MAX),
+    : mStartItem(0), mStartId(),
+      mEndItem(0), mEndId(),
+      mMinValue(0), mPrefValue(0), mMaxValue(QWIDGETSIZE_MAX),
+      mEffectiveMinimum(0), mEffectivePreferred(0), mEffectiveMaximum(QWIDGETSIZE_MAX),
       mPolicy(QSizePolicy::Fixed), mDir(HbAnchor::Positive), mParent(0), mAnchorId()
     {
     }
@@ -68,6 +71,26 @@ void HbAnchorPrivate::setInitialLength( qreal length )
 {
     mDir = (length < 0) ? HbAnchor::Negative : HbAnchor::Positive;
     mPrefValue = qAbs(length);
+    mEffectivePreferred = mPrefValue;
+}
+
+
+/*!
+    internal
+*/
+void HbAnchorPrivate::normalizeHints()
+{
+    mEffectiveMinimum = mMinValue;
+    mEffectivePreferred = mPrefValue;
+    mEffectiveMaximum = mMaxValue;
+
+    if ( mEffectiveMinimum > mEffectiveMaximum )
+        mEffectiveMinimum = mEffectiveMaximum;
+    if (mEffectivePreferred < mEffectiveMinimum) {
+        mEffectivePreferred = mEffectiveMinimum;
+    } else if (mEffectivePreferred > mEffectiveMaximum) {
+        mEffectivePreferred = mEffectiveMaximum;
+    }
 }
 
 /*!
@@ -203,16 +226,17 @@ QSizePolicy::Policy HbAnchor::sizePolicy() const
 /*!
     Sets minimum length to this anchor.
 
-    Note: only non-negative values accepted.
+    Note: only non-negative values accepted. If you pass negative value, then nothing would happen.
 
     \param length minimum length to be set
 */
 void HbAnchor::setMinimumLength( qreal length )
 {
     Q_D( HbAnchor );
-    Q_ASSERT( length >= 0 );
+    if( length < 0 ) return;
     if ( d->mMinValue != length ) {
         d->mMinValue = length;
+        d->normalizeHints();
         if( d->mParent ) {
             d->mParent->updateGeometry();
         }
@@ -222,16 +246,17 @@ void HbAnchor::setMinimumLength( qreal length )
 /*!
     Sets preferred length to this anchor.
 
-    Note: only non-negative values accepted.
+    Note: only non-negative values accepted. If you pass negative value, then nothing would happen.
 
     \param length preferred length to be set
 */
 void HbAnchor::setPreferredLength( qreal length )
 {
     Q_D( HbAnchor );
-    Q_ASSERT( length >= 0 );
+    if( length < 0 ) return;
     if ( d->mPrefValue != length ) {
         d->mPrefValue = length;
+        d->normalizeHints();
         if( d->mParent ) {
             d->mParent->updateGeometry();
         }
@@ -241,16 +266,17 @@ void HbAnchor::setPreferredLength( qreal length )
 /*!
     Sets maximum length to this anchor.
 
-    Note: only non-negative values accepted.
+    Note: only non-negative values accepted. If you pass negative value, then nothing would happen.
 
     \param length maximum length to be set
 */
 void HbAnchor::setMaximumLength( qreal length )
 {
     Q_D( HbAnchor );
-    Q_ASSERT( length >= 0 );
+    if( length < 0 ) return;
     if ( d->mMaxValue != length ) {
         d->mMaxValue = length;
+        d->normalizeHints();
         if( d->mParent ) {
             d->mParent->updateGeometry();
         }
@@ -265,7 +291,7 @@ void HbAnchor::setMaximumLength( qreal length )
 qreal HbAnchor::minimumLength() const
 {
     Q_D( const HbAnchor );
-    return d->mMinValue;
+    return d->mEffectiveMinimum;
 }
 
 /*!
@@ -276,7 +302,7 @@ qreal HbAnchor::minimumLength() const
 qreal HbAnchor::preferredLength() const
 {
     Q_D( const HbAnchor );
-    return d->mPrefValue;
+    return d->mEffectivePreferred;
 }
 
 /*!
@@ -287,7 +313,7 @@ qreal HbAnchor::preferredLength() const
 qreal HbAnchor::maximumLength() const
 {
     Q_D( const HbAnchor );
-    return d->mMaxValue;
+    return d->mEffectiveMaximum;
 }
 
 /*!
@@ -300,11 +326,11 @@ qreal HbAnchor::lengthHint( Qt::SizeHint which ) const
 {
     Q_D( const HbAnchor );
     if (which == Qt::MinimumSize) {
-        return d->mMinValue;
+        return d->mEffectiveMinimum;
     } else if (which == Qt::PreferredSize ) {
-        return d->mPrefValue;
+        return d->mEffectivePreferred;
     } else {
-        return d->mMaxValue;
+        return d->mEffectiveMaximum;
     }
 
 }
@@ -404,7 +430,7 @@ void HbAnchor::setDirection( HbAnchor::Direction dir )
 }
 
 /*!
-    Returns anchor id of this anchor, or null-string if it is not set. 
+    Returns anchor id of this anchor, or null-string if it is not set.
 
     \return anchor id
 */
@@ -424,5 +450,4 @@ void HbAnchor::setAnchorId( const QString &anchorId )
     Q_D( HbAnchor );
     d->mAnchorId = anchorId;
 }
-
 

@@ -29,10 +29,12 @@
 #include "hbmemorymanager_p.h"
 #include "hbtheme_p.h"
 #include "hbthemeclient_p.h"
-#include <hbmainwindow.h>
+#include "hbmainwindow.h"
 #include "hbmainwindow_p.h"
 
-#include <QDebug>
+#ifdef Q_OS_SYMBIAN
+#include "hbthemecommon_symbian_p.h"
+#endif
 
 // To store the pointer to the deviceProfiles at the client side.
 static HbDeviceProfileList *deviceProfilesList = 0;
@@ -86,9 +88,8 @@ HbDeviceProfile::HbDeviceProfile(const QString &name) : d_ptr(new HbDeviceProfil
                 found = true;
             }
         }
-        if (!found) {
-            qWarning() << "Device profile" << name << "not found!";
-        }
+        // The !found case is actually normal, just have the default constructed
+        // profile in that case, no need to raise errors.
     }
 }
 
@@ -299,19 +300,28 @@ HbDeviceProfilePrivate::~HbDeviceProfilePrivate()
 
 HbDeviceProfileList *HbDeviceProfilePrivate::deviceProfiles()
 {
-    if (!deviceProfilesList) {
+    // HbOrientationStatus may call this from the Theme Server process
+    // too and this needs special support.
+    bool isThemeServer = false;
+#ifdef Q_OS_SYMBIAN
+    RProcess process;
+    isThemeServer = process.SecureId().iId == KServerUid3.iUid;
+    process.Close();
+#endif
+    if (!deviceProfilesList && !isThemeServer) {
         // Will result in IPC call. gets the shared memory offset from themeserver.
         deviceProfilesList = HbThemeClient::global()->deviceProfiles();
     }
 
     if (!deviceProfilesList) {
+        HbMemoryManager::MemoryType memType = isThemeServer
+            ? HbMemoryManager::SharedMemory : HbMemoryManager::HeapMemory;
         // This is fall back.Create/Get the HbDeviceProfileDatabase Instance at
         // the client side and read the deviceProfilesList.
         HbDeviceProfileDatabase *deviceProfileDataBase =
-            HbDeviceProfileDatabase::instance(HbMemoryManager::HeapMemory);
-        deviceProfilesList = HbMemoryUtils::getAddress<HbDeviceProfileList>(HbMemoryManager::HeapMemory,
+            HbDeviceProfileDatabase::instance(memType);
+        deviceProfilesList = HbMemoryUtils::getAddress<HbDeviceProfileList>(memType,
                              deviceProfileDataBase->deviceProfilesOffset());
     }
     return deviceProfilesList;
 }
-// end of file

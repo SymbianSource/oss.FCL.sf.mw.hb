@@ -127,6 +127,12 @@ HbEffectPrivate::~HbEffectPrivate()
 {
     privateDestroyed = true;
     mDisabledItems.clear();
+    // Delete all remaining animated item groups
+    HbAnimatedItemGroup *itemGroup = 0;
+    while (mAnimatedItemGroups.count()) {
+        itemGroup = mAnimatedItemGroups.first();
+        animatedItemGroupFinished(itemGroup);
+    }
 }
 
 void HbEffectPrivate::connectViewChanges()
@@ -141,6 +147,14 @@ void HbEffectPrivate::connectViewChanges()
         // Need a notification when a mainwindow is added in the future.
         connect(HbInstancePrivate::d_ptr(), SIGNAL(windowAdded(HbMainWindow *)), SLOT(handleWindowAdded(HbMainWindow *)));
     }
+}
+
+void HbEffectPrivate::addAnimatedItemGroup(HbAnimatedItemGroup *newGroup)
+{
+    // Let HbEffectPrivate handle the deletion of animated item group
+    connect(newGroup, SIGNAL(finished(HbAnimatedItemGroup *)),
+            this, SLOT(animatedItemGroupFinished(HbAnimatedItemGroup *)));
+    mAnimatedItemGroups.append(newGroup);
 }
 
 void HbEffectPrivate::handleWindowAdded(HbMainWindow *window)
@@ -191,6 +205,18 @@ void HbEffectPrivate::handleViewChanged(HbView *view)
     }
 }
 
+void HbEffectPrivate::animatedItemGroupFinished(HbAnimatedItemGroup *itemGroup)
+{
+    // Called when animated item group is finished - delete later and remove from register
+    if (itemGroup) {
+        int itemIndex = mAnimatedItemGroups.indexOf(itemGroup);
+        if (itemIndex >= 0) {
+            itemGroup->deleteLater();
+            itemGroup = 0;
+            mAnimatedItemGroups.removeAt(itemIndex);
+        }
+    }
+}
 
 HbAnimatedItemGroup::HbAnimatedItemGroup(
     const QList<QGraphicsItem *> &items,
@@ -207,7 +233,9 @@ HbAnimatedItemGroup::HbAnimatedItemGroup(
     // Need information of receiver destroyed because this class gets
     // the notifications asynchronously so it must not invoke the
     // receiver if it has been destroyed meanwhile.
-    connect(mReceiver, SIGNAL(destroyed()), this, SLOT(receiverDestroyed()));
+    if (mReceiver) {
+        connect(mReceiver, SIGNAL(destroyed()), this, SLOT(receiverDestroyed()));
+    }
 }
 
 void HbAnimatedItemGroup::finished(const HbEffect::EffectStatus &status)
@@ -221,8 +249,8 @@ void HbAnimatedItemGroup::finished(const HbEffect::EffectStatus &status)
                 QGenericReturnArgument(),
                 Q_ARG(HbEffect::EffectStatus, status));
         }
-        // We are done, delete self.
-        deleteLater();
+        // We are done, notify owner
+        emit finished(this);
     }
 }
 
@@ -740,8 +768,8 @@ bool HbEffect::start(
     // Connect to view changes if not done yet
     d.connectViewChanges();
 
-    // This object deletes itself when the effect has finished.
     HbAnimatedItemGroup *group = new HbAnimatedItemGroup(items, receiver, member, userData);
+    d.addAnimatedItemGroup(group);
 
     bool ret = false;
 
@@ -1046,6 +1074,35 @@ bool HbEffectInternal::add(const QStringList &itemType, const QStringList &fileP
     if (!ret) {
         for (int i = 0; i < count; ++i) {
             remove(itemType.at(i), filePath.at(i), effectEvent.isEmpty() ? QString() : effectEvent.at(i));
+        }
+    }
+    return ret;
+#endif // HB_EFFECT_API_OFF
+}
+
+/*!
+  \internal
+*/
+bool HbEffectInternal::add(const char *itemType[], const char *filePath[], const char *effectEvent[], int count)
+{
+#ifdef HB_EFFECT_API_OFF
+    Q_UNUSED(itemType);
+    Q_UNUSED(filePath);
+    Q_UNUSED(effectEvent);
+    return false;
+#else
+    bool ret = false;
+    // Try to add all the files, stop when one fails.
+    for (int i = 0; i < count; ++i) {
+        ret = add(QLatin1String(itemType[i]), QLatin1String(filePath[i]), !effectEvent ? QString() : QLatin1String(effectEvent[i]));
+        if (!ret) {
+            break;
+        }
+    }
+    // If any of the files were not added then remove all the others too.
+    if (!ret) {
+        for (int i = 0; i < count; ++i) {
+            remove(QLatin1String(itemType[i]), QLatin1String(filePath[i]), !effectEvent ? QString() : QLatin1String(effectEvent[i]));
         }
     }
     return ret;

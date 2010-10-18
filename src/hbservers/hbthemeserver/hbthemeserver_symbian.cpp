@@ -54,9 +54,10 @@
 #include "hbthemesystemeffect_p.h"
 #ifdef HB_SGIMAGE_ICON
 #include "hbsgimagerenderer_p.h"
+#include <sgresource/sgerror.h>
 #endif
-// 5 MB GPU cache size
-#define GPU_CACHE_SIZE 0x500000
+// 16 MB GPU cache size
+#define GPU_CACHE_SIZE 0x1000000
 
 // 5 MB  CPU cache size
 #define CPU_CACHE_SIZE 0x500000
@@ -65,9 +66,11 @@ static const TInt KThemeName = 0;
 
 const QString KOperatorCPath = "C:/resource/hb/prioritytheme/icons/";
 const QString KOperatorZPath = "Z:/resource/hb/prioritytheme/icons/";
+const QString KBaseThemePath = "z:/resource/hb/";
 
 bool HbThemeServerPrivate::gpuGoodMemoryState = true;
-// This is used as parent theme always regardless of the active theme
+
+#define HB_SPLASH_FLICKER_WORKAROUND
 
 //**********************************
 //HbThemeServerPrivate
@@ -91,11 +94,45 @@ HbThemeServerPrivate * HbThemeServerPrivate::NewL(CActive::TPriority aActiveObje
     return self;
 }
 
+#ifdef HB_SPLASH_FLICKER_WORKAROUND
+_LIT_SECURITY_POLICY_PASS(KHbTfxPsRdPolicy); // all pass
+_LIT_SECURITY_POLICY_S0(KHbTfxPsWrPolicy, KServerUid3.iUid); // pass themeserver only
+static void checkTfxRenderStage()
+{
+    // Check wsini.ini for a line containing [tfxrenderstage]. When present,
+    // publish 1 in the property that will be read by HbMainWindow.
+    TUint32 key = 0x746678;
+    RProperty::Define(KServerUid3, key, RProperty::EInt, KHbTfxPsRdPolicy, KHbTfxPsWrPolicy);
+    RProperty::Set(KServerUid3, key, 0);
+    QFile f(QLatin1String("z:/system/data/wsini.ini"));
+    if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream input(&f);
+        input.setCodec("UTF-16");
+        while (!input.atEnd()) {
+            QString line = input.readLine().trimmed();
+            if (!line.isEmpty()) {
+                if (!line.compare(QLatin1String("[tfxrenderstage]"), Qt::CaseInsensitive)) {
+                    RProperty::Set(KServerUid3, key, 1);
+                    break;
+                }
+            }
+        }
+        f.close();
+    }
+}
+#else
+static void checkTfxRenderStage()
+{
+}
+#endif
+
 /**
 ConstructL
  */
 void HbThemeServerPrivate::ConstructL()
 {
+    checkTfxRenderStage();
+
     TInt err = RProperty::Define(KServerUid3, KThemeName, RProperty::ELargeText);
     if ( err != KErrAlreadyExists ) {
         User::LeaveIfError( err );
@@ -112,16 +149,12 @@ void HbThemeServerPrivate::ConstructL()
     iCurrentThemePath = path.absolutePath();
 
     cache = 0;
-    cssCache = 0;
 
     QT_TRY {
         //Create the Icon cache
         cache = new HbIconDataCache();
-        //Create the CSS cache
-        cssCache = new HbCache();
     } QT_CATCH(const std::bad_alloc &badalloc) {
         delete cache;
-        delete cssCache;
         qt_symbian_exception2LeaveL(badalloc);
     }
     setMaxGpuCacheSize(GPU_CACHE_SIZE);
@@ -197,11 +230,11 @@ HbThemeServerPrivate::HbThemeServerPrivate(CActive::TPriority aActiveObjectPrior
     // Set up the listener to listen for Publish events
     TRAPD(err, iListener = CHbThemeChangeNotificationListener::NewL(*this));
     if (err) {
-        qWarning( "HbThemeServerPrivate::HbThemeServerPrivate: CHbThemeChangeNotificationListener::NewL failed = %d", err );
+        THEME_GENERIC_DEBUG() << Q_FUNC_INFO << "CHbThemeChangeNotificationListener::NewL failed. Error code:" << err;
     } else {
         TRAPD(err, iListener->startListeningL());
         if (err) {
-             qWarning( "HbThemeServerPrivate::HbThemeServerPrivate: iListener->startListening failed = %d", err );
+             THEME_GENERIC_DEBUG() << Q_FUNC_INFO << "iListener->startListening failed. Error code:" << err;
          }
     }    
 }
@@ -212,9 +245,7 @@ Destructor
 HbThemeServerPrivate::~HbThemeServerPrivate()
 {
     delete cache;
-    delete cssCache;
     cache = 0;      // so that HbThemeServerSession::~HbThemeServerSession can avoid using these pointers;
-    cssCache = 0;   // it may be called inside HbThemeServerPrivate::~HbThemeServerPrivate
     TInt err = RProperty::Delete(KServerUid3, KNewThemeForThemeChanger);
     if(err != KErrNotFound) {
         User::LeaveIfError(err);
@@ -240,17 +271,17 @@ bool HbThemeServerPrivate::openCurrentIndexFile()
         
         QFile currentIndexfile(indexFileName);
         if(!currentIndexfile.open(QIODevice::ReadOnly)) {
-            qWarning()<< "HbSymbianThemeServer: No Index file found in the new theme, How did this happen ??";
+            THEME_GENERIC_DEBUG()<< Q_FUNC_INFO << "No Index file found in the new theme.";
             return false;
         } else {
             currentIndexfile.close();
             if (!iWatcher) {
                 // Set up the file watcher for active theme changes
-                TRAP_IGNORE(iWatcher = CHbThemeWatcher::NewL(*this));
+                iWatcher = new HbThemeWatcher(*this);
             }
-            // Start watching in case of mmc ejection
+            // Start watching in case of mmc ejection or active theme uninstall
             if (iWatcher) {
-                iWatcher->startWatchingL(indexFileName);
+                iWatcher->startWatching(indexFileName);
             }
         }
     }
@@ -262,13 +293,18 @@ Handles theme selection
 */
 void HbThemeServerPrivate::HandleThemeSelection( const QString& themeName)
 {
-    QDir path(themeName.trimmed());
+    QString cleanThemeName = themeName;
+    if (!HbThemeUtils::isThemeValid(cleanThemeName)) {
+        // check if the theme name is logical
+        cleanThemeName = KBaseThemePath + HbThemeUtils::platformHierarchy + '/' +
+                    HbThemeUtils::iconsResourceFolder + '/' + cleanThemeName;
+    }
+
+    QDir path(cleanThemeName);
     iCurrentThemeName = path.dirName();
     iCurrentThemePath = path.absolutePath();
 
-    #ifdef THEME_INDEX_TRACES
-    qDebug() << "ThemeIndex: theme change request, new theme =" << themeName.toUtf8();
-    #endif
+    THEME_INDEX_DEBUG() << Q_FUNC_INFO << "Theme change request, new theme =" << cleanThemeName.toUtf8();
 
     // Clear cached icons and session data
     clearIconCache();
@@ -288,9 +324,7 @@ Creates a new session with the server.
 */
 CSession2* HbThemeServerPrivate::NewSessionL(const TVersion& aVersion, const RMessage2& /*aMessage*/) const
 {
-#ifdef THEME_SERVER_TRACES
-    qDebug() << "HbThemeServerPrivate::NewSessionL: entered";
-#endif
+    THEME_GENERIC_DEBUG() << "entering" << Q_FUNC_INFO;
     // Check that the version is OK
     TVersion v(KThemeServerMajorVersionNumber, KThemeServerMinorVersionNumber, KThemeServerBuildVersionNumber);
     if (!User::QueryVersionSupported(v, aVersion))
@@ -320,16 +354,6 @@ bool HbThemeServerPrivate::insertIconCacheItem(const HbIconKey &key,  HbIconCach
 }
 
 /**
- * HbThemeServerPrivate::insertCssCacheItem
- *
- * Inserts a css-cache item along with its key into the css-cache.
- */
-bool HbThemeServerPrivate::insertCssCacheItem(const QString& key,  HbCacheItem* item)
-{
-    return (cssCache->insert(key, item));
-}
-
-/**
  * HbThemeServerPrivate::iconCacheItem
  *
  * Retrieves a icon cache-item from the icon cache based on it's key.
@@ -340,16 +364,6 @@ HbIconCacheItem * HbThemeServerPrivate::iconCacheItem(const HbIconKey &key , boo
 }
 
 /**
- * HbThemeServerPrivate::cssCacheItem
- *
- * Retrieves a css-cache item from the css cache based on it's key.
- */
-HbCacheItem * HbThemeServerPrivate::cssCacheItem(const QString &key)
-{
-    return(cssCache->cacheItem(key));
-}
-
-/**
  * HbThemeServerPrivate::clearIconCache
  *
  * Clears icon cache.
@@ -357,16 +371,6 @@ HbCacheItem * HbThemeServerPrivate::cssCacheItem(const QString &key)
 void HbThemeServerPrivate::clearIconCache()
 {
     cache->clear();
-}
-
-/**
- * HbThemeServerPrivate::clearCssCache
- *
- * Clears css cache.
- */
-void HbThemeServerPrivate::clearCssCache()
-{
-    cssCache->clear();
 }
 
 /**
@@ -405,22 +409,6 @@ void HbThemeServerPrivate::CleanupSessionIconItem(HbIconKey key)
 }
 
 /**
- * HbThemeServerPrivate::CleanupSessionCssItem
- *
- * Removes a css cache-item from css-cache based on it's key.
- */
-void HbThemeServerPrivate::CleanupSessionCssItem(QString key)
-{
-    /*
-        Don't call any HbCache ( CssCache )  functions if HbThemeServerPrivate has already deleted it,
-         which happens when ThemeServer is closed before the client(s).
-    */
-    if (cssCache) {
-        cssCache->remove(key);
-    }
-}
-
-/**
 HbThemeServerPrivate::setMaxGpuCacheSize
  */
 void HbThemeServerPrivate::setMaxGpuCacheSize(int size)
@@ -446,13 +434,12 @@ void HbThemeServerPrivate::FreeGpuRam(int bytes, bool useSwRendering )
 {
     gpuGoodMemoryState = false;
     cache->freeGpuRam(bytes, useSwRendering);
-#ifdef HB_SGIMAGE_ICON
-    if (useSwRendering) {
-    HbSgImageRenderer::global()->terminate();
-    }    	
-#endif
 }
 
+void HbThemeServerPrivate::freeGpuRam()
+{
+    cache->freeGpuRam();
+}
 /**
  *  HbThemeServerPrivate::freeUnusedGpuResources
  *  This function frees all unused SgImage icons
@@ -505,6 +492,21 @@ HbRenderingMode HbThemeServerPrivate::currentRenderingMode() const
     return renderMode;
 }
 
+HbRenderingMode HbThemeServerPrivate::expectedRenderingMode(HbRenderingMode requsetedRenderingMode) const
+{
+    HbRenderingMode renderingMode = ESWRendering;
+
+#if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)    
+    if((requsetedRenderingMode == EHWRendering) &&
+       (currentRenderingMode() == EHWRendering) &&
+        HbThemeServerPrivate::gpuMemoryState()) {
+        renderingMode = EHWRendering;
+    }
+#endif    
+    
+    return renderingMode;
+}
+
 /**
  *  HbThemeServerPrivate::setCurrentRenderingMode
  *  This function sets  ThemeServer's current rendering mode
@@ -513,13 +515,6 @@ HbRenderingMode HbThemeServerPrivate::currentRenderingMode() const
 void HbThemeServerPrivate::setCurrentRenderingMode(HbRenderingMode currentMode)
 {
     renderMode = currentMode;
-}
-
-//Debug Code for Test Purpose
-#ifdef HB_ICON_CACHE_DEBUG
-int HbThemeServerPrivate ::cacheIconCount() const
-{
-    return cache->count();
 }
 
 unsigned long HbThemeServerPrivate::totalGPUMemory()
@@ -532,15 +527,52 @@ unsigned long HbThemeServerPrivate::totalGPUMemory()
 #endif
 }
 
+int HbThemeServerPrivate::cachedSgImagesCount() const
+{
+    return cache->cachedSgImagesCount();
+}
+
+int HbThemeServerPrivate::totalSgImagesCost() const
+{
+    return cache->totalSgImagesCost();
+}
+
+int HbThemeServerPrivate::cachedPixmapCount() const
+{
+    return cache->cachedPixmapCount();
+}
+
 unsigned long HbThemeServerPrivate::freeGPUMemory()
 {
 #ifdef HB_SGIMAGE_ICON
+#ifdef HB_ICON_CACHE_DEBUG
     qDebug() << "Inside  HbThemeServerSymbian::freeGPUMemory()  " ;
+#endif    
     return HbSgImageRenderer::global()->freeGPUMemory();
 #else
     return 0;
 #endif
 }
+
+
+bool HbThemeServerPrivate::isItemCacheableinGpu(int itemCost, HbIconFormatType type)
+{    
+    return cache->isItemCachableInGpu(itemCost, type);
+}
+
+bool HbThemeServerPrivate::isItemCacheableinCpu(int itemCost, HbIconFormatType type)
+{
+    return cache->isItemCachableInCpu(itemCost, type);
+}
+
+
+//Debug Code for Test Purpose
+#ifdef HB_ICON_CACHE_DEBUG
+int HbThemeServerPrivate ::cacheIconCount() const
+{
+    return cache->count();
+}
+
 int HbThemeServerPrivate::freeVectorMemory()
 {
     return cache->freeVectorMemory();
@@ -612,7 +644,6 @@ int HbThemeServerPrivate::vectorLruCount()
 {
     return cache->vectorLruCount();
 }
-
 #endif
 
 int HbThemeServerPrivate::gpuLRUSize() const
@@ -620,25 +651,11 @@ int HbThemeServerPrivate::gpuLRUSize() const
     return cache->gpuLRUSize();
 }
 
-/**
- * HbThemeServerPrivate::doCleanup()
- *
- * This function releases shared memory occupied by css-resources whose reference count is zero,
- * so that subsequent css-requests could be fulfilled by the server. Those css-files whose reference
- * count are zero, are already appended to the LRU list maintained by the css-cache. Since these resources
- * are not being referred to by any application, they can be removed from the cache and corresponding
- * shared memory can be freed up.
- */
-void HbThemeServerPrivate::doCleanup()
-{
-    HbThemeServerUtils::cleanupUnusedCss(cssCache);
-}
-  
-//**********************************
+//*********************************
 //HbThemeServerSession
 //**********************************
 /**
-This class represents a session with the  server.
+This class represents a session with the server.
 Functions are provided to respond appropriately to client messages.
 */
 
@@ -663,16 +680,8 @@ HbThemeServerSession::~HbThemeServerSession()
             ++iter) {
         iServer->CleanupSessionIconItem(*iter);
     }
-    //clean up css related session-specific info
-    QList<QString>::const_iterator iterEnd(sessionCssData.constEnd());
-    for (QList<QString>::const_iterator iter = sessionCssData.constBegin();
-            iter != iterEnd;
-            ++iter) {
-        iServer->CleanupSessionCssItem(*iter);
-    }
 
     sessionData.clear();
-    sessionCssData.clear();
 }
 
 TIconParams HbThemeServerSession::ReadMessageAndRetrieveParams(const RMessage2& aMessage)
@@ -690,19 +699,11 @@ Services a client request.
 */
 void HbThemeServerSession::ServiceL(const RMessage2& aMessage)
 {
-#ifdef THEME_SERVER_TRACES
-    qDebug() << "Just entered HbThemeServerSession::ServiceL";
-#endif
+    THEME_GENERIC_DEBUG() << "entered" << Q_FUNC_INFO << "with function:" << aMessage.Function();
 
     TRAPD(err, DispatchMessageL(aMessage));
     aMessage.Complete(err);
-
-#ifdef THEME_SERVER_TRACES
-    QString er;
-    er.setNum(err);
-    qDebug() << "completed DispatchMessageL error code is " + er;
-#endif
-
+    THEME_GENERIC_DEBUG() << "completed" << Q_FUNC_INFO << "with error code" + err;
 }
 
 /**
@@ -713,10 +714,6 @@ the appropriate function.
 */
 void HbThemeServerSession::DispatchMessageL(const RMessage2& aMessage)
 {
-#ifdef THEME_SERVER_TRACES
-    qDebug() << "Just entered HbThemeServerSession::DispatchMessageL";
-#endif
-
     switch (aMessage.Function()) {
     case EStyleSheetLookup:
         HandleStyleSheetLookupL(aMessage);
@@ -748,12 +745,17 @@ void HbThemeServerSession::DispatchMessageL(const RMessage2& aMessage)
         unLoadIcon(aMessage);
         break;
 
+    case EBatchUnloadIcon:
+        batchUnLoadIcon(aMessage);
+        break;
+
     case EUnloadMultiIcon:
         unloadMultiIcon(aMessage);
         break;
+
     case ENotifyForegroundLost:
 #if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
-        freeClientGpuResources();
+        freeIconResources();
 #endif
         break;
         //Debug Code for Test Purpose
@@ -788,19 +790,6 @@ void HbThemeServerSession::DispatchMessageL(const RMessage2& aMessage)
     case EFreeVectorMem: {
         TInt freeVectMem = iServer->freeVectorMemory();
         TPckg<TInt> out(freeVectMem);
-        aMessage.WriteL(1, out);
-        break;
-    }
-
-    case EFreeGPUMem: {
-        unsigned long freeMem = iServer->freeGPUMemory();
-        TPckg<unsigned long> out(freeMem);
-        aMessage.WriteL(1, out);
-        break;
-    }
-    case ETotalGPUMem: {
-        unsigned long totalMem = iServer->totalGPUMemory();
-        TPckg<unsigned long> out(totalMem);
         aMessage.WriteL(1, out);
         break;
     }
@@ -903,6 +892,42 @@ void HbThemeServerSession::DispatchMessageL(const RMessage2& aMessage)
         break;
     }
 #endif
+    case EFreeGPUMem: {
+        unsigned long freeMem = iServer->freeGPUMemory();
+        TPckg<unsigned long> out(freeMem);
+        aMessage.WriteL(1, out);
+        break;
+    }   
+    case ECachedSgImages: {
+        TInt cachedSgImages = iServer->cachedSgImagesCount();
+        TPckg<TInt> out(cachedSgImages);
+        aMessage.WriteL(1, out);
+        break;
+    }
+    case ETotalSgImagesCost: {
+        TInt cachedSgImagesCost = iServer->totalSgImagesCost();
+        TPckg<TInt> out(cachedSgImagesCost);
+        aMessage.WriteL(1, out);
+        break;
+    }
+    case ECachedPixmapImages: {
+        TInt cachedPixImages = iServer->cachedPixmapCount();
+        TPckg<TInt> out(cachedPixImages);
+        aMessage.WriteL(1, out);
+        break;
+    }
+    case ECurrentRenderingMode: {
+        TInt currentRenderingMode = iServer->currentRenderingMode();
+        TPckg<TInt> out(currentRenderingMode);
+        aMessage.WriteL(1, out);
+        break;
+    }
+    case ETotalGPUMem: {
+        unsigned long totalMem = iServer->totalGPUMemory();
+        TPckg<unsigned long> out(totalMem);
+        aMessage.WriteL(1, out);
+        break;
+    }
 #ifdef HB_THEME_SERVER_MEMORY_REPORT
     case ECreateMemoryReport: {
         GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
@@ -933,14 +958,13 @@ void HbThemeServerSession::DispatchMessageL(const RMessage2& aMessage)
         iServer->FreeGpuRam(params.bytesToFree, params.useSwRendering);
         break;
     }
-
     case ERenderModeSwitch: {
         TInt mode = 0;
         TPckg<TInt> paramPckg(mode);      
         aMessage.ReadL(0, paramPckg, 0);
         SwitchRenderingMode((HbRenderingMode)mode);
         break;
-    }
+    }    
     case EFreeSharedMem: {
         int freeSharedMem = iServer->freeSharedMemory();
         TPckg<int> out(freeSharedMem);
@@ -959,23 +983,18 @@ void HbThemeServerSession::DispatchMessageL(const RMessage2& aMessage)
         aMessage.WriteL(1, out);
         break;
     }
-
     case ETypefaceOffset: {
         HandleTypefaceReqL(aMessage);
         break;
     }
-
-
-
-    // This is an example of a request that we know about, but don't support.
-    // We cause KErrNotSupported to be returned to the client.
+    case EMissedHbCssLookup: {
+        HandleMissedHbCssLookupL(aMessage);
+        break;
+    }
     default:
         PanicClient(aMessage, EBadRequest);
         break;
     }
-#ifdef THEME_SERVER_TRACES
-    qDebug() << "Leave HbThemeServerSession::DispatchMessageL";
-#endif
 }
 
 void HbThemeServerSession::SwitchRenderingMode(HbRenderingMode aRenderMode)
@@ -994,16 +1013,13 @@ void HbThemeServerSession::SwitchRenderingMode(HbRenderingMode aRenderMode)
     } 
 #endif
 }
-
 /**
  * HandleStyleSheetLookupL
  */
 void HbThemeServerSession::HandleStyleSheetLookupL(const RMessage2& aMessage)
 {
     if (aMessage.GetDesLength(0) == 0) {
-#ifdef THEME_SERVER_TRACES
-        qDebug() << "Empty Filename";
-#endif
+        THEME_GENERIC_DEBUG() << Q_FUNC_INFO << "no filename given.";
         return;
     }
 
@@ -1019,43 +1035,23 @@ void HbThemeServerSession::HandleStyleSheetLookupL(const RMessage2& aMessage)
 
     QString cssFileName((QChar*)fileName.Ptr(), fileName.Length());
     HbSharedStyleSheetInfo offsetInfo;
-    HbCacheItem* cssCacheItem = iServer->cssCacheItem(cssFileName);
-    bool insertKeyIntoSessionList = false;
-    if (cssCacheItem) {
-        //The item was found in the cache and reference count was incremented
-        insertKeyIntoSessionList = true;
-        offsetInfo.offset = cssCacheItem->offset;
-    } else {
-        bool tryAgain = false;
-        do {
-            offsetInfo.offset = HbThemeServerUtils::getSharedStylesheet(cssFileName, layerPriority);
-            if (offsetInfo.offset >= 0) {
-                HbCacheItem *cssItem =  new HbCacheItem(offsetInfo.offset, 0, cssFileName);
-                insertKeyIntoSessionList = iServer->insertCssCacheItem(cssFileName, cssItem);
-                if (layerPriority == HbLayeredStyleLoader::Priority_Core && cssItem->refCount == 1) {
-                    // This will make sure the requested stylesheet will always remain
-                    // in the primary and secondary cache.
-                    cssItem->incrementRefCount();
-                }
-                break;
-            } else if (offsetInfo.offset == OUT_OF_MEMORY_ERROR && tryAgain == false) {
-                iServer->doCleanup();
-                tryAgain = true;
-            } else if (offsetInfo.offset == OUT_OF_MEMORY_ERROR && tryAgain == true) {
-                //try only once to free up memory, else offset remains -2
-                tryAgain = false;
-            }
-        } while (tryAgain);
-    }
-    if (insertKeyIntoSessionList) {
-        //The session will only keep track of cssFiles that were either successfully found or were
-        //successfully inserted in the cache.
-        if (!sessionCssData.contains(cssFileName)) {
-            sessionCssData.append(cssFileName);
-        }
-    }
+
+    offsetInfo.offset = HbThemeServerUtils::getSharedStylesheet(cssFileName, 
+            layerPriority, offsetInfo.fileExists);
+
     TPckg<HbSharedStyleSheetInfo> data(offsetInfo);
     aMessage.WriteL(2, data);
+}
+
+/**
+ * HandleMissedHbCssLookupL
+ */
+void HbThemeServerSession::HandleMissedHbCssLookupL(const RMessage2& aMessage)
+{
+    HbSharedMissedHbCssInfo offsetInfo;
+    offsetInfo.offset = HbThemeServerUtils::getMissedHbCssFilesOffset();
+    TPckg<HbSharedMissedHbCssInfo> data(offsetInfo);
+    aMessage.WriteL(0, data);
 }
 
 static const TInt KMaxLayoutName = 256;
@@ -1082,7 +1078,8 @@ void HbThemeServerSession::HandleWidgetMLLookupL(const RMessage2& aMessage)
     QString section((QChar*)sectionName.Ptr(), sectionName.Length());
 
     HbSharedWMLInfo offsetInfo;
-    offsetInfo.offset = HbThemeServerUtils::getSharedLayoutDefinition(wmlFileName, layout, section);
+    offsetInfo.offset = HbThemeServerUtils::getSharedLayoutDefinition(wmlFileName, layout, 
+            section, offsetInfo.fileExists);
     TPckg<HbSharedWMLInfo> data(offsetInfo);
     aMessage.WriteL(3, data);
 }
@@ -1138,8 +1135,11 @@ void HbThemeServerSession::GetSharedIconInfoL(const RMessage2& aMessage)
                   (QIcon::Mode)params.mode, params.mirrored, color,
                   (HbRenderingMode)params.renderMode);
 
-    HbIconCacheItem* cacheItem = iServer->iconCacheItem(key);
     bool insertKeyIntoSessionList = false;
+    QString format = HbThemeServerUtils::formatFromPath(key.filename);
+    HbIconFormatType iconType = getIconFormatType(format);
+
+    HbIconCacheItem* cacheItem = getCachedIcon(key, format, false);    
     if (cacheItem) {
         insertKeyIntoSessionList = true; //The item was found in the cache and ref count was incremented
         if (cacheItem->rasterIconData.type != INVALID_FORMAT) {
@@ -1153,11 +1153,25 @@ void HbThemeServerSession::GetSharedIconInfoL(const RMessage2& aMessage)
         }
     } else {
         QT_TRY {
-            QString format = HbThemeServerUtils::formatFromPath(key.filename);
-                QScopedPointer <HbIconCacheItem> tempIconCacheItem(
-                    HbIconCacheItemCreator::createCacheItem(key,
-                        static_cast<HbIconLoader::IconLoaderOptions>(params.options),
-                        format, iServer->currentRenderingMode()));
+            QScopedPointer <HbIconCacheItem> tempIconCacheItem;
+            int gpuItemCost = HbThemeServerUtils::computeGpuCost(key, iconType, false);
+            HbRenderingMode rm = iServer->expectedRenderingMode((HbRenderingMode)key.renderMode);
+            // A hardware icon (SGImage) is only created when icon format is NVG,
+            // when both client and ThemeServer is in HW rendering mode and
+            // there is enough GPU space to create anew HW icon
+            if (rm == EHWRendering && format == HbIconCacheItemCreator::KNvg &&
+                iServer->isItemCacheableinGpu(gpuItemCost, iconType)) {
+                tempIconCacheItem.reset(HbIconCacheItemCreator::createCacheItem(key,
+                static_cast<HbIconLoader::IconLoaderOptions>(params.options),
+                format, EHWRendering));    
+            } else {
+                int cpuItemCost = HbThemeServerUtils::computeCpuCost(key, iconType, false);
+                if (iServer->isItemCacheableinCpu(cpuItemCost, iconType)){
+                    tempIconCacheItem.reset(HbIconCacheItemCreator::createCacheItem(key,
+                    static_cast<HbIconLoader::IconLoaderOptions>(params.options),
+                    format, ESWRendering));    
+                }
+            }
             cacheItem = tempIconCacheItem.data();
             if (cacheItem) {
                 if (cacheItem->rasterIconData.type != INVALID_FORMAT) {
@@ -1170,6 +1184,10 @@ void HbThemeServerSession::GetSharedIconInfoL(const RMessage2& aMessage)
                     data.type = INVALID_FORMAT;
                 }
                 if (data.type != INVALID_FORMAT) {
+                    // set the rendering mode according to the actual rendering mode
+                    // in which the icon is created
+                    key.renderMode = cacheItem->renderingMode();
+                    
                     insertKeyIntoSessionList = iServer->insertIconCacheItem(key, cacheItem);
                     if (!insertKeyIntoSessionList) {
                         FreeDataFromCacheItem(cacheItem);
@@ -1194,13 +1212,15 @@ void HbThemeServerSession::GetSharedIconInfoL(const RMessage2& aMessage)
         //successfully inserted in the cache.
         sessionData.append(key);
     }
+#ifdef HB_SGIMAGE_ICON
+    HbSgImageRenderer *sgImg = HbSgImageRenderer::global();
+    if (sgImg->lastError() == KErrNoGraphicsMemory ) {
+       iServer->freeGpuRam();
+    }
+#endif
     // create dshared pixmap info from HbIconCacheItem
     TPckg<HbSharedIconInfo> pixdata(data);
     aMessage.WriteL(1, pixdata);
-
-#ifdef THEME_SERVER_TRACES
-    qDebug() << "Completed  aMessage.WriteL";
-#endif
 }
 
 /**
@@ -1248,7 +1268,8 @@ void HbThemeServerSession::GetSharedMultiIconInfoL(const RMessage2& aMessage)
     QColor color = GetColorFromRgba(params.rgba, params.colorflag);
     QString iconId((QChar*)params.multiPartIconId.Ptr(), params.multiPartIconId.Length());
     QString fullPath((QChar*)params.multiPartIconList[0].Ptr(), params.multiPartIconList[0].Length());
-    int index = fullPath.lastIndexOf("/");
+    QString format = HbThemeServerUtils::formatFromPath(fullPath);
+    int index = fullPath.lastIndexOf('/');
     fullPath = fullPath.left(index + 1);
     iconId.prepend(fullPath);
     HbIconKey finalIconKey(iconId,
@@ -1259,7 +1280,7 @@ void HbThemeServerSession::GetSharedMultiIconInfoL(const RMessage2& aMessage)
                            color,
                            static_cast<HbRenderingMode>(params.renderMode));
 
-    if (!IconInfoFromSingleIcon(finalIconKey, stitchedData)) {
+    if (!IconInfoFromSingleIcon(finalIconKey, stitchedData, format, false)) {
         HbMultiIconParams frameItemParams;
         int noOfPieces = 1;
         if (iconId.contains("_3PV", Qt::CaseInsensitive) || iconId.contains("_3PH", Qt::CaseInsensitive)) {
@@ -1298,16 +1319,96 @@ void HbThemeServerSession::GetSharedMultiIconInfoL(const RMessage2& aMessage)
     aMessage.WriteL(1, pixdata);
 }
 
+HbIconCacheItem* HbThemeServerSession::getCachedIcon(HbIconKey & key, const QString & format,
+                                                    bool isConsolidatedIcon)
+{
+    HbIconCacheItem* cacheItem = 0;
+    
+    // try to find the icon in other rendering mode,
+    // if rendering will take place in another rendering mode
+    HbRenderingMode rm = iServer->expectedRenderingMode((HbRenderingMode)key.renderMode);
+    HbIconFormatType type = getIconFormatType(format);
+    if (rm == key.renderMode) {
+        cacheItem = iServer->iconCacheItem(key);
+    } else if (rm != key.renderMode) {
+        HbIconKey newKey(key);
+        newKey.renderMode = rm;
+        cacheItem = iServer->iconCacheItem(newKey);
+        if (cacheItem) {
+            key.renderMode = rm;
+        }
+    }
+    
+    if (!cacheItem) {
+        // try search for icon in software mode if the icon is not of type nvg
+        // currently only nvg type is used to create RSgImage.
+        // If hardware icon is not found and there is not space to create a hardware
+        // icon, search for the icon in software mode. 
+        int itemGpuCost = HbThemeServerUtils::computeGpuCost(key, type, isConsolidatedIcon ); 
+        if (format != HbIconCacheItemCreator::KNvg ||
+            (rm == EHWRendering && !iServer->isItemCacheableinGpu(itemGpuCost, type)) ) {            
+            HbIconKey newKey(key);
+            newKey.renderMode = ESWRendering;
+            cacheItem = iServer->iconCacheItem(newKey);
+            if (cacheItem) {
+                key.renderMode = ESWRendering;
+            }
+        }
+        
+    }
+    
+    return cacheItem;
+}
+
 /**
  * HbThemeServerPrivate::IconInfoFromSingleIcon
   Checks for the cacheItem for a given key, if found gets the data relevant of the cacheItem.
  */
 
 bool HbThemeServerSession::IconInfoFromSingleIcon(HbIconKey key,
-        HbSharedIconInfo &stitchedData)
+        HbSharedIconInfo &stitchedData, const QString & format, bool isMultiPiece)
 {
-    stitchedData.type = INVALID_FORMAT;
-    HbIconCacheItem * cacheItem = iServer->iconCacheItem(key, true);
+    HbIconCacheItem* cacheItem = 0;
+    
+    // try to find the icon in other rendering mode,
+    // if rendering will take place in another rendering mode
+    HbRenderingMode rm = iServer->expectedRenderingMode((HbRenderingMode)key.renderMode);
+    HbIconFormatType type = getIconFormatType(format);
+    bool consolidatedIcon = !isMultiPiece;
+    if (rm == key.renderMode) {
+        cacheItem = iServer->iconCacheItem(key, true);
+    } else if (rm != key.renderMode) {
+        HbIconKey newKey(key);
+        newKey.renderMode = rm;
+        cacheItem = iServer->iconCacheItem(newKey, true);
+        if (cacheItem) {
+            key.renderMode = rm;
+        }
+    }
+    
+    if (!cacheItem) {
+        if (!format.isEmpty()) {
+            int gpuItemCost = 0;
+            // only consolidated icon ican be cached in GPU
+            if (consolidatedIcon) {
+                gpuItemCost = HbThemeServerUtils::computeGpuCost(key, type, consolidatedIcon);
+            }
+            
+            // try search for icon in software mode if the icon is not of type nvg
+            // currently only nvg type is used to create RSgImage
+            if ((format != HbIconCacheItemCreator::KNvg) ||
+                (rm == EHWRendering && !iServer->isItemCacheableinGpu(gpuItemCost, type) &&
+                !isMultiPiece)) {            
+                HbIconKey newKey(key);
+                newKey.renderMode = ESWRendering;
+                cacheItem = iServer->iconCacheItem(newKey);
+                if (cacheItem) {
+                    key.renderMode = ESWRendering;
+                }
+            }
+        }
+    }
+    
     if (cacheItem) {
         GetDataFromCacheItem(cacheItem, stitchedData);
         return true; //The item was found in the cache and ref count was incremented
@@ -1326,19 +1427,23 @@ bool HbThemeServerSession::CreateCacheItemData(HbIconKey key, int options , HbSh
     bool insertKeyIntoSessionList = false;
     data.type = INVALID_FORMAT;
     QString format = HbThemeServerUtils::formatFromPath(key.filename);
-    HbIconCacheItem * cacheItemOfPiece = iServer->iconCacheItem(key, isMultiIcon);
-    if (cacheItemOfPiece) {
-        GetDataFromCacheItem(cacheItemOfPiece, data);
-        insertKeyIntoSessionList = true;
-    } else {
+    HbIconFormatType type = getIconFormatType(format);
+    HbIconCacheItem * cacheItemOfPiece = 0; 
+    HbRenderingMode rm = iServer->expectedRenderingMode((HbRenderingMode)key.renderMode);
+    int cpuItemCost = HbThemeServerUtils::computeFrameItemCpuCost(key, type, rm);
+    
+    if (iServer->isItemCacheableinCpu(cpuItemCost, type)) {
         cacheItemOfPiece = HbIconCacheItemCreator::createCacheItem(key,
-                           (HbIconLoader::IconLoaderOptions)options,
-                           format,
-                           iServer->currentRenderingMode(),
-                           isMultiIcon);
+                            (HbIconLoader::IconLoaderOptions)options,
+                            format,
+                            rm,
+                            isMultiIcon);
         if (cacheItemOfPiece) {
             GetDataFromCacheItem(cacheItemOfPiece, data);
             if (data.type != INVALID_FORMAT) {
+                // set the rendering mode according to the actual rendering mode
+                // in which the icon is created 
+                key.renderMode = cacheItemOfPiece->renderingMode();
                 insertKeyIntoSessionList = iServer->insertIconCacheItem(key, cacheItemOfPiece);
                 if (!insertKeyIntoSessionList) {
                     //if insertion failed free the memory
@@ -1366,11 +1471,31 @@ bool HbThemeServerSession::CreateStichedIconInfoOfParts(QVector<HbSharedIconInfo
     bool insertKeyIntoSessionList = false;
     stitchedData.type = INVALID_FORMAT;
     QString format = HbThemeServerUtils::formatFromPath(params.multiPartIconList[0]);
-
-    QScopedPointer<HbIconCacheItem> tempCacheItem(HbIconCacheItemCreator::createMultiPieceCacheItem(finalIconKey,
-                                                  (HbIconLoader::IconLoaderOptions)params.options, 
-                                                  format, dataForParts, params, allNvg,
-                                                  iServer->currentRenderingMode()));
+    HbIconFormatType type = getIconFormatType(format);
+    QScopedPointer <HbIconCacheItem> tempCacheItem;
+    
+    int gpuItemCost = HbThemeServerUtils::computeGpuCost(finalIconKey, type, true);
+    
+    HbRenderingMode rm = iServer->expectedRenderingMode((HbRenderingMode)finalIconKey.renderMode);
+    
+    // A consolidated hardware icon (SGImage) is only created when icon format is NVG,
+    // when both client and ThemeServer is in HW rendering mode and
+    // there is enough GPU space to create anew HW icon
+    
+    if (rm == EHWRendering && format == HbIconCacheItemCreator::KNvg &&
+        iServer->isItemCacheableinGpu(gpuItemCost, type)) {
+        tempCacheItem.reset(HbIconCacheItemCreator::createMultiPieceCacheItem(finalIconKey,
+        (HbIconLoader::IconLoaderOptions)params.options, format, dataForParts, 
+        params, allNvg, EHWRendering));    
+    }
+    else {
+        int cpuItemCost = HbThemeServerUtils::computeCpuCost(finalIconKey, type, true);
+        if (iServer->isItemCacheableinCpu(cpuItemCost, type)) {
+            tempCacheItem.reset(HbIconCacheItemCreator::createMultiPieceCacheItem(finalIconKey,
+            (HbIconLoader::IconLoaderOptions)params.options, format, dataForParts, 
+            params, allNvg, ESWRendering));    
+        }
+    }
     HbIconCacheItem * cacheItem = tempCacheItem.data();
     if (cacheItem) {
         if (cacheItem->rasterIconData.type == INVALID_FORMAT) {
@@ -1382,6 +1507,7 @@ bool HbThemeServerSession::CreateStichedIconInfoOfParts(QVector<HbSharedIconInfo
 
     stitchedData = cacheItem->rasterIconData;
     if (stitchedData.type != INVALID_FORMAT) {
+        finalIconKey.renderMode = cacheItem->renderingMode();
         insertKeyIntoSessionList = iServer->insertIconCacheItem(finalIconKey, cacheItem);
         if (!insertKeyIntoSessionList) {
             //if insertion failed free the memory
@@ -1391,6 +1517,12 @@ bool HbThemeServerSession::CreateStichedIconInfoOfParts(QVector<HbSharedIconInfo
             stitchedData.type = INVALID_FORMAT;
         }
     }
+#ifdef HB_SGIMAGE_ICON    
+    HbSgImageRenderer *sgImg = HbSgImageRenderer::global();
+    if (sgImg->lastError() == KErrNoGraphicsMemory ) {
+        iServer->freeGpuRam();
+    }
+#endif    
     if (tempCacheItem.data()) {
         tempCacheItem.take();
     }
@@ -1423,7 +1555,8 @@ void HbThemeServerSession::IconInfoFromMultiParts(const HbMultiIconParams &frame
         HbIconKey key(frameItemParams.multiPartIconList.at(i), frameItemParams.multiPartIconData.pixmapSizes[i], 
                       (Qt::AspectRatioMode)stichedKey.aspectRatioMode, (QIcon::Mode)stichedKey.mode, iconPieceMirrored, 
                       stichedKey.color,(HbRenderingMode)frameItemParams.renderMode);
-            insertKeyIntoSessionList = IconInfoFromSingleIcon(key, data);
+            QString format = HbThemeServerUtils::formatFromPath(key.filename);
+            insertKeyIntoSessionList = IconInfoFromSingleIcon(key, data, format, true );
             if (!insertKeyIntoSessionList) {
                 insertKeyIntoSessionList = CreateCacheItemData(key, frameItemParams.options, data, true);
             }
@@ -1513,6 +1646,11 @@ void HbThemeServerSession::FreeDataFromCacheItem(HbIconCacheItem* cacheItem)
         case OTHER_SUPPORTED_FORMATS :
             manager->free(cacheItem->rasterIconData.pixmapData.offset);
             break;
+        case SGIMAGE:
+#ifdef HB_SGIMAGE_ICON
+            HbSgImageRenderer::removeSgImageFromHash(cacheItem->rasterIconData.sgImageData.id);
+#endif
+            break;    
         default:
             break;
         }
@@ -1617,7 +1755,8 @@ void HbThemeServerSession::IconInfoL(const TIconListParams &frameItemParams,
             HbIconKey key(pieceName, frameItemParams.sizeList[i],
                           (Qt::AspectRatioMode)frameItemParams.aspectRatioMode, (QIcon::Mode)frameItemParams.mode,
                       (bool)frameItemParams.mirrored, color, (HbRenderingMode)frameItemParams.renderMode);
-            insertKeyIntoSessionList = IconInfoFromSingleIcon(key, data);
+            QString format = HbThemeServerUtils::formatFromPath(key.filename);
+            insertKeyIntoSessionList = IconInfoFromSingleIcon(key, data, format, true );
             if (!insertKeyIntoSessionList) {
                 insertKeyIntoSessionList = CreateCacheItemData(key, 0, data, false);
             }
@@ -1657,23 +1796,43 @@ void HbThemeServerSession::HandleTypefaceReqL(const RMessage2& aMessage)
 }
 
 
+void HbThemeServerSession::performUnload(const TIconParams &params)
+{
+    QString filename((QChar*) params.fileName.Ptr(), params.fileName.Length());
+    HbIconKey key(filename,
+                  QSizeF(params.width, params.height),
+                  (Qt::AspectRatioMode) params.aspectRatioMode,
+                  (QIcon::Mode) params.mode,
+                  params.mirrored,
+                  GetColorFromRgba(params.rgba, params.colorflag),
+                  (HbRenderingMode) params.renderMode);
+    iServer->CleanupSessionIconItem(key);
+    sessionData.removeOne(key);
+}
+
 void HbThemeServerSession::unLoadIcon(const RMessage2& aMessage)
 {
     TIconParams params = ReadMessageAndRetrieveParams(aMessage);
-    QString filename((QChar*)params.fileName.Ptr(), params.fileName.Length());
-    QColor color = GetColorFromRgba(params.rgba, params.colorflag);
-    HbIconKey key(filename, QSizeF(params.width, params.height),
-                  (Qt::AspectRatioMode)params.aspectRatioMode,
-                  (QIcon::Mode)params.mode, params.mirrored, color, (HbRenderingMode)params.renderMode);
-    iServer->CleanupSessionIconItem(key);
-    sessionData.removeOne(key);
+    performUnload(params);
+}
+
+void HbThemeServerSession::batchUnLoadIcon(const RMessage2& aMessage)
+{
+    typedef TIconParams Params[BATCH_SIZE_LIMIT];
+    Params paramList;
+    TPckg<Params> paramsPckg(paramList);
+    aMessage.ReadL(0, paramsPckg);
+    for (int i = 0; i < BATCH_SIZE_LIMIT; ++i) {
+        const TIconParams &params(paramList[i]);
+        if (params.fileName.Length()) {
+            performUnload(params);
+        }
+    }
 }
 
 void HbThemeServerSession::unloadMultiIcon(const RMessage2& aMessage)
 {
     TIconListParams params;
-
-    TInt deslen = aMessage.GetDesLength(0);
     TPckg<TIconListParams> paramPckg(params);
     // Copy the client's descriptor data into our buffer.
     aMessage.ReadL(0, paramPckg, 0);
@@ -1703,7 +1862,7 @@ cleanup based on the reference count.
 void HbThemeServerSession::freeClientGpuResources()
 {
 #if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
-	QList<HbIconKey> tempSessionData(sessionData);
+    QList<HbIconKey> tempSessionData(sessionData);
     QList<HbIconKey>::const_iterator itEnd( tempSessionData.constEnd() );
     for ( QList<HbIconKey>::const_iterator iter = tempSessionData.constBegin();
             iter != itEnd;
@@ -1717,6 +1876,30 @@ void HbThemeServerSession::freeClientGpuResources()
     }
 #endif
 }
+
+/**
+freeIconResources - unloads all the resources in the session
+
+Iterates all the keys in sessionData and then CleanUpSessionIConItem is called
+on that item, which will do the cleanup based on the reference count.
+*/
+void HbThemeServerSession::freeIconResources()
+{
+    QList<HbIconKey> tempSessionData(sessionData);
+    QList<HbIconKey>::const_iterator itEnd( tempSessionData.constEnd() );
+    for ( QList<HbIconKey>::const_iterator iter = tempSessionData.constBegin();
+            iter != itEnd;
+            ++iter ) {
+                
+        iServer->CleanupSessionIconItem(*iter);
+        // remove the item in the session data.
+        sessionData.removeOne(*iter);
+               
+    }
+}
+
+
+
 
 /**
  * HbThemeServerSession::ClearSessionData
@@ -1743,6 +1926,22 @@ void HbThemeServerSession::freeGpuResources()
     iServer->freeUnusedGpuResources();
 #endif
 #endif
+}
+
+HbIconFormatType HbThemeServerSession::getIconFormatType(const QString & format)
+{
+    HbIconFormatType type = INVALID_FORMAT;
+    if (format == HbIconCacheItemCreator::KNvg) {
+        type = NVG;
+    } else if (format == HbIconCacheItemCreator::KBlob) {
+        type = BLOB;
+    } else if (format == HbIconCacheItemCreator::KSvg) {
+        type = SVG;
+    } else if (format == HbIconCacheItemCreator::KPic) {
+        type = PIC;
+    }
+    
+    return type;
 }
 
 #ifdef HB_ICON_CACHE_DEBUG

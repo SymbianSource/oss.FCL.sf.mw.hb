@@ -72,7 +72,7 @@ protected:
     virtual void boundaryReached(const HbWidget *widget);
     virtual void rotated90Degrees(const HbWidget *widget);
     virtual void selectionChanged(const HbWidget *widget);
-    virtual void multitouchActivated(const HbWidget *widget);
+    virtual void advancedGestureActivated(const HbWidget *widget);
     virtual void continuousTriggered(const HbWidget *widget, Hb::ContinuousInteraction interaction, QPointF delta);
     virtual void continuousStopped(const HbWidget *widget, Hb::ContinuousInteraction interaction);
 

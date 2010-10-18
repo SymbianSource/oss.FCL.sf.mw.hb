@@ -120,11 +120,13 @@ void HbGridView::setRowCount(int rowCount)
 {
     Q_D(HbGridView);
 
-    d->mVisibleIndex = d->indexInTheCenter();
+    if (d->itemContainer()->rowCount() != rowCount) {
+        d->mVisibleIndex = d->firstFullyVisibleIndex();
 
-    d->itemContainer()->setRowCount(rowCount);
+        d->itemContainer()->setRowCount(rowCount);
 
-    scrollTo(d->mVisibleIndex, HbAbstractItemView::PositionAtCenter);
+        scrollTo(d->mVisibleIndex, HbAbstractItemView::PositionAtTop);
+    }
 }
 
 /*!
@@ -147,11 +149,13 @@ void HbGridView::setColumnCount(int columnCount)
 {
     Q_D(HbGridView);
 
-    d->mVisibleIndex = d->indexInTheCenter();
+    if (d->itemContainer()->columnCount() != columnCount) {
+        d->mVisibleIndex = d->firstFullyVisibleIndex();
 
-    d->itemContainer()->setColumnCount(columnCount);
+        d->itemContainer()->setColumnCount(columnCount);
 
-    scrollTo(d->mVisibleIndex, HbAbstractItemView::PositionAtCenter);
+        scrollTo(d->mVisibleIndex, HbAbstractItemView::PositionAtTop);
+    }
 }
 
 
@@ -252,12 +256,13 @@ HbAbstractViewItem *HbGridView::itemAt(int row, int column) const
 void HbGridView::scrollTo(const QModelIndex &index, ScrollHint hint)
 {
     Q_D(HbGridView);
-    // always use container, event if recycling is off and all items are 
-    // in container, but still additional action is needed -
+
+    // always use HbGridItemContainer::scrollTo, even if recycling
+    // is off - still additional action is needed -
     // container::scrollTo is responsible for procesing all
     // posponed events (DelayedLayoutRequest)
-    if (    d->mModelIterator->model()
-        &&  index.model() == d->mModelIterator->model()) {
+    if (   d->mModelIterator->model()
+        && index.model() == d->mModelIterator->model()) {
         d->itemContainer()->scrollTo(index, hint);
         HbAbstractItemView::scrollTo(index, hint);
     }
@@ -279,7 +284,7 @@ void HbGridView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 void HbGridView::orientationAboutToBeChanged()
 {
     Q_D(HbGridView);
-    d->mVisibleIndex = d->indexInTheCenter();
+    d->mVisibleIndex = d->firstFullyVisibleIndex();
 }
 
 /*!
@@ -291,10 +296,20 @@ void HbGridView::orientationChanged(Qt::Orientation newOrientation)
     d->mContainer->setPos(0,0);
     if (d->mSwapDimensionsOnOrientationChange) {
         d->itemContainer()->orientationChanged(newOrientation);
+        int indexPosition = d->mModelIterator->indexPosition(d->mVisibleIndex);
+        int columnsCount = 0;
+        if (d->mScrollDirections == Qt::Vertical) {
+            columnsCount = columnCount();
+        } else {
+            columnsCount = rowCount();
+        }
+        int remainder = indexPosition % columnsCount;
+        if (remainder > columnsCount / 2) {
+            d->mVisibleIndex = d->mModelIterator->index(indexPosition + columnsCount - remainder);
+        }
     }
 
-    // abstract part is enough - container update buffer
-    HbAbstractItemView::scrollTo(d->mVisibleIndex, HbAbstractItemView::PositionAtCenter);
+    scrollTo(d->mVisibleIndex, HbAbstractItemView::PositionAtTop);
 
     d->mVisibleIndex = QModelIndex();
 }
@@ -395,13 +410,12 @@ void HbGridView::scrollDirectionChanged(Qt::Orientations scrollDirection)
 {
     Q_D(HbGridView);
     // scroll direction changed, calculations need to be done on old value
-    d->mVisibleIndex = d->indexInTheCenter((d->mScrollDirections == Qt::Vertical) 
-        ? Qt::Horizontal : Qt::Vertical);
+    d->mVisibleIndex = d->firstFullyVisibleIndex();
     d->mContainer->setPos(0,0);
     d->itemContainer()->scrollDirectionChanged(scrollDirection);
 
     // abstract part is enough - container update buffer
-    HbAbstractItemView::scrollTo(d->mVisibleIndex, HbAbstractItemView::PositionAtCenter);
+    HbAbstractItemView::scrollTo(d->mVisibleIndex, HbAbstractItemView::PositionAtTop);
 
     d->mVisibleIndex = QModelIndex();
 }

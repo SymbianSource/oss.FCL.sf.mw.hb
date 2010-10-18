@@ -29,7 +29,6 @@
 #include "hbgestures_p.h"
 
 #include <QPointF>
-#include <QTime>
 
 #include <QDebug>
 //#define VELOCITY_DEBUG
@@ -69,12 +68,12 @@ HbVelocityCalculator::HbVelocityCalculator(
     \return
 
 */
-QPointF HbVelocityCalculator::velocity( const QTime& time ) const
+QPointF HbVelocityCalculator::velocity( qint64 currentTime ) const
 {
     QPointF velocity(0.0, 0.0);
 
-    velocity.setX(calculate_velocity(mListX, time));
-    velocity.setY(calculate_velocity(mListY, time));
+    velocity.setX(calculate_velocity(mListX, currentTime));
+    velocity.setY(calculate_velocity(mListY, currentTime));
 
     DEBUG() << "Velocity: " << velocity;
 
@@ -88,29 +87,30 @@ QPointF HbVelocityCalculator::velocity( const QTime& time ) const
 
 */
 qreal HbVelocityCalculator::calculate_velocity(
-    const HbPointRecorder &list,
-    const QTime& time ) const
+        const HbPointRecorder &list,
+        qint64 currentTime) const
 {
-    Q_UNUSED(time)
-
     if (list.count() < 2) {
         return 0.0;
     }
 
-    DEBUG() << "Stationary time: " << list.lastTime().msecsTo(time);
-    if (list.lastTime().msecsTo(time) >= HbVelocityStopTime) {
+    if (currentTime-list.lastTime() >= HbVelocityStopTime) {
         return 0.0;
     }
 
     // Accumulate the distance from previous point until we have sufficient sample
     qreal delta = 0.0;
-    int timeDelta = 0;
+    qint64 timeDelta = 0;
     int i = list.count();
     while (timeDelta < HbVelocitySampleTime && i > 0) {
         i--;
-        timeDelta = list.at(i).second.msecsTo(time);
+        timeDelta = currentTime - list.at(i).second;
     }
+    if(timeDelta <= 0) {
+        return 0.0;
+    }
+
     delta = list.lastPoint() - list.at(i).first;
 
-    return delta / (qreal)(list.at(i).second.msecsTo(time));
+    return delta / (qreal)(timeDelta);
 }

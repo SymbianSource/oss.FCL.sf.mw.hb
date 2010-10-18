@@ -24,8 +24,9 @@
 ****************************************************************************/
 
 #include "hbswipegesture.h"
-#include "hbswipegesture_p.h"
 #include "hbswipegesturelogic_p.h"
+#include "hbgestures_p.h"
+
 #include "hbpointrecorder_p.h"
 #include "hbvelocitycalculator_p.h"
 
@@ -54,7 +55,6 @@
 */
 HbSwipeGestureLogic::HbSwipeGestureLogic()
 {
-    mCurrentTime = QTime();
 }
 
 HbSwipeGestureLogic::~HbSwipeGestureLogic() {}
@@ -98,22 +98,26 @@ QGestureRecognizer::Result HbSwipeGestureLogic::handleMousePress(
         Qt::GestureState gestureState,
         HbSwipeGesture *gesture,
         QObject *watched,
-        QMouseEvent *me )
+        QMouseEvent *me,
+        qint64 currentTime)
 {
     // Just ignore situations that are not interesting at all.
     if (!(gestureState == Qt::NoGesture && me->button() == Qt::LeftButton)) {
         return QGestureRecognizer::Ignore;
     }
-    gesture->d_func()->mStartTime = mCurrentTime;
+    gesture->d_func()->mStartTime = currentTime;
 
     gesture->d_func()->mStartPos = me->globalPos();
     gesture->d_func()->mSceneStartPos = HbGestureUtils::mapToScene(watched, me->globalPos());
 
     gesture->setHotSpot(me->globalPos());
-    gesture->d_ptr->mAxisX.clear();
-    gesture->d_ptr->mAxisY.clear();
-    gesture->d_ptr->mAxisX.record(me->globalPos().x(), mCurrentTime);
-    gesture->d_ptr->mAxisY.record(me->globalPos().y(), mCurrentTime);
+
+    qreal velocityThreshold = HbPanVelocityUpdateThreshold * HbDeviceProfile::current().ppmValue();
+
+    gesture->d_ptr->mAxisX.resetRecorder(velocityThreshold);
+    gesture->d_ptr->mAxisY.resetRecorder(velocityThreshold);
+    gesture->d_ptr->mAxisX.record(me->globalPos().x(), currentTime);
+    gesture->d_ptr->mAxisY.record(me->globalPos().y(), currentTime);
 
     return QGestureRecognizer::MayBeGesture;
 }
@@ -128,7 +132,8 @@ QGestureRecognizer::Result HbSwipeGestureLogic::handleMouseMove(
         Qt::GestureState gestureState,
         HbSwipeGesture *gesture,
         QObject *watched,
-        QMouseEvent *me )
+        QMouseEvent *me,
+        qint64 currentTime )
 {
     Q_UNUSED(watched);
     Q_UNUSED(gestureState);
@@ -137,8 +142,8 @@ QGestureRecognizer::Result HbSwipeGestureLogic::handleMouseMove(
         return QGestureRecognizer::Ignore;
     }
 
-    gesture->d_ptr->mAxisX.record(me->globalPos().x(), mCurrentTime);
-    gesture->d_ptr->mAxisY.record(me->globalPos().y(), mCurrentTime);
+    gesture->d_ptr->mAxisX.record(me->globalPos().x(), currentTime);
+    gesture->d_ptr->mAxisY.record(me->globalPos().y(), currentTime);
 
     return QGestureRecognizer::MayBeGesture;
 }
@@ -154,7 +159,8 @@ QGestureRecognizer::Result HbSwipeGestureLogic::handleMouseRelease(
         Qt::GestureState gestureState,
         HbSwipeGesture *gesture,
         QObject *watched,
-        QMouseEvent *me )
+        QMouseEvent *me,
+        qint64 currentTime )
 {   
     Q_UNUSED(gesture);
     Q_UNUSED(watched);
@@ -166,14 +172,14 @@ QGestureRecognizer::Result HbSwipeGestureLogic::handleMouseRelease(
 
     QPoint totalOffset = me->globalPos() - gesture->d_func()->mStartPos.toPoint();
 
-    int deltaTime = gesture->d_func()->mStartTime.msecsTo(mCurrentTime);
+    qint64 deltaTime = currentTime - gesture->d_func()->mStartTime;
     QPointF velocity = deltaTime != 0 ? totalOffset / deltaTime : QPointF(0,0);
 
     gesture->setSwipeAngle(QLineF(gesture->d_func()->mStartPos, me->globalPos()).angle());
     gesture->setSceneSwipeAngle(QLineF(gesture->d_func()->mSceneStartPos, HbGestureUtils::mapToScene(watched, me->globalPos())).angle());    
     bool movedEnough = totalOffset.manhattanLength() >= (int)(HbSwipeMinOffset * HbDeviceProfile::current().ppmValue());
     bool fastEnough = velocity.manhattanLength() >= HbSwipeMinSpeed * HbDeviceProfile::current().ppmValue();
-    bool notStoppedAtEnd = HbVelocityCalculator(gesture->d_ptr->mAxisX, gesture->d_ptr->mAxisY).velocity(mCurrentTime) != QPointF(0,0);
+    bool notStoppedAtEnd = HbVelocityCalculator(gesture->d_func()->mAxisX, gesture->d_func()->mAxisY).velocity(currentTime) != QPointF(0,0);
 
     if (movedEnough && fastEnough && notStoppedAtEnd) {
         return QGestureRecognizer::FinishGesture;
@@ -193,11 +199,8 @@ QGestureRecognizer::Result HbSwipeGestureLogic::recognize(
         HbSwipeGesture *gesture,
         QObject *watched,
         QEvent *event,
-        QTime currentTime)
-{
-    // Record the time right away.
-    mCurrentTime = currentTime;
-    
+        qint64 currentTime)
+{    
     if ( isMouseEvent(event->type()) )
     {
         QMouseEvent* me = static_cast<QMouseEvent*>(event);
@@ -205,13 +208,13 @@ QGestureRecognizer::Result HbSwipeGestureLogic::recognize(
         {
         case QEvent::MouseButtonDblClick:
         case QEvent::MouseButtonPress:
-            return handleMousePress(gestureState, gesture, watched, me);
+            return handleMousePress(gestureState, gesture, watched, me, currentTime);
 
         case QEvent::MouseMove:
-            return handleMouseMove(gestureState, gesture, watched, me);
+            return handleMouseMove(gestureState, gesture, watched, me, currentTime);
 
         case QEvent::MouseButtonRelease:
-            return handleMouseRelease(gestureState, gesture, watched, me);
+            return handleMouseRelease(gestureState, gesture, watched, me, currentTime);
 
         default: break;
         }

@@ -38,6 +38,7 @@ class HbNotificationDialogContent : public HbWidget
 
 public:
     HbNotificationDialogContent(QGraphicsWidget *parent = 0);
+    virtual ~HbNotificationDialogContent();
     void setText(const QString &text);
     void setTitle(const QString &title);
     void setIcon(const HbIcon &icon);

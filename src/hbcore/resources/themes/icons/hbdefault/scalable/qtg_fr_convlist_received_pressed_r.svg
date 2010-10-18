@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
 <svg baseProfile="tiny" height="30px" version="1.1" viewBox="0 0 15 30" width="15px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
-<rect fill="#14141E" fill-opacity="0.1" fill-rule="evenodd" height="30" stroke-opacity="0.1" width="15"/>
-<rect fill="url(#SVGID_1_)" fill-rule="evenodd" height="30" width="14"/>
-<polygon fill-opacity="0.2" fill-rule="evenodd" points="14,0 13,0 13,30 14,30 14,0.001 " stroke-opacity="0.2"/>
-<rect fill="#FFFFFF" fill-opacity="0.2" fill-rule="evenodd" height="30" stroke-opacity="0.2" width="1" x="12" y="0"/>
+<g>
+<path d="M15,0.02c0-0.007-0.001-0.013-0.001-0.02H0v30h15   V0.02z" fill="#14141E" fill-opacity="0.1" fill-rule="evenodd" stroke-opacity="0.1"/>
+<polygon fill="url(#SVGID_1_)" fill-rule="evenodd" points="0,0 0,30 13.999,30 14,29.991 14,0.006 14,0  "/>
+<polygon fill-opacity="0.2" fill-rule="evenodd" points="14,0.006 14,0 13,0 13,0.006 13,29.991 12.999,30    13.999,30 14,29.991  " stroke-opacity="0.2"/>
+<polygon fill="#FFFFFF" fill-opacity="0.2" fill-rule="evenodd" points="13,0.006 13,0 12,0 12,0.006 12,29.991    11.999,30 12.999,30 13,29.991  " stroke-opacity="0.2"/>
+<rect fill="none" height="30" width="15"/>
 <defs>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="7.0005" x2="7.0005" y1="43" y2="-7.8108">
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="7.1426" x2="6.7891" y1="36.5078" y2="-16.8146">
 <stop offset="0" style="stop-color:#65B8CC"/>
 <stop offset="1" style="stop-color:#306D8C"/>
 </linearGradient>
 </defs>
+</g>
 </svg>

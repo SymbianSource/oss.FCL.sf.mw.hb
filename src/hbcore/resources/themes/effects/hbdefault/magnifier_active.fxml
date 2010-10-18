@@ -1,0 +1,12 @@
+<layers>
+	<visual src="Item" />
+	<filter name="Drop Shadow" type="drop_shadow">
+		<param name="offset_x">0.0</param>
+		<param name="offset_y">4.0</param>
+		<param name="opacity">0.7</param>
+		<param name="steepness">1.0</param>
+		<param name="outline_x">4.0</param>
+		<param name="outline_y">4.0</param>
+		<param name="color">#000000</param>
+	</filter>
+</layers>

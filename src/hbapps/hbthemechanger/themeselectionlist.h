@@ -65,13 +65,14 @@ protected:
     void resizeEvent(QResizeEvent* event);
 private:
     static QStringList rootPaths();
-    QStringList rootThemes;
-    QDir dir; 
+    void updateRootThemes();
+    QStringList themePaths();
     HbListWidget *themelist;
     HbIcon* rightMark;
     HbIcon* noMark;
     HbAction *action;
     QList<HbIcon*> thumbnails;
+    QStringList mRootThemes;
     HbAction* mOkAction;
     HbAction* mCancelAction;
     HbMainWindow *mMainWindow;

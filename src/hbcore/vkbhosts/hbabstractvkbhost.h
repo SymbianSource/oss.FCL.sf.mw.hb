@@ -49,9 +49,7 @@ public:
 
 public: // From HbVkbHost
     void openKeypad(HbVirtualKeyboard *vkb = 0, HbInputMethod *owner = 0, bool animationAllowed = true);
-    void openMinimizedKeypad(HbVirtualKeyboard *vkb, HbInputMethod *owner);
     void closeKeypad(bool animationAllowed = true);
-    void minimizeKeypad(bool animationAllowed = true);
     HbVkbStatus keypadStatus() const;
     HbVirtualKeyboard *activeKeypad() const;
     QRectF applicationArea() const;
@@ -76,6 +74,8 @@ public slots:
     virtual void currentViewChanged(HbView *);
     virtual void stateTransitionCompleted();
 
+private slots:
+    void aboutToChangeView(HbView *oldView, HbView *newView);
 protected:
     HbAbstractVkbHost() : d_ptr(0) {}
     HbAbstractVkbHost(HbAbstractVkbHostPrivate *dd);
@@ -86,6 +86,7 @@ protected:
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbAbstractVkbHost)
     Q_DISABLE_COPY(HbAbstractVkbHost)
+    Q_PRIVATE_SLOT(d_func(), void _q_containerAboutToClose())
 };
 
 #endif // HBABSTRACTVKBHOST_H

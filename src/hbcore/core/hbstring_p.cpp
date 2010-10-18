@@ -35,10 +35,10 @@
 #include "hbcssconverterutils_p.h"
 #endif
 
-static int createNullOffset(HbMemoryManager::MemoryType type)
+static qptrdiff createNullOffset(HbMemoryManager::MemoryType type)
 {
     GET_MEMORY_MANAGER(type);
-    int nullOffset(manager->alloc(sizeof(HbStringData)));
+    qptrdiff nullOffset(manager->alloc(sizeof(HbStringData)));
     HbStringData* data = HbMemoryUtils::getAddress<HbStringData>(type, nullOffset);
     new(data) HbStringData();
     return nullOffset;
@@ -69,12 +69,12 @@ HbString::HbString(HbMemoryManager::MemoryType type)
     : mMemoryType(type), mShared(false), mDataOffset(-1)
 {
     if (type == HbMemoryManager::HeapMemory) {
-        static int heapNullOffset(createNullOffset(HbMemoryManager::HeapMemory));
+        static qptrdiff heapNullOffset(createNullOffset(HbMemoryManager::HeapMemory));
         mDataOffset = heapNullOffset;
         HbStringData* data = HbMemoryUtils::getAddress<HbStringData>(type, mDataOffset);
         data->mRef.ref();
     } else if (type == HbMemoryManager::SharedMemory) {
-        static int sharedNullOffset(createNullOffset(HbMemoryManager::SharedMemory));
+        static qptrdiff sharedNullOffset(createNullOffset(HbMemoryManager::SharedMemory));
         mDataOffset = sharedNullOffset;
         HbStringData* data = HbMemoryUtils::getAddress<HbStringData>(type, mDataOffset);
         data->mRef.ref();
@@ -252,7 +252,7 @@ static int compare_helper(const QChar *data1, int length1, const QLatin1String &
 /*
     Private Utility function that copies the const char* to the HbString
 */
-void HbString::copyString(const QChar *arr, int size, int dataOffset)
+void HbString::copyString(const QChar *arr, int size, qptrdiff dataOffset)
 {
     GET_MEMORY_MANAGER(mMemoryType)
     RETURN_IF_READONLY(manager)
@@ -332,7 +332,7 @@ void HbString::detach(int size)
         HbStringData* newData = 
                 getStringData(mMemoryType, dataOffset.get());
         new(newData) HbStringData();
-		
+        
         // Allocate new string buffer if given size is greater than zero
         if (size > 0) {
             newData->mStartOffset = manager->alloc(size*sizeof(QChar));
@@ -475,7 +475,7 @@ bool HbString::operator==(const HbString &other) const
     }
 
     QChar *ptr = getAddress<QChar>(mMemoryType, data->mStartOffset, mShared);
-	QChar *otherPtr = getAddress<QChar>(other.mMemoryType, otherData->mStartOffset, other.mShared);
+    QChar *otherPtr = getAddress<QChar>(other.mMemoryType, otherData->mStartOffset, other.mShared);
 
     return memEquals((quint16 *)ptr, (quint16 *)otherPtr, data->mLength);
 }

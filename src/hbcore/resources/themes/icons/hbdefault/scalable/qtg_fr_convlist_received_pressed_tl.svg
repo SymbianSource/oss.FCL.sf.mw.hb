@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
 <svg baseProfile="tiny" height="15px" version="1.1" viewBox="0 0 15 15" width="15px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<g>
+<path d="M11.002,6.024C5.699,6.028,3.458,4.258,1.74,1.627   C1.26,0.892,1.129,0.276,0.816,0.073C0.352-0.228-0.029,0.46,0.002,1.069v0.113V15H15V6.024H11.002z" fill="#14141E" fill-opacity="0.1" fill-rule="evenodd" stroke-opacity="0.1"/>
+<path d="M10,7.01c-5,0-8.203-2.824-9.545-5.716   C0.161,0.661,0,1.294,0,1.294V15h15V7.01H10z" fill="url(#SVGID_1_)" fill-rule="evenodd"/>
+<path d="M10,7.01c-5,0-8.203-2.824-9.545-5.716   C0.161,0.661,0,1.296,0,1.296V15h1V3.982C2.843,6.187,5.843,8.01,10,8.01h5v-1H10z" fill-opacity="0.2" fill-rule="evenodd" stroke-opacity="0.2"/>
+<path d="M10,8.01c-4.157,0-7.157-1.823-9-4.027V15h1V6.345   c2.19,1.731,4.956,2.664,8,2.664h5V8.01H10z" fill="#FFFFFF" fill-opacity="0.2" fill-rule="evenodd" stroke-opacity="0.2"/>
 <rect fill="none" height="15" width="15"/>
-<rect fill="none" fill-rule="evenodd" height="15" width="15"/>
-<path d="M11,6c-4.611,0-7.485-2.655-8.638-5.14  C2.032,0.149,1.552,0,1.207,0C0.652,0,0.191,0.406,0.031,1.036L0,1.157V15h15V6H11z" fill="#14141E" fill-opacity="0.1" fill-rule="evenodd" stroke-opacity="0.1"/>
-<path d="M11,7C6,7,2.797,4.173,1.455,1.281  C1.161,0.648,1,1.282,1,1.282V15h14V7H11z" fill="url(#SVGID_1_)" fill-rule="evenodd"/>
-<path d="M11,7C6,7,2.797,4.174,1.455,1.282C1.161,0.649,1,1.283,1,1.283V15  h1V3.971C3.843,6.177,6.843,8,11,8h4V7H11z" fill-opacity="0.2" fill-rule="evenodd" stroke-opacity="0.2"/>
-<path d="M11,8C6.843,8,3.843,6.177,2,3.971V15h1V6.334  C5.191,8.067,7.957,9,11,9h4V8H11z" fill="#FFFFFF" fill-opacity="0.2" fill-rule="evenodd" stroke-opacity="0.2"/>
 <defs>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="8" x2="8" y1="58.001" y2="7.1894">
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="7.7827" x2="7.4292" y1="53.6924" y2="0.3682">
 <stop offset="0" style="stop-color:#65B8CC"/>
 <stop offset="1" style="stop-color:#306D8C"/>
 </linearGradient>
 </defs>
+</g>
 </svg>

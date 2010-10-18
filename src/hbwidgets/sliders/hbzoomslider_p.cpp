@@ -31,6 +31,9 @@
 #include "hbslidercontrol_p.h"
 #include <QGraphicsSceneEvent>
 #include <QGraphicsScene>
+#ifdef HB_GESTURE_FW 
+#include <hbtapgesture.h>
+#endif
 
 /*!
     Example usage:
@@ -123,35 +126,38 @@ void HbZoomSliderPrivate::init( )
         << HbSlider::DecreaseElement 
         << HbSlider::TextElement;
     setElements( elements );
+#ifdef HB_GESTURE_FW    
+    q->grabGesture(Qt::TapGesture);
+#endif 
 
      // create element because HbSlider will not create element for NULL Icon
     // and zoom slider Icon is set in style
 
     if ( !elementItemMap.contains(HbSlider::IncreaseElement) ) {
         elementItemMap[HbSlider::IncreaseElement].item = 
-            q->style( )->createPrimitive( HbStyle::P_SliderElement_increase, q);
+            HbStylePrivate::createPrimitive( HbStylePrivate::P_SliderElement_increase, q);
         HbStyle::setItemName( elementItemMap[HbSlider::IncreaseElement].item, "increment-icon" );
-        elementItemMap[HbSlider::IncreaseElement].type= HbStyle::P_SliderElement_increase;
+        elementItemMap[HbSlider::IncreaseElement].type= HbStylePrivate::P_SliderElement_increase;
         elementItemMap[HbSlider::IncreaseElement].touchItem = 
-            q->style( )->createPrimitive( HbStyle::P_SliderElement_touchincrease,q );
+            HbStylePrivate::createPrimitive( HbStylePrivate::P_SliderElement_touchincrease,q );
         HbStyle::setItemName( elementItemMap[HbSlider::IncreaseElement].touchItem, "increment-icon-toucharea" );
     }
 
     if ( !elementItemMap.contains(HbSlider::DecreaseElement) ) {
         elementItemMap[HbSlider::DecreaseElement].item = 
-            q->style( )->createPrimitive( HbStyle::P_SliderElement_decrease, q);
-        elementItemMap[HbSlider::DecreaseElement].type = HbStyle::P_SliderElement_decrease;
+            HbStylePrivate::createPrimitive( HbStylePrivate::P_SliderElement_decrease, q);
+        elementItemMap[HbSlider::DecreaseElement].type = HbStylePrivate::P_SliderElement_decrease;
         HbStyle::setItemName( elementItemMap[HbSlider::DecreaseElement].item, "decrement-icon" );
-        elementItemMap[HbSlider::DecreaseElement].touchItem = q->style( )->createPrimitive( HbStyle::P_SliderElement_touchdecrease,q ) ;
+        elementItemMap[HbSlider::DecreaseElement].touchItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_SliderElement_touchdecrease,q ) ;
         HbStyle::setItemName( elementItemMap[HbSlider::DecreaseElement].touchItem, "decrement-icon-toucharea" );
     }
 
     HbStyleOptionSlider option;
     q->initStyleOption( &option );
     option.sliderElementIcon = icons.value( HbSlider::IncreaseElement ); 
-    q->style( )->updatePrimitive(elementItemMap[HbSlider::IncreaseElement].item ,HbStyle::P_SliderElement_increase,&option );
+    HbStylePrivate::updatePrimitive(elementItemMap[HbSlider::IncreaseElement].item ,HbStylePrivate::P_SliderElement_increase,&option );
     option.sliderElementIcon = icons.value( HbSlider::DecreaseElement ); 
-    q->style( )->updatePrimitive(elementItemMap[HbSlider::DecreaseElement].item ,HbStyle::P_SliderElement_decrease,&option );
+    HbStylePrivate::updatePrimitive(elementItemMap[HbSlider::DecreaseElement].item ,HbStylePrivate::P_SliderElement_decrease,&option );
     q->setFlags( QGraphicsItem::ItemIsFocusable );
     q->connect( q, SIGNAL( textClicked( ) ), q, SLOT( _q_resetToDefault( ) ) );
     q->setProperty("changeincrementState" ,false);
@@ -249,6 +255,7 @@ void HbZoomSlider::setToolTipVisible( bool /*b*/ )
  */
 void HbZoomSlider::mousePressEvent( QGraphicsSceneMouseEvent *event )
 {
+#ifndef HB_GESTURE_FW 
     Q_D( HbZoomSlider );
     if( d->elementItemMap.contains(HbSlider::IncreaseElement) ) {
         if ( d->elementItemMap[HbSlider::IncreaseElement].touchItem->isUnderMouse( ) ) {
@@ -266,6 +273,9 @@ void HbZoomSlider::mousePressEvent( QGraphicsSceneMouseEvent *event )
     }
    
     HbSlider::mousePressEvent( event );
+#else
+    Q_UNUSED(event)
+#endif 
 }
 
 /*!
@@ -274,12 +284,62 @@ void HbZoomSlider::mousePressEvent( QGraphicsSceneMouseEvent *event )
  */
 void HbZoomSlider::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
 {
+#ifndef HB_GESTURE_FW 
     Q_D( HbZoomSlider );
     HbSlider::mouseReleaseEvent( event );
     d->stopRepeatAction( );
     setProperty("changeincrementState" ,false);
     setProperty("changedecrementState" ,false);
     setProperty("state", "normal"); 
+#else
+    Q_UNUSED (event)
+#endif 
+}
+/*!
+    \reimp
+ */
+void HbZoomSlider::gestureEvent(QGestureEvent *event)
+{ 
+    Q_D(HbZoomSlider);
+    //consume the event if gesture is on increment or decrement
+    if (HbTapGesture *tap = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
+        QPointF pos = event->mapToGraphicsScene(tap->position());
+        switch( tap->state( ) ) {
+            case Qt::GestureStarted: {
+                if ( d->elementItemMap.contains (HbSlider::IncreaseElement ) ) {
+                    if (d->elementItemMap[HbSlider::IncreaseElement].touchItem ) {
+                        if (d->elementItemMap[HbSlider::IncreaseElement].touchItem->sceneBoundingRect().contains(pos)) {
+                            setProperty("changeincrementState" ,true);
+                            setProperty("changedecrementState" ,false);
+                            setProperty("state", "pressed"); 
+
+                        }
+                    }
+                }
+                if ( d->elementItemMap.contains (HbSlider::DecreaseElement ) ) {
+                    if (d->elementItemMap[HbSlider::DecreaseElement].touchItem ) {
+                        if (d->elementItemMap[HbSlider::DecreaseElement].touchItem->sceneBoundingRect().contains(pos))  {
+                            setProperty("changeincrementState" ,false);
+                            setProperty("changedecrementState" ,true);
+                            setProperty("state", "pressed"); 
+                        }
+                    }
+                }
+            }
+            break;
+            case Qt::GestureCanceled:
+            case Qt::GestureFinished:     {       
+                setProperty("changeincrementState" ,false);
+                setProperty("changedecrementState" ,false);
+                setProperty("state", "normal");        
+                } 
+            default:
+                break;
+
+
+        }
+    }
+    HbSlider::gestureEvent(event);       
 }
 
 /*!

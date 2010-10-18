@@ -30,9 +30,10 @@
 #include <QGraphicsWidget>
 #include <QGraphicsItem>
 #include <QGraphicsScene>
-
+#include <QApplication>
 #include "hbaction.h"
 #include "hbbackgrounditem_p.h"
+#include "hbscreenshotitem_p.h"
 #include "hbdeviceprofile_p.h"
 #include "hbindicatorgroup_p.h"
 #include "hbinstance.h"
@@ -63,10 +64,12 @@
 #include "hboogmwatcher_p.h"
 #include "hbwindowobscured_p.h"
 #include "hbsleepmodelistener_p.h"
+#include "hbforegroundwatcher_p.h"
 
 #ifdef Q_OS_SYMBIAN
 #include <coecntrl.h>
 #include <w32std.h>
+#include <e32property.h>
 #include "hbnativewindow_sym_p.h"
 #endif
 
@@ -263,6 +266,18 @@
   \internal
  */
 
+#ifdef Q_OS_SYMBIAN
+// When defined, the surface for the HbMainWindow is made transparent upon
+// showing, until the 3rd phase construction is done, to prevent
+// flickering. However it will also check wsini.ini for a line containing
+// [tfxrenderstage] and disable the workaround when such a line is present (the
+// workaround should not be needed when system tfx is enabled).
+//
+// When system tfx is known to be enabled permanently, the following define can
+// be commented out or removed.
+#define HB_SPLASH_FLICKER_WORKAROUND
+#endif
+
 class HbRootItem : public HbWidget
 {
 public:
@@ -287,6 +302,7 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
 
     // No need for any default (e.g. blank white) background for this window.
     setAttribute(Qt::WA_NoSystemBackground);
+    viewport()->setAttribute(Qt::WA_NoSystemBackground);
     setOptimizationFlag(QGraphicsView::DontSavePainterState);
 
     // Continue with basic initialization. Note: Prefer doing everything that is
@@ -326,9 +342,9 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
         d->mAutomaticOrientationSwitch = false;
     }
 
-#if defined(Q_WS_S60) || defined(HB_Q_WS_MAEMO)
+#if defined(Q_OS_SYMBIAN) || defined(HB_Q_WS_MAEMO)
     setWindowState(Qt::WindowFullScreen);
-#endif//Q_WS_S60
+#endif
 
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -355,10 +371,13 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
 
     // add clipping item
     d->mClippingItem = new HbScreen;
+    // Makes sure clipingItem layout is activated before any of its child items.
+    QApplication::postEvent(d->mClippingItem, new QEvent(QEvent::LayoutRequest));
     d->mClippingItem->setParentItem(d->mRootItem);
     d->mClippingItem->setZValue(HbPrivate::ContentZValue);
 
-    // create content (stacked) widget
+    // Create content (stacked) widget as a child of the HbScreen. Its size,
+    // position, etc. will be managed by the clipping item (HbScreen).
     d->mViewStackWidget = new HbContentWidget(this, d->mClippingItem);
     d->mEffectItem = d->mViewStackWidget;
     d->mClippingItem->setStackWidget(d->mViewStackWidget);
@@ -398,6 +417,9 @@ HbMainWindow::HbMainWindow(QWidget *parent, Hb::WindowFlags windowFlags):
     // Make sure the sleep mode listener instance is created.
     HbSleepModeListener::instance();
 
+    // Have also the foregroundwatcher up and running.
+    HbForegroundWatcher::instance();
+
     HbWindowObscured::installWindowEventFilter();
 
 #ifdef HB_GESTURE_FW
@@ -436,11 +458,6 @@ HbMainWindow::~HbMainWindow()
 
     HbInstancePrivate::d_ptr()->removeWindow(this);
     delete d_ptr;
-
-    // to workaround problem when creating/destroying multiple hbmainwindow's in unit tests (win env)
-#ifdef Q_OS_WIN
-    destroy();
-#endif
 }
 
 /*!
@@ -631,6 +648,9 @@ void HbMainWindow::setCurrentView(HbView *view, bool animate, Hb::ViewSwitchFlag
     // Switching to null view or to the one that is current will do nothing.
     if (view && oldView != view) {
         emit aboutToChangeView(oldView, view);
+        if (isObscured()) {
+            animate = false;
+        }
         if (oldView && animate) {
             if (flags & Hb::ViewSwitchFullScreen) {
                 flags |= Hb::ViewSwitchSequential;
@@ -939,6 +959,21 @@ void HbMainWindow::keyPressEvent(QKeyEvent *event)
         event->accept();
         break;
 
+#ifdef __WINSCW__
+    // Support for testing orientation change on the winscw emulator: When enabled,
+    // pressing '9' will toggle (and force) the orientation.
+    case Qt::Key_9:
+        if (QFile::exists("c:/resource/hb_ori_simu")) {
+            if (orientation() == Qt::Horizontal) {
+                setOrientation(Qt::Vertical);
+            } else {
+                setOrientation(Qt::Horizontal);
+            }
+        }
+        QGraphicsView::keyPressEvent(event);
+        break;
+#endif
+
     default:
         QGraphicsView::keyPressEvent(event);
         break;
@@ -982,8 +1017,28 @@ void HbMainWindow::resizeEvent(QResizeEvent *event)
         if (d->mBgItem) {
             d->mBgItem->resize(newSize);
         }
+        if (d->mScreenshotItem) {
+            d->mScreenshotItem->resize(newSize);
+        }
     }
 }
+
+#ifdef HB_SPLASH_FLICKER_WORKAROUND
+static bool tfxRenderStagePresent()
+{
+    // Cannot afford to read wsini.ini in every app, let themeserver
+    // do it once and use the property published by it.
+    static int wsini_has_tfxrenderstage = -1;
+    if (wsini_has_tfxrenderstage == -1) {
+        wsini_has_tfxrenderstage = 0;
+        TInt v = -1;
+        if (RProperty::Get(TUid::Uid(0x20022E82), 0x746678, v) == KErrNone) {
+            wsini_has_tfxrenderstage = v;
+        }
+    }
+    return wsini_has_tfxrenderstage == 1;
+}
+#endif
 
 /*!
     Reimplemented from QObject::customEvent().
@@ -1000,10 +1055,10 @@ void HbMainWindow::customEvent(QEvent *event)
                     d->mTheTestUtility = new HbTheTestUtility(this);
                 }
             }
-#ifdef Q_OS_SYMBIAN
+#ifdef HB_SPLASH_FLICKER_WORKAROUND
             // Disable surface transparency unless we were really asked to be transparent.
             // Must be done before destroying the splash screen widget.
-            if (!testAttribute(Qt::WA_TranslucentBackground)) {
+            if (!tfxRenderStagePresent() && !testAttribute(Qt::WA_TranslucentBackground)) {
                 RWindow *const window = static_cast<RWindow *>(effectiveWinId()->DrawableWindow());
                 window->SetSurfaceTransparency(false);
             }
@@ -1076,12 +1131,17 @@ void HbMainWindow::paintEvent(QPaintEvent *event)
 
 void HbMainWindow::showEvent(QShowEvent *event)
 {
-#ifdef Q_OS_SYMBIAN
+#ifdef HB_SPLASH_FLICKER_WORKAROUND
     // Enable surface transparency if QWidget did not do it already. This is a
     // workaround for having non-transparent surfaces filled automatically with
     // black color. The showEvent is a suitable place because the native control
-    // is already created at this point, but it is not too late either.
-    if (!testAttribute(Qt::WA_TranslucentBackground)) {
+    // is already created at this point, but it is not too late either. Note
+    // that while this is meant to be a workaround, the system transition
+    // effects may actually rely on (and require) this behavior.
+    if (!tfxRenderStagePresent() && !testAttribute(Qt::WA_TranslucentBackground)) {
+        // The Qt::WA_TranslucentBackground attribute cannot be used here
+        // because that can only be enabled, disabling does not seem to be
+        // supported.
         RWindow *const window = static_cast<RWindow *>(effectiveWinId()->DrawableWindow());
         window->SetSurfaceTransparency(true);
     }
@@ -1096,7 +1156,7 @@ void HbMainWindow::showEvent(QShowEvent *event)
 }
 
 /*!
-    Reimplemented from QAbstractScrollArea::scrollContentsBy().
+    \reimp
 */
 void HbMainWindow::scrollContentsBy(int dx, int dy)
 {
@@ -1131,7 +1191,7 @@ bool HbMainWindow::isObscured() const
 }
 
 /*
-    // reimplemented from QWidget
+    \reimp
 */
 bool HbMainWindow::event(QEvent *event)
 {
@@ -1141,6 +1201,33 @@ bool HbMainWindow::event(QEvent *event)
         d->setObscuredState(wosEvent->obscuredState());
     }
     return QGraphicsView::event(event);
+}
+
+/*
+    \reimp
+*/
+void HbMainWindow::drawBackground(QPainter *painter, const QRectF &rect)
+{
+    QGraphicsView::drawBackground(painter, rect);
+    // The background item's paint() does not get called automatically so call
+    // it directly and optimize it by setting a proper clipping rectangle.
+    Q_D(HbMainWindow);
+    if (d->mBgItem) {
+        bool restoreState = false;
+        if (d->mBgItem->imageMode() != Hb::DoNotDrawBackground &&
+            (!qFuzzyCompare(rect.height(), d->mBgItem->boundingRect().height()) ||
+             !qFuzzyCompare(rect.width(), d->mBgItem->boundingRect().width()))) {
+            //Need to save the state since some widget in scene could apply a smaller
+            //clip than this
+            restoreState = true;
+            painter->save();
+            painter->setClipRect(rect);
+        }
+        d->mBgItem->paint(painter, 0, 0);
+        if (restoreState) {
+            painter->restore();
+        }
+    }
 }
 
 HbRootItem::HbRootItem(QGraphicsItem *parent)

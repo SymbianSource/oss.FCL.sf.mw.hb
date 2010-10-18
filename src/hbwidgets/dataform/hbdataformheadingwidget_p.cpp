@@ -24,6 +24,7 @@
 ****************************************************************************/
 
 #include "hbdataformheadingwidget_p.h"
+#include "hbstyle_p.h"
 
 #include <hbcombobox.h>
 #include <hbstyleoptiondataform_p.h>
@@ -50,12 +51,12 @@ HbDataFormHeadingWidget::HbDataFormHeadingWidget(QGraphicsItem* parent):
 void HbDataFormHeadingWidget::createPrimitives()
 {
     if(!mBackgroundItem) {
-        mBackgroundItem = style()->createPrimitive(HbStyle::P_DataForm_heading_background, this);
+        mBackgroundItem = HbStylePrivate::createPrimitive(HbStylePrivate::P_DataForm_heading_background, this);
     }
     if(!mHeading.isEmpty()) {
         if(!mHeadingItem){
             setProperty( "hasHeading", true );
-            mHeadingItem = style()->createPrimitive(HbStyle::P_DataForm_heading, this);
+            mHeadingItem = HbStylePrivate::createPrimitive(HbStylePrivate::P_DataForm_heading, this);
         }
     } else {
         setProperty( "hasHeading", false );
@@ -68,7 +69,7 @@ void HbDataFormHeadingWidget::createPrimitives()
     if(!mDescription.isEmpty()) {
         if(!mDescriptionItem) {            
             setProperty( "hasDescription", true );
-            mDescriptionItem = style()->createPrimitive(HbStyle::P_DataForm_description, this);
+            mDescriptionItem = HbStylePrivate::createPrimitive(HbStylePrivate::P_DataForm_description, this);
         }
     } else {                  
         setProperty( "hasDescription", false );
@@ -85,16 +86,16 @@ void HbDataFormHeadingWidget::updatePrimitives()
     initStyleOption(&dataFormOption);
 
     if(mHeadingItem) {
-        style()->updatePrimitive( mHeadingItem, HbStyle::P_DataForm_heading, &dataFormOption);
+        HbStylePrivate::updatePrimitive( mHeadingItem, HbStylePrivate::P_DataForm_heading, &dataFormOption);
     }
 
     if(mDescriptionItem) {
-        style()->updatePrimitive( mDescriptionItem, HbStyle::P_DataForm_description,
+        HbStylePrivate::updatePrimitive( mDescriptionItem, HbStylePrivate::P_DataForm_description,
             &dataFormOption);
     }
     if(mBackgroundItem) {
-        style()->updatePrimitive(
-            mBackgroundItem, HbStyle::P_DataForm_heading_background, &dataFormOption);
+        HbStylePrivate::updatePrimitive(
+            mBackgroundItem, HbStylePrivate::P_DataForm_heading_background, &dataFormOption);
     }
 }
 

@@ -52,6 +52,9 @@ public:
         const char *member,
         const QVariant &userData);
 
+signals:
+    void finished(HbAnimatedItemGroup *itemGroup);
+
 public slots:
     void finished(const HbEffect::EffectStatus &status);
     void receiverDestroyed();
@@ -74,10 +77,12 @@ public:
     ~HbEffectPrivate();
 
     void connectViewChanges();
+    void addAnimatedItemGroup(HbAnimatedItemGroup *newGroup);
 
 private slots:
     void handleViewChanged(HbView *view);
     void handleWindowAdded(HbMainWindow *window);
+    void animatedItemGroupFinished(HbAnimatedItemGroup *itemGroup);
 
 public:
     HbEffectController mController;
@@ -88,6 +93,7 @@ public:
     QList<QGraphicsItem *> mDisabledItems;
     bool mViewChangeConnected;
     bool mEffectsEnabled;
+    QList<HbAnimatedItemGroup *> mAnimatedItemGroups;
 };
 
 #endif // HBEFFECT_P_H

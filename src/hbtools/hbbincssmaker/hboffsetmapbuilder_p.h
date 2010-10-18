@@ -54,7 +54,7 @@ struct LayoutItem
     }
 
     const CSSLayoutInfo* layout;
-    int offset;
+    qptrdiff offset;
 };
 
 struct HbBinMakerOffsetItem : public HbOffsetItem
@@ -69,28 +69,42 @@ struct HbBinMakerOffsetItem : public HbOffsetItem
     }
 };
 
+struct HbParameterValueItem
+{
+    HbParameterValueItem(qptrdiff offset, bool special = false)
+        : offset(offset), special(special) {}
+    qptrdiff offset;
+    bool special;
+};
+
 class HbOffsetMapBuilder
 {
 public:
-    HbOffsetMapBuilder() {}
+    HbOffsetMapBuilder() : mGlobalParameterOffset(-1) {}
 
     bool addWidgetOffsets(const QString &className,
              const QFileInfo *fileInfo,
-             int offsets[]);
+             qptrdiff offsets[]);
     bool addWidgetMLOffsets(const QString &fileName,
                             quint32 classNameHash,
                             const QList<LayoutItem> &layoutInfoList);
+    bool addGlobalParameters(int zoomLevel,
+                             const QHash<QString, HbParameterValueItem> &parameters);
 
     QByteArray result();
-    int size() const { return _mapItems.count(); }
+    int size() const { return mMapItems.count(); }
+    int globalParameterOffset() const { return mGlobalParameterOffset;}
 
     QList<HbBinMakerOffsetItem> items() const
     {
-        return _mapItems.values();
+        return mMapItems.values();
     }
 
 private:
-    QMap<quint32, HbBinMakerOffsetItem> _mapItems;
+    typedef QMap<quint32, QPair<QString, HbParameterValueItem> > ParameterMap;
+    QMap<quint32, HbBinMakerOffsetItem> mMapItems;
+    ParameterMap mParameters;
+    int mGlobalParameterOffset;
 };
 
 #endif // HBOFFSETMAPBUILDER_P_H

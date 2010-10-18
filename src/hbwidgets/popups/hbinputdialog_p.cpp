@@ -26,7 +26,7 @@
 #include "hbinputdialog_p.h"
 #include "hbinputdialogcontent_p.h"
 #include "hbstyleoptioninputdialog_p.h"
-
+#include <hbstyletextprimitivedata.h>
 #include <hblineedit.h>
 #include <hbaction.h>
 #include <hbvalidator.h>
@@ -48,7 +48,7 @@ HbInputDialogContentWidget::HbInputDialogContentWidget(HbInputDialogPrivate* pri
     mEdit2(0),
     mAdditionalRowVisible(false)
 {
-    mLabel1 = style()->createPrimitive(HbStyle::P_InputDialog_text,this);
+    mLabel1 = style()->createPrimitive(HbStyle::PT_TextItem, "label-1", this);
     mEdit1 = new HbLineEdit(this);
     HbStyle::setItemName(mEdit1, "text-1");
 
@@ -65,9 +65,8 @@ void HbInputDialogContentWidget::setAdditionalRowVisible(bool visible)
     mAdditionalRowVisible = visible;
 
     if(!mLabel2 && visible) {
-        mLabel2 = style()->createPrimitive(HbStyle::P_InputDialog_additionaltext,this);
+        mLabel2 = style()->createPrimitive(HbStyle::PT_TextItem, "label-2", this);
     }
-
     if(!mEdit2 && visible) {
         //Retrieve the cached data here and assign//
         mEdit2 = new HbLineEdit(this);
@@ -258,14 +257,15 @@ void HbInputDialogPrivate::setPromptText(const QString& text,int row)
     HbStyleOptionInputDialog option;
     if(row == 0) {
         mPromptText = text;
-        q->initStyleOption(&option);
-        q->style()->updatePrimitive(mContentWidget->mLabel1,HbStyle::P_InputDialog_text,&option);
-    } else {
+        HbStyleTextPrimitiveData data;
+        q->initPrimitiveData(&data, mContentWidget->mLabel1);
+        q->style()->updatePrimitive(mContentWidget->mLabel1, &data, mContentWidget);
+    } 
+    else {
         mPromptAdditionalText = text;
-        q->initStyleOption(&option);
-        if(mContentWidget->mAdditionalRowVisible) {
-           q->style()->updatePrimitive(mContentWidget->mLabel2,HbStyle::P_InputDialog_additionaltext,&option);
-        }
+        HbStyleTextPrimitiveData data;
+        q->initPrimitiveData(&data, mContentWidget->mLabel2);
+        q->style()->updatePrimitive(mContentWidget->mLabel2, &data, mContentWidget);
     }
 }
 

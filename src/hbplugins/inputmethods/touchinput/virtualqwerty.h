@@ -29,7 +29,6 @@
 #include <QPointer>
 #include <hbinputabstractbase.h>
 #include <hbinputpredictioncallback.h>
-#include <hbinputvirtualrocker.h>
 #include <hbinputvkbwidget.h>
 
 class QTimer;
@@ -65,8 +64,7 @@ public: // From QInputContext
     bool filterEvent(const QEvent* event);
 
 public slots:
-    void orientationAboutToChange();
-    void rockerDirection(int aDirection, HbInputVirtualRocker::RockerSelectionMode aSelectionMode);
+    void orientationAboutToChange();  
     // keypad related slots
     void keypadClosed();
     void keypadCloseEventDetected(HbInputVkbWidget::HbVkbCloseMethod vkbCloseMethod);
@@ -102,12 +100,13 @@ public:
     void closeExactWordPopup();
     void launchExactWordPopup(QString exactWord);
     void closeAutoCompletionPopup();
+    void closeCandidatePopup();
     void launchAutoCompletionPopup(const QStringList &candidates);
     HbKeyboardType currentKeyboardType() const;
 
 private slots:
-    void candidatePopupCancelled();
-	void primaryCandidateModeChanged(HbPrimaryCandidateMode mode);
+    void primaryCandidateModeChanged(HbPrimaryCandidateMode mode);
+    void restorePreviousState();
 
 private:
     void initializePredictiveMode();
@@ -116,9 +115,10 @@ private:
     void launchCandidatePopup();
     QPointF getCursorCoordinatePosition();
     void loadKeymap(const HbInputLanguage &newLanguage);
+    void createSctKeypad();
 
 private:
-    void openKeypad(HbInputVkbWidget * keypadToOpen, bool inMinimizedMode = false);
+    void openKeypad(HbInputVkbWidget *keypadToOpen);
     HbInputVkbWidget *constructKeyboard(HbKeypadMode currentInputType);
 
 private:
@@ -140,7 +140,6 @@ private:
 
     HbExactWordPopup *mExactWordPopup;
     HbCandidateList *mCandidatePopup;
-    bool mOrientationAboutToChange;
     int mShiftKeyState;
     // mode handlers
     HbInputModeHandler *mActiveModeHandler;

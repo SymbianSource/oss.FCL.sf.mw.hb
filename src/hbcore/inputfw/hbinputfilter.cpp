@@ -25,7 +25,7 @@
 #include "hbinputfilter.h"
 
 /*!
-@alpha
+@stable
 @hbcore
 \class HbInputFilter
 \brief Abstract base class for all editor filters.
@@ -52,6 +52,7 @@ invalid characters.
 */
 void HbInputFilter::filterString(const QString &in, QString &out)
 {
+    out = QString();
     for (int i = 0; i < in.length(); i++) {
         if (filter(in[i])) {
             out.append(in[i]);

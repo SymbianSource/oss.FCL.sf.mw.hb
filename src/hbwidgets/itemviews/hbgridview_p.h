@@ -59,8 +59,7 @@ public:
     inline qreal getScrollDirectionContainerPos() const;
     inline qreal getScrollDirectionItemSize() const;
 
-    inline QModelIndex indexInTheCenter() const;
-    QModelIndex indexInTheCenter(Qt::Orientations scrollDirection) const;
+    QModelIndex firstFullyVisibleIndex() const;
 
 public:
     bool mIconVisible;
@@ -117,11 +116,6 @@ inline qreal HbGridViewPrivate::getScrollDirectionItemSize() const
     return (mScrollDirections == Qt::Vertical) ?
         mContainer->items().first()->size().height()
         : mContainer->items().first()->size().width();
-}
-
-QModelIndex HbGridViewPrivate::indexInTheCenter() const
-{
-    return indexInTheCenter(mScrollDirections);
 }
 
 #endif /*HBGRIDVIEW_P_H*/

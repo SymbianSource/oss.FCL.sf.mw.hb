@@ -29,13 +29,12 @@
 #include "hbnamespace_p.h"
 #include "hbwidget.h"
 
-class HB_CORE_PRIVATE_EXPORT HbBackgroundItem : public HbWidget
+class HB_CORE_PRIVATE_EXPORT HbBackgroundItem : public HbWidgetBase
 {
     Q_OBJECT
 
 public:
     explicit HbBackgroundItem(HbMainWindow *mainWindow, QGraphicsWidget *parent = 0);
-    ~HbBackgroundItem();
 
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0);
     QRectF boundingRect() const;

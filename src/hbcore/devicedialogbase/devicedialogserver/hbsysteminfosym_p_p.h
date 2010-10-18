@@ -28,7 +28,10 @@
 
 #include <e32base.h>
 #include <e32property.h>
+#include <QMutex>
 #include "hbsysteminfo_p.h"
+
+class HbDeviceDialogServerStatus;
 
 struct DeviceSystemInfo 
 {
@@ -123,5 +126,7 @@ private:
     bool mWriter;
     bool mListening;
     HbForegroundWatcher *mWatcher;
+    QMutex mutex;
+    HbDeviceDialogServerStatus *mServerStatus;
 };
 #endif // HBSYSTEMINFOSYM_P_P_H

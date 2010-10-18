@@ -32,6 +32,9 @@
 
 /**
  * HbCore orientation PS category UID.
+ *
+ * Matches KThemeOrientationCategory in
+ * os/graphics/windowing/windowserver/nga/server/renderorientationtracker.h
  */
 const TUid KHbPsHardwareCoarseOrientationCategoryUid = {0x20022E82}; // Theme server UID
 
@@ -60,6 +63,9 @@ const TUid KHbPsForegroundAppOrientationCategoryUid = {0x20022FC5}; // Device di
  *
  * Published by theme server. Used by Hb apps themselves (e.g. when
  * showing splash screens) and possibly by wserv.
+ *
+ * Matches KThemeOrientationKey in
+ * os/graphics/windowing/windowserver/nga/server/renderorientationtracker.h
  */
 const TUint KHbPsHardwareCoarseWsOrientationKey = 0x4F726965;
 

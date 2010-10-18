@@ -77,7 +77,7 @@ void HbGroupBoxContentWidget::createPrimitives()
 {
     if( groupBoxType == GroupBoxRichLabel ){
         if ( !mBackgroundItem ) {
-            mBackgroundItem = style()->createPrimitive( HbStyle::P_GroupBoxContent_background , this );
+            mBackgroundItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_GroupBoxContent_background , this );
         }
     }else if ( mBackgroundItem ) {
             delete mBackgroundItem;
@@ -94,7 +94,7 @@ void HbGroupBoxContentWidget::updatePrimitives()
    initStyleOption( &option );
 
     if ( mBackgroundItem ) {
-        style()->updatePrimitive( mBackgroundItem , HbStyle::P_GroupBoxContent_background , &option );
+        HbStylePrivate::updatePrimitive( mBackgroundItem , HbStylePrivate::P_GroupBoxContent_background , &option );
     }
 }
 
@@ -106,11 +106,11 @@ void HbGroupBoxContentWidget::updatePrimitives()
 void HbGroupBoxContentWidget::createConnection()
 {
     // to avoid duplicate signals getting emitted from groupBox contentWidget
-    disconnect( this , SIGNAL ( clicked() ) , groupBox , SIGNAL ( clicked() ));
-    disconnect ( this , SIGNAL( longPress( QPointF ) ) , groupBox , SIGNAL( longPress( QPointF ) ));
+    disconnect(this, SIGNAL(clicked()), groupBox, SIGNAL(clicked()));
+    disconnect(this, SIGNAL(longPress(QPointF)), groupBox , SIGNAL(longPress(QPointF)));
 
-    connect ( this , SIGNAL ( clicked() ) , groupBox , SIGNAL ( clicked() ));
-    connect ( this , SIGNAL( longPress( QPointF ) ) , groupBox , SIGNAL( longPress( QPointF ) ));
+    connect(this, SIGNAL(clicked()), groupBox, SIGNAL(clicked()));
+    connect(this, SIGNAL(longPress(QPointF)), groupBox, SIGNAL(longPress(QPointF)));
 }
 
 /*!
@@ -152,7 +152,7 @@ void HbGroupBoxContentWidget::setContentWidget( HbWidget *widget )
             mContent = 0;
         }
         mContent = widget;
-        style()->setItemName( mContent , "content" );
+        HbStyle::setItemName( mContent , "content" );
         mContent->setParentItem( this);
     }
 }
@@ -164,7 +164,7 @@ void HbGroupBoxContentWidget::setContentWidget( HbWidget *widget )
 QGraphicsItem* HbGroupBoxContentWidget::primitive(HbStyle::Primitive primitive) const
 {
     switch (primitive) {
-        case HbStyle::P_GroupBoxContent_background:
+        case HbStylePrivate::P_GroupBoxContent_background:
             return mBackgroundItem;
         default:
             return 0;
@@ -252,7 +252,7 @@ void HbGroupBoxContentWidget::polish( HbStyleParameters& params )
         // set dynamic property for contentwidget, if it is scrollable content
         // if content is scrollable, then groupBox leaves out margin spacing b/w heading
         // and content area, otherwise zero margin spacing will be taken
-        HbScrollArea* scrollContent = qobject_cast<HbScrollArea*>( mContent );		
+        HbScrollArea* scrollContent = qobject_cast<HbScrollArea*>( mContent );      
         if(scrollContent)
            setProperty("scrollableContent",true);
         else
@@ -276,6 +276,7 @@ void HbGroupBoxContentWidget::gestureEvent(QGestureEvent *event)
 
             contentPressed=true;
             updatePrimitives();
+            HbWidgetFeedback::triggered(this, Hb::InstantPressed);
             break;
         case Qt::GestureCanceled: // Reset state
             scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
@@ -292,6 +293,7 @@ void HbGroupBoxContentWidget::gestureEvent(QGestureEvent *event)
             scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
             contentPressed=false;
             updatePrimitives();
+            HbWidgetFeedback::triggered(this, Hb::InstantReleased);
             if(tap->tapStyleHint() == HbTapGesture::Tap) {
                 emit clicked();
             }

@@ -31,6 +31,7 @@
 #include <QGraphicsItem>
 #include <hbglobal.h>
 
+
 class HbGraphicsScenePrivate;
 class HbPopup;
 
@@ -63,6 +64,7 @@ private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbGraphicsScene)
     friend class HbToolTip;
     friend class HbPopup;
+    friend class HbWidget;
 };
 
 #endif // HBGRAPHICSSCENE_H

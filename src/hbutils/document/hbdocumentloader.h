@@ -63,7 +63,7 @@ public:
     void reset();
     
     static QString version();
-	
+    
 protected:
     virtual QObject *createObject(const QString& type, const QString &name);
 

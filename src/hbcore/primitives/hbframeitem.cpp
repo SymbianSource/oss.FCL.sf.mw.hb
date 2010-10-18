@@ -26,6 +26,8 @@
 #include "hbframeitem.h"
 #include "hbevent.h"
 #include "hbframedrawerpool_p.h"
+#include "hbframedrawer_p.h"
+#include "hbinstance_p.h"
 #include <QPainter>
 #include <QGraphicsWidget>
 
@@ -238,6 +240,21 @@ QSizeF HbFrameItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
     } else {
         return HbWidgetBase::sizeHint(which, constraint);
     }
+}
+
+/*!
+   \reimp
+*/
+QVariant HbFrameItem::itemChange(GraphicsItemChange change, const QVariant &value)
+{
+    if (change == QGraphicsItem::ItemVisibleHasChanged) {
+        if (!value.toBool()
+            && d->frameDrawer
+            && HbInstancePrivate::d_ptr()->mDropHiddenIconData) {
+            HbFrameDrawerPrivate::d_ptr(d->frameDrawer)->reset();
+        }
+    }
+    return HbWidgetBase::itemChange(change, value);
 }
 
 

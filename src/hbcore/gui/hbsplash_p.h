@@ -43,7 +43,10 @@ public:
                        const QString &appId = QString(),
                        const QString &screenId = QString(),
                        AllocFunc allocFunc = 0,
-                       void *allocFuncParam = 0);
+                       void *allocFuncParam = 0,
+                       bool async = false);
+
+    static uchar *finishAsync(uchar *handle);
 };
 
 #endif // HBSPLASH_P_H

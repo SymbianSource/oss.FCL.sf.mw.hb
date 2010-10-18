@@ -34,6 +34,7 @@
 #include <hbinputsettingproxy.h>
 #include <hbinputmethod.h>
 #include <hbinputregioncollector_p.h>
+#include <hbpopup_p.h>
 
 /// @cond
 
@@ -48,6 +49,13 @@ bool caseInsensitiveLessThanForHbInputLanguage(const HbInputLanguage &s1, const 
 /// @endcond
 
 /*!
+@alpha
+@hbinput
+\class HbInputCommonDialogs
+\brief Provides some common input-related dialogs.
+*/
+
+/*!
 Displays language selection dialog and returns selected language.
 */
 HbInputLanguage HbInputCommonDialogs::showLanguageSelectionDialog(QLocale::Language selectedLanguage, const QList<HbInputLanguage> languageList)
@@ -57,6 +65,7 @@ HbInputLanguage HbInputCommonDialogs::showLanguageSelectionDialog(QLocale::Langu
 
     // Make sure the language dialog never steals focus.
     langDialog->setFlag(QGraphicsItem::ItemIsPanel, true);
+    HbPopupPrivate::d_ptr(langDialog)->mActivePopup = false;
     langDialog->setActive(false);
 
     HbInputSettingProxy *settings = HbInputSettingProxy::instance();
@@ -127,6 +136,7 @@ HbInputMethodDescriptor HbInputCommonDialogs::showCustomInputMethodSelectionDial
 
     // Make sure the language dialog never steals focus.
     methodDialog->setFlag(QGraphicsItem::ItemIsPanel, true);
+    HbPopupPrivate::d_ptr(methodDialog)->mActivePopup = false;
     methodDialog->setActive(false);
 
     QList<HbInputMethodDescriptor> customList = HbInputMethod::listCustomInputMethods();

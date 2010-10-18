@@ -200,7 +200,7 @@ void HbHardware12key::predictiveInputStatusChanged(int newStatus)
     //activateState(inputState);
     //focusedObject->editorInterface().setInputMode(mInputMode);
     //focusedObject->syncEditorInterface();
-	HbInputFocusObject *focusedObject = focusObject();
+    HbInputFocusObject *focusedObject = focusObject();
     if (focusedObject) {
         // Just refresh the situation.
         inputStateActivated(inputState());   
@@ -508,7 +508,7 @@ void HbHardware12key::launchAutoCompletionPopup(QStringList* candidates)
                 mCandidatePopup->resize(candListSize);
             }
 
-			mCandidatePopup->setBackgroundFaded(false);
+            mCandidatePopup->setBackgroundFaded(false);
             mCandidatePopup->show();
         } else if (mCandidatePopup->isVisible()) {
             mCandidatePopup->hide();

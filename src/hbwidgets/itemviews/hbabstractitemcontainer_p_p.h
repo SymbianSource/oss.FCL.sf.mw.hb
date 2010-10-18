@@ -93,7 +93,7 @@ public:
     void restoreItemPosition(HbAbstractViewItem *item, const QPointF &position);
 
     void insertItem(HbAbstractViewItem *item, int pos, const QModelIndex &index, bool animate);
-	
+    
     inline HbModelIterator *modelIterator() const;
 
     inline void adjustContent() const;

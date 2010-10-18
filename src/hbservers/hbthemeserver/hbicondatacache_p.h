@@ -46,10 +46,12 @@ public:
     void setMaxCpuCacheSize(int size);
     bool contains(const HbIconKey &key) const;
     HbIconCacheItem* value(const HbIconKey &key) const;
-    bool isItemCachableInGpu(const HbIconCacheItem *item)const;
-    bool isItemCachableInCpu(const HbIconCacheItem *item)const;
+    bool isItemCachableInGpu(int itemCost, HbIconFormatType type)const;
+    bool isItemCachableInCpu(int itemCost, HbIconFormatType type)const;
+    bool isItemCacheable(const HbIconCacheItem * item );
     void memoryGood();
     void freeGpuRam(int bytes, bool useSwRendering);
+    void freeGpuRam();
     void freeUnusedGpuResources();
     QVector<const HbIconKey *> getKeys(const QString &filename) const;
 
@@ -71,6 +73,9 @@ public:
     int rasterLruCount();
     int vectorLruCount();
 #endif
+    int cachedSgImagesCount() const;
+    int totalSgImagesCost() const;
+    int cachedPixmapCount() const;
 
 private:
 

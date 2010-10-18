@@ -24,10 +24,10 @@
 ****************************************************************************/
 
 #include <hbindicatorinterface.h>
+#include <hbmainwindow.h>
 #include "hbindicatormenucontent_p.h"
 
 static const int ListWidgetItemIndicatorTypeRole = Hb::UserRole;
-static const int DefaultItemsVisible = 6;
 
 HbIndicatorListItem::HbIndicatorListItem(QGraphicsItem *parent) :
         HbListViewItem(parent)
@@ -44,10 +44,18 @@ HbAbstractViewItem *HbIndicatorListItem::createItem()
 }
 
 IndicatorList::IndicatorList(HbIndicatorMenuContent *content) :
-        HbListView(content), mUpdateListSize(false)
+    HbListView(content), mUpdateListSize(false), mPreferredHeight(-1), mContent(content)
 {
     setItemRecycling(true);
     setUniformItemSizes(true);
+
+    qreal text1(0);
+    style()->parameter(QLatin1String("hb-param-text-height-primary"), text1);
+    qreal text2(0);
+    style()->parameter(QLatin1String("hb-param-text-height-secondary"), text2);
+    qreal margin(0);
+    style()->parameter(QLatin1String("hb-param-margin-gene-middle-horizontal"), margin);
+    mPreferredHeight = text1 + text2 + 3 * margin;
 }
 
 void IndicatorList::rowsInserted(
@@ -94,8 +102,12 @@ QSizeF IndicatorList::sizeHint(Qt::SizeHint which, const QSizeF & constraint) co
                 item = viewItem(i);
             }
             if (item) {
-                QSizeF itemSize(item->effectiveSizeHint(Qt::PreferredSize));
-                qreal height = qMin(DefaultItemsVisible, indicators)
+                QSizeF itemSize(item->effectiveSizeHint(Qt::PreferredSize, QSizeF(-1, mPreferredHeight)));
+                int defaultItemsVisible = 6;
+                if (mContent->orientation() == Qt::Horizontal) {
+                    defaultItemsVisible = 4;
+                } 
+                qreal height = qMin(defaultItemsVisible, indicators)
                                * itemSize.height();
                 mSize = QSizeF(itemSize.width(), height);
             } else {
@@ -124,7 +136,7 @@ void IndicatorList::showEvent(QShowEvent *event)
     Constructs a new HbItemContainer with \a parent.
 */
 HbIndicatorMenuContent::HbIndicatorMenuContent(QGraphicsItem *parent) :
-    HbWidget(parent)
+    HbWidget(parent), mOrientation(Qt::Vertical)
 {
     for (int i = 0; i < IndicatorTypes; ++i) {
         mGroupTypeIndeces[i] = 0;
@@ -152,17 +164,32 @@ int HbIndicatorMenuContent::indicatorCount() const
      return indicatorModel.rowCount();
 }
 
-void HbIndicatorMenuContent::handleAboutToShow()
+void HbIndicatorMenuContent::handleAboutToShow(HbMainWindow *mainWindow)
 {
+    if (mainWindow) {
+        mOrientation = mainWindow->orientation();
+    }
+
     for (int i = 0; i < mIndicatorList->model()->rowCount(); ++i) {
         HbIndicatorInterface *indicator =
             indicatorFromIndex(indicatorModel.item(i)->index());
         if (indicator) {
-            if (indicator->refreshData()) {
+            bool refreshed = true;
+            try {
+                refreshed = indicator->refreshData();
+            } catch (const std::bad_alloc &) {
+                refreshed = false;
+            }
+            if (refreshed) {
                 setData(indicator, indicatorModel.item(i)->index());
             }
         }
     }
+}
+
+Qt::Orientation HbIndicatorMenuContent::orientation() const
+{
+    return mOrientation;
 }
 
 void HbIndicatorMenuContent::updatePrimitives()
@@ -175,7 +202,10 @@ void HbIndicatorMenuContent::itemActivated(const QModelIndex &modelIndex)
     HbIndicatorInterface *indicator = indicatorFromIndex(modelIndex);
     if (indicator && indicator->interactionTypes().testFlag(
             HbIndicatorInterface::InteractionActivated)) {
-        indicator->handleInteraction(HbIndicatorInterface::InteractionActivated);
+        try {
+            indicator->handleInteraction(HbIndicatorInterface::InteractionActivated);
+        }  catch (const std::bad_alloc &) {
+        }
         emit aboutToClose();
     }
 }
@@ -229,8 +259,15 @@ void HbIndicatorMenuContent::setData(HbIndicatorInterface *source, const QModelI
         HbIndicatorInterface::DecorationNameRole).toString();
 
     QStringList texts;
+
+    // List doesn't allow empty text
+    static const char empty[] = " ";
+    if (primaryText.isEmpty()) {
+        primaryText.append(empty);
+    }
+    // Always reserve space for secondary text. Item size should be uniform.
     if (secondaryText.isEmpty()) {
-        secondaryText = " "; //always reserve space for secondary text. Item size should be uniform.
+        secondaryText.append(empty);
     }
     texts << primaryText << secondaryText;
 

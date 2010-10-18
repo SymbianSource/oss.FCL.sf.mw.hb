@@ -56,6 +56,8 @@ public:
     QList<HbAnchor*> anchors() const;
     QList<HbAnchor*> effectiveAnchors();
 
+    qreal anchorLength( HbAnchor *anchor ) const;
+
     bool setMapping( QGraphicsLayoutItem *item, const QString& nodeId );
     bool removeMapping( QGraphicsLayoutItem *item );
     bool removeMapping( const QString &nodeId );

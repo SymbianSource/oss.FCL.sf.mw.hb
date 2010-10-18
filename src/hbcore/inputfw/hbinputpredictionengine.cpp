@@ -26,7 +26,7 @@
 #include "hbinputpredictionengine.h"
 
 /*!
-@alpha
+@stable
 @hbcore
 \class HbPredictionBase
 \brief A base class for prediction engine abstration layer.
@@ -195,6 +195,8 @@ HbKeyboardType HbPredictionBase::keyboardType() const
 }
 
 /*!
+@stable
+@hbcore
 \class HbPredictionEngine
 \brief Prediction API for latin based langauges.
 
@@ -350,10 +352,12 @@ QStringList HbPredictionEngine::nextWordCandidateList(HbPredictionCallback *call
 }
 
 /*!
+@stable
+@hbcore
 \class HbPredictionEngineChinese
 \brief Abstract API for predictive Chinese input.
 
-This interface extends predictiv einput abstraction layer with methods specific
+This interface extends predictive input abstraction layer with methods specific
 to predictive Chinese input. Those are mainly related to spelling candidates and candidate
 page handling.
 */

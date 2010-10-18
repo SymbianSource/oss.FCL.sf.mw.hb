@@ -30,10 +30,10 @@
 
 // Document loader version number
 #define VERSION_MAJOR 0
-#define VERSION_MINOR 1
+#define VERSION_MINOR 2
 
 #define MIN_SUPPORTED_VERSION_MAJOR 0
-#define MIN_SUPPORTED_VERSION_MINOR 1
+#define MIN_SUPPORTED_VERSION_MINOR 2
 
 // <start-of-text> + "hbBIN" + <end-of-text>
 const char *BINARYFORMATSIGNATURE = "\x02\x68\x62\x42\x49\x4e\x03";
@@ -152,6 +152,7 @@ bool HbXmlLoaderBinarySyntax::processDocument( const QString &section )
         case HbXml::ActionSetSizePolicy: result = parseSetSizePolicy(); break;
         case HbXml::ActionSetSizeHint: result = parseSetSizeHint(); break;
         case HbXml::ActionSetToolTip: result = parseSetToolTip(); break;
+        case HbXml::ActionSetBackground: result = parseSetBackground(); break;
         case HbXml::ActionCreateAnchorLayout: result = parseCreateAnchorLayout(); break;
         case HbXml::ActionAddAnchorLayoutItem: result = parseAddAnchorLayoutItem(); break;
         case HbXml::ActionSetAnchorLayoutMapping: result = parseSetAnchorLayoutMapping(); break;
@@ -377,6 +378,14 @@ bool HbXmlLoaderBinarySyntax::parseSetToolTip()
     HbXmlVariable tooltip;
     mIn >> tooltip;
     return mActions->setToolTip(tooltip);
+}
+
+bool HbXmlLoaderBinarySyntax::parseSetBackground()
+{
+    QString name;
+    quint8 type;
+    mIn >> name >> type;
+    return mActions->setBackground(name, (HbFrameDrawer::FrameType)type);
 }
 
 bool HbXmlLoaderBinarySyntax::parseCreateAnchorLayout()

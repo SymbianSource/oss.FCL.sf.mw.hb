@@ -28,7 +28,7 @@
 #include "hbwidgetstyleloader_p.h"
 
 /*!
-	@stable
+    @stable
     @hbcore
     \class HbStyleLoader
     \brief allows an application to override platform layout and stylesheet definitions
@@ -100,3 +100,4 @@ bool HbStyleLoader::unregisterFilePath(const QString &filePath)
         HbLayeredStyleLoader::Concern_All,
         HbLayeredStyleLoader::Priority_Application);
 }
+

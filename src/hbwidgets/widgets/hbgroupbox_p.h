@@ -38,11 +38,11 @@ enum GroupBoxType{
         GroupBoxCollapsingContainer = 0x03,
         GroupBoxTypeUnknown = 0x04
     };
-	
+    
 /*
     private class definition
 */
-class HbGroupBoxPrivate : public HbWidgetPrivate	
+class HbGroupBoxPrivate : public HbWidgetPrivate    
 {
     Q_DECLARE_PUBLIC(HbGroupBox)
 

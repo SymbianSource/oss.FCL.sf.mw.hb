@@ -27,7 +27,9 @@
 #define HBTHEMECLIENT_P_P_H
 
 #include <QIcon>
+#include <QQueue>
 #include "hbthemecommon_p.h"
+#include "hbthemeclient_p.h"
 #include "hbiconloader_p.h"
 #include "hbwidgetloader_p.h"
 #include "hblayeredstyleloader_p.h"
@@ -39,14 +41,17 @@
 #ifdef HB_SGIMAGE_ICON
 #include <sgresource/sgimage.h>
 #endif
-
 #include <e32base.h>
-#endif
+#endif // Q_OS_SYMBIAN
 
+QT_BEGIN_NAMESPACE
 class QFileSystemWatcher;
-class CHbThemeListenerPrivate;
 class QSizeF;
+QT_END_NAMESPACE
+
+class CHbThemeListenerPrivate;
 class HbEffectFxmlData;
+class QueueEntry;
 
 class HB_AUTOTEST_EXPORT HbThemeClientPrivate :
 #ifdef Q_OS_SYMBIAN
@@ -66,21 +71,25 @@ public:
 #ifdef Q_OS_SYMBIAN
     bool connectToServer();
 
-    HbSharedIconInfo getSharedIconInfo(const QString& iconPath ,
-                                       const QSizeF &size,
-                                       Qt::AspectRatioMode aspectRatioMode,
-                                       QIcon::Mode mode,
-                                       bool mirrored,
-                                       HbIconLoader::IconLoaderOptions options,
-                                       const QColor &color,
-                                       HbRenderingMode renderMode);
+    HbSharedIconInfo getSharedIconInfo(const HbThemeClient::IconReqInfo &reqInfo);
+
+    void getSharedIconInfo(const HbThemeClient::IconReqInfo &reqInfo,
+                           HbAsyncIconInfoCallback callback,
+                           void *callbackParam);
+
+    void cancelGetSharedIconInfo(HbAsyncIconInfoCallback callback,
+                                 void *callbackParam);
 
     HbWidgetLoader::LayoutDefinition *getSharedLayoutDefs(const QString &fileName,
                                                           const QString &layout,
-                                                          const QString &section);
+                                                          const QString &section,
+                                                          bool &fileExists);
 
     HbCss::StyleSheet *getSharedStyleSheet(const QString &filePath,
-                                           HbLayeredStyleLoader::LayerPriority priority);
+                                           HbLayeredStyleLoader::LayerPriority priority,
+                                           bool &fileExists);
+
+    HbVector<uint> *getSharedMissedHbCss();
 
     HbEffectFxmlData *getSharedEffect(const QString &filePath);
 
@@ -90,40 +99,38 @@ public:
 
     bool addSharedEffect(const QString& filePath);
 
-    void unloadIcon(const QString& iconPath ,
-                        const QSizeF &size,
-                        Qt::AspectRatioMode aspectRatioMode,
-                        QIcon::Mode mode,
-                        bool mirrored,
-                        const QColor &color,
-                        HbRenderingMode renderMode);
+    void unloadIcon(const HbThemeClient::IconReqInfo &reqInfo);
+
+    void batchUnloadIcon(const QVector<HbThemeClient::IconReqInfo> &reqInfos);
+
+    HbSharedIconInfo getMultiPartIconInfo(const QStringList &multiPartIconList,
+                                          const HbMultiPartSizeData &multiPartIconData,
+                                          const QSizeF &size,
+                                          Qt::AspectRatioMode aspectRatioMode,
+                                          QIcon::Mode mode,
+                                          bool mirrored,
+                                          HbIconLoader::IconLoaderOptions options,
+                                          const QColor &color,
+                                          HbRenderingMode renderMode);
+    
+    HbSharedIconInfoList getMultiIconInfo(const QStringList &multiPartIconList,
+                                          const QVector<QSizeF>  &sizeList ,
+                                          Qt::AspectRatioMode aspectRatioMode,
+                                          QIcon::Mode mode,
+                                          bool mirrored,
+                                          HbIconLoader::IconLoaderOptions options,
+                                          const QColor &color,
+                                          HbRenderingMode renderMode);
 
     void unLoadMultiIcon(const QStringList& iconPathList,
-                    const QVector<QSizeF> &sizeList,
-                    Qt::AspectRatioMode aspectRatioMode,
-                    QIcon::Mode mode,
-                    bool mirrored,
-                    const QColor &color,
-                    HbRenderingMode renderMode);   
-    HbSharedIconInfo getMultiPartIconInfo(const QStringList &multiPartIconList,
-                        const HbMultiPartSizeData &multiPartIconData,
-                        const QSizeF &size,
-                        Qt::AspectRatioMode aspectRatioMode,
-                        QIcon::Mode mode,
-                        bool mirrored,
-                        HbIconLoader::IconLoaderOptions options,
-                        const QColor &color,
-                        HbRenderingMode renderMode);
+                         const QVector<QSizeF> &sizeList,
+                         Qt::AspectRatioMode aspectRatioMode,
+                         QIcon::Mode mode,
+                         bool mirrored,
+                         const QColor &color,
+                         HbRenderingMode renderMode);   
 
-    HbSharedIconInfoList getMultiIconInfo(const QStringList &multiPartIconList,
-                                        const QVector<QSizeF>  &sizeList ,
-                                        Qt::AspectRatioMode aspectRatioMode,
-                                        QIcon::Mode mode,
-                                        bool mirrored,
-                                        HbIconLoader::IconLoaderOptions options,
-                                        const QColor &color,
-                                        HbRenderingMode renderMode);
-
+    void scheduleQueueCheck();
     void notifyForegroundLostToServer();
     bool switchRenderingMode(HbRenderingMode renderMode);
     int freeSharedMemory();
@@ -133,41 +140,41 @@ public:
     void createMemoryReport() const;
 #endif
 
-private:
-    void handleThemeChange(const QString &themeName);
-
-#endif // Q_OS_SYMBIAN
-
-public:
-    void setTheme(const QString &theme);
-
-    ~HbThemeClientPrivate();
-
-#ifdef Q_OS_SYMBIAN
-private:
-    TVersion Version() const;
-    TInt StartServer();
-    TInt CreateServerProcess();
-
-private:
     CHbThemeListenerPrivate *themelistener;
-    friend class CHbThemeListenerPrivate;
+
+    CIdle *queueCheckInvoker;
+    typedef QQueue<QueueEntry *> QueueType;
+    QueueType reqQueue;
+
 #ifdef HB_SGIMAGE_ICON
     RSgDriver sgDriver;
     bool sgDriverInit;
 #endif
 
+private:
+    TVersion Version() const;
+    TInt StartServer();
+    TInt CreateServerProcess();
+    void handleThemeChange(const QString &themeName);
+
 #else
+
+    QFileSystemWatcher *iniFileWatcher;
 
 public slots:
     void iniFileChanged(QString iniFile);
 
-private:
-    QFileSystemWatcher *iniFileWatcher;
 #endif  // Q_OS_SYMBIAN
 
 public:
     bool clientConnected;
+
+    void setTheme(const QString &theme);
+
+    ~HbThemeClientPrivate();
+
+    friend class QueueEntry;
+    friend class CHbThemeListenerPrivate;
 };
 
 #endif // HBTHEMECLIENT_P_P_H

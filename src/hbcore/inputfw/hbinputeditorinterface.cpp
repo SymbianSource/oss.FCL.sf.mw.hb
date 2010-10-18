@@ -31,6 +31,8 @@
 
 #include <hbaction.h>
 #include <hbwidget.h>
+#include <hbdialog.h>
+#include <hbview.h>
 
 #include "hbinputstandardfilters.h"
 #include "hbinputvkbhost.h"
@@ -38,37 +40,135 @@
 #include "hbinpututils.h"
 
 /*!
-@alpha
+@stable
 @hbcore
 \class HbEditorInterface
-\brief An interface for accessing editor specific input attributes.
+\brief The HbEditorInterface class provides an interface for accessing
+editor-specific input attributes.
 
-This class is an interface for accessing and manipulating editor attributes, such as input mode, text case,
-constraints, input filter and so on. It also contains some useful convenience and utility methods.
-This interface is meant to be used from both client application and input method code.
+HbEditorInterface is an interface for different editor widget types, which
+do not always derive from the same base classes. The interface defines
+a set of properties that applications can modify to constrain the input
+characters that the user can enter into an editor widget. %HbEditorInterface
+gives applications a common way of setting properties for both %Hb and %Qt editors
+(such as HbLineEdit, HbTextEdit, QLineEdit). The interface is also used in
+input method code.
 
-Following example shows how to create editor interface, attach editor to it and use some attributes.
+HbEditorInterface does not store the editor widget properties locally or
+duplicate them. Its memory footprint is very small. You can create as many
+interfaces to the same editor as you require for your application.
+The HbInput framework maintains only one copy of the editor attributes for
+each editor. All interface instances for an editor use those attributes.
 
-\snippet{unittest_hbinputeditorinterface/unittest_hbinputeditorinterface.cpp,1}
+With HbEditorInterface, you can control, for example, the following editor attributes:
 
-If the attached editor is deleted, the editor interface will start to return same values
-as when a null pointer is passed to the constructor.
+<ul>
+<li>text case: lower case, upper case, automatic</li>
+<li>input mode type: numeric, handwriting, ...</li>
+<li>input constraints: Latin only, auto-completing, ...</li>
+<li>input filter: digits only, input lower case, phone number, URL, ...</li>
+<li>editor class type: e-mail, URL, username, password, phone number, ...</li>
+<li>extra dictionary to be used in predictive text input</li>
+<li>smiley theme</li>
+<li>custom button for an editor-specific or application-specific action</li>
+</ul>
 
-When any of the values is changed, signal modified() is emitted.
+The interface also contains useful convenience functions to define the type of data
+that the user can enter into an editor. The convenience functions set all the necessary
+attributes for some commonly used editor cases:
+
+<ul>
+<li>setUpAsCompletingEmailField()</li>
+<li>setUpAsCompletingUrlField()</li>
+<li>setUpAsLatinAlphabetOnlyEditor()</li>
+</ul>
+
+\section _usecases_hbeditorinterface Using HbEditorInterface
+
+\subsection _uc_001_hbeditorinterface Creating and using HbEditorInterface
+
+The following example shows how to create an editor interface, attach an editor
+to it, and use some attributes.
+
+\code
+QLineEdit *lineEdit = new QLineEdit;           // Create an editor
+HbEditorInterface editorInterface(lineEdit);   // Create an editor interface and attach lineEdit to it
+editorInterface.setTextCase(HbTextCaseUpper);  // Set text case to upper case
+\endcode
+
+If the attached editor is deleted, the editor interface will start to return
+the same values as when a null pointer is passed to the constructor.
+
+When any of the values is changed, a signal modified() is emitted.
+
+\subsection _uc_002_hbeditorinterface Using the convenience functions
+
+The following example shows how to use a convenience function for configuring
+your editor to be a URL field. The convenience function sets the required
+attributes necessary for URL input.
+
+\code
+HbLineEdit *myLineEdit = new HbLineEdit;         // Create an editor
+HbEditorInterface editorInterface2(myLineEdit);  // Create an editor interface to it
+editorInterface2.setUpAsCompletingUrlField();    // Use the convenience function to set the editor as an URL field 
+\endcode
+
+\subsection _uc_003_hbeditorinterface Setting input constraints
+
+Input constraints in the HbInput framework are defined by the enumeration HbEditorConstraint,
+which is defined in the header file hbinputdef.h. You can set several input constraints
+at the same time in a bit vector HbEditorConstraints, as in the following example:
+
+\code
+HbLineEdit *mySearchField = new HbLineEdit;         // Create an editor
+HbEditorInterface editorInterface3(mySearchField);  // Create an editor interface to it
+
+// Use the input constraint function to set the editor as an auto-completing field
+// and to prevent the change of the input mode
+editorInterface3.setInputConstraints(HbEditorConstraintAutoCompletingField | HbEditorConstraintFixedInputMode);
+\endcode
+
+One useful constraint is HbEditorConstraintIgnoreFocus. By default, a virtual 
+keyboard is shown when an editor gets the focus. If you want to use the editor
+as a read-only viewer, or prevent the virtual keyboard from opening for some
+other reason, you can set the HbEditorConstraintIgnoreFocus constraint. It prevents
+the editor from getting a focus event, and the virtual keyboard is not shown.
+
+Here is an example of setting HbEditorConstraintIgnoreFocus:
+\code
+HbSomeViewerPointer *myViewer;                // Pointer to some kind of editor in read-only mode, so it is a viewer 
+HbEditorInterface editorInterface4(myViewer);  // Create an editor interface to it (viewer does not have to be
+                                               // an editor for this to work as long as it is derived from QObject)
+
+// Instruct the input framework to ignore viewer focus events
+editorInterface4.setInputConstraints(HbEditorConstraintIgnoreFocus);  
+\endcode
+
+\note Note that there are also some common editor attributes that cannot be
+set with HbEditorInterface, such as disabling the predictive mode. To set this
+and other input method hints in application code, use your editor's %Qt base class
+function, either QGraphicsItem::setInputMethodHints(Qt::InputMethodHints hints) for
+%Hb editors, or QWidget::setInputMethodHints(Qt::InputMethodHints hints) for
+%Qt editors. In input method code, use
+HbInputFocusObject::setInputMethodHints(Qt::InputMethodHints hints).
+
+\sa HbLineEdit, HbTextEdit, HbAbstractEdit
 */
 
 
 /*!
-Constructs the object and attaches given editor.
+Constructor. Attaches the given editor to the interface.
 */
 HbEditorInterface::HbEditorInterface(QObject *editor)
 {
     mPrivate = HbEditorInterfacePrivateCache::instance()->attachEditor(editor, this);
-    connect(mPrivate, SIGNAL(destroyed(QObject *)), this, SLOT(backendDestroyed(QObject *)));
+    if (mPrivate) {
+        connect(mPrivate, SIGNAL(destroyed(QObject *)), this, SLOT(backendDestroyed(QObject *)));
+    }
 }
 
 /*!
-Destructs the object.
+Destructor.
 */
 HbEditorInterface::~HbEditorInterface()
 {
@@ -76,7 +176,7 @@ HbEditorInterface::~HbEditorInterface()
 }
 
 /*!
-Returns text case. Returned value is HbTextCase
+Returns the text case.
 
 \sa setTextCase
 */
@@ -93,10 +193,9 @@ HbTextCase HbEditorInterface::textCase() const
 }
 
 /*!
-Sets text case.
+Sets the text case.
 
 \sa textCase
-\sa HbTextCase
 */
 void HbEditorInterface::setTextCase(HbTextCase textCase)
 {
@@ -109,9 +208,9 @@ void HbEditorInterface::setTextCase(HbTextCase textCase)
 }
 
 /*!
-Returns active editor input mode.
+Returns the active editor input mode.
 
-\sa setInputMode
+\sa setMode
 */
 HbInputModeType HbEditorInterface::mode() const
 {
@@ -126,9 +225,9 @@ HbInputModeType HbEditorInterface::mode() const
 }
 
 /*!
-Sets active editor input mode.
+Sets the active editor input mode.
 
-\sa inputMode
+\sa mode
 */
 void HbEditorInterface::setMode(HbInputModeType inputMode)
 {
@@ -147,7 +246,7 @@ void HbEditorInterface::setMode(HbInputModeType inputMode)
 /*!
 Returns editor constraints. The returned value is a combination of HbEditorConstraint flags.
 
-\sa setEditorConstraints
+\sa setInputConstraints
 */
 HbEditorConstraints HbEditorInterface::inputConstraints() const
 {
@@ -164,7 +263,7 @@ HbEditorConstraints HbEditorInterface::inputConstraints() const
 /*!
 Sets editor constraints.
 
-\sa editorConstraints
+\sa inputConstraints
 */
 void HbEditorInterface::setInputConstraints(HbEditorConstraints constraints)
 {
@@ -177,8 +276,8 @@ void HbEditorInterface::setInputConstraints(HbEditorConstraints constraints)
 }
 
 /*!
-Returns active input filter. The input framework will always run any text it produces
-through the active filter before it is committed into editor buffer.
+Returns the active input filter. The input framework will always run any input text
+through the active filter before committing the text into the editor buffer.
 
 In some cases, the input framework also automatically sets the filter to match
 input method hints. The default filter can still be overridden.
@@ -198,7 +297,13 @@ HbInputFilter *HbEditorInterface::filter() const
 }
 
 /*!
-Sets active input filter. The ownership is not transferred.
+Sets the active input filter. The ownership is not transferred.
+
+The input framework will always run any input text through the active filter
+before committing the text into the editor buffer.
+
+In some cases, the input framework also automatically sets the filter to match
+input method hints. The default filter can still be overridden.
 
 \sa filter
 */
@@ -213,8 +318,8 @@ void HbEditorInterface::setFilter(HbInputFilter *filter)
 }
 
 /*!
-Returns local digit type setting. If this value is set, it will override device wide
-digit type setting.
+Returns the local digit type setting. If this value is set, it will override
+the device-wide digit type setting.
 
 \sa setDigitType
 */
@@ -232,7 +337,8 @@ HbInputDigitType HbEditorInterface::digitType() const
 }
 
 /*!
-Sets local digit type.
+Sets the local digit type. If this value is set, it will override the device-wide
+digit type setting.
 
 \sa digitType
 */
@@ -247,21 +353,24 @@ void HbEditorInterface::setDigitType(HbInputDigitType digitType)
 }
 
 /*!
-Adds action to this editor's list of actions on the first position.
+Adds \a action to this editor's list of actions on the first position.
 
-The action is used in virtual keyboards to define the application specific button. The
-keyboard will display a button using the text, icon and tooltip specified in the action.
+The action is used in virtual keyboards to define a custom button.
+The keyboard will display a button using the icon specified in the action.
 When the button is clicked, the action is triggered.
 
-If the action is already in the list, it will be removed before adding it again.
+If the action is already in the list, it will be removed before being added
+again.
 
-Hb input methods currently use only the first action in the list.
+%Hb input methods currently use only the first action in the list and display
+only the icon, not the text.
 Different input methods may display 0 or more than one button.
 
-Note that the custom button action is only a request to show it. Whether or not the
-virtual keyboard widget actually shows it depends on the situation and
-the active input method. That's why a function asigned to custom button should never
-be the only way to use a feature but only a shortcut.
+Note that the custom button action is only a request to show it. Whether
+or not the virtual keyboard widget actually shows the action depends on
+the situation and the active input method. That is why a function assigned
+to the custom button should never be the only way to use a feature, but
+only a shortcut.
 
 \sa insertAction
 \sa removeAction
@@ -273,8 +382,8 @@ void HbEditorInterface::addAction(HbAction *action)
 }
 
 /*!
-Inserts action to this editor's list of actions before the action before.
-If the action is already in the list, it will be removed before inserting it again.
+Inserts \a action to this editor's list of actions before the action \a before.
+If the action is already in the list, it will be removed before being inserted again.
 
 \sa addAction
 \sa removeAction
@@ -294,7 +403,7 @@ void HbEditorInterface::insertAction(HbAction *before, HbAction *action)
         if (index >= 0) {
             mPrivate->mActions.removeAt(index);
             disconnect(action, SIGNAL(destroyed(QObject *)),
-                       HbEditorInterfacePrivateCache::instance(), SLOT(actionDestroyed(QObject * object)));
+                       HbEditorInterfacePrivateCache::instance(), SLOT(actionDestroyed(QObject *)));
         }
 
         int pos = mPrivate->mActions.indexOf(before);
@@ -327,7 +436,7 @@ void HbEditorInterface::removeAction(HbAction *action)
         mPrivate->lock();
         mPrivate->mActions.removeAll(action);
         disconnect(action, SIGNAL(destroyed(QObject *)),
-                   HbEditorInterfacePrivateCache::instance(), SLOT(actionDestroyed(QObject * object)));
+                   HbEditorInterfacePrivateCache::instance(), SLOT(actionDestroyed(QObject *)));
         mPrivate->unlock();
         HbEditorInterfacePrivateCache::instance()->notifyValueChanged(mPrivate->mHostEditor);
     }
@@ -352,8 +461,8 @@ QList<HbAction *> HbEditorInterface::actions() const
 }
 
 /*!
-Returns id value for attached extra user dictionary. Returns zero if no extra
-user dictinaries are attached to this editor.
+Returns the id value for the attached extra user dictionary. Returns zero if no extra
+user dictionaries are attached to this editor.
 
 \sa setExtraDictionaryId
 \sa HbUserDictionary
@@ -373,9 +482,9 @@ int HbEditorInterface::extraDictionaryId() const
 }
 
 /*!
-Sets extra user dictionary id value. After setting this value those prediction
-engines that support extra dictionaries attach given dictionary to be
-part of prediction vocabulary.
+Sets the extra user dictionary id value. After setting this value those prediction
+engines that support extra dictionaries attach the given dictionary to be
+part of the prediction vocabulary.
 
 \sa extraDictionaryId
 \sa HbUserDictionary
@@ -392,7 +501,9 @@ void HbEditorInterface::setExtraDictionaryId(int id)
 }
 
 /*!
-Returns editor class.
+Returns the editor class type.
+
+\sa setEditorClass
 */
 HbInputEditorClass HbEditorInterface::editorClass() const
 {
@@ -408,7 +519,9 @@ HbInputEditorClass HbEditorInterface::editorClass() const
 }
 
 /*!
-Sets editor class.
+Sets the editor class type.
+
+\sa editorClass
 */
 void HbEditorInterface::setEditorClass(HbInputEditorClass editorClass)
 {
@@ -421,7 +534,7 @@ void HbEditorInterface::setEditorClass(HbInputEditorClass editorClass)
 }
 
 /*!
-Returns editor sepcific smiley theme.
+Returns the editor-specific smiley theme.
 
 \sa setSmileyTheme
 */
@@ -439,8 +552,8 @@ HbSmileyTheme HbEditorInterface::smileyTheme() const
 }
 
 /*!
-Sets editor specific smiley theme. The smiley picker will display smileys provided
-by given theme.
+Sets the editor-specific smiley theme. The smiley picker will display smileys
+provided by \a theme.
 
 \sa smileyTheme
 */
@@ -455,7 +568,7 @@ void HbEditorInterface::setSmileyTheme(const HbSmileyTheme &theme)
 }
 
 /*!
-Finds and returns virtual keyboard host for this editor.
+Finds and returns a virtual keyboard host for the attached editor.
 */
 HbVkbHost *HbEditorInterface::vkbHost() const
 {
@@ -489,16 +602,22 @@ HbVkbHost *HbEditorInterface::vkbHost() const
 
         if (graphicsObjectEditor) {
             QGraphicsObject *lastKnownParent = 0;
+            QGraphicsObject *lastContainer = 0;
             for (QGraphicsObject *parent = graphicsObjectEditor; parent; parent = parent->parentObject()) {
                 HbVkbHost *host = HbVkbHost::getVkbHost(parent);
                 if (host) {
                     return host;
                 }
+                if (qobject_cast<HbView *>(parent) || qobject_cast<HbPopup *>(parent)) {
+                    lastContainer = parent;
+                }
                 lastKnownParent = parent;
             }
-            if (lastKnownParent) {
+            if (lastContainer) {
                 // No host was found from graphics widget parent chain.
-                // Use popup host as a fallback.
+                return new HbAbstractVkbHost(lastContainer);
+            } else if (lastKnownParent) {
+                // No host or container was found from graphics widget parent chain.
                 return new HbAbstractVkbHost(lastKnownParent);
             }
         }
@@ -508,7 +627,8 @@ HbVkbHost *HbEditorInterface::vkbHost() const
 }
 
 /*!
-Returns true if this instance is attached to same editor as given instance.
+Returns \c true if this instance is attached to the same editor
+as \a editorInterface.
 */
 bool HbEditorInterface::operator==(const HbEditorInterface &editorInterface) const
 {
@@ -516,7 +636,8 @@ bool HbEditorInterface::operator==(const HbEditorInterface &editorInterface) con
 }
 
 /*!
-Returns true if this instance is not attached to same editor as given instance.
+Returns \c true if this instance is not attached to the same editor
+as \a editorInterface.
 */
 bool HbEditorInterface::operator!=(const HbEditorInterface &editorInterface) const
 {
@@ -524,7 +645,7 @@ bool HbEditorInterface::operator!=(const HbEditorInterface &editorInterface) con
 }
 
 /*!
-Returns pointer to the editor object this interface is attached to.
+Returns a pointer to the editor object attached to this interface.
 */
 QObject *HbEditorInterface::editor() const
 {
@@ -536,8 +657,9 @@ QObject *HbEditorInterface::editor() const
 }
 
 /*!
-Last focused state remembers the editor state exactly as it was when the focus is taken away. This is framework side
-API. There should never be need to use it from application code.
+The last focused state remembers the editor state exactly as it was when
+the focus was removed. This is for the framework side API, and there
+should never be need to call it from application code.
 
 \sa setLastFocusedState
 */
@@ -553,7 +675,8 @@ void HbEditorInterface::lastFocusedState(HbInputState &result) const
 }
 
 /*!
-Sets last focused state. This is framework side API, there should neever be need to call it from application code.
+Sets the last focused state. This is for the framework side API, and
+there should never be need to call it from application code.
 
 \sa lastFocusedState
 */
@@ -566,8 +689,10 @@ void HbEditorInterface::setLastFocusedState(const HbInputState &state)
     }
 }
 
+
 /*!
-A convenience method for setting up the editor as completing email field.
+A convenience function for setting up the editor as an auto-completing
+e-mail address field.
 */
 void HbEditorInterface::setUpAsCompletingEmailField()
 {
@@ -577,32 +702,35 @@ void HbEditorInterface::setUpAsCompletingEmailField()
     setEditorClass(HbInputEditorClassEmail);
     setExtraDictionaryId(HbInputEditorClassEmail);
     setDigitType(HbDigitTypeNone);
-    mPrivate->setInputMethodHints(Qt::ImhNoPredictiveText | Qt::ImhPreferLowercase);
+    mPrivate->setInputMethodHints(Qt::ImhEmailCharactersOnly | Qt::ImhNoPredictiveText | Qt::ImhPreferLowercase);
 }
 
 /*!
-A convenience method for setting up the editor as completing url field.
+A convenience function for setting up the editor as an auto-completing
+URL field.
 */
 void HbEditorInterface::setUpAsCompletingUrlField()
 {
     setMode(HbInputModeNone);
     setInputConstraints(HbEditorConstraintLatinAlphabetOnly | HbEditorConstraintAutoCompletingField);
-    setFilter(HbUrlFilter::instance());
     setEditorClass(HbInputEditorClassUrl);
     setExtraDictionaryId(HbInputEditorClassUrl);
     setDigitType(HbDigitTypeNone);
-    mPrivate->setInputMethodHints(Qt::ImhNoPredictiveText | Qt::ImhPreferLowercase);
+    mPrivate->setInputMethodHints(Qt::ImhUrlCharactersOnly | Qt::ImhNoPredictiveText | Qt::ImhPreferLowercase);
 }
 
 /*!
-A convenience method for setting up the editor as latin alphabet editor. In this mode, the input framework
-will use global input language if it is naturally capable of producing latin aplhabets. Otherwise
-it will switch locally to english language (is is assumed that english is always available).
-It is also recommended that prediction is disabled in latin only editors. That's because predictive mode in
-latin alphabet editor is controversial (which prediction database should be used if global language doesn't
-apply and we locally to switch to english? If we used english database, that would lead to situation
-where some global languages use their native prediction databases and some don't).
-That's why this method disables predictive input by default.
+A convenience function for setting up the editor as a Latin alphabet editor.
+In this mode, the input framework will use the global input language if
+it is naturally capable of producing Latin alphabets. Otherwise it will switch
+locally to English (is is assumed that English is always available).
+
+It is also recommended that prediction is disabled in Latin-only editors.
+That is because the predictive mode in a Latin alphabet editor is controversial:
+which prediction database should be used if the global language does not
+apply and we switch to English locally? Using the English database would lead
+to a situation where some global languages use their native prediction databases
+and some do not. To avoid this, the function disables predictive input by default.
 */
 void HbEditorInterface::setUpAsLatinAlphabetOnlyEditor()
 {
@@ -612,34 +740,50 @@ void HbEditorInterface::setUpAsLatinAlphabetOnlyEditor()
 }
 
 /*!
-Returns true if connected editor is configured to behave as numeric editor. In Qt 4.6 and beyond, numeric
-editors have one of these input method hints set: Qt::ImhDigitsOnly, Qt::ImhDialableCharactersOnly or Qt::ImhFormattedNumbersOnly.
-If either Qt::ImhLowercaseOnly or Qt::ImhUppercaseOnly is also set, then the editor is not numeric editor and
-this method returns false.
+Returns \c true if the connected editor is configured to behave as
+a numeric editor. In Qt 4.6 and beyond, numeric editors have one of these
+input method hints set: Qt::ImhDigitsOnly, Qt::ImhDialableCharactersOnly,
+or Qt::ImhFormattedNumbersOnly. If either Qt::ImhLowercaseOnly or
+Qt::ImhUppercaseOnly is also set, then the editor is not a numeric editor
+and this function returns \c false.
 */
 bool HbEditorInterface::isNumericEditor() const
 {
-    return ((mPrivate->inputMethodHints() & (Qt::ImhDigitsOnly | Qt::ImhDialableCharactersOnly | Qt::ImhFormattedNumbersOnly)) &&
+    return mPrivate && ((mPrivate->inputMethodHints() & (Qt::ImhDigitsOnly | Qt::ImhDialableCharactersOnly | Qt::ImhFormattedNumbersOnly)) &&
             !(mPrivate->inputMethodHints() & (Qt::ImhLowercaseOnly | Qt::ImhUppercaseOnly)));
 }
 
 /*!
-Returns true if predictive input mode is allowed in attached editor.
+Returns \c true if the predictive input mode is allowed in the attached editor.
 */
 bool HbEditorInterface::isPredictionAllowed() const
 {
-    return !(mPrivate->inputMethodHints() & Qt::ImhNoPredictiveText);
+    return mPrivate && !(mPrivate->inputMethodHints() & Qt::ImhNoPredictiveText);
 }
 
 /*!
-Returns true if there is existing data record for given object. This method can
-be used for testing whether someone has set editor data for given object without
-creating a data record for it. This is usually not needed on application side.
+Returns \c true if there is an existing data record for \a object. This function can
+be used for testing whether someone has set editor data for a given object without
+creating a data record for it. This is usually not needed on the application side.
 */
 bool HbEditorInterface::isConnected(QObject *object)
 {
     return HbEditorInterfacePrivateCache::instance()->isConnected(object);
 }
+
+/*!
+ * \fn void HbEditorInterface::modified()
+ * 
+ * This signal is emitted when any of the editor settings is changed. 
+ */
+
+/*!
+ * \fn void HbEditorInterface::cursorPositionChanged(int oldPos, int newPos)
+ * 
+ * This signal is emitted when the cursor position in the attached editor
+ * is changed. 
+ */
+
 
 /// @cond
 

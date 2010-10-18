@@ -45,7 +45,7 @@ public:
     };
 
     struct Layer {
-		HbStyleSelector styleSelector;
+        HbStyleSelector styleSelector;
     };
     
     enum Concern {
@@ -75,27 +75,29 @@ public:
 
     void clear();
     void clear(LayerPriority priority);
-    bool findInDefaultVariables( const QString& variableName, HbCss::Value &val ) const;
 
 public:
     bool hasOrientationSpecificStyleRules(HbStyleSelector::NodePtr node) const;
     HbVector<HbCss::Declaration> declarationsForNode(HbStyleSelector::NodePtr node,
             const Qt::Orientation orientation, const char *extraPseudo = 0) const;
     HbVector<HbCss::StyleRule> styleRulesForNode(HbStyleSelector::NodePtr node,
-			const Qt::Orientation orientation) const;
-    void variableRuleSets(QHash<QString, HbCss::Declaration> *variables) const;
+            const Qt::Orientation orientation) const;
+    void variableRuleSets(QHash<quint32, HbCss::Declaration> *variables) const;
 
 protected:
     void updateLayersListIfRequired(LayerPriority priority);
+    void init(Concern con);
     QList<LayerPriority> mUsedLayers;
 
 private:
     PriorityLayerMap mStyleLayers;
     Concern mConcern;
-    mutable QHash<QString, HbCss::Declaration> mDefaultVariables;
+    mutable QHash<quint32, HbCss::Declaration> mDefaultVariables;
 #ifdef HB_CSS_INSPECTOR
     HbCss::StyleSheet *mCurrentSheet;
 #endif
+    HbVector<uint> *mServerHbCssMisses;
+    HbLayeredStyleLoader *mAllStack;
 };
 
 #endif // HBLAYEREDSTYLELOADER_P_H

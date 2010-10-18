@@ -68,7 +68,8 @@ public:
 
     void setEchoMode(HbLineEdit::EchoMode echoMode=HbLineEdit::Normal,int row=0);
     HbLineEdit::EchoMode echoMode(int row=0) const;
-
+    
+    QGraphicsItem *primitive(const QString &itemName) const;
 
 public:
     static void getText(const QString &heading
@@ -122,14 +123,13 @@ public:
             , QGraphicsScene *scene = 0
             , QGraphicsItem *parent = 0);
 
-    QGraphicsItem* primitive(HbStyle::Primitive primitive) const;
-
     enum { Type = Hb::ItemType_InputDialog };
     int type() const { return Type; }
 
 public slots:
     void updatePrimitives();
     void done(int code);
+    void recreatePrimitives();
 
 signals:
     void intValueSelected(int value);
@@ -139,6 +139,7 @@ signals:
 protected:
     HbInputDialog(HbDialogPrivate &dd, QGraphicsItem *parent);
     void initStyleOption(HbStyleOptionInputDialog *option) const;
+    void initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive);
 
 private:
     Q_DISABLE_COPY(HbInputDialog)

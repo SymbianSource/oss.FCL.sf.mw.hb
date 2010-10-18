@@ -47,7 +47,7 @@ class HB_AUTOTEST_EXPORT HbTouchAreaPrivate : public HbWidgetBasePrivate
 
 public:
 
-	HbTouchAreaPrivate();
+    HbTouchAreaPrivate();
     virtual ~HbTouchAreaPrivate();
     HbTouchArea *q_ptr;
     static bool outlineDrawingEnabled();

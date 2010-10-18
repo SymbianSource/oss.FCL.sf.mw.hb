@@ -93,9 +93,9 @@ public:
     enum { Type = Hb::ItemType_DateTimePicker };
     int type() const { return Type; }
 
-    QGraphicsItem *primitive(HbStyle::Primitive primitive) const;
-
     void setGeometry(const QRectF &rect);
+
+    QGraphicsItem *primitive(const QString &itemName) const;
 
 public slots:
     void setDate(const QDate &date);
@@ -111,6 +111,7 @@ signals:
 protected:
     HbDateTimePicker(HbDateTimePickerPrivate &dd, QGraphicsItem *parent = 0);
     bool event(QEvent *e);
+    void initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive);
 
 private:
     Q_DISABLE_COPY(HbDateTimePicker)  

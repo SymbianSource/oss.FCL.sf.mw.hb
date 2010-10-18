@@ -25,7 +25,6 @@
 #include "hbradiobuttonlistviewitem_p.h"
 
 #include "hblistviewitem_p.h"
-#include <hbstyleoptionlistviewitem_p.h>
 #include <hbeffect.h>
 
 HbRadioButtonListViewItem::HbRadioButtonListViewItem(QGraphicsItem *parent) :

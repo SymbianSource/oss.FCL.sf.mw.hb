@@ -73,10 +73,10 @@ HbTypefaceXmlParser::HbTypefaceXmlParser()
 */
 HbTypefaceXmlParser::~HbTypefaceXmlParser()
 {
-	if (mFile) {
-		delete mFile;
+    if (mFile) {
+        delete mFile;
         mFile = 0;
-	}
+    }
 }
 
 /*!
@@ -86,7 +86,7 @@ HbTypefaceXmlParser::~HbTypefaceXmlParser()
 */
 void HbTypefaceXmlParser::setFilePath(const QString& path)
 {
-	mFilePath = path;
+    mFilePath = path;
 }
 
 /*!
@@ -98,59 +98,63 @@ void HbTypefaceXmlParser::setFilePath(const QString& path)
 */
 bool HbTypefaceXmlParser::init()
 {
-	QString filePath(":typefaces.xml");
+    QString filePath(":typefaces.xml");
 
-	// If one has been set by API
-	if ( !mFilePath.isEmpty() ) {
-		filePath = mFilePath;
-	}
-	else {
-	// Check if resource directory has got the typefaces.xml file.
-	// If yes, then use the one present in the resource directory
-		QString resourceFilePath(TYPEFACE_RESOURCE_FOLDER);
-		resourceFilePath.append(QDir::separator());
-		resourceFilePath.append("typefaces.xml"); 
+    // If one has been set by API
+    if ( !mFilePath.isEmpty() ) {
+        filePath = mFilePath;
+    }
+    else {
+    // Check if resource directory has got the typefaces.xml file.
+    // If yes, then use the one present in the resource directory
+        QString resourceFilePath(TYPEFACE_RESOURCE_FOLDER);
+        resourceFilePath.append(QDir::separator());
+        resourceFilePath.append("typefaces.xml"); 
 
-		QFile *file = new QFile(resourceFilePath);
-		if( file && file->exists() ) {
-			filePath = resourceFilePath;
-		}
-		delete file;
-	}	
+        QFile *file = new QFile(resourceFilePath);
+        if( file && file->exists() ) {
+            filePath = resourceFilePath;
+        }
+        delete file;
+    }   
+    
+    if (mFile){
+        delete mFile;
+    }
 
-	mFile = new QFile(filePath);
-	// Trying to see if the absolute path can be determined
-	QString name2 = mFile->fileName();
+    mFile = new QFile(filePath);
+    // Trying to see if the absolute path can be determined
+    QString name2 = mFile->fileName();
 
-	if( !mFile->exists() ) {
-		qWarning("HbTypefaceXmlParser Warning: XML-file at %s does not exist", qPrintable(filePath));
-		return false;
-	}
+    if( !mFile->exists() ) {
+        qWarning("HbTypefaceXmlParser Warning: XML-file at %s does not exist", qPrintable(filePath));
+        return false;
+    }
 
-	// not yet parsed, parse and add data
-	if (!mFile->open(QFile::ReadOnly | QFile::Text)) {
-		qWarning("HbEffect Warning: XML-file at %s opening failed", qPrintable(filePath));
-		return false;
-	}
+    // not yet parsed, parse and add data
+    if (!mFile->open(QFile::ReadOnly | QFile::Text)) {
+        qWarning("HbEffect Warning: XML-file at %s opening failed", qPrintable(filePath));
+        return false;
+    }
 
-	setDevice(mFile);
-	bool positioned(false);
-	while (!atEnd() && !positioned) {
-    	QXmlStreamReader::TokenType type = readNext();
+    setDevice(mFile);
+    bool positioned(false);
+    while (!atEnd() && !positioned) {
+        QXmlStreamReader::TokenType type = readNext();
         if(type == QXmlStreamReader::Invalid)
             break;
 
-		if (isStartElement()) {
-			if (name() == TYPEFACE_INFO) {
-				positioned = true;
-			}
-			else {
-				raiseError("HbTypefaceXmlParser::read The document is not a valid typeface information xml file.");
-			}
-		}
-	}
+        if (isStartElement()) {
+            if (name() == TYPEFACE_INFO) {
+                positioned = true;
+            }
+            else {
+                raiseError("HbTypefaceXmlParser::read The document is not a valid typeface information xml file.");
+            }
+        }
+    }
 
-	return !error() && positioned;
+    return !error() && positioned;
 }
 
 /*!
@@ -158,21 +162,21 @@ bool HbTypefaceXmlParser::init()
 */
 bool HbTypefaceXmlParser::readAndPositionTypefaceSet()
 {
-	Q_ASSERT(isStartElement() && name() == TYPEFACE_INFO);
-	bool positioned(false);
-	while (!atEnd() && !positioned) {
-    	QXmlStreamReader::TokenType type = readNext();
+    Q_ASSERT(isStartElement() && name() == TYPEFACE_INFO);
+    bool positioned(false);
+    while (!atEnd() && !positioned) {
+        QXmlStreamReader::TokenType type = readNext();
         if(type == QXmlStreamReader::Invalid)
             break;
 
-		if (isStartElement()) {
-			if (name() == TYPEFACE_SET) {
-				// find the correct language and country
-				positioned = matchLanguageAndCountry();
-			}
-		}
-	}
-	return positioned;
+        if (isStartElement()) {
+            if (name() == TYPEFACE_SET) {
+                // find the correct language and country
+                positioned = matchLanguageAndCountry();
+            }
+        }
+    }
+    return positioned;
 }
 
 /*
@@ -180,49 +184,49 @@ bool HbTypefaceXmlParser::readAndPositionTypefaceSet()
  */
 bool HbTypefaceXmlParser::matchLanguageAndCountry() const
 {
-	Q_ASSERT(isStartElement() && name() == TYPEFACE_SET);
-	QString language, country;
-	bool positioned(false);
+    Q_ASSERT(isStartElement() && name() == TYPEFACE_SET);
+    QString language, country;
+    bool positioned(false);
 
-	HbExtendedLocale systemLocale = HbExtendedLocale::system();
-	QString attrName, typefaceLocaleName, systemLocaleName;
-	QXmlStreamAttributes attrs = attributes();
+    HbExtendedLocale systemLocale = HbExtendedLocale::system();
+    QString attrName, typefaceLocaleName, systemLocaleName;
+    QXmlStreamAttributes attrs = attributes();
 
-	foreach (const QXmlStreamAttribute &attr, attrs) {
-		attrName = attr.name().toString();
+    foreach (const QXmlStreamAttribute &attr, attrs) {
+        attrName = attr.name().toString();
 
-		if (attrName == TYPEFACE_LANGUAGE_ATT) {
-			language = attr.value().toString().toLower();
-		}
-		else if (attrName == TYPEFACE_COUNTRY_ATT) {
-			country = attr.value().toString().toUpper();
-		}
-		else {
-			qDebug("Unrecognized attribute");
-		}
-	}
-	
+        if (attrName == TYPEFACE_LANGUAGE_ATT) {
+            language = attr.value().toString().toLower();
+        }
+        else if (attrName == TYPEFACE_COUNTRY_ATT) {
+            country = attr.value().toString().toUpper();
+        }
+        else {
+            qDebug("Unrecognized attribute");
+        }
+    }
+    
 
-	// Construct the locale with the typeface locale info
-	if (!language.isEmpty()) {
-		if (!country.isEmpty()) {
-			typefaceLocaleName = language + '_' + country;
-			systemLocaleName = systemLocale.name();
-		}
-		else {
-			typefaceLocaleName = language;
-			// Language is a lowercase, two-letter, ISO 639 language code
-			systemLocaleName = systemLocale.name().left(2);
-		}
-	}
-	else {
-		positioned = true;
-	}
+    // Construct the locale with the typeface locale info
+    if (!language.isEmpty()) {
+        if (!country.isEmpty()) {
+            typefaceLocaleName = language + '_' + country;
+            systemLocaleName = systemLocale.name();
+        }
+        else {
+            typefaceLocaleName = language;
+            // Language is a lowercase, two-letter, ISO 639 language code
+            systemLocaleName = systemLocale.name().left(2);
+        }
+    }
+    else {
+        positioned = true;
+    }
 
-	if (!positioned && typefaceLocaleName.compare(systemLocaleName, Qt::CaseInsensitive) == 0) {
-		positioned = true;
-	}
-	return positioned;
+    if (!positioned && typefaceLocaleName.compare(systemLocaleName, Qt::CaseInsensitive) == 0) {
+        positioned = true;
+    }
+    return positioned;
 }
 
 /*!
@@ -232,41 +236,41 @@ bool HbTypefaceXmlParser::matchLanguageAndCountry() const
 */
 HbTypefaceXmlParser::StartElement HbTypefaceXmlParser::readToStartElement()
 {
-	StartElement startElement(NoStartElement);
+    StartElement startElement(NoStartElement);
 
-	bool atEnd(false);
+    bool atEnd(false);
 
     while (!atEnd && startElement == NoStartElement) {
-    	QXmlStreamReader::TokenType type = readNext();
+        QXmlStreamReader::TokenType type = readNext();
 
         if(type == QXmlStreamReader::Invalid)
             break;
 
-		if (isStartElement()) {
+        if (isStartElement()) {
 
-			if (name() == TYPEFACE_METRICS) {
-				startElement = TypefaceMetrics;
-				// Grab the typeface name as "current"
-				QXmlStreamAttributes attrs = attributes();
-				foreach (const QXmlStreamAttribute &attr, attrs) {
+            if (name() == TYPEFACE_METRICS) {
+                startElement = TypefaceMetrics;
+                // Grab the typeface name as "current"
+                QXmlStreamAttributes attrs = attributes();
+                foreach (const QXmlStreamAttribute &attr, attrs) {
 
-					if (attr.name().toString() == TYPEFACE_FAMILY_ATT) {
-						mCurrentFamily = attr.value().toString();
-			            if (!mCurrentFamily.isEmpty()) {
-							startElement = TypefaceMetrics; // Now we have a workable start element
-			            }
-					}
-				}
+                    if (attr.name().toString() == TYPEFACE_FAMILY_ATT) {
+                        mCurrentFamily = attr.value().toString();
+                        if (!mCurrentFamily.isEmpty()) {
+                            startElement = TypefaceMetrics; // Now we have a workable start element
+                        }
+                    }
+                }
 
-			}
-			else if ( name() == TYPEFACE_SET) {
-				startElement = TypefaceSet;
-			}
-		}
+            }
+            else if ( name() == TYPEFACE_SET) {
+                startElement = TypefaceSet;
+            }
+        }
 
-		else {
-			// Nothing. Some other type of element;
-		}
+        else {
+            // Nothing. Some other type of element;
+        }
     }
 
     return startElement;
@@ -280,7 +284,7 @@ HbTypefaceXmlParser::StartElement HbTypefaceXmlParser::readToStartElement()
     name to a typeface family.
     The mapping also indicates if the typeface should be bold by default
 
-	\sa init()
+    \sa init()
     \param role The name of the role mapped from
     \param family The typeface family name mapped to the role
     \param bold true if typeface is to be used bold by default
@@ -288,28 +292,28 @@ HbTypefaceXmlParser::StartElement HbTypefaceXmlParser::readToStartElement()
 */
 bool HbTypefaceXmlParser::readMapping(QString &role, QString &family, QString &aliasFamily, bool &bold)
 {
-	bool atEnd(false);
-	bool success(false);
+    bool atEnd(false);
+    bool success(false);
 
     while (!atEnd && !success ) {
-    	QXmlStreamReader::TokenType type = readNext();
+        QXmlStreamReader::TokenType type = readNext();
         if(type == QXmlStreamReader::Invalid)
             break;
 
-		if (isEndElement()) {
-        	if(name() == TYPEFACE_SET) {
-    			atEnd = true;
-        	}
-		}
-		else if (isStartElement()) {
-			if (name() == TYPEFACE_MAPPING) {
-				success = readMapItem(role, family, aliasFamily, bold);
-			}
-		}
+        if (isEndElement()) {
+            if(name() == TYPEFACE_SET) {
+                atEnd = true;
+            }
+        }
+        else if (isStartElement()) {
+            if (name() == TYPEFACE_MAPPING) {
+                success = readMapItem(role, family, aliasFamily, bold);
+            }
+        }
 
-		else {
-			// Nothing. Some other type of element;
-		}
+        else {
+            // Nothing. Some other type of element;
+        }
     }
 
     return success;
@@ -326,33 +330,33 @@ bool HbTypefaceXmlParser::readMapItem(QString &role, QString &family, QString &a
     bool haveFamily(false);
 
     QString attrName;
-	QXmlStreamAttributes attrs = attributes();
+    QXmlStreamAttributes attrs = attributes();
 
-	foreach (const QXmlStreamAttribute &attr, attrs) {
-		attrName = attr.name().toString();
+    foreach (const QXmlStreamAttribute &attr, attrs) {
+        attrName = attr.name().toString();
 
-		if (attrName == TYPEFACE_ROLE_ATT) {
-			role = attr.value().toString();
+        if (attrName == TYPEFACE_ROLE_ATT) {
+            role = attr.value().toString();
             if (!role.isEmpty()) {
-    			haveRole = true;
+                haveRole = true;
             }
-		}
-		else if (attrName == TYPEFACE_FAMILY_ATT) {
-			family = attr.value().toString();
+        }
+        else if (attrName == TYPEFACE_FAMILY_ATT) {
+            family = attr.value().toString();
             if (!role.isEmpty()) {
-    			haveFamily = true;
+                haveFamily = true;
             }
-		}
-		else if (attrName == TYPEFACE_WEIGHT_ATT) {
-			if (attr.value().toString() == TYPEFACE_ATT_VAL_BOLD)
-				isBold = true;
-		}
-		else if (attrName == TYPEFACE_ALIASFAMILY_ATT) {
-			aliasFamily = attr.value().toString();
-		}
-		else {
-			qDebug("Unrecognized attribute");
-		}
+        }
+        else if (attrName == TYPEFACE_WEIGHT_ATT) {
+            if (attr.value().toString() == TYPEFACE_ATT_VAL_BOLD)
+                isBold = true;
+        }
+        else if (attrName == TYPEFACE_ALIASFAMILY_ATT) {
+            aliasFamily = attr.value().toString();
+        }
+        else {
+            qDebug("Unrecognized attribute");
+        }
     }
 
     return haveRole && haveFamily;
@@ -371,31 +375,31 @@ bool HbTypefaceXmlParser::readMapItem(QString &role, QString &family, QString &a
 */
 bool HbTypefaceXmlParser::readMetric(int &textHeight, int &size, int&baseline)
 {
-	bool atEnd(false);
-	bool success(false);
+    bool atEnd(false);
+    bool success(false);
 
-	textHeight = -1;
-	size = -1;
-	baseline = -1;
+    textHeight = -1;
+    size = -1;
+    baseline = -1;
 
     while (!atEnd && !success) {
-    	QXmlStreamReader::TokenType type = readNext();
+        QXmlStreamReader::TokenType type = readNext();
         if(type == QXmlStreamReader::Invalid)
             break;
 
-		if (isEndElement()) {
-        	if(name() == TYPEFACE_METRICS) {
-    			atEnd = true;
-        	}
-		}
-		else if (isStartElement()) {
-			if (name() == TYPEFACE_METRICS_POINT) {
-				success = readMetricItem(textHeight, size, baseline);
-			}
-		}
-		else {
-			// Nothing. Some other type of element;
-		}
+        if (isEndElement()) {
+            if(name() == TYPEFACE_METRICS) {
+                atEnd = true;
+            }
+        }
+        else if (isStartElement()) {
+            if (name() == TYPEFACE_METRICS_POINT) {
+                success = readMetricItem(textHeight, size, baseline);
+            }
+        }
+        else {
+            // Nothing. Some other type of element;
+        }
     }
 
     return success;
@@ -411,24 +415,24 @@ bool HbTypefaceXmlParser::readMetricItem(int &textHeight, int &size, int &baseli
 
     QString attrName;
     QString attrValue;
-	QXmlStreamAttributes attrs = attributes();
+    QXmlStreamAttributes attrs = attributes();
 
-	foreach (const QXmlStreamAttribute &attr, attrs) {
-		attrName = attr.name().toString();
-		attrValue = attr.value().toString();
+    foreach (const QXmlStreamAttribute &attr, attrs) {
+        attrName = attr.name().toString();
+        attrValue = attr.value().toString();
 
-		if (attrName == TYPEFACE_TEXTHEIGHT_ATT) {
-			textHeight = attrValue.toInt();
-		}
-		else if (attrName == TYPEFACE_SIZE_ATT) {
-			size = attrValue.toInt();
-		}
-		else if (attrName == TYPEFACE_BASELINE_ATT) {
-			baseline = attrValue.toInt();
-		}
-		else {
-			qDebug() << "Unrecognized attribute: " << attrName;
-		}
+        if (attrName == TYPEFACE_TEXTHEIGHT_ATT) {
+            textHeight = attrValue.toInt();
+        }
+        else if (attrName == TYPEFACE_SIZE_ATT) {
+            size = attrValue.toInt();
+        }
+        else if (attrName == TYPEFACE_BASELINE_ATT) {
+            baseline = attrValue.toInt();
+        }
+        else {
+            qDebug() << "Unrecognized attribute: " << attrName;
+        }
     }
 
     return (textHeight>0 && size>0);
@@ -439,10 +443,10 @@ bool HbTypefaceXmlParser::readMetricItem(int &textHeight, int &size, int &baseli
 */
 void HbTypefaceXmlParser::close()
 {
-	clear();
-	if (mFile && mFile->isOpen()) {
-			mFile->close(); // Device is owned externally from streamreader
-	}
+    clear();
+    if (mFile && mFile->isOpen()) {
+            mFile->close(); // Device is owned externally from streamreader
+    }
 }
 
 /*!
@@ -452,7 +456,7 @@ void HbTypefaceXmlParser::close()
 */
 const QString HbTypefaceXmlParser::metricsTypefaceFamily() const
 {
-	return mCurrentFamily;
+    return mCurrentFamily;
 }
 
 // End of File

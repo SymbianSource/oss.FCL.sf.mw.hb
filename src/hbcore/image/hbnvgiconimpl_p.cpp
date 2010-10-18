@@ -340,6 +340,13 @@ QPixmap HbNvgIconImpl::pixmap()
 
     currentPixmap = QPixmap::fromImage(image);
 
+    // Apply color
+    if (this->color().isValid()) {
+        QPixmap mask = currentPixmap.alphaChannel();
+        currentPixmap.fill(this->color());
+        currentPixmap.setAlphaChannel(mask);
+    }
+    
     // Apply mode
     if (this->mode != QIcon::Normal) {
         QStyleOption opt(0);
@@ -347,12 +354,6 @@ QPixmap HbNvgIconImpl::pixmap()
         currentPixmap = QApplication::style()->generatedIconPixmap(this->mode, currentPixmap, &opt);
     }
 
-    // Apply color
-    if (this->color().isValid() && (this->mode != QIcon::Disabled)) {
-        QPixmap mask = currentPixmap.alphaChannel();
-        currentPixmap.fill(this->color());
-        currentPixmap.setAlphaChannel(mask);
-    }
     return currentPixmap;
 }
 

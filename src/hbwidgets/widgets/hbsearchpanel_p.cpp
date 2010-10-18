@@ -69,6 +69,7 @@ void HbSearchPanelPrivate::init( )
 
     // connect initial state signals
     QObject::connect(mLineEdit, SIGNAL(textChanged(QString)), q, SIGNAL(criteriaChanged(QString)));
+    mLineEdit->installEventFilter(q);
 
 }
 
@@ -92,7 +93,7 @@ void HbSearchPanelPrivate::removeSearchOptionsButton()
     mSearchOptions = false;
     HbStyle::setItemName( mSearchOptionsButton, "" );
     QObject::disconnect(mSearchOptionsButton, SIGNAL(clicked()), q, SLOT(_q_searchOptionsClicked()));
-    mSearchOptionsButton->deleteLater();
+    delete mSearchOptionsButton;
     mSearchOptionsButton = 0;
     q->repolish();
 }
@@ -118,7 +119,7 @@ void HbSearchPanelPrivate::removeProgressButton()
     mProgressive = true;
     HbStyle::setItemName( mProgressButton, "" );
     QObject::disconnect(mProgressButton, SIGNAL(clicked()), q, SLOT(_q_criteriaChanged()));
-    mProgressButton->deleteLater();
+    delete mProgressButton;
     mProgressButton = 0;
 
     // start to send events always when text is updated
@@ -145,7 +146,7 @@ void HbSearchPanelPrivate::removeCancelButton()
     Q_Q( HbSearchPanel );
     mCancelEnabled = false;
     HbStyle::setItemName( mCancelButton, "" );
-    mCancelButton->deleteLater();
+    delete mCancelButton;
     mCancelButton = 0;
     q->repolish();
 }

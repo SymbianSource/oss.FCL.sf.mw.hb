@@ -48,12 +48,14 @@ public:
             NotificationGroup = 0x02,
             IndicatorGroup  = 0x04,
             SecurityGroup  = 0x08, // screen saver / alarm
-            CriticalGroup  = 0x10, // topmost dialogs
+            NormalLevel = 0x10,
+            SecurityLevel  = 0x20, // showing on security level
+            CriticalLevel  = 0x40, // showing on critical level
             // Dialog status
-            Showing = 0x20, // show() has been called
-            CloseCalled = 0x40, // HbDeviceDialogInterface::closeDeviceDialog() has been called
-            NoClient = 0x80, // dialog has no client (session closed or a client launched a new dialog)
-            ClosedByServer = 0x100 // closed by server for some reason, not client
+            Showing = 0x80, // show() has been called
+            CloseCalled = 0x100, // HbDeviceDialogInterface::closeDeviceDialog() has been called
+            NoClient = 0x200, // dialog has no client (session closed or a client launched a new dialog)
+            ClosedByServer = 0x400 // closed by server for some reason, not client
         };
         Q_DECLARE_FLAGS(Flags, Flag)
         enum Variable {
@@ -83,9 +85,12 @@ public:
         QString stringVariable(Variable selector) const {return mVariables[selector].toString();}
         void setVariable(Variable selector, qulonglong value){mVariables[selector].setValue(value);}
         void setVariable(Variable selector, const QString &value){mVariables[selector].setValue(value);}
+        void setReadOnly(); 
         bool operator ==(const Dialog &other) const;
+        void operator =(const Dialog &other);
     private:
         bool verify() const;
+        bool readOnly() const;
 
         int mId;
         HbDeviceDialogInterface *mPtr;
@@ -94,6 +99,7 @@ public:
         int mIndex;
 #ifndef QT_NO_DEBUG
         HbDeviceDialogsContainer *mContainer; // used by verify()
+        bool mReadOnly; // used by readOnly() 
 #endif // QT_NO_DEBUG
         friend class HbDeviceDialogsContainer;
     };
@@ -107,13 +113,15 @@ public:
     Dialog &find(int id);
     Dialog &find(const QObject *widget);
     void remove(Dialog &dialog);
+    const Dialog &next(const Dialog &from, Dialog::Flags flags, Dialog::Flags mask) const;
     Dialog &next(const Dialog &from, Dialog::Flags flags, Dialog::Flags mask);
     Dialog &next(const Dialog &from, Dialog::Variable variable, quintptr value)
         {return next(from, variable, QVariant(static_cast<qulonglong>(value)));}
     Dialog &next(const Dialog &from, Dialog::Variable variable, const QString &value)
         {return next(from, variable, QVariant(value));}
     Dialog &next(const Dialog &from, Dialog::Variable variable, const QVariant &value);
-    bool isEmpty() const;	
+    int count(Dialog::Flags flags, Dialog::Flags mask) const;
+    bool isEmpty() const;
 
 private:
     HbDeviceDialogPluginManager &mPluginManager;

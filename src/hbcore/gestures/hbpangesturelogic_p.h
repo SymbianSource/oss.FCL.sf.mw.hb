@@ -26,14 +26,12 @@
 #ifndef HBPANGESTURELOGIC_P_H
 #define HBPANGESTURELOGIC_P_H
 
-#include "hbgestures_p.h"
 #include "hbglobal.h"
-#include "hbpangesture_p.h"
 
-#include <QTime>
 #include <QEvent>
 #include <QGestureRecognizer>
 #include <QList>
+#include <QTouchEvent>
 
 class QPoint;
 class HbPanGesture;
@@ -46,30 +44,34 @@ public:
     ~HbPanGestureLogic();
 
     bool isMouseEvent(QEvent::Type eventType);
+    bool isTouchEvent(QEvent::Type eventType);
     void resetGesture(HbPanGesture *gesture);
-    QGestureRecognizer::Result handleMousePress(
+    QTouchEvent::TouchPoint followedTouchPoint(QTouchEvent *te, HbPanGesture *gesture);
+    QTouchEvent::TouchPoint getNextTouchPoint(QTouchEvent *te);
+    QGestureRecognizer::Result handlePress(
             Qt::GestureState gestureState,
             HbPanGesture *gesture,
             QObject *watched,
-            QMouseEvent *me );
-    QGestureRecognizer::Result handleMouseMove(
+            const QPointF &globalPos,
+            qint64 currentTime );
+    QGestureRecognizer::Result handleMove(
             Qt::GestureState gestureState,
             HbPanGesture *gesture,
             QObject *watched,
-            QMouseEvent *me );
-    QGestureRecognizer::Result handleMouseRelease(
+            const QPointF &globalPos,
+            qint64 currentTime );
+    QGestureRecognizer::Result handleRelease(
             Qt::GestureState gestureState,
             HbPanGesture *gesture,
             QObject *watched,
-            QMouseEvent *me );    
+            const QPointF &globalPos,
+            qint64 currentTime );
     QGestureRecognizer::Result recognize(
             Qt::GestureState gestureState,
             HbPanGesture *gesture,
             QObject *watched,
             QEvent *event,
-            QTime currentTime);
-
-    QTime mCurrentTime;    
+            qint64 currentTime);
 };
 
 #endif // HBPANGESTURELOGIC_P_H

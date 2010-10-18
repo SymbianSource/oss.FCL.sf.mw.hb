@@ -24,15 +24,17 @@
 ****************************************************************************/
 
 #include "hbsysteminfosym_p_p.h"
+#include "hbdevicedialogserverstatus_p.h"
 #include <qapplication.h>
 #include <qcoreevent.h>
+#include <QMutexLocker>
 
 const TUint32 secureId = 0x20022FC5;
 const TUint32 splashGenServerSecureId = 0x2002E68B;
 
 // publish & subscribe 
 const TUid PropertyCategoryUid = {secureId};
-const TUint InfoKey = 'Info';
+const TUint InfoKey = 0x496e666f; // 'Info'
 _LIT_SECURITY_POLICY_PASS(KRdPolicy); // all pass
 _LIT_SECURITY_POLICY_S0(KWrPolicy, PropertyCategoryUid.iUid); // pass device dialog server
 
@@ -54,6 +56,7 @@ HbSystemInfoPrivate::~HbSystemInfoPrivate()
     delete mSystemDeviceInfo;
     mInfoProperty.Close(); 
     delete mDataBuffer;   
+    delete mServerStatus;
 }
 
 void HbSystemInfoPrivate::init(bool writer)
@@ -106,6 +109,8 @@ void HbSystemInfoPrivate::init(bool writer)
             mInfoProperty.Attach(PropertyCategoryUid, InfoKey);
         }
 
+        mServerStatus = new HbDeviceDialogServerStatus(false);
+
         // hbsplashgenerator will not have any Qt widget shown (and
         // thus created) so we cannot rely on foreground-background
         // notifications. Instead, invoke gainedForeground manually.
@@ -120,6 +125,7 @@ void HbSystemInfoPrivate::init(bool writer)
 void HbSystemInfoPrivate::start()
 {
     if (mInfoProperty.Handle()) {
+        mServerStatus->enableMonitoring(true);
         mInfoProperty.Subscribe(iStatus);
         SetActive();
     }
@@ -144,6 +150,7 @@ void HbSystemInfoPrivate::readDeviceInfo()
 
 void HbSystemInfoPrivate::writeDeviceInfo()
 {
+    QMutexLocker locker(&mutex);
     QByteArray array;
     QDataStream stream(&array, QIODevice::WriteOnly);
     stream << mDeviceSystemInfo;
@@ -193,6 +200,7 @@ void HbSystemInfoPrivate::DoCancel()
     if (mListening) {
         mInfoProperty.Cancel();
         mListening = false;
+        mServerStatus->enableMonitoring(false);
     }
 }
 
@@ -253,6 +261,8 @@ void HbSystemInfoPrivate::setNetworkMode(QSystemNetworkInfo::NetworkMode mode)
 {
     if (mode != mDeviceSystemInfo.networkMode) {
         mDeviceSystemInfo.networkMode = mode;
+        mDeviceSystemInfo.networkStatus = mSystemNetworkInfo->networkStatus(mode);
+        mDeviceSystemInfo.signalStrength = QSystemNetworkInfo::networkSignalStrength(mode); 
         writeDeviceInfo();
     }
 }
@@ -279,9 +289,13 @@ void HbSystemInfoPrivate::lostForeground()
     // so cannot stop listening in that case.
     RProcess me;
     if (mListening && me.SecureId().iId != splashGenServerSecureId) {
+        HbDeviceDialogServerStatus::StatusFlags flags = mServerStatus->status();
+        if ((flags & HbDeviceDialogServerStatus::ShowingDialog) == HbDeviceDialogServerStatus::NoFlags ||
+            flags & HbDeviceDialogServerStatus::ShowingScreenSaver) {            
         mInfoProperty.Cancel();
         Cancel();
         mListening = false;
+        }
     }
     me.Close();
 }

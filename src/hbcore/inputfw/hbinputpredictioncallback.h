@@ -50,6 +50,7 @@ public:
     virtual QList<HbKeyPressProbability> probableKeypresses() {
         return QList<HbKeyPressProbability>();
     }
+    virtual bool isPunctuationKey(const Qt::Key key, const HbKeyboardType keypad) = 0;
 };
 
 #endif // HB_INPUT_PREDICTION_CALLBACK_H

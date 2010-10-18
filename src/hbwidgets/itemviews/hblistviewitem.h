@@ -31,6 +31,9 @@
 #include <hbnamespace.h>
 
 class HbListViewItemPrivate;
+class HbStylePrimitiveData;
+
+class QGraphicsObject;
 
 class HB_WIDGETS_EXPORT HbListViewItem : public HbAbstractViewItem
 {
@@ -89,6 +92,10 @@ protected:
     HbListViewItem(HbListViewItemPrivate &dd, QGraphicsItem *parent);
 
     void polish(HbStyleParameters& params);
+
+    void initPrimitiveData( HbStylePrimitiveData     *primitiveData, 
+                            const QGraphicsObject    *primitive,
+                            int                      index);
 
 private:
 

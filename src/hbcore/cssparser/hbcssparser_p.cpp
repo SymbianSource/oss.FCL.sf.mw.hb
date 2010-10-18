@@ -25,28 +25,27 @@
 
 #include "hbcssparser_p.h"
 
-#include <new>
-#include <qdebug.h>
-#include <qcolor.h>
-#include <qfont.h>
-#include <qfileinfo.h>
-#include <qfontmetrics.h>
-#include <qbrush.h>
-#include <qimagereader.h>
-#include <qgraphicswidget.h>
+#include <QDebug>
+#include <QColor>
+#include <QFont>
+#include <QGraphicsWidget>
+#include <QStack>
 
-//QT_BEGIN_NAMESPACE
+#include <qmath.h>
 
-//#define CSSSTACKS_DEBUG 
+//#define CSSPARSER_DEBUG 
 
 #include "hbcssscanner_p.cpp"
 #include "hbmemoryutils_p.h"
 #include "hblayeredstyleloader_p.h"
 #include "hbthemeindex_p.h"
+#include "hblayoutparameters_p.h"
+#include "hbhash_p.h"
 
 using namespace HbCss;
 
 const QString GLOBAL_CSS_SELECTOR = "*";
+const uint GLOBAL_CSS_SELECTOR_HASH = qHash(GLOBAL_CSS_SELECTOR.toLatin1());
 
 struct HbCssKnownValue
 {
@@ -99,6 +98,7 @@ static const HbCssKnownValue properties[NumProperties - 1] = {
     { "size-policy-vertical", Property_SizePolicyVertical },
     { "text-align", Property_TextAlignment },
     { "text-decoration", Property_TextDecoration },
+    { "text-elide-mode", Property_TextElideMode },
     { "text-height", Property_TextHeight },
     { "text-line-count-max", Property_TextLineCountMax },
     { "text-line-count-min", Property_TextLineCountMin },
@@ -125,6 +125,7 @@ static const HbCssKnownValue values[NumKnownValues - 1] = {
     { "line-through", Value_LineThrough },
     { "lowercase", Value_Lowercase },
     { "maximum", Value_Maximum },
+    { "middle", Value_Middle },
     { "minimum", Value_Minimum },
     { "minimum-expanding", Value_MinimumExpanding },
     { "negative", Value_Negative },
@@ -148,7 +149,8 @@ static const HbCssKnownValue values[NumKnownValues - 1] = {
     { "underline", Value_Underline },
     { "uppercase", Value_Uppercase },
     { "word-wrap", Value_WordWrap },
-    { "wrap-anywhere", Value_WrapAnywhere }
+    { "wrap-anywhere", Value_WrapAnywhere },
+    { "wrap-at-word-boundary-or-anywhere", Value_WrapAtWordBoundaryOrAnywhere }
 };
 
 static const HbCssKnownValue pseudos[NumPseudos - 1] = {
@@ -157,6 +159,9 @@ static const HbCssKnownValue pseudos[NumPseudos - 1] = {
     { "portrait", PseudoClass_Portrait },
     { "right-to-left", PseudoClass_RightToLeft }
 };
+
+static const int screenWidthParam = hbHash(QString("hb-param-screen-width"));
+static const int screenHeightParam = hbHash(QString("hb-param-screen-height"));
 
 inline bool operator<(const QString &name, const HbCssKnownValue &prop)
 {
@@ -180,61 +185,90 @@ static quint64 findKnownValue(const QString &name, const HbCssKnownValue *start,
 #ifndef HB_BIN_CSS
 ///////////////////////////////////////////////////////////////////////////////
 // Value Extractor
-ValueExtractor::ValueExtractor(const HbVector<Declaration> &decls, const HbDeviceProfile &profile)
-: declarations(decls), currentProfile(profile)
-{
-}
 ValueExtractor::ValueExtractor(
-    const HbVector<Declaration> &decls, 
-    const QHash<QString, 
-    HbCss::Declaration> &varDeclarations,
+    const HbVector<Declaration> &decls,
     const HbDeviceProfile &profile)
-: declarations(decls), variableDeclarationsHash(varDeclarations), currentProfile(profile)
+: declarations(decls), layoutParameters(0), variables(0), currentProfile(profile)
 {
 }
 
-ValueExtractor::ValueExtractor(
-    const HbVector<Declaration> &varDecls, 
-    bool isVariable, 
-    const HbDeviceProfile &profile)
-: variableDeclarations(varDecls), currentProfile(profile)
+ValueExtractor::ValueExtractor( const HbDeviceProfile &profile)
+: layoutParameters(0), variables(0), currentProfile(profile)
 {
-    Q_UNUSED(isVariable)
     // Initialize to some profile.
     if ( currentProfile.isNull() ) {
         currentProfile = HbDeviceProfile::current();
     }
 }
 
-ValueExtractor::ValueExtractor(
-    const QHash<QString, 
-    HbCss::Declaration> &varDecls, 
-    bool isVariable, 
-    const HbDeviceProfile &profile)
-: variableDeclarationsHash(varDecls), currentProfile(profile)
+qreal ValueExtractor::asReal(const Value& v, bool *ok) const
 {
-    Q_UNUSED(isVariable)
-    // Initialize to some profile.
-    if ( currentProfile.isNull() ) {
-        currentProfile = HbDeviceProfile::current();
+    if (ok) {
+        *ok = true;
     }
-}
 
-qreal ValueExtractor::asReal(const Value& v, bool *ok)
-{
-    QString s = v.variant.toString();
-    s.reserve(s.length());
+    qreal retVal(0.0);
 
-    if (v.type == Value::Expression || v.type == Value::ExpressionNegative) {
+    if (v.type == Value::LengthInUnits) {
+        retVal = currentProfile.unitValue() * v.variant.toDouble();
+    } else if (v.type == Value::LengthInPixels) {
+        retVal = v.variant.toDouble();
+    } else if (v.type == Value::LengthInMillimeters) {
+        retVal = currentProfile.ppmValue() * v.variant.toDouble();
+    } else if (v.type == Value::Percentage) {
+        retVal = v.variant.toDouble() / 100.0;
+    } else if (v.type == Value::Number) {
+        retVal = v.variant.toDouble();
+    } else if (v.type == Value::Variable || v.type == Value::VariableNegative) {
+        qreal factor = (v.type == Value::Variable) ? 1.0 : -1.0;
+        qreal variableValue(0.0);
+        bool tempOk = extractVariableValue((quint32)v.variant.toInt(), variableValue);
+        if (ok) {
+            *ok = tempOk;
+        }
+        retVal = factor * variableValue;
+    } else if (v.type == Value::Expression || v.type == Value::ExpressionNegative) {
         qreal factor = (v.type == Value::Expression) ? 1.0 : -1.0;
-        qreal value = 0;
-        extractExpressionValue(s, value);
-        return factor * value;
+        qreal variableValue(0.0);
+        bool tempOk = extractExpressionValue(v.variant.toIntList(), variableValue);
+        if (ok) {
+            *ok = tempOk;
+        }
+        retVal = factor * variableValue;
+    } else {
+        QString s = v.variant.toString();
+        s.reserve(s.length());
+
+        retVal = asReal(s, v.type, ok);
     }
-    return asReal(s, v.type, ok);
+    return retVal;
 }
 
-qreal ValueExtractor::asReal(QString &s, Value::Type type, bool *ok)
+qreal ValueExtractor::asReal(int token, HbExpressionParser::Token type, bool &ok) const
+{
+    ok = true;
+    qreal result(0.0);
+    switch (type) {
+        case HbExpressionParser::Variable:
+            ok = extractVariableValue((quint32)token, result);
+            break;
+        case HbExpressionParser::LengthInUnits:
+            result = HbExpressionParser::fromFixed(token) * currentProfile.unitValue();
+            break;
+        case HbExpressionParser::LengthInPixels:
+            result = HbExpressionParser::fromFixed(token);
+            break;
+        case HbExpressionParser::LengthInMillimeters:
+            result = HbExpressionParser::fromFixed(token) * currentProfile.ppmValue();
+            break;
+        default:
+            ok = false;
+            break;
+    }
+    return result;
+}
+
+qreal ValueExtractor::asReal(QString &s, Value::Type type, bool *ok) const
 {
     if (ok) {
         *ok = true;
@@ -242,16 +276,16 @@ qreal ValueExtractor::asReal(QString &s, Value::Type type, bool *ok)
 
     if (type == Value::Variable || type == Value::VariableNegative) {
         qreal factor = (type == Value::Variable) ? 1.0 : -1.0;
-        HbVector<HbCss::Value> values;
-        if (extractVariableValue(s, values))
-            return factor * asReal(values.first(), ok);
+        HbCss::Value value;
+        if (extractVariableValue(s, value))
+            return factor * asReal(value, ok);
         else
             if (ok) {
                 *ok = false;
             }
             return 0;
     } else if (type == Value::Percentage) {
-        qreal result = s.toDouble(ok) /100.0;
+        qreal result = s.toDouble(ok) / 100.0;
         if (ok && !(*ok)) {
             return 0;
         } else {
@@ -286,7 +320,7 @@ qreal ValueExtractor::asReal(QString &s, Value::Type type, bool *ok)
     return result;
 }
 
-qreal ValueExtractor::asReal(const Declaration &decl, bool *ok)
+qreal ValueExtractor::asReal(const Declaration &decl, bool *ok) const
 {
     if (decl.values.count() < 1) {
         if (ok) {
@@ -297,7 +331,7 @@ qreal ValueExtractor::asReal(const Declaration &decl, bool *ok)
     return asReal(decl.values.first(), ok);
 }
 
-bool ValueExtractor::asReals(const Declaration &decl, qreal *m)
+bool ValueExtractor::asReals(const Declaration &decl, qreal *m) const
 {
     bool ok = true;
     int i;
@@ -418,7 +452,23 @@ static Hb::TextWrapping parseWrapMode(const Value v)
         switch(v.variant.toInt()) {
         case Value_WordWrap: mode = Hb::TextWordWrap; break;
         case Value_WrapAnywhere: mode = Hb::TextWrapAnywhere; break;
+        case Value_WrapAtWordBoundaryOrAnywhere: mode = Hb::TextWrapAtWordBoundaryOrAnywhere; break;
         case Value_NoWrap: // fall-through
+        default: break;
+        }
+    }
+    return mode;
+}
+
+static Qt::TextElideMode parseElideMode(const Value v)
+{
+    Qt::TextElideMode mode(Qt::ElideNone);
+    if (v.type == Value::KnownIdentifier) {
+        switch(v.variant.toInt()) {
+        case Value_Left: mode = Qt::ElideLeft; break;
+        case Value_Right: mode = Qt::ElideRight; break;
+        case Value_Middle: mode = Qt::ElideMiddle; break;
+        case Value_None: // fall-through
         default: break;
         }
     }
@@ -427,23 +477,22 @@ static Hb::TextWrapping parseWrapMode(const Value v)
 
 static bool setFontSizeFromValue(Value value, QFont &font)
 {
-    if (value.type != Value::Length)
+    if (value.type != Value::Length && value.type != Value::LengthInPixels) {
         return false;
-
+    }
     bool valid = false;
+    if (value.type == Value::LengthInPixels) {
+        if (value.variant.convert(HbVariant::Int)) {
+            font.setPixelSize(value.variant.toInt());
+            return true;
+        }
+    }
     QString s = value.variant.toString();
     if (s.endsWith(QLatin1String("pt"), Qt::CaseInsensitive)) {
         s.chop(2);
         value.variant = s;
         if (value.variant.convert(HbVariant::Double)) {
             font.setPointSizeF(value.variant.toDouble());
-            valid = true;
-        }
-    } else if (s.endsWith(QLatin1String("px"), Qt::CaseInsensitive)) {
-        s.chop(2);
-        value.variant = s;
-        if (value.variant.convert(HbVariant::Int)) {
-            font.setPixelSize(value.variant.toInt());
             valid = true;
         }
     }
@@ -486,7 +535,7 @@ static bool setFontFamilyFromValues(const Declaration &decl, QFont &font)
         const Value &v = decl.values.at(i);
         if (v.type == Value::TermOperatorComma)
             break;
-        const QString str = v.variant.toString();
+        const QString &str = v.variant.toString();
         if (str.isEmpty())
             break;
         family += str;
@@ -538,7 +587,7 @@ static void parseShorthandFontProperty(const Declaration &decl, QFont &font)
     }
 
     if (i < decl.values.count()) {
-        QString fam = decl.values.at(i).variant.toString();
+        const QString &fam = decl.values.at(i).variant.toString();
         if (!fam.isEmpty())
             font.setFamily(fam);
     }
@@ -577,7 +626,7 @@ static void setTextTransformFromValue(const Value &value, QFont &font)
     }
 }
 
-bool ValueExtractor::extractKnownProperties(KnownProperties &prop)
+bool ValueExtractor::extractKnownProperties(KnownProperties &prop) const
 {
     KnownPropertyFlags flags(0);
     bool hit = false;
@@ -688,6 +737,8 @@ bool ValueExtractor::extractKnownProperties(KnownProperties &prop)
             prop.mMaxLines = decl.values.first().variant.toInt(); flags|=ExtractedMaxLines; break;
         case Property_TextWrapMode: 
             prop.mTextWrapMode = parseWrapMode(decl.values.at(0)); flags|=ExtractedWrapMode; break;
+        case Property_TextElideMode: 
+            prop.mTextElideMode = parseElideMode(decl.values.at(0)); flags|=ExtractedElideMode; break;
         case Property_ZValue: prop.mZ = 
             asReal(decl); flags|=ExtractedZValue; break;
 
@@ -783,285 +834,146 @@ static QColor parseColorValue(Value v)
                : QColor::fromHsv(v1, v2, v3, alpha);
 }
 
-bool ValueExtractor::extractVariableValue(
-    const QString& variableName, 
-    HbVector<HbCss::Value>& values) const
+bool ValueExtractor::extractVariableValue(quint32 hashValue, HbCss::Value &value) const
 {
     bool variableFound = false;
-    if ( !variableDeclarationsHash.isEmpty() ) {
-        values = variableDeclarationsHash.value(variableName).values;
-        if ( !values.isEmpty() ) {
+    if (layoutParameters && !layoutParameters->isEmpty()) {
+        HbLayoutParameters::const_iterator i = layoutParameters->find(hashValue);
+        if (i != layoutParameters->end()) {
+            value = layoutParameters->value(i);
             variableFound = true;
         }
-    } else {
-        const int variableCount = variableDeclarations.count();
-        for (int i=variableCount-1; i>=0; i--) {
-            if (variableDeclarations.at(i).property == variableName ) {
-                values = variableDeclarations.at(i).values;
-                variableFound = true;
-                break;
-            }
-        }    
+    } else if (variables && !variables->isEmpty()) {
+        QHash<quint32, HbCss::Declaration>::const_iterator f = variables->find(hashValue);
+        if (f != variables->end() && !f.value().values.isEmpty()) {
+            value = f.value().values.first();
+            variableFound = true;
+        }
     }
     return variableFound;
 }
 
-bool ValueExtractor::extractVariableValue(const QString& variableName, qreal& value)
+
+bool ValueExtractor::extractVariableValue(quint32 hashValue, qreal& value) const
 {
     bool variableFound = false;
-    HbVector<HbCss::Value> values;
-    if (extractVariableValue(variableName, values)) {
-        value = asReal(values.first());
+    HbCss::Value v;
+    if (extractVariableValue(hashValue, v)) {
+        value = asReal(v);
         variableFound = true;
     }
     return variableFound;    
 }
 
-bool ValueExtractor::extractVariableValue( const QString& variableName, HbCss::Value &val ) const
+bool ValueExtractor::extractVariableValue(const QString& variableName, HbCss::Value &value) const
 {
-    HbVector<HbCss::Value> values;
-    bool variableFound = extractVariableValue( variableName, values );
-
-    //for variable cascading support
-    if ( variableFound ) {
-        val = values.first();
-        if ( val.type == Value::Variable ){
-            variableFound = extractVariableValue ( val.variant.toString (), val );
-        }
-    } else {
-        HbLayeredStyleLoader *styleLoader = 
-            HbLayeredStyleLoader::getStack(HbLayeredStyleLoader::Concern_Colors);
-        if (styleLoader) {
-            variableFound = styleLoader->findInDefaultVariables(variableName, val);
-        }
-    }
-    return variableFound;
+    return extractVariableValue(hbHash(variableName), value);
 }
 
-bool ValueExtractor::extractExpressionValue(QString &expression, qreal &value)
+bool ValueExtractor::extractVariableValue(const QString& variableName, qreal& value) const
 {
-    // todo: invalid global variables are not checked because asReal() doesn't check them
-    value = 0;
-    const QChar SPACE(' ');
-    const QChar LPARENTHESIS('(');
-    const QChar RPARENTHESIS(')');
-    const QChar MINUS('-');
-    const QChar PLUS('+');
-    const QChar STAR('*');
-    const QChar SLASH('/');
+    return extractVariableValue(hbHash(variableName), value);
+}
 
-    int position = 0;
-    int begin = -1;
-    // + and - are level 0, * and / in level 1, unary - is level 2
-    // every parenthesis add 10 to (base) precedence level
-    int precedenceLevel = 0; 
-    bool parseVariable = false;
-    bool endMark = false;
-    int operatorCount = 1;//there can only be 2 sequental operators if the latter one is unary '-'
-    while (position < expression.size()) {
-        endMark = false;
-        if (expression.at(position) == SPACE) {
-            endMark = true;
-        } else if ((expression.at(position) == LPARENTHESIS) && !parseVariable) {
-            precedenceLevel+=10;
-            position++;
-            operatorCount = 1;
-            continue;
-        } else if (expression.at(position) == RPARENTHESIS) {
-            if (parseVariable) {
-                parseVariable = false;
-                operatorCount = 0;
-                position++;
-                continue;
-            }
-            precedenceLevel-=10;
-            operatorCount = 0;
-            endMark = true;
-        } else if ((expression.at(position) == MINUS) && !parseVariable) {
-            endMark = true;
-        } else if ((expression.at(position) == PLUS) ||
-                   (expression.at(position) == STAR) ||
-                   (expression.at(position) == SLASH)) {
-            endMark = true;
-        }
-
-        if (endMark) {
-            if (begin >= 0) {
-                // parse value
-                QString valueString = expression.mid(begin, position - begin);
-                qreal val = 0;
-                if (valueString.startsWith("var(") && valueString.endsWith(")")) {
-                    // remove var( and last )
-                    QString variableString = valueString.mid(4, valueString.size()-5);
-                    if (!extractVariableValue(variableString, val)) {
-                        expressionValues.clear();
-                        return false;
-                    }
-                } else {
-                    bool real_ok = true;
-                    val = asReal(valueString, Value::String, &real_ok);
-                    if (!real_ok) {
-                        expressionValues.clear();
-                        return false;
-                    }
-                }
-                expressionValues.append(ExpressionValue(ExpressionValue::None, 0, val));
-                operatorCount = 0;
-            }
-            begin = -1;
-            if (expression.at(position) == MINUS) {
-                if (operatorCount == 1) {
-                    expressionValues.append(
-                        ExpressionValue(ExpressionValue::UnaryMinus,precedenceLevel+2,0));
-                } else if (operatorCount > 1) {
-                    expressionValues.clear();
-                    return false;
-                } else {
-                    expressionValues.append(
-                        ExpressionValue(ExpressionValue::Minus,precedenceLevel,0));
-                }
-                operatorCount++;
-            } else if (expression.at(position) == PLUS) {
-                if (operatorCount > 0) {
-                    expressionValues.clear();
+bool ValueExtractor::extractExpressionValue(const QList<int> &tokens, qreal &value) const
+{
+    // The expression is in RPN format
+    bool ok(true);
+    QStack<qreal> values;
+    for (int i=0; i<tokens.count(); i++) {
+        HbExpressionParser::Token t = (HbExpressionParser::Token)tokens.at(i);
+        switch (t) {
+            case HbExpressionParser::Variable:
+            case HbExpressionParser::LengthInPixels:
+            case HbExpressionParser::LengthInUnits:
+            case HbExpressionParser::LengthInMillimeters:
+                {
+                i++;
+                int val = tokens.at(i);
+                values.push(asReal(val, t, ok));
+                if (!ok) {
                     return false;
                 }
-                expressionValues.append(
-                    ExpressionValue(ExpressionValue::Plus,precedenceLevel,0));
-                operatorCount++;
-            } else if (expression.at(position) == STAR) {
-                if (operatorCount > 0) {
-                    expressionValues.clear();
-                    return false;
-                }
-                expressionValues.append(
-                    ExpressionValue(ExpressionValue::Star,precedenceLevel+1,0));
-                operatorCount++;
-            } else if (expression.at(position) == SLASH) {
-                if (operatorCount > 0) {
-                    expressionValues.clear();
-                    return false;
-                }
-                expressionValues.append(
-                    ExpressionValue(ExpressionValue::Slash,precedenceLevel+1,0));
-                operatorCount++;
-            }
-            position++;
-            continue;
-        }
-
-        if (begin == -1) {
-            begin = position;
-        }
-
-        // flag variable parsing (variable syntax contains parenthesis)
-        if ((expression.at(position) == QChar('v')) && !parseVariable) {
-            parseVariable = true;
-            position++;
-            continue;
-        }
-        position++;
-    }
-
-    // check for unmatching parentheses
-    if (precedenceLevel != 0) {
-        expressionValues.clear();
-        return false;
-    }
-
-    // parse last value
-    if (begin >= 0) {
-        QString valueString = expression.mid(begin, position - begin);
-        qreal val = 0;
-        if (valueString.startsWith("var(") && valueString.endsWith(")")) {
-            // remove var( and last )
-            QString variableString = valueString.mid(4, valueString.size()-5);
-            if (!extractVariableValue(variableString, val)) {
-                expressionValues.clear();
-                return false;
-            }
-        } else {
-            bool real_ok = true;
-            val = asReal(valueString, Value::String, &real_ok);
-            if (!real_ok) {
-                expressionValues.clear();
-                return false;
-            }
-        }
-        expressionValues.append(ExpressionValue(ExpressionValue::None, 0, val));
-    }
-
-    if(expressionValues.isEmpty()) {
-        expressionValues.clear();
-        return false;
-    }
-        
-    // if last value is operator, fail
-    if (expressionValues[expressionValues.size()-1].mToken != ExpressionValue::None) {
-        expressionValues.clear();
-        return false;
-    }
-
-
-    while (expressionValues.size() > 1) { // we have an answer when size = 1
-        int maxPrecedence = -1;
-        int calculateIndex = -1;
-        for (int i = 0; i < expressionValues.size(); i++) {
-            if ((expressionValues[i].mToken != ExpressionValue::None) &&
-                (expressionValues[i].mPrecedence > maxPrecedence)) {
-                maxPrecedence = expressionValues[i].mPrecedence;
-                calculateIndex = i; // contains operator with highest precedence
-            }
-        }
-        qreal answer = 0;
-
-        if(calculateIndex < 0){
-            return false;
-        }
-
-        switch (expressionValues[calculateIndex].mToken) {
-            case ExpressionValue::Minus:
-                answer = expressionValues[calculateIndex-1].mValue -
-                         expressionValues[calculateIndex+1].mValue;
                 break;
-            case ExpressionValue::Plus:
-                answer = expressionValues[calculateIndex-1].mValue +
-                         expressionValues[calculateIndex+1].mValue;
+                }
+            case HbExpressionParser::Addition:
+                {
+                qreal op1 = values.pop();
+                qreal op2 = values.pop();
+                values.push(op2+op1);
                 break;
-            case ExpressionValue::Star:
-                answer = expressionValues[calculateIndex-1].mValue *
-                         expressionValues[calculateIndex+1].mValue;
+                }
+            case HbExpressionParser::Subtraction:
+                {
+                qreal op1 = values.pop();
+                qreal op2 = values.pop();
+                values.push(op2-op1);
                 break;
-            case ExpressionValue::Slash:
-                if (expressionValues[calculateIndex+1].mValue == 0) {
-                    expressionValues.clear();
+                }
+            case HbExpressionParser::Multiplication:
+                {
+                qreal op1 = values.pop();
+                qreal op2 = values.pop();
+                values.push(op2*op1);
+                break;
+                }
+            case HbExpressionParser::Division:
+                {
+                qreal op1 = values.pop();
+                qreal op2 = values.pop();
+                if (op1 == 0) {
                     return false;
                 }
-                answer = expressionValues[calculateIndex-1].mValue /
-                         expressionValues[calculateIndex+1].mValue;
+                values.push(op2/op1);
                 break;
+                }
+            case HbExpressionParser::Negation:
+                {
+                qreal op1 = values.pop();
+                values.push(-op1);
+                break;
+                }
+            case HbExpressionParser::Ceil:
+                {
+                qreal op1 = values.pop();
+                values.push(qCeil(op1));
+                break;
+                }
+            case HbExpressionParser::Floor:
+                {
+                qreal op1 = values.pop();
+                values.push(qFloor(op1));
+                break;
+                }
+            case HbExpressionParser::Round:
+                {
+                qreal op1 = values.pop();
+                values.push(qRound(op1));
+                break;
+                }
             default:
-                break;
-        }
-        if (expressionValues[calculateIndex].mToken == ExpressionValue::UnaryMinus) {
-            expressionValues[calculateIndex+1].mValue = 
-                -expressionValues[calculateIndex+1].mValue;
-            expressionValues.removeAt(calculateIndex);
-        } else {
-            expressionValues[calculateIndex-1].mValue = answer;
-            expressionValues.removeAt(calculateIndex+1);
-            expressionValues.removeAt(calculateIndex);
+                return false;;
         }
     }
 
-    value = expressionValues[0].mValue;
-    expressionValues.clear();
+    if (values.count() != 1) {
+        return false;
+    }
+    value = values.at(0);
+    return true;
+}
 
-    return true;    
+bool ValueExtractor::extractExpressionValue(const QString &expression, qreal &value) const
+{
+    QList<int> tokens;
+    if (!HbExpressionParser::parse(expression, tokens)) {
+        return false;
+    }
+    return extractExpressionValue(tokens, value);
 }
 
 
-bool ValueExtractor::extractCustomProperties( const QList<QString> &keys, QList<QVariant> &values )
+bool ValueExtractor::extractCustomProperties( const QList<QString> &keys, QList<QVariant> &values ) const
 {
     if ( keys.count() != values.count() ) {
         return false;
@@ -1072,13 +984,20 @@ bool ValueExtractor::extractCustomProperties( const QList<QString> &keys, QList<
                 Value val = declarations[i].values.last();
                 switch (val.type) {
                     case Value::Length:
+                    case Value::LengthInUnits:
+                    case Value::LengthInPixels:
+                    case Value::LengthInMillimeters:
                     case Value::Variable:
                     case Value::VariableNegative:
                     case Value::Expression:
                     case Value::ExpressionNegative:
                     case Value::Percentage:
-                        values[j] = asReal(val);
+                        {
+                        bool ok = true;
+                        qreal temp = asReal(val, &ok);
+                        values[j] = ok ? temp : QVariant();
                         break;
+                        }
                     case Value::KnownIdentifier:
                         values[j] = (QString)val.original;
                         break;
@@ -1093,7 +1012,7 @@ bool ValueExtractor::extractCustomProperties( const QList<QString> &keys, QList<
     return true;
 }
 
-bool ValueExtractor::extractLayout(QString &layoutName, QString &sectionName)
+bool ValueExtractor::extractLayout(QString &layoutName, QString &sectionName) const
 {
     QString tempSectionName;
     bool hit = false;
@@ -1128,14 +1047,14 @@ bool ValueExtractor::extractColor( QColor &color ) const
             {
             HbCss::Value value;
             if ( decl.values.at(0).type == Value::Variable ) {
-                const QString variableName = decl.values.at(0).variant.toString();
-                HbThemeIndexResource resource(variableName);
+                quint32 hashValue = (quint32)decl.values.at(0).variant.toInt();
+                HbThemeIndexResource resource(hashValue);
                 if (resource.isValid()) {
                     // Color value coming from index
                     color = resource.colorValue();
                 } else {
                     // Color value coming from custom css
-                    extractVariableValue( variableName, value );
+                    extractVariableValue( hashValue, value );
                     color = parseColorValue(value);
                 }
             } else {
@@ -1223,8 +1142,13 @@ StyleSelector::~StyleSelector()
 }
 
 int StyleSelector::selectorMatches(
-    const Selector &selector, NodePtr node, bool nameCheckNeeded) const
+    const Selector &selector, 
+    NodePtr node, 
+    QSet<NodePtr> *dirtyNodes,
+    bool nameCheckNeeded) const
 {
+    Q_ASSERT(dirtyNodes);
+
     if (selector.basicSelectors.isEmpty()) {
         return -1;
     }
@@ -1233,7 +1157,7 @@ int StyleSelector::selectorMatches(
         if (selector.basicSelectors.count() != 1) {
             return -1;
         }
-        return basicSelectorMatches(selector.basicSelectors.first(), node, nameCheckNeeded);
+        return basicSelectorMatches(selector.basicSelectors.first(), node, dirtyNodes, nameCheckNeeded);
     }
 
     if (selector.basicSelectors.count() <= 1) {
@@ -1247,7 +1171,7 @@ int StyleSelector::selectorMatches(
     BasicSelector sel = selector.basicSelectors.at(i);
     bool firstLoop = true;
     do {
-        matchLevel = basicSelectorMatches(sel, node, (nameCheckNeeded || !firstLoop));
+        matchLevel = basicSelectorMatches(sel, node, dirtyNodes, (nameCheckNeeded || !firstLoop));
         if (firstLoop) {
             firstMatchLevel = matchLevel;
         }
@@ -1302,14 +1226,21 @@ int StyleSelector::inheritanceDepth(NodePtr node, HbString &elementName) const
 const uint CLASS_HASH = qHash(QString("class"));
 
 int StyleSelector::basicSelectorMatches(
-    const BasicSelector &sel, NodePtr node, bool nameCheckNeeded) const
+    const BasicSelector &sel, 
+    NodePtr node, 
+    QSet<NodePtr> *dirtyNodes,
+    bool nameCheckNeeded) const
 {
+    Q_ASSERT(dirtyNodes);
+
     int matchLevel = 0;
     HbString elementName(HbMemoryManager::HeapMemory);
 
     if (!sel.attributeSelectors.isEmpty()) {
         if (!hasAttributes(node))
             return -1;
+
+        dirtyNodes->insert(node);
 
         for (int i = 0; i < sel.attributeSelectors.count(); ++i) {
             const AttributeSelector &a = sel.attributeSelectors.at(i);
@@ -1354,25 +1285,40 @@ static inline bool qcss_selectorDeclarationLessThan(
 }
 
 void StyleSelector::matchRules(
-    NodePtr node, const HbVector<StyleRule> &rules, StyleSheetOrigin origin,
-    int depth, QVector<WeightedRule> *weightedRules, bool nameCheckNeeded) const
+    NodePtr node, 
+    const HbVector<StyleRule> &rules, 
+    StyleSheetOrigin origin,
+    int depth, 
+    QList<WeightedRule> *weightedRules, 
+    QSet<NodePtr> *dirtyNodes,
+    bool nameCheckNeeded) const
 {
+    Q_ASSERT(weightedRules);
+    Q_ASSERT(dirtyNodes);
+
     for (int i = 0; i < rules.count(); ++i) {
         const StyleRule &rule = rules.at(i);
-        for (int j = 0; j < rule.selectors.count(); ++j) {
+        int selectorCount = rule.selectors.count();
+        for (int j = 0; j < selectorCount; ++j) {
             const Selector& selector = rule.selectors.at(j);
-            int matchLevel = selectorMatches(selector, node, nameCheckNeeded);
+            int matchLevel = selectorMatches(selector, node, dirtyNodes, nameCheckNeeded);
             if ( matchLevel >= 0 ) {
-                WeightedRule wRule;
-                wRule.first = selector.specificity()
+                int specificity = selector.specificity()
                     + 0x1000* matchLevel
                     + (origin == StyleSheetOrigin_Inline)*0x10000*depth;
-                wRule.second.selectors.append(selector);
-                wRule.second.declarations = rule.declarations;
+                if (selectorCount > 1) {
+                    WeightedRule wRule;
+                    wRule.first = specificity;
+                    wRule.second.selectors.append(selector);
+                    wRule.second.declarations = rule.declarations;
 #ifdef HB_CSS_INSPECTOR
-                wRule.second.owningStyleSheet = rule.owningStyleSheet;
+                    wRule.second.owningStyleSheet = rule.owningStyleSheet;
 #endif
-                weightedRules->append(wRule);
+                    weightedRules->append(wRule);
+                } else {
+                    WeightedRule wRule(specificity, rule);
+                    weightedRules->append(wRule);
+                }
             }
         }
     }
@@ -1387,7 +1333,8 @@ HbVector<StyleRule> StyleSelector::styleRulesForNode(
     if (styleSheets.isEmpty())
         return rules;
 
-    QVector<WeightedRule> weightedRules = weightedStyleRulesForNode(node, orientation);
+    QList<WeightedRule> weightedRules;
+    weightedStyleRulesForNode(node, orientation, &weightedRules);
 
     qStableSort(weightedRules.begin(), weightedRules.end(), qcss_selectorStyleRuleLessThan);
 
@@ -1397,92 +1344,100 @@ HbVector<StyleRule> StyleSelector::styleRulesForNode(
     return rules;
 }
 
+// Generate inheritance list (reverse order)
+static QList<uint> generateAncestorHashList(const StyleSelector::NodePtr &node)
+{
+    QList<uint> ancestorList;
+    static QHash<uint, QList<uint> > ancestorsCache;
+    const QGraphicsWidget *widgetPtr = static_cast<const QGraphicsWidget*>(node);
+    if (widgetPtr) {
+        const QMetaObject *metaObject = widgetPtr->metaObject();
+        const char *className = metaObject->className();
+        uint classHash = qHash(className);
+        if (ancestorsCache.contains(classHash)) {
+            ancestorList = ancestorsCache[classHash];
+        } else {
+            do {
+                className = metaObject->className();
+                const QByteArray classNameBA = QByteArray::fromRawData(className, strlen(className));
+                ancestorList << qHash(classNameBA);
+                metaObject = metaObject->superClass();
+            } while (metaObject != 0);
+            ancestorList << GLOBAL_CSS_SELECTOR_HASH;
+            ancestorsCache[classHash] = ancestorList;
+        }
+    }
+    return ancestorList;
+}
 
 // Returns style rules and specificity values (unordered)
-QVector<WeightedRule> StyleSelector::weightedStyleRulesForNode(
-    NodePtr node, const Qt::Orientation orientation) const
+void StyleSelector::weightedStyleRulesForNode(
+    NodePtr node, 
+    const Qt::Orientation orientation,
+    QList<HbCss::WeightedRule> *matchedRules) const
 {
     initNode(node);
-    QVector<WeightedRule> weightedRules; // (spec, rule) that will be sorted below
-
-    // Generate inheritance list (reverse order)
-    QStringList classNames;
-    QGraphicsWidget *widgetPtr = static_cast<QGraphicsWidget*> (node.ptr);
-    const QMetaObject *metaObject = widgetPtr->metaObject();
-    do {
-        const QString className = metaObject->className();
-        classNames << className;
-        metaObject = metaObject->superClass();
-    } while (metaObject != 0);
-    classNames << GLOBAL_CSS_SELECTOR;
-
+    QSet<NodePtr> dirtyNodes;
+    
+    QList<uint> ancestorClasses = generateAncestorHashList(node);
     // Iterate backwards through list to append most-derived classes last
-    int count = classNames.count();
+    int count = ancestorClasses.count();
     bool firstLoop = true;
     while(count--){
-        const QString &className = classNames.at(count);
-        uint classNameHash = qHash(className);
+        uint classNameHash = ancestorClasses.at(count);
         QVectorIterator<StyleSheet*> iter(widgetSheets[classNameHash]);
         while (iter.hasNext()) {
             const StyleSheet *styleSheet = iter.next();
-            if(styleSheet) {
-                WidgetStyleRules* widgetStack = styleSheet->widgetStack(classNameHash);
-                if (widgetStack) {
-                    matchRules(node, widgetStack->styleRules, styleSheet->origin, 
-                                styleSheet->depth, &weightedRules, false);
-                    // Append orientation-specific rules
-                    if (orientation == Qt::Vertical) {
-                        matchRules(node, widgetStack->portraitRules, styleSheet->origin, 
-                                    styleSheet->depth, &weightedRules, false);
-                    }else if (orientation == Qt::Horizontal) {
-                        matchRules(node, widgetStack->landscapeRules, styleSheet->origin, 
-                                    styleSheet->depth, &weightedRules, false);
+            if (!styleSheet)
+                continue;
+
+            WidgetStyleRules* widgetStack = styleSheet->widgetStack(classNameHash);
+            if (widgetStack) {
+                matchRules(node, widgetStack->styleRules, styleSheet->origin, 
+                            styleSheet->depth, matchedRules, &dirtyNodes, false);
+                // Append orientation-specific rules
+                if (orientation == Qt::Vertical) {
+                    matchRules(node, widgetStack->portraitRules, styleSheet->origin, 
+                                styleSheet->depth, matchedRules, &dirtyNodes, false);
+                }else if (orientation == Qt::Horizontal) {
+                    matchRules(node, widgetStack->landscapeRules, styleSheet->origin, 
+                                styleSheet->depth, matchedRules, &dirtyNodes, false);
+                }
+            }
+            if (firstLoop && !medium.isEmpty()) { // Media rules are only added to global widget stack
+                int mediaRuleCount = styleSheet->mediaRules.count();
+                for (int i = 0; i < mediaRuleCount; ++i) {
+                    if (styleSheet->mediaRules.at(i).media.contains(
+                            HbString(medium, HbMemoryManager::HeapMemory),
+                            Qt::CaseInsensitive)) {
+                        matchRules(node, styleSheet->mediaRules.at(i).styleRules, 
+                            styleSheet->origin, styleSheet->depth, matchedRules, &dirtyNodes);
                     }
                 }
-                if (firstLoop && !medium.isEmpty()) { // Media rules are only added to global widget stack
-                    int mediaRuleCount = styleSheet->mediaRules.count();
-                    for (int i = 0; i < mediaRuleCount; ++i) {
-                        if (styleSheet->mediaRules.at(i).media.contains(
-                                HbString(medium, HbMemoryManager::HeapMemory),
-                                Qt::CaseInsensitive)) {
-                            matchRules(node, styleSheet->mediaRules.at(i).styleRules, 
-                                styleSheet->origin, styleSheet->depth, &weightedRules);
-                        }
-                    }
-                }// End medium.isEmpty loop
-            }// End styleSheet
+            }// End medium.isEmpty loop
         }
         firstLoop = false;
     }
-    cleanupNode(node);
-    return weightedRules;
+    QSet<NodePtr>::const_iterator dirtyNode;
+    for (dirtyNode = dirtyNodes.begin(); dirtyNode != dirtyNodes.end(); ++dirtyNode)
+        cleanupNode(*dirtyNode);
 }
 
 bool StyleSelector::hasOrientationSpecificStyleRules(NodePtr node) const
 {
-    // Generate inheritance list (reverse order)
-    QStringList classNames;
-    QGraphicsWidget *widgetPtr = static_cast<QGraphicsWidget*> (node.ptr);
-    const QMetaObject *metaObject = widgetPtr->metaObject();
-    do {
-        const QString className = metaObject->className();
-        classNames << className;
-        metaObject = metaObject->superClass();
-    } while (metaObject != 0);
-    classNames << GLOBAL_CSS_SELECTOR;
-
-    int count = classNames.count();
+    QList<uint> ancestorClasses = generateAncestorHashList(node);
+    int count = ancestorClasses.count();
     while (count--) {
-        const QString &className = classNames.at(count);
-        uint classNameHash = qHash(className);
+        uint classNameHash = ancestorClasses.at(count);
         QVectorIterator<StyleSheet*> iter(widgetSheets[classNameHash]);
         while (iter.hasNext()) {
             const StyleSheet *styleSheet = iter.next();
             if (styleSheet) {
                 WidgetStyleRules* widgetStack = styleSheet->widgetStack(classNameHash);
                 if (widgetStack) {
-                    if (widgetStack->portraitRules.count() ||
-                            widgetStack->landscapeRules.count()) {
+                    if (widgetStack->portraitRules.count() 
+                            || widgetStack->landscapeRules.count()
+                            || widgetStack->dependsOnScreen) {
                         return true;
                     }
                 }
@@ -1495,16 +1450,17 @@ bool StyleSelector::hasOrientationSpecificStyleRules(NodePtr node) const
 
 
 // Returns declarations and specificity values (unordered)
-QVector<WeightedDeclaration> StyleSelector::weightedDeclarationsForNode(
+void StyleSelector::weightedDeclarationsForNode(
     NodePtr node, 
     const Qt::Orientation orientation,
+    QList<WeightedDeclaration> *matchedDecls,
     const char *extraPseudo) const
 {
-    QVector<WeightedDeclaration> decls;
-    QVector<WeightedRule> rules = weightedStyleRulesForNode(node, orientation);
+    QList<WeightedRule> rules;
+    weightedStyleRulesForNode(node, orientation, &rules);
     for (int i = 0; i < rules.count(); i++) {
         const Selector& selector = rules.at(i).second.selectors.at(0);
-        const QString pseudoElement = selector.pseudoElement();
+        const QString &pseudoElement = selector.pseudoElement();
 
         bool pseudoElementMatches = (extraPseudo && pseudoElement == QLatin1String(extraPseudo));
 
@@ -1521,14 +1477,11 @@ QVector<WeightedDeclaration> StyleSelector::weightedDeclarationsForNode(
         if (pseudoClassIsValid || pseudoElementMatches) {
             HbVector<Declaration> ruleDecls = rules.at(i).second.declarations;
             for (int j=0; j<ruleDecls.count(); j++) {
-                WeightedDeclaration wDecl;
-                wDecl.first = rules.at(i).first;
-                wDecl.second = ruleDecls.at(j);
-                decls.append(wDecl);
+                WeightedDeclaration wDecl(rules.at(i).first, ruleDecls.at(j));
+                matchedDecls->append(wDecl);
             }
         }
     }
-    return decls;
 }
 
 // for qtexthtmlparser which requires just the declarations with Enabled state
@@ -1542,8 +1495,8 @@ HbVector<Declaration> StyleSelector::declarationsForNode(
     if (styleSheets.isEmpty())
         return decls;
 
-    QVector<WeightedDeclaration> weightedDecls = 
-        weightedDeclarationsForNode(node, orientation, extraPseudo);
+    QList<WeightedDeclaration> weightedDecls;
+    weightedDeclarationsForNode(node, orientation, &weightedDecls, extraPseudo);
 
     qStableSort(weightedDecls.begin(), weightedDecls.end(), qcss_selectorDeclarationLessThan);
 
@@ -1553,7 +1506,7 @@ HbVector<Declaration> StyleSelector::declarationsForNode(
     return decls;
 }
 
-void StyleSelector::variableRuleSets(QHash<QString, HbCss::Declaration> *variables) const 
+void StyleSelector::variableRuleSets(QHash<quint32, HbCss::Declaration> *variables) const 
 {
     HbVector<Declaration> decls;
     const int styleSheetsCount = styleSheets.count();
@@ -1564,7 +1517,7 @@ void StyleSelector::variableRuleSets(QHash<QString, HbCss::Declaration> *variabl
             decls = styleSheet->variableRules.at(j).declarations;
             const int declsCount = decls.count();
             for (int k=0; k<declsCount; k++) {
-                variables->insert(decls.at(k).property, decls.at(k));
+                variables->insert(hbHash(decls.at(k).property), decls.at(k));
             }
         }
     }
@@ -1685,8 +1638,9 @@ Parser::Parser()
     hasEscapeSequences = false;
 }
 
-void Parser::init(const QString &css, bool isFile)
+bool Parser::init(const QString &css, bool isFile)
 {
+    bool success(true);
     QString styleSheet = css;
     if (isFile) {
         QFile file(css);
@@ -1696,8 +1650,11 @@ void Parser::init(const QString &css, bool isFile)
             QTextStream stream(&file);
             styleSheet = stream.readAll();
         } else {
+#ifdef CSSPARSER_DEBUG
             qWarning() << "HbCss::Parser - Failed to load file " << css;
+#endif
             styleSheet.clear();
+            success = false;
         }
     } else {
         sourcePath.clear();
@@ -1711,6 +1668,7 @@ void Parser::init(const QString &css, bool isFile)
     errorIndex = -1;
     errorCode = NoError;
     symbols.reserve(qMax(symbols.capacity(), symbols.size()));
+    return success;
 }
 
 bool Parser::parse(StyleSheet *styleSheet)
@@ -1765,9 +1723,10 @@ bool Parser::parse(StyleSheet *styleSheet)
 #endif
                 if(rule.selectors.count() > 1){
                     foreach(const HbCss::Selector &selector, rule.selectors){
-                        QString stackName = selector.basicSelectors.last().elementName;
-                        if(stackName.length() < 1){
-                            stackName = GLOBAL_CSS_SELECTOR;
+                        uint stackNameHash = GLOBAL_CSS_SELECTOR_HASH; // Default to global selector value
+                        const QString &stackName = selector.basicSelectors.last().elementName;
+                        if(stackName.length() > 0){
+                            stackNameHash = qHash(stackName.toLatin1());
                         }
                         StyleRule newRule(rule.memoryType);
                         newRule.declarations = rule.declarations;
@@ -1775,14 +1734,15 @@ bool Parser::parse(StyleSheet *styleSheet)
 #ifdef HB_CSS_INSPECTOR
                         newRule.owningStyleSheet = styleSheet;
 #endif
-                        addRuleToWidgetStack(styleSheet, stackName, newRule);
+                        addRuleToWidgetStack(styleSheet, stackNameHash, newRule);
                     }
                 } else {
-                    QString stackName = rule.selectors.at(0).basicSelectors.last().elementName;
-                    if(stackName.length() < 1){
-                        stackName = GLOBAL_CSS_SELECTOR;
+                    uint stackNameHash = GLOBAL_CSS_SELECTOR_HASH; // Default to global selector value
+                    const QString &stackName = rule.selectors.at(0).basicSelectors.last().elementName;
+                    if(stackName.length() > 0){
+                        stackNameHash = qHash(stackName.toLatin1());
                     }
-                    addRuleToWidgetStack(styleSheet, stackName, rule);
+                    addRuleToWidgetStack(styleSheet, stackNameHash, rule);
                 }
             } else if (test(ATKEYWORD_SYM)) {
                 if (!until(RBRACE)) return false;
@@ -1803,15 +1763,43 @@ bool Parser::parse(StyleSheet *styleSheet)
     return true;
 }
 
-void Parser::addRuleToWidgetStack(StyleSheet *sheet, const QString &stackName, StyleRule &rule)
+/*
+ * Check whether the rule depends on the current orientation of the screen.
+ * It doesn't matter if it depends on the long or short edge, as those don't
+ * change when the orientation changes.
+ */
+bool Parser::testDependsOnScreen(StyleRule &rule)
 {
-    uint stackNameHash = qHash(stackName);
+    // Iterate through the property values
+    int declCount = rule.declarations.count();
+    for (int i=0; i<declCount; i++) {
+        const Declaration &decl = rule.declarations.at(i);
+        int valueCount = decl.values.count();
+        for (int j=0; j<valueCount; j++) {
+            const Value &value = decl.values.at(j);
+            if (value.type == Value::Variable
+                    || value.type == Value::VariableNegative) {
+                int val = value.variant.toInt();
+                if (val == screenWidthParam || val == screenHeightParam) {
+                    return true;
+                }
+            } else if (value.type == Value::Expression
+                    || value.type == Value::ExpressionNegative) {
+                const QList<int> &vals = value.variant.toIntList();
+                if (vals.contains(screenWidthParam) || vals.contains(screenHeightParam)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+void Parser::addRuleToWidgetStack(StyleSheet *sheet, uint stackNameHash, StyleRule &rule)
+{
     WidgetStyleRules* widgetStack = sheet->widgetStack(stackNameHash);
 
     if (!widgetStack) {
-#ifdef CSSSTACKS_DEBUG
-        qDebug() << "Creating stack for classname" << stackName;
-#endif
         HbCss::WidgetStyleRules rules(stackNameHash, sheet->memoryType);
         widgetStack = sheet->addWidgetStack(rules);
     }
@@ -1829,6 +1817,10 @@ void Parser::addRuleToWidgetStack(StyleSheet *sheet, const QString &stackName, S
         widgetStack->landscapeRules.append(rule);
     } else {
         widgetStack->styleRules.append(rule);
+    }
+
+    if (!widgetStack->dependsOnScreen) {
+        widgetStack->dependsOnScreen = testDependsOnScreen(rule);
     }
 }
 
@@ -2329,11 +2321,28 @@ bool Parser::parseTerm(Value *value)
             value->type = Value::Percentage;
             str.chop(1); // strip off %
             value->variant = str;
+            value->variant.convert(HbVariant::Double);
             break;
         case LENGTH:
-            value->type = Value::Length;
+            if (str.endsWith(QLatin1String("un"), Qt::CaseInsensitive)) {
+                str.chop(2);
+                value->variant = str;
+                value->variant.convert(HbVariant::Double);
+                value->type = Value::LengthInUnits;
+            } else if (str.endsWith(QLatin1String("px"), Qt::CaseInsensitive)) {
+                str.chop(2);
+                value->variant = str;
+                value->variant.convert(HbVariant::Double);
+                value->type = Value::LengthInPixels;
+            } else if (str.endsWith(QLatin1String("mm"), Qt::CaseInsensitive)) {
+                str.chop(2);
+                value->variant = str;
+                value->variant.convert(HbVariant::Double);
+                value->type = Value::LengthInMillimeters;
+            } else {
+                value->type = Value::Length;
+            }
             break;
-
         case STRING:
             if (haveUnary) return false;
             value->type = Value::String;
@@ -2370,24 +2379,27 @@ bool Parser::parseTerm(Value *value)
                         args.prepend(sourcePath);
                     }
                     value->variant = args;
-                }
-                //changes for variable support
-                else if (name == QLatin1String("var")) {
-                    value->type = Value::Variable;
-                    value->variant = args;
-                } else if (name == QLatin1String("-var")) {                    
-                    value->type = Value::VariableNegative;
-                    value->variant = args;
-                } //change end
-                //changes for expression support
-                else if (name == QLatin1String("expr")) {
-                    value->type = Value::Expression;
-                    value->variant = args;
-                } else if (name == QLatin1String("-expr")) {
-                    value->type = Value::ExpressionNegative;
-                    value->variant = args;
-                } //change end
-                else {
+                } else if (name == QLatin1String("var") || name == QLatin1String("-var")) {
+                    value->type = name.startsWith(QLatin1Char('-'))
+                        ? Value::VariableNegative
+                        : Value::Variable;
+                    value->variant = (int)hbHash( args );
+#ifdef HB_CSS_INSPECTOR
+                    value->original = args;
+#endif
+                } else if (name == QLatin1String("expr") || name == QLatin1String("-expr")) {
+                    value->type = name.startsWith(QLatin1Char('-'))
+                        ? Value::ExpressionNegative
+                        : Value::Expression;
+                    QList<int> tokens;
+                    if (!HbExpressionParser::parse(args, tokens)) {
+                        return false;
+                    }
+                    value->variant = tokens;
+#ifdef HB_CSS_INSPECTOR
+                    value->original = args;
+#endif
+                } else {
                     value->type = Value::Function;
                     value->variant = QStringList() << name << args;
                 }
@@ -2557,6 +2569,15 @@ static const QString what(Value::Type t)
         break;
     case Value::Length:
         returnString = QString("Length");
+        break;
+    case Value::LengthInUnits:
+        returnString = QString("LengthInUnits");
+        break;
+    case Value::LengthInPixels:
+        returnString = QString("LengthInPixels");
+        break;
+    case Value::LengthInMillimeters:
+        returnString = QString("LengthInMillimeters");
         break;
     case Value::String:
         returnString = QString("String");
@@ -2732,4 +2753,3 @@ void StyleSheet::print() const
 
 #endif // CSS_PARSER_TRACES
 
-//QT_END_NAMESPACE

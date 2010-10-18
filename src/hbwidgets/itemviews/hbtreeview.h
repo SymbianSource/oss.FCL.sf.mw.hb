@@ -51,6 +51,11 @@ public:
     explicit HbTreeView(QGraphicsItem *parent = 0);
     virtual ~HbTreeView();    
 
+    enum { Type = Hb::ItemType_TreeView };
+    virtual int type() const {
+        return Type;
+    }
+
     virtual void setModel(QAbstractItemModel *model, HbAbstractViewItem *prototype = 0);
 
     virtual void scrollTo(const QModelIndex &index, ScrollHint hint = EnsureVisible);

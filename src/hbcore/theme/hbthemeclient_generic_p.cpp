@@ -43,9 +43,7 @@ HbThemeClientPrivate::HbThemeClientPrivate() :
         iniFileWatcher(0),
         clientConnected(false)
 {
-#ifdef THEME_SERVER_TRACES
-    qDebug() << Q_FUNC_INFO ;
-#endif
+    THEME_GENERIC_DEBUG() << Q_FUNC_INFO;
 
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, QLatin1String(ORGANIZATION), QLatin1String(THEME_COMPONENT));
     iniFileWatcher = new QFileSystemWatcher(this);
@@ -67,9 +65,7 @@ HbThemeClientPrivate::~HbThemeClientPrivate()
 void HbThemeClientPrivate::iniFileChanged(QString iniFile)
 {
     Q_UNUSED(iniFile);
-#ifdef THEME_SERVER_TRACES
-    qDebug() << Q_FUNC_INFO;
-#endif
+    THEME_GENERIC_DEBUG() << Q_FUNC_INFO;
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, QLatin1String(ORGANIZATION), QLatin1String(THEME_COMPONENT));
     QString newTheme = settings.value("currenttheme").toString();
 

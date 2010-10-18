@@ -29,6 +29,8 @@
 #include "hbtextitem.h"
 #include "hbnamespace_p.h"
 #include "hbfontspec.h"
+#include "hbstyle_p.h"
+#include "hbframeitem.h"
 #ifdef HB_EFFECTS
 #include "hbeffectinternal_p.h"
 #endif
@@ -57,13 +59,15 @@ HbToolTipLabelPrivate::HbToolTipLabelPrivate():
 void HbToolTipLabelPrivate::init()
 {
     Q_Q(HbToolTipLabel);
-    setBackgroundItem(HbStyle::P_ToolTip_background);
+    q->setBackgroundItem(new HbFrameItem(QLatin1String("qtg_fr_popup_preview"), HbFrameDrawer::NinePieces), -1);
 
     q->setFocusPolicy(Qt::NoFocus);
     q->setTimeout(HbPopup::NoTimeout);
     q->setBackgroundFaded(false);
     q->setDismissPolicy(HbPopup::TapAnywhere);
     q->setModal(false);
+
+    q->setFlag(QGraphicsItem::ItemIsPanel, false);
 }
 
 void HbToolTipLabelPrivate::addPopupEffects()
@@ -224,6 +228,7 @@ HbToolTipLabel::HbToolTipLabel(QGraphicsWidget *parent) :
     Q_D(HbToolTipLabel);
     d->q_ptr = this;
     d->init();
+    d->mActivePopup = false;
 }
 
 HbToolTipLabel::~HbToolTipLabel()
@@ -250,9 +255,6 @@ void HbToolTipLabel::eventHook(QEvent *event)
                 case QEvent::GraphicsSceneMousePress:
                 case QEvent::GraphicsSceneMouseRelease:
                 case QEvent::GraphicsSceneMouseDoubleClick:
-                case QEvent::GraphicsSceneHoverEnter:
-                case QEvent::GraphicsSceneHoverLeave:
-                case QEvent::GraphicsSceneHoverMove:
                 case QEvent::FocusIn:
                 case QEvent::FocusOut:
 

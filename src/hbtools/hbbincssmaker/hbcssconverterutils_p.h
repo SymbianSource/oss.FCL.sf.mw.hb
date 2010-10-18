@@ -34,15 +34,15 @@ class HbCssConverterUtils
 {
 public:
     // Shared chunk offset management
-    static void registerOffsetHolder(int *offset);
-    static void unregisterOffsetHolder(int *offset);
-    static QMultiHash<int, int *> registeredOffsetHolders();
+    static void registerOffsetHolder(qptrdiff *offset);
+    static void unregisterOffsetHolder(qptrdiff *offset);
+    static QMultiHash<int, qptrdiff *> registeredOffsetHolders();
     static void unregisterAll();
 
     // Shared chunk allocation management
-    static void cellAllocated(int offset, int size);
-    static void cellFreed(int offset);
-    static void cellMoved(int offset, int newOffset);
+    static void cellAllocated(qptrdiff offset, int size);
+    static void cellFreed(qptrdiff offset);
+    static void cellMoved(qptrdiff offset, qptrdiff newOffset);
     static int defragmentChunk();
 
     //shared string management

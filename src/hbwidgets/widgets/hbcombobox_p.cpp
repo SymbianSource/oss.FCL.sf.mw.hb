@@ -34,6 +34,7 @@
 #include <hbtextitem.h>
 #include <hbstyleoptioncombobox_p.h>
 #include <hbgraphicsscene.h>
+#include <hbinputeditorinterface.h>
 
 #include <QSortFilterProxyModel>
 #include <QCompleter>
@@ -84,10 +85,14 @@ HbComboBoxPrivate::~HbComboBoxPrivate( )
         return;
     }
 
-    if ( !mDropDown->scene() || !mDropDown->scene( )->property( "destructed" ).isValid( ) ) {
-        delete mDropDown;
-        mDropDown = 0;
+    //if drop down is added to scene then remove it from scene so that scene does not deletes
+    //drop down again
+    if( mDropDown->scene() ) {
+        q->scene()->removeItem(mDropDown);
     }
+
+    delete mDropDown;
+    mDropDown = 0;
 }
 
 void HbComboBoxPrivate::init( )
@@ -99,16 +104,16 @@ void HbComboBoxPrivate::createPrimitives( )
 {
     Q_Q( HbComboBox );
 
-    mTextItem = q->style( )->createPrimitive( HbStyle::P_ComboBox_text, q );
+    mTextItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_ComboBox_text, q );
     HbStyle::setItemName( mTextItem, "combobox_labelfield" );
 
-    mBackgroundItem = q->style( )->createPrimitive( HbStyle::P_ComboBox_background, q );
+    mBackgroundItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_ComboBox_background, q );
     HbStyle::setItemName( mBackgroundItem, "text_background" );
 
-    mButton = q->style( )->createPrimitive( HbStyle::P_ComboBox_button, q );
+    mButton = HbStylePrivate::createPrimitive( HbStylePrivate::P_ComboBox_button, q );
     HbStyle::setItemName( mButton, "combobox_button" );
 
-    mButtonTouchAreaItem = q->style( )->createPrimitive( HbStyle::P_ComboBoxButton_toucharea, q );
+    mButtonTouchAreaItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_ComboBoxButton_toucharea, q );
 
     static_cast<HbTouchArea*>( mButtonTouchAreaItem )->grabGesture( Qt::TapGesture );
 }
@@ -121,7 +126,10 @@ void HbComboBoxPrivate::touchAreaPressEvent( )
     }
     mIsDown = true;
     q->updatePrimitives( );
-    q->setProperty( "state", "pressed" );
+    //Update the state only when valid model is there
+    if ( mModel && mModel->rowCount( ) ) {
+        q->setProperty( "state", "pressed" );
+    }
 }
 
 void HbComboBoxPrivate::touchAreaReleaseEvent(  )
@@ -167,10 +175,10 @@ void HbComboBoxPrivate::touchAreaClicked( )
             mDropDown->mList->setCurrentIndex( 
                 mModel->index( 0, 0 ), QItemSelectionModel::Select );
         }
+        positionDropDown( );
         #ifdef HB_EFFECTS
         HbEffect::start( mDropDown, HB_DROPD0WN_ITEM_TYPE, "appear" );
         #endif
-        positionDropDown( );
     }
 }
 
@@ -204,7 +212,12 @@ void HbComboBoxPrivate::showPopup( QAbstractItemModel *aModel, QModelIndex aInde
             mDropDown->mList->scrollTo( aModel->index( 0, 0 ) );
         }
         positionDropDown( );
-        mDropDown->setVisible( true );
+        if( !mDropDown->isVisible( ) ) {
+            mDropDown->setVisible( true );
+            #ifdef HB_EFFECTS
+            HbEffect::start( mDropDown, HB_DROPD0WN_ITEM_TYPE, "appear" );
+            #endif
+        }
     }
 }
 
@@ -238,6 +251,31 @@ void HbComboBoxPrivate::calculateListItemHeight( )
     }
 }
 
+void HbComboBoxPrivate::resetGeometryChangeFlag( )
+{
+    Q_Q( HbComboBox );
+    QGraphicsWidget *p = q;
+    if( widgetGeometryChange.count() > 0 ) {
+        while ( p->parentWidget( ) ) {
+            p = p->parentWidget( );
+            if ( !widgetGeometryChange.value( p ) ) {
+                //if earlier geometry change flag was disabled then disable this flag
+                p->setFlag( QGraphicsItem::ItemSendsGeometryChanges, false );
+            }
+        }
+        widgetGeometryChange.clear();
+    }
+}
+
+void HbComboBoxPrivate::showDismissEffect( )
+{
+    #ifdef HB_EFFECTS
+    HbEffect::start( mDropDown, HB_DROPD0WN_ITEM_TYPE, "disappear", mDropDown, "dismissEffectFinished" );
+    #else
+    mDropDown->setVisible( false );
+    #endif
+}
+
 void HbComboBoxPrivate::positionDropDown( )
 {
     Q_Q( HbComboBox );
@@ -249,24 +287,10 @@ void HbComboBoxPrivate::positionDropDown( )
     qreal totalHeightRequd = model->rowCount( ) * mListItemHeight;
     qreal maxPopupHeight = 0.0;
 
-    //read the maximum rows in drop down for different orientation from css
+    //calculate the maximum popup height for different orientation
     if( q->mainWindow( )->orientation( ) == Qt::Horizontal ) {
-        if( mDropDownRowsInLandscape == -1 ) {
-            HbStyleParameters params;
-            q->style( )->parameters( params );
-            params.addParameter( "max-rows-in-dropdown" );
-            q->polish( params );
-            mDropDownRowsInLandscape = params.value( "max-rows-in-dropdown" ).toInt( );
-        }
         maxPopupHeight = mDropDownRowsInLandscape * mListItemHeight;
     } else if( q->mainWindow( )->orientation( ) == Qt::Vertical ) {
-        if( mDropDownRowsInPortrait == -1 ) {
-            HbStyleParameters params;
-            q->style( )->parameters( params );
-            params.addParameter( "max-rows-in-dropdown" );
-            q->polish( params );
-            mDropDownRowsInPortrait = params.value( "max-rows-in-dropdown" ).toInt( );
-        }
         maxPopupHeight = mDropDownRowsInPortrait * mListItemHeight;
     }
 
@@ -275,7 +299,58 @@ void HbComboBoxPrivate::positionDropDown( )
     }
     QSizeF popupSize = QSizeF( q->rect( ).width( ), maxPopupHeight );
     QPointF popupPos;
-    if( !mDropDown->vkbOpened ) {
+
+    HbEditorInterface editorInterface( q );
+    HbVkbHost *host = editorInterface.vkbHost( );
+
+    if( host && ( host->keypadStatus( ) == HbVkbHost::HbVkbStatusOpened ) ) {
+        // case when vkb is visible
+        // positioning drop down when vkb is positioned
+        // drop down will come on top/below of combo based upon which side has more space
+        // available 
+        QSizeF keyBoardArea = host->keyboardArea( );
+        QSize screenSize = HbDeviceProfile::profile( q ).logicalSize( );
+
+        qreal heightDifference = screenSize.height( ) - keyBoardArea.height( );
+        qreal topSpace = widgetPos.y( );
+        qreal bottomSpace = heightDifference - topSpace - q->boundingRect( ).height( );
+
+        if( topSpace > bottomSpace ) {
+            //display drop down at top
+            if( widgetPos.y( ) - maxPopupHeight  > 0.0 ) {
+                popupPos = QPointF( widgetPos.x( ), widgetPos.y( ) - maxPopupHeight );
+            } else {
+                popupPos = QPointF( widgetPos.x( ), 0.0 );
+                popupSize.setHeight( topSpace );
+            }
+            #ifdef HB_EFFECTS
+            if ( !mHasUpEffect ) {
+                 mHasUpEffect = true;
+                 mHasDownEffect = false;
+                 //this Effect will be shown when there is more space in the view bottom.
+                 HbEffectInternal::add( mDropDown, "combo_appear_up", "appear" );
+                 HbEffectInternal::add( mDropDown, "combo_disappear_up", "disappear" );
+            }
+            #endif
+        } else {
+            //display drop down at bottom
+            popupPos = QPointF( widgetPos.x( ), widgetPos.y( ) + q->rect( ).height( ) );
+            if( bottomSpace < maxPopupHeight ) {
+                popupSize.setHeight( bottomSpace );
+            }
+            #ifdef HB_EFFECTS
+            if ( !mHasDownEffect ) {
+                mHasDownEffect = true;
+                mHasUpEffect = false;
+                //this Effect will be shown when there is more space in the view bottom.
+                HbEffectInternal::add( mDropDown, "combo_appear_down", "appear" );
+                HbEffectInternal::add( mDropDown, "combo_disappear_down", "disappear" );
+            }
+            #endif
+        }
+    } else {
+        //this is the case when vkb is not visible
+
         //position of drop down in both editable and non-editable combobox depends upon
         //the available space above and below combobox
         if( ( widgetPos.y( ) + q->rect( ).height( ) + maxPopupHeight) < sceneRect.height( ) ) {
@@ -284,17 +359,15 @@ void HbComboBoxPrivate::positionDropDown( )
             if ( !mHasDownEffect ) {
                  mHasDownEffect = true;
                  mHasUpEffect = false;
-                 // this is temporary until proper effect theming comes.
                  //this Effect will be shown when there is space in the view bottom.
                  HbEffectInternal::add( mDropDown, "combo_appear_down", "appear" );
-                 HbEffectInternal::add( mDropDown, "combo_disappear_downl", "disappear" );
+                 HbEffectInternal::add( mDropDown, "combo_disappear_down", "disappear" );
             }
             #endif
         } else if( widgetPos.y( ) - maxPopupHeight  > 0.0 ) {
             popupPos = QPointF( widgetPos.x( ), widgetPos.y( ) - maxPopupHeight );
             #ifdef HB_EFFECTS
             if ( !mHasUpEffect ) {
-                 // this is temporary until proper effect theming comes.
                  //this Effect will be shown when there is no space in the view bottom
                  mHasUpEffect = true;
                  mHasDownEffect = false;
@@ -310,7 +383,6 @@ void HbComboBoxPrivate::positionDropDown( )
                 if ( !mHasDownEffect ) {
                     mHasDownEffect = true;
                     mHasUpEffect = false;
-                    // this is temporary until proper effect theming comes.
                     //this Effect will be shown when there is more space in the view bottom.
                     HbEffectInternal::add( mDropDown, "combo_appear_down", "appear" );
                     HbEffectInternal::add( mDropDown, "combo_disappear_down", "disappear" );
@@ -322,60 +394,9 @@ void HbComboBoxPrivate::positionDropDown( )
                 if ( !mHasUpEffect ) {
                      mHasUpEffect = true;
                      mHasDownEffect = false;
-                     // this is temporary until proper effect theming comes.
                      //this Effect will be shown when there is more space in the view bottom.
                      HbEffectInternal::add( mDropDown, "combo_appear_up", "appear" );
                      HbEffectInternal::add( mDropDown, "combo_disappear_up", "disappear" );
-                }
-                #endif
-            }
-        }
-    } else {
-        // positioning drop down when vkb is positioned
-        // drop down will come on top/below of combo based upon which side has more space
-        // available 
-        HbEditorInterface editorInterface( q );
-        HbVkbHost *host = editorInterface.vkbHost( );
-        if ( host ) {
-            QSizeF keyBoardArea = host->keyboardArea( );
-            QSize screenSize = HbDeviceProfile::profile( q ).logicalSize( );
-
-            qreal heightDifference = screenSize.height( ) - keyBoardArea.height( );
-            qreal topSpace = widgetPos.y( );
-            qreal bottomSpace = heightDifference - topSpace - q->boundingRect( ).height( );
-
-            if( topSpace > bottomSpace ) {
-                //display drop down at top
-                if( widgetPos.y( ) - maxPopupHeight  > 0.0 ) {
-                    popupPos = QPointF( widgetPos.x( ), widgetPos.y( ) - maxPopupHeight );
-                } else {
-                    popupPos = QPointF( widgetPos.x( ), 0.0 );
-                    popupSize.setHeight( topSpace );
-                }
-                #ifdef HB_EFFECTS
-                if ( !mHasUpEffect ) {
-                     mHasUpEffect = true;
-                     mHasDownEffect = false;
-                     // this is temporary until proper effect theming comes.
-                     //this Effect will be shown when there is more space in the view bottom.
-                     HbEffectInternal::add( mDropDown, "combo_appear_up", "appear" );
-                     HbEffectInternal::add( mDropDown, "combo_disappear_up", "disappear" );
-                }
-                #endif
-            } else {
-                //display drop down at bottom
-                popupPos = QPointF( widgetPos.x( ), widgetPos.y( ) + q->rect( ).height( ) );
-                if( bottomSpace < maxPopupHeight ) {
-                    popupSize.setHeight( bottomSpace );
-                }
-                #ifdef HB_EFFECTS
-                if ( !mHasDownEffect ) {
-                    mHasDownEffect = true;
-                    mHasUpEffect = false;
-                    // this is temporary until proper effect theming comes.
-                    //this Effect will be shown when there is more space in the view bottom.
-                    HbEffectInternal::add( mDropDown, "combo_appear_down", "appear" );
-                    HbEffectInternal::add( mDropDown, "combo_disappear_down", "disappear" );
                 }
                 #endif
             }
@@ -388,6 +409,15 @@ void HbComboBoxPrivate::positionDropDown( )
     QGraphicsWidget *p = q;
     while ( p->parentWidget( ) ) {
         p = p->parentWidget( );
+        //cache the original geometry change flag of parent widget
+        QGraphicsItem::GraphicsItemFlags itemFlags = p->flags( );
+        bool geometryFlagEnabled =  itemFlags & QGraphicsItem::ItemSendsGeometryChanges;
+        widgetGeometryChange.insert(p, geometryFlagEnabled);
+
+        //This flag is being set since geometry change notification is required for properly
+        //positioning drop down when its visible and combobox position is changed for example
+        //when orientation change happens.
+        p->setFlag( QGraphicsItem::ItemSendsGeometryChanges );
     }
     mDropDown->setZValue( p->zValue( ) + 1 );
 }
@@ -403,7 +433,7 @@ void HbComboBoxPrivate::_q_textChanged( const QModelIndex & aIndex )
         } else {
             HbStyleOptionComboBox comboBoxOption;
             q->initStyleOption( &comboBoxOption );
-            q->style( )->updatePrimitive( mTextItem, HbStyle::P_ComboBox_text, &comboBoxOption );
+            HbStylePrivate::updatePrimitive( mTextItem, HbStylePrivate::P_ComboBox_text, &comboBoxOption );
         }
         mCurrentIndex = aIndex;
     } else {
@@ -415,7 +445,7 @@ void HbComboBoxPrivate::_q_textChanged( const QModelIndex & aIndex )
            SLOT( _q_textChanged( QString ) ) );
     }
     if ( mDropDown->isVisible( ) ) {
-        mDropDown->setVisible( false );
+        showDismissEffect( );
         q->setProperty( "state", "normal" );
     }
     currentIndexChanged( mCurrentIndex );
@@ -444,7 +474,7 @@ void HbComboBoxPrivate::_q_textChanged( const QString & aString )
         }
     } else {
         if( mDropDown ) {
-            mDropDown->setVisible( false );
+            showDismissEffect( );
         }
         //showPopup( mModel, mCurrentIndex);
     }
@@ -522,7 +552,6 @@ void HbComboBoxPrivate::setEditable(  bool editable )
         q->setHandlesChildEvents( false );
         mLineEdit->setReadOnly( false );
         mLineEdit->setCursorVisibility( Hb::TextCursorVisible );
-        mLineEdit->setLongPressEnabled( );
         q->repolish( );
         q->connect( mLineEdit, SIGNAL( textChanged ( QString ) ),
             q, SLOT( _q_textChanged( QString ) ) );
@@ -532,7 +561,6 @@ void HbComboBoxPrivate::setEditable(  bool editable )
             q, SLOT( _q_textChanged( QString ) ) );
         q->setHandlesChildEvents( true );
         mLineEdit->setReadOnly( true );
-        mLineEdit->setLongPressEnabled( false );
         setCompletion( false );
         mLineEdit->setCursorVisibility( Hb::TextCursorHidden );
         if( mModel && mModel->rowCount( ) ) {
@@ -600,8 +628,8 @@ void HbComboBoxPrivate::setCurrentIndex( const QModelIndex &mi )
             } else {
                 HbStyleOptionComboBox comboBoxOption;
                 q->initStyleOption(&comboBoxOption);
-                q->style( )->updatePrimitive(
-                    mTextItem, HbStyle::P_ComboBox_text, &comboBoxOption );
+                HbStylePrivate::updatePrimitive(
+                    mTextItem, HbStylePrivate::P_ComboBox_text, &comboBoxOption );
             }
         }
         currentIndexChanged( mCurrentIndex );

@@ -41,6 +41,7 @@ public:
     void setOrientation(Qt::Orientation);
     void setSpan( qreal span);
     void paint ( QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0 );
+    void setHandleRect(QRectF handleRect);
     int minimum;
     int maximum;
     int value;
@@ -49,6 +50,7 @@ public:
     Qt::Orientation mOrientation;
     qreal trackSpan;
     bool setMask;
+    QRectF handleRect;
 protected:
     void changeEvent(QEvent *event);
 };

@@ -23,15 +23,30 @@
 **
 ****************************************************************************/
 #include "hbtumbleviewitem.h"
-#include "hbtapgesture_p.h"
+#include "hbtapgesture.h"
 
 #include "hblistviewitem_p.h"
 #include "hbnamespace_p.h"
-#include <hbstyleoptionlistviewitem_p.h>
+#include <hbstyleoption_p.h>
 
 #include <QGestureEvent>
 #include <QCoreApplication>
 
+/*!
+    @proto
+    \class HbTumbleViewitem
+    \brief The HbTumbleViewItem class represents a single row in HbTumbleView.
+
+    HbTumbleViewItem class provides an item that is used by the HbTumbleView class to
+    visualize content within single model index. HbTumbleViewItem supports 
+    QStringList that is stored into Qt::DisplayRole role within the index. 
+
+    This class acts as a default item prototype inside HbTumbleView.
+*/
+
+/*!
+    Constructs a TumbleViewItem with \a parent.
+*/
 HbTumbleViewItem::HbTumbleViewItem(QGraphicsItem *parent) :
     HbListViewItem(parent)
 {
@@ -40,6 +55,9 @@ HbTumbleViewItem::HbTumbleViewItem(QGraphicsItem *parent) :
     setFocusPolicy(Qt::NoFocus);
 }
 
+/*!
+    Destructor
+*/
 HbTumbleViewItem::~HbTumbleViewItem()
 {
 }
@@ -52,7 +70,6 @@ int HbTumbleViewItem::type() const
     return Type;
 }
 
-
 /*!
     \reimp
 */
@@ -63,6 +80,7 @@ HbAbstractViewItem *HbTumbleViewItem::createItem()
     connect(item,SIGNAL(released(QPointF)),item->itemView(),SLOT(_q_itemSelected(QPointF)));
     return item;
 }
+
 /*!
     \reimp
 */
@@ -100,7 +118,6 @@ void HbTumbleViewItem::gestureEvent(QGestureEvent *event)
     }
 }
 
-
 QSizeF HbTumbleViewItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
 {
     HB_SDD(const HbAbstractViewItem);
@@ -134,7 +151,6 @@ QSizeF HbTumbleViewItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) 
     }
     return sh;
 }
-
 
 #include "moc_hbtumbleviewitem.cpp"
 

@@ -27,6 +27,7 @@
 #define HBTHEMESERVICES_R_H
 
 #include <hbglobal.h>
+#include <QPair>
 
 QT_BEGIN_NAMESPACE
 class QString;
@@ -37,6 +38,7 @@ class HB_UTILS_RESTRICTED_EXPORT HbThemeServices
 public:
     static void setTheme(const QString &themePath);
     static const QString themePath();
+    static const QList<QPair<QString, QString> > availableThemes();
 };
 
 #endif // HBTHEMESERVICES_R_H

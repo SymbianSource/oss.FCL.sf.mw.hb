@@ -80,7 +80,7 @@ public: //defined locally
 signals:
     void flipStatusChange();
 protected:
-    void predictiveInputStatusChanged(int newStatus);	
+    void predictiveInputStatusChanged(int newStatus);   
     void openKeypad(bool inMinimizedMode = false);   
     
 public slots:

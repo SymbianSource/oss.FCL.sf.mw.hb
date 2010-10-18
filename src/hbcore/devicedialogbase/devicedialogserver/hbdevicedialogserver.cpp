@@ -84,8 +84,8 @@ HbDeviceDialogServer::HbDeviceDialogServer() : iManager(0), d_ptr(0), mError(0)
 HbDeviceDialogServer::~HbDeviceDialogServer()
 {
     TRACE_ENTRY
-    delete iManager;
     delete d_ptr;
+    delete iManager;
     TRACE_EXIT
 }
 
@@ -218,5 +218,5 @@ void HbDeviceDialogServer::indicatorRemoved(
 
 void HbDeviceDialogServer::indicatorUserActivated(const QVariantMap &data)
 {
-	d_func()->IndicatorUserActivated(data);
+    d_func()->IndicatorUserActivated(data);
 }

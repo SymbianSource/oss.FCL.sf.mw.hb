@@ -41,7 +41,13 @@
 #include "hbdocumentloader_p.h"
 #include <hbwidget_p.h>
 #include <hbwidgetbase_p.h>
-
+#include <hbview.h>
+#include <hbview_p.h>
+#include <hbmenu.h>
+#include <hbtoolbar.h>
+#include <hbaction.h>
+#include <hbframeitem.h>
+#include <hbinstance.h>
 
 class AccessToMetadata : public QObject
     {
@@ -64,10 +70,16 @@ HbDocumentLoaderActions::HbDocumentLoaderActions( HbDocumentLoaderPrivate *ref, 
     HbXmlLoaderBaseActions(),
     d( ref )
 {
-    if ( window ) {
-        mCurrentProfile = HbDeviceProfile::profile(window);
+    if (window) {
+        mMainWindow = window;
     } else {
-        mCurrentProfile = HbDeviceProfile::current();
+        qWarning() << "HbDocumentLoaderActions: Using default main window";
+        QList<HbMainWindow*> mainWindows = hbInstance->allMainWindows();
+        if (mainWindows.isEmpty()) {
+            qWarning() << "HbDocumentLoaderActions: Default main window not found";
+        } else {
+            mMainWindow = mainWindows.at(0);
+        }
     }
 }
 
@@ -309,16 +321,16 @@ bool HbDocumentLoaderActions::setContentsMargins( const HbXmlLengthValue &left,
 
     qreal leftVal=0, topVal=0, rightVal=0, bottomVal=0;
     bool ok = true;
-    if (left.mType != HbXmlLengthValue::None) {
+    if (left.mValues.count()) {
         ok &= toPixels(left, leftVal);
     }
-    if (top.mType != HbXmlLengthValue::None) {
+    if (top.mValues.count()) {
         ok &= toPixels(top, topVal);
     }
-    if (right.mType != HbXmlLengthValue::None) {
+    if (right.mValues.count()) {
         ok &= toPixels(right, rightVal);
     }
-    if (bottom.mType != HbXmlLengthValue::None) {
+    if (bottom.mValues.count()) {
         ok &= toPixels(bottom, bottomVal);
     }
     if ( ok ) {
@@ -341,10 +353,10 @@ bool HbDocumentLoaderActions::setSizeHint(Qt::SizeHint hint, const HbXmlLengthVa
     qreal hintWidthVal, hintHeightVal;
 
     bool ok = true;
-    if ( hintWidth.mType != HbXmlLengthValue::None ) {
+    if ( hintWidth.mValues.count() ) {
         ok &= toPixels(hintWidth, hintWidthVal);
     }
-    if ( hintHeight.mType != HbXmlLengthValue::None ) {
+    if ( hintHeight.mValues.count() ) {
         ok &= toPixels(hintHeight, hintHeightVal);
     }
     if (!ok) {
@@ -354,29 +366,29 @@ bool HbDocumentLoaderActions::setSizeHint(Qt::SizeHint hint, const HbXmlLengthVa
     // TODO: Use set <Min/Pref/Max> Size if both declared. It's more efficient.
     switch (hint) {
     case Qt::MinimumSize:
-        if ( hintWidth.mType != HbXmlLengthValue::None ) {
+        if ( hintWidth.mValues.count() ) {
 
             widget->setMinimumWidth(hintWidthVal);
         }
-        if ( hintHeight.mType != HbXmlLengthValue::None ) {
+        if ( hintHeight.mValues.count() ) {
             widget->setMinimumHeight(hintHeightVal);
         }
         break;
 
     case Qt::PreferredSize:
-        if ( hintWidth.mType != HbXmlLengthValue::None ) {
+        if ( hintWidth.mValues.count() ) {
             widget->setPreferredWidth(hintWidthVal);
         }
-        if ( hintHeight.mType != HbXmlLengthValue::None ) {
+        if ( hintHeight.mValues.count() ) {
             widget->setPreferredHeight(hintHeightVal);
         }
         break;
 
     case Qt::MaximumSize:
-        if ( hintWidth.mType != HbXmlLengthValue::None ) {
+        if ( hintWidth.mValues.count() ) {
             widget->setMaximumWidth(hintWidthVal);
         }
-        if ( hintHeight.mType != HbXmlLengthValue::None ) {
+        if ( hintHeight.mValues.count() ) {
             widget->setMaximumHeight(hintHeightVal);
         }
         break;
@@ -387,10 +399,10 @@ bool HbDocumentLoaderActions::setSizeHint(Qt::SizeHint hint, const HbXmlLengthVa
 
     if (fixed) {
         QSizePolicy policy = widget->sizePolicy();
-        if ( hintWidth.mType != HbXmlLengthValue::None && hintWidthVal >= 0) {
+        if ( hintWidth.mValues.count() && hintWidthVal >= 0) {
             policy.setHorizontalPolicy(QSizePolicy::Fixed);
         }
-        if ( hintHeight.mType != HbXmlLengthValue::None && hintHeightVal >= 0) {
+        if ( hintHeight.mValues.count() && hintHeightVal >= 0) {
             policy.setVerticalPolicy(QSizePolicy::Fixed);
         }
         widget->setSizePolicy(policy);
@@ -415,6 +427,19 @@ bool HbDocumentLoaderActions::setToolTip( const HbXmlVariable &tooltip )
         widget->setToolTip( variant.toString() );
     }
     return result;
+}
+
+bool HbDocumentLoaderActions::setBackground( const QString &name, HbFrameDrawer::FrameType type )
+{
+    HbWidget *widget = qobject_cast<HbWidget*>(findFromStack());
+    if (!widget) {
+        HB_DOCUMENTLOADER_PRINT( QString( "Cannot set background for non-HbWidget" ) );
+        return false;
+    }
+    HbFrameItem *frame = new HbFrameItem(name, type, widget);
+    widget->setBackgroundItem(frame);
+
+    return true;
 }
 
 bool HbDocumentLoaderActions::setSizePolicy(
@@ -541,7 +566,7 @@ bool HbDocumentLoaderActions::addAnchorLayoutItem( const QString &src, const QSt
         anchor = new HbAnchor( srcId, srcEdge, dstId, dstEdge );
     }
 
-    if ( minLength.mType != HbXmlLengthValue::None ) {
+    if ( minLength.mValues.count() ) {
         qreal minVal(0);
         if ( !toPixels(minLength, minVal) ) {
             delete anchor;
@@ -551,17 +576,21 @@ bool HbDocumentLoaderActions::addAnchorLayoutItem( const QString &src, const QSt
         }
     }
 
-    if ( prefLength.mType != HbXmlLengthValue::None ) {
+    if ( prefLength.mValues.count() ) {
         qreal prefVal(0);
         if ( !toPixels(prefLength, prefVal) ) {
             delete anchor;
             return false;
         } else {
-            anchor->setPreferredLength( prefVal );
+            // if the expression resulted a negative result, we must reverse the direction
+            if ( prefVal < 0 && dir ) {
+                *dir = (*dir==HbAnchor::Positive) ? HbAnchor::Negative : HbAnchor::Positive;
+            }
+            anchor->setPreferredLength( qAbs(prefVal) );         
         }
     }
 
-    if ( maxLength.mType != HbXmlLengthValue::None ) {
+    if ( maxLength.mValues.count() ) {
         qreal maxVal(0);
         if ( !toPixels(maxLength, maxVal) ) {
             delete anchor;
@@ -643,7 +672,7 @@ bool HbDocumentLoaderActions::createGridLayout( const QString &widget, const HbX
     qreal spacingVal;
     bool setSpacing(false);
 
-    if (spacing.mType != HbXmlLengthValue::None) {
+    if (spacing.mValues.count()) {
         if ( toPixels(spacing, spacingVal) ) {
             setSpacing = true;
         } else {
@@ -762,7 +791,7 @@ bool HbDocumentLoaderActions::setGridLayoutRowHeights( int row,
         return false;
     }
 
-    if ( minHeight.mType != HbXmlLengthValue::None ) {
+    if ( minHeight.mValues.count() ) {
         qreal minHeightVal;
         if ( !toPixels(minHeight, minHeightVal) ) {
             return false;
@@ -770,7 +799,7 @@ bool HbDocumentLoaderActions::setGridLayoutRowHeights( int row,
         layout->setRowMinimumHeight( row, minHeightVal );
     }
 
-    if ( maxHeight.mType != HbXmlLengthValue::None ) {
+    if ( maxHeight.mValues.count() ) {
         qreal maxHeightVal;
         if ( !toPixels(maxHeight, maxHeightVal) ) {
             return false;
@@ -778,7 +807,7 @@ bool HbDocumentLoaderActions::setGridLayoutRowHeights( int row,
         layout->setRowMaximumHeight( row, maxHeightVal );
     }
 
-    if ( prefHeight.mType != HbXmlLengthValue::None ) {
+    if ( prefHeight.mValues.count() ) {
         qreal prefHeightVal;
         if ( !toPixels(prefHeight, prefHeightVal) ) {
             return false;
@@ -786,7 +815,7 @@ bool HbDocumentLoaderActions::setGridLayoutRowHeights( int row,
         layout->setRowPreferredHeight( row, prefHeightVal );
     }
 
-    if ( fixedHeight.mType != HbXmlLengthValue::None ) {
+    if ( fixedHeight.mValues.count() ) {
         qreal fixedHeightVal;
         if ( !toPixels(fixedHeight, fixedHeightVal) ) {
             return false;
@@ -794,7 +823,7 @@ bool HbDocumentLoaderActions::setGridLayoutRowHeights( int row,
         layout->setRowFixedHeight( row, fixedHeightVal );
     }
 
-    if ( rowSpacing.mType != HbXmlLengthValue::None ) {
+    if ( rowSpacing.mValues.count() ) {
         qreal rowSpacingVal;
         if ( !toPixels(rowSpacing, rowSpacingVal) ) {
             return false;
@@ -820,7 +849,7 @@ bool HbDocumentLoaderActions::setGridLayoutColumnWidths( int column,
         return false;
     }
 
-    if ( minWidth.mType != HbXmlLengthValue::None ) {
+    if ( minWidth.mValues.count() ) {
         qreal minWidthVal;
         if ( !toPixels(minWidth, minWidthVal) ) {
             return false;
@@ -828,7 +857,7 @@ bool HbDocumentLoaderActions::setGridLayoutColumnWidths( int column,
         layout->setColumnMinimumWidth( column, minWidthVal );
     }
 
-    if ( maxWidth.mType != HbXmlLengthValue::None ) {
+    if ( maxWidth.mValues.count() ) {
         qreal maxWidthVal;
         if ( !toPixels(maxWidth, maxWidthVal) ) {
             return false;
@@ -836,7 +865,7 @@ bool HbDocumentLoaderActions::setGridLayoutColumnWidths( int column,
         layout->setColumnMaximumWidth( column, maxWidthVal );
     }
 
-    if ( prefWidth.mType != HbXmlLengthValue::None ) {
+    if ( prefWidth.mValues.count() ) {
         qreal prefWidthVal;
         if ( !toPixels(prefWidth, prefWidthVal) ) {
             return false;
@@ -844,7 +873,7 @@ bool HbDocumentLoaderActions::setGridLayoutColumnWidths( int column,
         layout->setColumnPreferredWidth( column, prefWidthVal );
     }
 
-    if ( fixedWidth.mType != HbXmlLengthValue::None ) {
+    if ( fixedWidth.mValues.count() ) {
         qreal fixedWidthVal;
         if ( !toPixels(fixedWidth, fixedWidthVal) ) {
             return false;
@@ -852,7 +881,7 @@ bool HbDocumentLoaderActions::setGridLayoutColumnWidths( int column,
         layout->setColumnFixedWidth( column, fixedWidthVal );
     }
 
-    if ( columnSpacing.mType != HbXmlLengthValue::None ) {
+    if ( columnSpacing.mValues.count() ) {
         qreal columnSpacingVal;
         if ( !toPixels(columnSpacing, columnSpacingVal) ) {
             return false;
@@ -888,7 +917,7 @@ bool HbDocumentLoaderActions::createLinearLayout(
     qreal spacingVal;
     bool setSpacing(false);
 
-    if (spacing.mType != HbXmlLengthValue::None) {
+    if (spacing.mValues.count()) {
         if ( toPixels(spacing, spacingVal) ) {
             setSpacing = true;
         } else {
@@ -949,7 +978,7 @@ bool HbDocumentLoaderActions::addLinearLayoutItem(
     int indexValue = index ? *index : -1;
     layout->insertItem( indexValue, item );
 
-    if ( spacing.mType != HbXmlLengthValue::None ) {
+    if ( spacing.mValues.count() ) {
         qreal spacingVal;
         if ( !toPixels(spacing, spacingVal) ) {
             return false;
@@ -1007,16 +1036,16 @@ bool HbDocumentLoaderActions::setLayoutContentsMargins( const HbXmlLengthValue &
 
     qreal leftVal=0, topVal=0, rightVal=0, bottomVal=0;
     bool ok = true;
-    if (left.mType != HbXmlLengthValue::None) {
+    if (left.mValues.count()) {
         ok &= toPixels(left, leftVal);
     }
-    if (top.mType != HbXmlLengthValue::None) {
+    if (top.mValues.count()) {
         ok &= toPixels(top, topVal);
     }
-    if (right.mType != HbXmlLengthValue::None) {
+    if (right.mValues.count()) {
         ok &= toPixels(right, rightVal);
     }
-    if (bottom.mType != HbXmlLengthValue::None) {
+    if (bottom.mValues.count()) {
         ok &= toPixels(bottom, bottomVal);
     }
     if ( ok ) {
@@ -1191,19 +1220,19 @@ bool HbDocumentLoaderActions::variableToQVariant( const HbXmlVariable& variable,
 
         HbIcon icon(*iconName);
         qreal width, height;
-        if ( widthVal->mType != HbXmlLengthValue::None ) {
+        if ( widthVal->mValues.count() ) {
             result = toPixels(*widthVal, width);
         }
-        if ( result && heightVal->mType != HbXmlLengthValue::None ) {
+        if ( result && heightVal->mValues.count() ) {
             result = toPixels(*heightVal, height);
         }
         if ( result ) {
-            if ( widthVal->mType != HbXmlLengthValue::None &&
-                 heightVal->mType != HbXmlLengthValue::None ) {
+            if ( widthVal->mValues.count() &&
+                 heightVal->mValues.count() ) {
                 icon.setSize(QSizeF(width, height));
-            } else if ( widthVal->mType != HbXmlLengthValue::None ) {
+            } else if ( widthVal->mValues.count() ) {
                 icon.setWidth(width);
-            } else if ( heightVal->mType != HbXmlLengthValue::None ) {
+            } else if ( heightVal->mValues.count() ) {
                 icon.setHeight(height);
             }
             variant.setValue( icon );
@@ -1274,12 +1303,12 @@ bool HbDocumentLoaderActions::variableToQVariant( const HbXmlVariable& variable,
         quint8* role_b = (quint8*)variable.mParameters.at(0);
         HbXmlLengthValue* textHeightVal = (HbXmlLengthValue*)variable.mParameters.at(1);
         qreal textHeight;
-        if ( textHeightVal->mType != HbXmlLengthValue::None ) {
+        if ( textHeightVal->mValues.count() ) {
             result = toPixels(*textHeightVal, textHeight);
         }
         if (result) {
             HbFontSpec fontSpec((HbFontSpec::Role)(*role_b));
-            if ( textHeightVal->mType != HbXmlLengthValue::None ) {
+            if ( textHeightVal->mValues.count() ) {
                 fontSpec.setTextHeight(textHeight);
             }
             variant.setValue(fontSpec);
@@ -1296,5 +1325,80 @@ bool HbDocumentLoaderActions::variableToQVariant( const HbXmlVariable& variable,
 
     return result;
 }
+
+
+bool HbDocumentLoaderActions::setObjectTree( QList<QObject *> roots )
+{
+    reset();
+    addToObjectMap( roots );
+    return true;
+}
+
+void HbDocumentLoaderActions::addToObjectMap( QList<QObject *> objects )
+{
+    for ( int i = 0; i < objects.size(); i++ ) {
+        QObject *obj = objects.at(i);
+        QGraphicsWidget *widget = qobject_cast<QGraphicsWidget*>(obj);
+
+        ObjectMapItem item;
+        item.mObject = obj;
+        item.mType = widget ? HbXml::WIDGET : HbXml::OBJECT;
+        item.mOwned = false;
+        mObjectMap.insert( obj->objectName(), item );
+
+        if ( widget ) {
+            widgetAddedToMap( widget );
+            addToObjectMap( widget->childItems() );
+        } else {
+            addToObjectMap( obj->children() );
+        }
+    }
+}
+
+void HbDocumentLoaderActions::addToObjectMap( QList<QGraphicsItem *> objects )
+{
+    for ( int i = 0; i < objects.size(); i++ ) {
+        if ( objects.at(i)->isWidget() ) {
+            QGraphicsWidget *widget = static_cast<QGraphicsWidget *>( objects.at(i) );
+            ObjectMapItem item;
+            item.mObject = widget;
+            item.mType = HbXml::WIDGET;
+            item.mOwned = false;
+            mObjectMap.insert( widget->objectName(), item );
+            addToObjectMap( widget->childItems() );
+        }
+    }    
+}
+
+void HbDocumentLoaderActions::widgetAddedToMap(QGraphicsWidget *widget)
+{
+    // check the menu/toolbar from view
+    if ( widget->type() == Hb::ItemType_View ) {
+        HbView *view = qobject_cast<HbView*>(widget);
+        HbViewPrivate *viewPrivate = HbViewPrivate::d_ptr( view );
+        if ( viewPrivate->menu ) {
+            QList<QObject *> newObjects;
+            newObjects << viewPrivate->menu.data();
+            addToObjectMap( newObjects );
+        }
+        if ( viewPrivate->toolBar ) {
+            QList<QObject *> newObjects;
+            newObjects << viewPrivate->toolBar.data();
+            addToObjectMap( newObjects );
+        }
+    // check submenu
+    } else if ( widget->type() == Hb::ItemType_Menu ) {
+        QList<QAction *> actions = widget->actions();
+        for ( int i = 0; i < actions.count(); i++ ) {
+            HbAction *action = qobject_cast<HbAction *>( actions.at(i) );
+            if ( action && action->menu() ) {
+                QList<QObject *> newObjects;
+                newObjects << action->menu();
+                addToObjectMap( newObjects );
+            }
+        }
+    }
+}
+
 
 

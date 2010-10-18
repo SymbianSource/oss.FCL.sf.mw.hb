@@ -44,6 +44,7 @@ symbian {
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL
     TARGET.UID3 = 0x20022EA9
+    MMP_RULES += SMPSAFE
 
     hbautocomplete.sources = HbAutoComplete.dll
     hbautocomplete.path = /resource/plugins/inputengines

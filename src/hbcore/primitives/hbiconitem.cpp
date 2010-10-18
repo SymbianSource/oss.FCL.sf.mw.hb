@@ -28,6 +28,8 @@
 #include "hbiconanimator.h"
 #include "hbicon_p.h"
 #include "hboogmwatcher_p.h"
+#include "hbinstance_p.h"
+#include "hbiconengine_p.h"
 
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
@@ -111,6 +113,16 @@ const Qt::Alignment HbIconItem::defaultAlignment = 0;
 
 bool HbIconItemPrivate::outlinesEnabled = false;
 
+static void asyncReady(void *param)
+{
+    HbIconItem *item = static_cast<HbIconItem *>(param);
+    HbIconItemPrivate *d = HbIconItemPrivate::d_ptr(item);
+    bool doUpdate = d->mAsyncFilter ? !d->mAsyncFilter(item, d->mAsyncFilterParam) : true;
+    if (doUpdate) {
+        item->update();
+    }
+}
+
 HbIconItemPrivate::HbIconItemPrivate(const HbIcon &icon) :
     mIcon(icon),
     mAnimator(),
@@ -118,7 +130,11 @@ HbIconItemPrivate::HbIconItemPrivate(const HbIcon &icon) :
     mAspectRatioMode(HbIconItem::defaultAspectRatioMode),
     mState(HbIconItem::defaultState),
     mMode(HbIconItem::defaultMode),
-    mClearCachedRect(true)
+    mClearCachedRect(true),
+    mIconScalingEnabled(true),
+    mAsync(false),
+    mAsyncFilter(0),
+    mAsyncFilterParam(0)
 {
     q_ptr = 0;
 }
@@ -135,12 +151,14 @@ void HbIconItemPrivate::updateIconItem()
         // possibility of detaching. Doing it afterwards would lead to
         // colorization errors as the themed color might potentially be set for
         // a different icon engine, not for the one that is used in painting.
-        HbIconPrivate::d_ptr_detached(&mIcon)->setThemedColor(mThemedColor);
+        HbIconPrivate *p = HbIconPrivate::d_ptr_detached(&mIcon);
+        p->setThemedColor(mThemedColor);
+        p->setAsync(mAsync, asyncReady, q);
     }
     const QRectF boundingRect = q->rect();
     if (!boundingRect.size().isEmpty()) {
         mIconRect = boundingRect;
-        mIcon.setSize(mIconRect.size());
+        mIcon.setSize(mIconScalingEnabled ? mIconRect.size() : mIcon.defaultSize());
         mAnimator.setIcon(mIcon);
         q->update();
     }
@@ -151,7 +169,9 @@ void HbIconItemPrivate::updateIconParams()
     Q_Q(HbIconItem);
     if (mIconRect.isValid()) {
         if (!mIcon.isNull()) {
-            HbIconPrivate::d_ptr_detached(&mIcon)->setThemedColor(mThemedColor);
+            HbIconPrivate *p = HbIconPrivate::d_ptr_detached(&mIcon);
+            p->setThemedColor(mThemedColor);
+            p->setAsync(mAsync, asyncReady, q);
         }
         mAnimator.setIcon(mIcon);
     }
@@ -162,10 +182,6 @@ void HbIconItemPrivate::recalculateBoundingRect() const
 {
     Q_Q(const HbIconItem);
     mBoundingRect = q->HbWidgetBase::boundingRect();
-    //workaround for qt bug http://bugreports.qt.nokia.com/browse/QTBUG-8820
-    mAdjustedRect.setWidth(qMax(qreal(0),mBoundingRect.width() - qreal(2.0)));
-    mAdjustedRect.setHeight(qMax(qreal(0),mBoundingRect.height() - qreal(2.0)));
-    //workaround ends
     mClearCachedRect = false;
 }
 
@@ -173,6 +189,27 @@ void HbIconItemPrivate::setThemedColor(const QColor &color)
 {
     mThemedColor = color;
     updateIconItem();
+}
+
+/*!
+  Requests clearStoredIconContent() for the currently set icon.
+*/
+void HbIconItemPrivate::clearStoredIconContent()
+{
+    HbIconPrivate::d_ptr(&mIcon)->clearStoredIconContent();
+}
+
+/*!
+  Installs a filter for the async-load-ready callbacks.
+
+  When non-null, the filter is called before invoking update() on the
+  icon item, and if the filter returns true, the update() call is
+  suppressed.
+*/
+void HbIconItemPrivate::setAsyncCallbackFilter(AsyncCallbackFilter filter, void *filterParam)
+{
+    mAsyncFilter = filter;
+    mAsyncFilterParam = filterParam;
 }
 
 /*!
@@ -298,9 +335,9 @@ void HbIconItem::setSize(const QSizeF &size)
 /*!
  Sets the alignment for the icon.
 
- If this method is not called, the icon uses its default alignment.
- The default alignment can be defined in the icon definition file, otherwise it defaults to Qt::AlignCenter.
- \param alignment the new icon alignment.gnCenter.
+ By default no aligning is used.
+
+ \param alignment the new icon alignment
 
  \sa alignment
  */
@@ -308,6 +345,7 @@ void HbIconItem::setAlignment(Qt::Alignment alignment)
 {
     Q_D(HbIconItem);
     d->setApiProtectionFlag(HbWidgetBasePrivate::AC_IconAlign, true);
+    alignment = d->combineAlignment(alignment, d->mAlignment);
     if (d->mAlignment != alignment) {
         d->mAlignment = alignment;
         update();
@@ -317,8 +355,8 @@ void HbIconItem::setAlignment(Qt::Alignment alignment)
 /*!
  Sets the aspect ratio mode for the icon.
 
- If this method is not called, the icon uses its default aspect ratio mode.
- The default mode can be defined in the icon definition file, otherwise it defaults to Qt::KeepAspectRatio.
+ It defaults to Qt::KeepAspectRatio.
+
  \param aspectRatio the new icon aspect ratio.
 
  \sa aspectRatioMode
@@ -435,12 +473,60 @@ void HbIconItem::setBrush(const QBrush &brush)
 }
 
 /*!
+    Enables or disables icon scaling.
+
+    By default the setting is true, i.e. scaling is enabled.
+   
+    When enabled, the size of the icon will be set to match
+    the item's size, so scaling may occur (by taking the aspect
+    ratio setting into account).
+
+    Scaling should only be disabled when the icon item is used
+    with raster graphics, for which upscaling is not desired.
+    
+    When disabled, the size of the icon will be the default size
+    of its source, i.e. in case of raster graphics the original dimensions
+    of the image. It is recommended to set the center alignment too in this case.
+    The size of the icon item is not affected, the content will just not cover the
+    entire area. Note however that when the icon's default size is bigger than the
+    size of the item displaying it then downscaling will still occur.
+    
+    \sa iconScaling
+*/
+void HbIconItem::setIconScaling(bool enabled)
+{
+    Q_D(HbIconItem);
+    if (d->mIconScalingEnabled != enabled) {
+        d->mIconScalingEnabled = enabled;
+        d->updateIconItem();
+    }
+}
+
+/*!
+  This function can be used to enable asynchronous icon data retrieval.
+
+  It has no effect if called after the first paint so it needs to be called
+  immediately after creating the HbIconItem instance.
+
+  While the data is not available empty content will be painted.
+
+  \sa async
+ */
+void HbIconItem::setAsync(bool async)
+{
+    Q_D(HbIconItem);
+    if (d->mAsync != async) {
+        d->mAsync = async;
+        d->updateIconItem();
+    }
+}
+
+/*!
  Sets the new icon name for this HbIconItem for \a mode and \a state. If iconName is already set in
  HbIconItem then it will be replaced with this new iconName.
  \param  iconName the icon name.
  \param  mode  mode of the  icon.
  \param  state state of the icon.
-
 
  \sa HbIcon::setIconName()
  \sa iconName
@@ -611,6 +697,29 @@ QBrush HbIconItem::brush() const
 }
 
 /*!
+  \return the current setting for icon scaling. By default it is true (i.e. enabled).
+  
+  \sa setIconScaling
+ */
+bool HbIconItem::iconScaling() const
+{
+    Q_D(const HbIconItem);
+    return d->mIconScalingEnabled;
+}
+
+/*!
+  \return the current setting for asynchronous icon data retrieval.
+  By default the value is false (i.e. disabled).
+
+  \sa setAsync
+ */
+bool HbIconItem::async() const
+{
+    Q_D(const HbIconItem);
+    return d->mAsync;
+}
+
+/*!
  * Refer HbIcon::isNull()
  */
 bool HbIconItem::isNull() const
@@ -629,25 +738,36 @@ void HbIconItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option
     Q_UNUSED(widget)
     Q_UNUSED(option)
     Q_D(HbIconItem);
+
+    if (d->mIcon.isNull() && d->mBrush == Qt::NoBrush) {
+        return;
+    }
+
     if (d->mClearCachedRect){
         d->recalculateBoundingRect();
     }
+
     if (!d->mBoundingRect.isEmpty()){
         if (d->mIconRect != d->mBoundingRect) {
             d->mIconRect = d->mBoundingRect;
             if (!d->mIcon.isNull()) {
-                HbIconPrivate::d_ptr_detached(&d->mIcon)->setThemedColor(d->mThemedColor);
+                HbIconPrivate *p = HbIconPrivate::d_ptr_detached(&d->mIcon);
+                p->setThemedColor(d->mThemedColor);
+                p->setAsync(d->mAsync, asyncReady, this);
             }
-            d->mIcon.setSize(d->mIconRect.size());
+            d->mIcon.setSize(d->mIconScalingEnabled ? d->mIconRect.size() : d->mIcon.defaultSize());
             d->mAnimator.setIcon(d->mIcon);
         }
         if (d->mBrush != Qt::NoBrush) {
             painter->fillRect(d->mBoundingRect, d->mBrush);
         }
-        d->mAnimator.paint(painter, d->mBoundingRect,
-                           d->mAspectRatioMode, d->mAlignment,
+        d->mAnimator.paint(painter,
+                           d->mBoundingRect,
+                           d->mAspectRatioMode,
+                           QStyle::visualAlignment(layoutDirection(), d->mAlignment),
                            d->mMode, d->mState);
     }
+
     if (HbIconItemPrivate::outlinesEnabled) {
         painter->setBrush(QBrush(QColor(0, 255, 0, 50)));
         painter->drawRect(contentsRect());
@@ -664,7 +784,7 @@ QRectF HbIconItem::boundingRect() const
     if (d->mClearCachedRect) {
         d->recalculateBoundingRect();
     }
-    return d->mAdjustedRect;
+    return d->mBoundingRect;
 }
 
 /*!
@@ -701,8 +821,12 @@ void HbIconItem::changeEvent(QEvent *event)
 QVariant HbIconItem::itemChange(GraphicsItemChange change, const QVariant &value)
 {
     Q_D(HbIconItem);
-    if (QGraphicsItem::ItemEnabledHasChanged == change) {
+    if (change == QGraphicsItem::ItemEnabledHasChanged) {
         d->mMode = value.toBool() ? QIcon::Normal : QIcon::Disabled;
+    } else if (change == QGraphicsItem::ItemVisibleHasChanged) {
+        if (!value.toBool() && HbInstancePrivate::d_ptr()->mDropHiddenIconData) {
+            d->clearStoredIconContent();
+        }
     }
 
     return HbWidgetBase::itemChange(change, value);
@@ -718,14 +842,6 @@ HbIconAnimator &HbIconItem::animator()
 {
     Q_D(HbIconItem);
     return d->mAnimator;
-}
-
-/*!
-  Requests clearStoredIconContent() for the currently set icon.
- */
-void HbIconItemPrivate::clearStoredIconContent()
-{
-    HbIconPrivate::d_ptr(&mIcon)->clearStoredIconContent();
 }
 
 // end of file

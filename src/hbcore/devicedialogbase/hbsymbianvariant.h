@@ -34,27 +34,20 @@
 class CHbSymbianVariantPrivate;
 class CHbSymbianVariantMapPrivate;
 
-class CHbSymbianVariant : public CBase
+class CHbSymbianVariant
+#if !defined(HB_DOXYGEN)
+: public CBase
+#endif // !defined(HB_DOXYGEN)
 {
 public:
 
     enum TType{
-    EInt,
-    EBool,
-    EUint,
-    EReal,
-    ERect,
-    EPoint,
-    ESize,
-    EChar,
-    EDes,
-    EBinary,
-    EDesArray,
-    EVariantMap
+        EInt, EBool, EUint, EReal, ERect, EPoint, ESize, EChar,
+        EDes, EBinary, EDesArray, EVariantMap
     };
 
     IMPORT_C static CHbSymbianVariant* NewL(const TAny* aData, TType aDataType);
-
+    IMPORT_C virtual ~CHbSymbianVariant();
 
     IMPORT_C CHbSymbianVariant::TType Type() const;
 
@@ -68,42 +61,34 @@ public:
         }
 
     IMPORT_C TAny* Data() const;
-
     IMPORT_C void SetData(TAny* aData, TType aDataType);
-
     IMPORT_C TBool IsValid() const;
-
-    IMPORT_C ~CHbSymbianVariant();
 
 private:
     CHbSymbianVariant(const TAny* aData, TType aDataType);
-
     void ConstructL(const TAny* aData, TType aDataType);
-
     CHbSymbianVariant(const CHbSymbianVariant& aNativeVariant);
 
 private:
     CHbSymbianVariantPrivate* d;
 };
 
-class CHbSymbianVariantMap : public CBase
+class CHbSymbianVariantMap
+#if !defined(HB_DOXYGEN)
+: public CBase
+#endif // !defined(HB_DOXYGEN)
 {
 public:
     IMPORT_C static CHbSymbianVariantMap* NewL();
-    IMPORT_C ~CHbSymbianVariantMap();
+    IMPORT_C virtual ~CHbSymbianVariantMap();
 
     IMPORT_C TInt Add(const TDesC& aKey, CHbSymbianVariant* aVariant);
-
     IMPORT_C TInt Delete(const TDesC& aKey);
-
     IMPORT_C const CHbSymbianVariant* Get(const TDesC& aKey) const;
-
     IMPORT_C MDesCArray& Keys() const;
 
 private:
-
     CHbSymbianVariantMap();
-
     void ConstructL();
 
     CHbSymbianVariantMapPrivate* d;

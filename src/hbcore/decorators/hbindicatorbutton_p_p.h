@@ -29,6 +29,10 @@
 #include <hbtoolbutton_p.h>
 #include "hbindicatorbutton_p.h"
 
+#if defined(Q_OS_SYMBIAN)
+class HbIndicatorButtonStatusPrivate;
+#endif // defined(Q_OS_SYMBIAN)
+
 class HbIndicatorButtonPrivate : public HbToolButtonPrivate
 {
     Q_DECLARE_PUBLIC(HbIndicatorButton)
@@ -42,9 +46,11 @@ public:
 
     void addIndicators(const QList<IndicatorClientInfo> &clientInfo);
     void removeIndicators(const QList<IndicatorClientInfo> &clientInfo);
+    void updateIndicators(const QList<IndicatorClientInfo> &clientInfo);
     int findIndicator(const IndicatorClientInfo &indicator) const;
     void updateIcon();
     void setStyle();
+    void setNewEvent(bool newEvent);
 
 private:
 
@@ -63,6 +69,10 @@ private:
     int mStyle;
     bool mIndicatorMenuOpen;
     QGraphicsItem *mTouchArea;
+    
+#if defined(Q_OS_SYMBIAN)
+    HbIndicatorButtonStatusPrivate *mIndicatorButtonStatusPrivate;
+#endif // defined(Q_OS_SYMBIAN)   
 };
 
 #endif // HBINDICATORBUTTON_P_P_H

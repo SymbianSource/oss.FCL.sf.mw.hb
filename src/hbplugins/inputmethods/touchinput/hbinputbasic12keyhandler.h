@@ -43,7 +43,7 @@ public slots:
     void cursorPositionChanged(int oldPos, int newPos);
 
 protected:
-	HbInputBasic12KeyHandler(HbInputBasic12KeyHandlerPrivate &dd, HbInputAbstractMethod* inputMethod);
+    HbInputBasic12KeyHandler(HbInputBasic12KeyHandlerPrivate &dd, HbInputAbstractMethod* inputMethod);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputBasic12KeyHandler)

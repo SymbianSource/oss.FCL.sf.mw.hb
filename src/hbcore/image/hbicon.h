@@ -92,7 +92,8 @@ public:
         ResolutionCorrected = 0x02,
         NoAutoStartAnimation = 0x04,
         Colorized = 0x08,
-        NonThemeable = 0x10
+        NonThemeable = 0x10,
+        KeepDefaultQIconSize = 0x20
     };
 
     Q_DECLARE_FLAGS(Flags, Flag)

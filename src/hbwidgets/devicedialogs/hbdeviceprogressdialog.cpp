@@ -277,45 +277,60 @@ void HbDeviceProgressDialogPrivate::dataReceived(QVariantMap data)
 }
 
 /*!
-    \class HbDeviceProgressDialog
-    \brief HbDeviceProgressDialog is a device dialog version of HbProgressDialog.
+    \stable
+    \hbwidgets
 
-    It displays a dialog with a wait animation or progress bar, text, icon or animation and a
+    \class HbDeviceProgressDialog
+    \brief HbDeviceProgressDialog displays a progress dialog on top all applications.
+
+    HbDeviceProgressDialog is a device-dialog version of HbProgressDialog. It is a modal
+    dialog and displayed on top all applications by a device-dialog service.
+    HbDeviceProgressDialog is a client of the service.
+
+    HbDeviceProgressDialog provides a similar kind of interface as HbProgressDialog.
+    Progress dialogs are always shown asynchronously as application needs to perform an operation
+    and update the dialog while the dialog is showing.
+
+    For content it provides wait animation or progress bar, text, icon or icon-animation and a
     cancel button.
 
-    Device dialogs are shown on top of any running applications and are always modal by nature.
+    Two different dialogs are supported: wait and progress. Progress dialog displays a progress
+    bar indicating progress of the operation. Wait dialog displays a wait animation in place of
+    the progress bar.
 
-    Two different dialogs are supported: wait and progress. The wait dialog displays an animated
-    bar and progress dialog a progress bar indicating progress of the operation.
+    Wait dialog is used when length of an operation cannot be determined beforehand.
+    The dialog is closed by user pressing dialog cancel button or by an application closing
+    the dialog after the operation has finished by HbDeviceProgressDialog::close().
 
-    Wait dialog is used when length of an operation cannot be determined beforehand. It displays
-    an animated bar to indicate an action. The dialog is closed by the user pressing the cancel
-    button, the application closing the dialog after the operation is finished.
-
-    Progress dialog is used when the length of operation can be determined. For example
-    when deleting a number of files, the progress of the operation could be shown as a
+    Progress dialog is used when the length of operation can be determined. beforehand.
+    For example when deleting a number of files, the progress could be shown as a
     percentage of the files deleted. Application updates the progress bar during the
     operation. The dialog closes by user pressing the cancel button, the application closing the
     dialog after the operation is finished or automatically when progress value reaches a
-    maximum.
+    maximum, HbDeviceProgressDialog::autoClose().
 
-    HbDeviceProgressDialog provides a similar kind of interface as HbProgressDialog, excluding
-    functions which handle concrete UI-component related information. Progress dialogs are
-    always asynchronous by as the client needs to perform the operation and update the dialog
-    while the dialog is showing.
-
-    Device progress dialog is launched when show() is called. Launched dialog can be updated by setters.
+    Device progress dialog is launched when show() is called. Launched dialog can be updated by
+    setters. Changed properties are updated to the displayed dialog automatically next time event
+    loop is entered or updated values can be sent immediately by calling update().
     Because updating a dialog requires interprocess communication, it's advisable to fully construct the
     progress dialog before calling show().
 
-    Supported icon animation formats are following:
+    An animation can replace an icon on device progress dialog. Supported icon animation formats are
+    following:
+
     - GIF (.gif)
     - MNG (.mng)
         - Frame animations
 
-    Sample code:
+    \section _platform_spec Platform-specific implementation notes for HbDeviceProgressDialog
 
-    An example showing the wait dialog:
+    \subsection _nonsymbian Non-Symbian
+    Device dialog service is implemented only for the Symbian platform. On other platforms device 
+    progress dialogs are displayed on client's main window.
+
+    \section _code_samples Sample code
+
+    An example showing a wait dialog:
 
     \code
     mDialog = new HbDeviceProgressDialog(HbProgressDialog::WaitDialog);
@@ -323,11 +338,11 @@ void HbDeviceProgressDialogPrivate::dataReceived(QVariantMap data)
     mDialog->show();
     \endcode
 
-    An example showing the progress dialog:
+    An example showing a progress dialog:
 
-    \include deviceprogressdialog/main.cpp
+    \include tsrc/fute/ultimatecodesnippet/deviceprogressdialog.cpp
 
-    Creating a frame animation.
+    Showing an icon animation.
 
     Create an animation definition file:
     \code
@@ -352,9 +367,7 @@ void HbDeviceProgressDialogPrivate::dataReceived(QVariantMap data)
     msg->show();
     \endcode
 
-    \sa HbProgressDialog, HbDialog, HbDeviceDialog
-    \stable
-    \hbwidgets
+    \sa HbProgressDialog, HbDialog, HbDeviceDialog, CHbDeviceProgressDialogSymbian
 */
 
 /*!
@@ -387,9 +400,10 @@ void HbDeviceProgressDialogPrivate::dataReceived(QVariantMap data)
 */
 
 /*!
-    Constructor.
+    Constructs HbDeviceProgressDialog.
+
     \param type Must be one of the defined HbProgressDialog::ProgressDialogType enumerations.
-    \param parent An optional parameter.
+    \param parent Parent pointer or 0.
 */
 HbDeviceProgressDialog::HbDeviceProgressDialog(HbProgressDialog::ProgressDialogType type, QObject *parent) :
     QObject(parent), d(new HbDeviceProgressDialogPrivate)
@@ -401,8 +415,7 @@ HbDeviceProgressDialog::HbDeviceProgressDialog(HbProgressDialog::ProgressDialogT
 }
 
 /*!
-    Constructor.
-    \param parent An optional parameter.
+    Constructs HbDeviceProgressDialog with \a parent.
 */
 HbDeviceProgressDialog::HbDeviceProgressDialog(QObject *parent) :
     QObject(parent), d(new HbDeviceProgressDialogPrivate)
@@ -414,7 +427,7 @@ HbDeviceProgressDialog::HbDeviceProgressDialog(QObject *parent) :
 }
 
 /*!
-    Destructs the class.
+    Destructs HbDeviceProgressDialog. The dialog launched by show() is closed as well.
 */
 HbDeviceProgressDialog::~HbDeviceProgressDialog()
 {
@@ -424,7 +437,13 @@ HbDeviceProgressDialog::~HbDeviceProgressDialog()
 }
 
 /*!
-    Executes the dialog asynchronously.
+    Shows a dialog and returns immediately without waiting for it to close. Closing
+    is indicated by aboutToClose() signal. User cancellation is indicated by cancelled()
+    signal. Button press is also indicated by QAction::triggered() signal.
+    The dialog can be updated while showing by property setters. A new dialog is launched
+    each time show() is called.
+
+    \sa update(), aboutToClose(), cancelled()
 */
 void HbDeviceProgressDialog::show()
 {
@@ -436,7 +455,7 @@ void HbDeviceProgressDialog::show()
 /*!
     Updates changed properties of a launched progress dialog to device dialog service using
     interprocess communication. Has no effect if show() has not been called or dialog has
-    closed already. Calling show() is optional as updating any property schedules an event
+    closed already. Calling update() is optional as updating any property schedules an event
     and the dialog is updated next time Qt event loop executes.
 
     \sa show()
@@ -475,7 +494,7 @@ const QAction *HbDeviceProgressDialog::triggeredAction() const
 }
 
 /*!
-    Sets the maximum value of the progress bar within the dialog.
+    Sets progress bar maximum value.
 
     \sa maximum()
 */
@@ -492,7 +511,7 @@ void HbDeviceProgressDialog::setMaximum(int max)
 }
 
 /*!
-    Returns the maximum value of the progress bar within the dialog. Default value is 100.
+    Returns progress bar maximum value. Default value is 100.
 
     \sa setMaximum()
 */
@@ -502,7 +521,7 @@ int HbDeviceProgressDialog::maximum() const
 }
 
 /*!
-    Sets the minimum value of the progress bar within the dialog.
+    Sets progress bar minimum value.
 
     \sa minimum()
 */
@@ -519,7 +538,7 @@ void HbDeviceProgressDialog::setMinimum(int min)
 }
 
 /*!
-    Returns the minimum value of the progress bar within the dialog. Default value is 0.
+    Returns progress bar minimum value. Default value is 0.
 
     \sa setMinimum()
 */
@@ -529,7 +548,7 @@ int HbDeviceProgressDialog::minimum() const
 }
 
 /*!
-    Sets the minimum and maximum value of the progress bar within the dialog.
+    Sets progress bar minimum and maximum values.
 
     \sa minimum(), maximum()
 */
@@ -540,7 +559,7 @@ void HbDeviceProgressDialog::setRange(int min, int max)
 }
 
 /*!
-    Sets the value of the progress bar within the dialog.
+    Sets progress bar value.
 
     \sa progressValue()
 */
@@ -552,7 +571,7 @@ void HbDeviceProgressDialog::setProgressValue(int progressValue)
 }
 
 /*!
-    Returns the value of the progress bar within the dialog.
+    Returns progress bar value.
 
     \sa setProgressValue()
  */
@@ -562,7 +581,7 @@ int HbDeviceProgressDialog::progressValue() const
 }
 
 /*!
-    Sets the autoClose property value of the dialog.
+    Sets dialog auto-closing.
 
     \param autoClose When set, the dialog is closed when value of the progress bar reaches
     the maximum value of the progress bar.
@@ -577,7 +596,7 @@ void HbDeviceProgressDialog::setAutoClose(bool autoClose)
 }
 
 /*!
-    Returns the value of the autoClose property of the dialog.
+    Returns auto-closing property of a dialog.
 
     The default value is true for HbProgressDialog::ProgressDialog and false
     for HbProgressDialog::WaitDialog.
@@ -590,7 +609,8 @@ bool HbDeviceProgressDialog::autoClose() const
 }
 
 /*!
-    Sets dialog's progress type. After setProgressType(), a new dialog is launched by a show().
+    Sets dialog's progress type. All dialog properties are initialized to default values.
+    After setProgressType(), a new dialog is launched by a show().
 
     \sa progressType()
 */
@@ -616,7 +636,7 @@ HbProgressDialog::ProgressDialogType HbDeviceProgressDialog::progressType() cons
 }
 
 /*!
-    Sets text of the dialog.
+    Sets dialog text.
 
     \sa text()
 */
@@ -628,7 +648,8 @@ void HbDeviceProgressDialog::setText(const QString &text)
 }
 
 /*!
-    Returns text of the dialog.
+    Returns dialog text.
+
     \sa setText()
 */
 QString HbDeviceProgressDialog::text() const
@@ -639,7 +660,7 @@ QString HbDeviceProgressDialog::text() const
 /*!
     Sets message box icon name or animation logical name.
 
-    \param aIconName Icon name. Icon can be from Hb resources or themes. Or can be a file in
+    \param iconName Icon name. Icon can be from Hb resources or themes. Or can be a file in
     a file system.
 
     \sa IconName()
@@ -695,8 +716,8 @@ QString HbDeviceProgressDialog::animationDefinition() const
 
 /*!
     Sets a new action into progress dialog. When users presses a button on dialog, triggered()
-    signal of the action is emitted. HbDeviceProgressDialog constructor sets a default action
-    into a dialog.
+    signal of the action is emitted. HbDeviceProgressDialog sets a default action
+    into a dialog on construction.
 
     \param action Action or Null. Ownership is not transferred.
     \param role Selects an action to set.

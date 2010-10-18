@@ -32,8 +32,6 @@
 
 #include "hbindicatorclientinfo_p.h"
 
-const TInt KHbMessageBufferSize = 255;
-
 class CAsyncListener;
 //
 //  W A R N I N G

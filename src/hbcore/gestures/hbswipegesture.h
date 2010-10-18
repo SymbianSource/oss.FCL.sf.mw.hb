@@ -37,10 +37,6 @@ class HB_CORE_EXPORT HbSwipeGesture : public QSwipeGesture
     Q_PROPERTY(SwipeDirection sceneVerticalDirection READ sceneVerticalDirection STORED false)
     Q_PROPERTY(qreal sceneSwipeAngle READ sceneSwipeAngle WRITE setSceneSwipeAngle)
 
-    // Deprecated
-    Q_PROPERTY(qreal speed READ speed WRITE setSpeed)
-    Q_PROPERTY(int touchPointCount READ touchPointCount WRITE setTouchPointCount)
-
 public:
     explicit HbSwipeGesture(QObject *parent = 0);
     virtual ~HbSwipeGesture();
@@ -60,12 +56,7 @@ private:
     Q_DISABLE_COPY(HbSwipeGesture)
 
     friend class HbSwipeGestureLogic;
-
-public: // Deprecated
-    qreal speed() const;
-    void setSpeed(qreal speed);
-    int touchPointCount() const;
-    void setTouchPointCount(int touchPointCount);
+    friend class HbSwipeGestureRecognizer;
 };
 
 #endif // HBSWIPEGESTURE_H

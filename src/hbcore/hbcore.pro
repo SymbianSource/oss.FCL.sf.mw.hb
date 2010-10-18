@@ -33,6 +33,7 @@ DEFINES += HB_PLUGINS_DIR=\"\\\"$${HB_PLUGINS_DIR}\\\"\"
 DEFINES += HB_RESOURCES_DIR=\"\\\"$${HB_RESOURCES_DIR}\\\"\"
 DEFINES += HB_BUILD_DIR=\"\\\"$${HB_BUILD_DIR}\\\"\"
 DEFINES += HB_INSTALL_DIR=\"\\\"$${HB_INSTALL_DIR}\\\"\"
+DEFINES += HB_TRANSLATIONS_DIR=\"\\\"$${HB_TRANSLATIONS_DIR}\\\"\"
 *-maemo*:DEFINES += HB_Q_WS_MAEMO
 
 # directories
@@ -51,10 +52,8 @@ include(core/core.pri)
 include(cssparser/hbcssparser.pri)
 include(decorators/decorators.pri)
 include(devicedialogbase/devicedialogbase.pri)
-effects {
-    include(effects/effects.pri)
-    include(ovgeffects/ovgeffects.pri)
-}
+include(effects/effects.pri)
+include(ovgeffects/ovgeffects.pri)
 include(gui/gui.pri)
 include(i18n/i18n.pri)
 include(image/image.pri)
@@ -101,19 +100,13 @@ contains(DEFINES, HB_HAVE_QT_MOBILITY) {
 #QMAKE_DISTCLEAN += $$hbNativePath($${HB_BUILD_DIR}/include/hbcore/*)
 #QMAKE_DISTCLEAN += $$hbNativePath($${HB_BUILD_DIR}/include/hbcore/private/*)
 
-TRANSLATIONS += i18n/translations/directorylocalizer_en_GB.ts
-TRANSLATIONS += i18n/translations/directorylocalizer_de_DE.ts
-TRANSLATIONS += i18n/translations/languages.ts
-TRANSLATIONS += i18n/translations/collations.ts
-TRANSLATIONS += i18n/translations/regions.ts
-TRANSLATIONS += i18n/translations/languages_OLD.ts
-
 symbian {
     defFilePath = defs
     
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL
     TARGET.UID3=0x20022EDC
+    MMP_RULES += SMPSAFE
     #DEPLOYMENT_PLUGIN += qjpeg # TODO: Removed because this is already in qt.sis and that caused problems
     DEFINES += SYMBIAN_TARGET_ICON_CACHE_SIZE # TODO: what's this? why not use Q_OS_SYMBIAN?
 
@@ -125,12 +118,16 @@ symbian {
     nvg:DEFINES += HB_NVG_CS_ICON
     sgimage:DEFINES += HB_SGIMAGE_ICON
 
+    load(symbian_i18n.prf):TRANSLATIONS = directorynamelocalizer.ts
+
     nvg {
         include(svgext/svgext.pri)
         LIBS += -llibOpenVG
         LIBS += -llibOpenVGU
         LIBS += -lsvgengine
         LIBS += -llibegl
+        LIBS += -lNVGDecoder_SW
+        LIBS += -llibvgi
     }
     sgimage {
         INCLUDEPATH += $${EPOCROOT}epoc32/include/platform #For SGImage Support
@@ -153,17 +150,16 @@ symbian {
 
     hbExportHeaders(hbcore)
 
-    # i18n's .qm files export
-    exportqm.path = $${EPOCROOT}epoc32/winscw/c/resource/hbi18n/translations
-    exportqm.sources = $$TRANSLATIONS
-    for(file, exportqm.sources) {
-        file2 = $$replace(file, .ts, .qm)
-        file3 = $${PWD}/$$file2
-        BLD_INF_RULES.prj_exports += "$$section(file3, ":", 1) $$exportqm.path/$$basename(file2)"
-    }
-    # i18n's other files export
-    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/i18n/translations/language_list.txt $${EPOCROOT}epoc32/winscw/c/resource/hbi18n/translations/language_list.txt"
-    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/i18n/translations/locale_mappings.txt $${EPOCROOT}epoc32/winscw/c/resource/hbi18n/translations/locale_mappings.txt"
+    hbPrjExport("$${PWD}/i18n/translations/language_list.txt", "$${EPOCROOT}epoc32/data/z/resource/hb/translations/language_list.txt")
+    hbPrjExport("$${PWD}/i18n/translations/language_list.txt", "$${EPOCROOT}epoc32/release/winscw/udeb/resource/hb/translations/language_list.txt")
+    hbPrjExport("$${PWD}/i18n/translations/locale_mappings.txt", "$${EPOCROOT}epoc32/data/z/resource/hb/translations/locale_mappings.txt")
+    hbPrjExport("$${PWD}/i18n/translations/locale_mappings.txt", "$${EPOCROOT}epoc32/release/winscw/udeb/resource/hb/translations/locale_mappings.txt")
+    hbPrjExport("$${PWD}/i18n/translations/collations.qm", "$${EPOCROOT}epoc32/data/z/resource/hb/translations/collations.qm")
+    hbPrjExport("$${PWD}/i18n/translations/collations.qm", "$${EPOCROOT}epoc32/release/winscw/udeb/resource/hb/translations/collations.qm")
+    hbPrjExport("$${PWD}/i18n/translations/languages.qm", "$${EPOCROOT}epoc32/data/z/resource/hb/translations/languages.qm")
+    hbPrjExport("$${PWD}/i18n/translations/languages.qm", "$${EPOCROOT}epoc32/release/winscw/udeb/resource/hb/translations/languages.qm")
+    hbPrjExport("$${PWD}/i18n/translations/regions.qm", "$${EPOCROOT}epoc32/data/z/resource/hb/translations/regions.qm")
+    hbPrjExport("$${PWD}/i18n/translations/regions.qm", "$${EPOCROOT}epoc32/release/winscw/udeb/resource/hb/translations/regions.qm")
 
     LIBS += -lapparc
     LIBS += -lavkon
@@ -180,25 +176,18 @@ symbian {
     LIBS += -lsystemtoneservice
 
     # central repository
-    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/2002C304.txt $${EPOCROOT}epoc32/data/z/private/10202BE9/2002C304.txt"
-    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/2002C304.txt $${EPOCROOT}epoc32/release/winscw/udeb/z/private/10202BE9/2002C304.txt"
-    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/2002C304.txt $${EPOCROOT}epoc32/release/winscw/urel/z/private/10202BE9/2002C304.txt"
-
-    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/2002C384.txt $${EPOCROOT}epoc32/data/z/private/10202BE9/2002C384.txt"
-    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/2002C384.txt $${EPOCROOT}epoc32/release/winscw/udeb/z/private/10202BE9/2002C384.txt"
-    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/2002C384.txt $${EPOCROOT}epoc32/release/winscw/urel/z/private/10202BE9/2002C384.txt"
-    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/2002C3AE.txt $${EPOCROOT}epoc32/data/z/private/10202BE9/2002C3AE.txt"
-    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/2002C3AE.txt $${EPOCROOT}epoc32/release/winscw/udeb/z/private/10202BE9/2002C3AE.txt"
-    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/2002C3AE.txt $${EPOCROOT}epoc32/release/winscw/urel/z/private/10202BE9/2002C3AE.txt"
-    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/20022E82.txt $${EPOCROOT}epoc32/data/z/private/10202BE9/20022E82.txt"
-    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/20022E82.txt $${EPOCROOT}epoc32/release/winscw/udeb/z/private/10202BE9/20022E82.txt"
-    BLD_INF_RULES.prj_exports += "$$section(PWD, ":", 1)/resources/centralrepository/20022E82.txt $${EPOCROOT}epoc32/release/winscw/urel/z/private/10202BE9/20022E82.txt"
-}
-
-hb_maemo_dui {
-    INCLUDEPATH += /usr/include/dui
-    INCLUDEPATH += /usr/local/include/dui
-    LIBS += -ldui
+    hbPrjExport("$${PWD}/resources/centralrepository/2002C304.txt", "$${EPOCROOT}epoc32/data/z/private/10202BE9/2002C304.txt")
+    hbPrjExport("$${PWD}/resources/centralrepository/2002C304.txt", "$${EPOCROOT}epoc32/release/winscw/udeb/z/private/10202BE9/2002C304.txt")
+    hbPrjExport("$${PWD}/resources/centralrepository/2002C304.txt", "$${EPOCROOT}epoc32/release/winscw/urel/z/private/10202BE9/2002C304.txt")
+    hbPrjExport("$${PWD}/resources/centralrepository/2002C384.txt", "$${EPOCROOT}epoc32/data/z/private/10202BE9/2002C384.txt")
+    hbPrjExport("$${PWD}/resources/centralrepository/2002C384.txt", "$${EPOCROOT}epoc32/release/winscw/udeb/z/private/10202BE9/2002C384.txt")
+    hbPrjExport("$${PWD}/resources/centralrepository/2002C384.txt", "$${EPOCROOT}epoc32/release/winscw/urel/z/private/10202BE9/2002C384.txt")
+    hbPrjExport("$${PWD}/resources/centralrepository/2002C3AE.txt", "$${EPOCROOT}epoc32/data/z/private/10202BE9/2002C3AE.txt")
+    hbPrjExport("$${PWD}/resources/centralrepository/2002C3AE.txt", "$${EPOCROOT}epoc32/release/winscw/udeb/z/private/10202BE9/2002C3AE.txt")
+    hbPrjExport("$${PWD}/resources/centralrepository/2002C3AE.txt", "$${EPOCROOT}epoc32/release/winscw/urel/z/private/10202BE9/2002C3AE.txt")
+    hbPrjExport("$${PWD}/resources/centralrepository/20022E82.txt", "$${EPOCROOT}epoc32/data/z/private/10202BE9/20022E82.txt")
+    hbPrjExport("$${PWD}/resources/centralrepository/20022E82.txt", "$${EPOCROOT}epoc32/release/winscw/udeb/z/private/10202BE9/20022E82.txt")
+    hbPrjExport("$${PWD}/resources/centralrepository/20022E82.txt", "$${EPOCROOT}epoc32/release/winscw/urel/z/private/10202BE9/20022E82.txt")
 }
 
 include($${HB_SOURCE_DIR}/src/hbcommon.pri)

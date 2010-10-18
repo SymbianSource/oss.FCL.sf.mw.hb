@@ -40,8 +40,9 @@
 
     \internal
 */
+
 HbIconImpl *HbIconImplCreator::createIconImpl(HbSharedIconInfo &iconImplInfo,
-        HbIconLoadingParams &params)
+                                              HbIconLoadingParams &params)
 {
     HbIconImpl *iconImpl = 0;
     switch (iconImplInfo.type) {
@@ -53,7 +54,7 @@ HbIconImpl *HbIconImplCreator::createIconImpl(HbSharedIconInfo &iconImplInfo,
                                      params.aspectRatioMode,
                                      params.mode,
                                      (params.mirrored && !params.mirroredIconFound),
-                                     params.renderMode);
+                                     iconImplInfo.renderingMode);
 #endif
         break;
     case SGIMAGE:
@@ -64,7 +65,7 @@ HbIconImpl *HbIconImplCreator::createIconImpl(HbSharedIconInfo &iconImplInfo,
                                          params.aspectRatioMode,
                                          params.mode,
                                          (params.mirrored && !params.mirroredIconFound),
-                                         params.renderMode);
+                                         iconImplInfo.renderingMode);
 #endif
         break;
     case OTHER_SUPPORTED_FORMATS:
@@ -74,7 +75,7 @@ HbIconImpl *HbIconImplCreator::createIconImpl(HbSharedIconInfo &iconImplInfo,
                                         params.aspectRatioMode,
                                         params.mode,
                                         (params.mirrored && !params.mirroredIconFound),
-                                        params.renderMode);
+                                        iconImplInfo.renderingMode);
         break;
     default:
         break;
@@ -84,5 +85,20 @@ HbIconImpl *HbIconImplCreator::createIconImpl(HbSharedIconInfo &iconImplInfo,
         iconImpl->setColor(params.color);
     }
 
+    return iconImpl;
+}
+
+HbIconImpl *HbIconImplCreator::createIconImpl(const QPixmap &pixmap,
+                                              HbIconLoadingParams &params)
+{
+    HbIconImpl *iconImpl = new HbPixmapIconImpl(pixmap,
+                                                params.iconFileName,
+                                                params.size,
+                                                params.aspectRatioMode,
+                                                params.mode,
+                                                (params.mirrored && !params.mirroredIconFound));
+    if (iconImpl && params.color.isValid()) {
+        iconImpl->setColor(params.color);
+    }
     return iconImpl;
 }

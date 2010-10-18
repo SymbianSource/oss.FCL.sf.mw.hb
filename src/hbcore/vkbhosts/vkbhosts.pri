@@ -29,11 +29,16 @@ INCLUDEPATH += $$PWD
 DEPENDPATH += $$PWD
 
 PRIVATE_HEADERS += $$PWD/hbabstractvkbhost_p.h
+PRIVATE_HEADERS += $$PWD/private/hbvkbgeometrylogic_p.h
+PRIVATE_HEADERS += $$PWD/hbvkbconstants_p.h
+PRIVATE_HEADERS += $$PWD/hbvkbhostcontainerwidget_p.h
 
 PUBLIC_HEADERS += $$PWD/hbstaticvkbhost.h
 PUBLIC_HEADERS += $$PWD/hbabstractvkbhost.h
 PUBLIC_HEADERS += $$PWD/hbshrinkingvkbhost.h
 
+SOURCES += $$PWD/private/hbvkbgeometrylogic_p.cpp
+SOURCES += $$PWD/hbvkbhostcontainerwidget.cpp
 SOURCES += $$PWD/hbabstractvkbhost.cpp
 SOURCES += $$PWD/hbstaticvkbhost.cpp
 SOURCES += $$PWD/hbshrinkingvkbhost.cpp

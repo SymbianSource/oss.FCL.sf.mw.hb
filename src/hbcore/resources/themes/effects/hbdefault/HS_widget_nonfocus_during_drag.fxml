@@ -1,0 +1,8 @@
+<layers>
+	<visual src="Item" />
+	<filter name="brightness_contrast" type="brightness_contrast">
+		<param name="opacity">1.0</param>
+		<param name="brightness">-0.2</param>
+		<param name="contrast">0.6</param>
+	</filter>
+</layers>

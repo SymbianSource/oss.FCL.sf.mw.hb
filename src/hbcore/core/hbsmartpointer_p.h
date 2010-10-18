@@ -32,16 +32,16 @@ template <typename T>
 class  smart_ptr
 {
 public:
-    typedef T *                pointer;
+    typedef T *               pointer;
     typedef T                 value_type;
     typedef T &               reference;
-    typedef int               difference_type;
+    typedef qptrdiff          difference_type;
 public:
     
     /*
      * C'tor
     */
-    smart_ptr( pointer ptr = 0, HbMemoryManager::MemoryType type = HbMemoryManager::InvalidMemory )
+    HB_ALWAYS_INLINE smart_ptr( pointer ptr = 0, HbMemoryManager::MemoryType type = HbMemoryManager::InvalidMemory )
     { 
         mType = type;
         setOffset(ptr);
@@ -51,7 +51,7 @@ public:
      * Constructor from other pointer.
     */
     template <class U>
-    smart_ptr( U *ptr, HbMemoryManager::MemoryType type ) 
+    HB_ALWAYS_INLINE smart_ptr( U *ptr, HbMemoryManager::MemoryType type )
     {  
         mType = type;
         pointer p(ptr);
@@ -62,7 +62,7 @@ public:
     /*
      * Copy C'tor
     */
-    smart_ptr( const smart_ptr &other )
+    HB_ALWAYS_INLINE smart_ptr( const smart_ptr &other )
     { 
         mType = other.mType;
         setOffset(other.get());
@@ -73,108 +73,107 @@ public:
      *  convertible, smart_ptr will be convertibles.
     */
     template<class T2>
-    smart_ptr( const smart_ptr<T2> &other ) 
+    HB_ALWAYS_INLINE smart_ptr( const smart_ptr<T2> &other )
     {  
         mType = other.memoryType();
         pointer p(other.get());
         setOffset(p);
     }
 
-    smart_ptr operator+( difference_type offset )
+    HB_ALWAYS_INLINE smart_ptr operator+( difference_type offset )
     {
         return smart_ptr(get() + offset, mType);
     }
 
-    reference operator*() const
+    HB_ALWAYS_INLINE reference operator*() const
     { 
         return *get();
     }
 
-    reference operator[]( difference_type idx ) const
+    HB_ALWAYS_INLINE reference operator[]( difference_type idx ) const
     {
         return get()[idx];
     }
 
-    smart_ptr & operator++( void )
+    HB_ALWAYS_INLINE smart_ptr & operator++( void )
     {
         incOffset( sizeof(T) );
         return *this;
     }
 
-    smart_ptr operator++(int)
+    HB_ALWAYS_INLINE smart_ptr operator++(int)
     { 
         smart_ptr temp(*this);
         ++*this;
         return temp;
     }
 
-    smart_ptr & operator-- (void) 
+    HB_ALWAYS_INLINE smart_ptr & operator-- (void)
     {  
         decOffset(sizeof(T));
         return *this;
     }
 
-    smart_ptr operator-- (int)
+    HB_ALWAYS_INLINE smart_ptr operator-- (int)
     {  
         smart_ptr temp(*this);
         --*this;
         return temp;
     }
 
-    bool operator == ( const smart_ptr<T> &other )
+    HB_ALWAYS_INLINE bool operator == ( const smart_ptr<T> &other )
     { 
-        return (get() == other.get() && mType == other.mType);
+        return (get() == other.get() && mType == other.mType); 
     }
 
-    bool operator != ( const smart_ptr<T> &other )
+    HB_ALWAYS_INLINE bool operator != ( const smart_ptr<T> &other )
     { 
         return (get() != other.get() && mType == other.mType);
     }
 
-    bool operator! () const
+    HB_ALWAYS_INLINE bool operator! () const
     {
         return get() == 0;
     }
 
-    pointer get() const
+    HB_ALWAYS_INLINE pointer get() const
     {
         return static_cast<pointer>( rawPointer() );
     }
 
     // this two functions are here as change of the smart pointer behaviour
     //of getting offset wrt shared memory baseaddress.
-    int offset()
+    HB_ALWAYS_INLINE qptrdiff offset()
     { 
         return mOffset;
     }
 
-    void setOffset( difference_type offset )
+    HB_ALWAYS_INLINE void setOffset( difference_type offset )
     { 
        mOffset = offset;
     }
 
     // This function is here for being able to modify offset when
     // cells in shared memory are moved.
-    difference_type *offsetPtr()
+    HB_ALWAYS_INLINE difference_type *offsetPtr()
     {
         return &mOffset;
     }
 
-    HbMemoryManager::MemoryType memoryType() const
+    HB_ALWAYS_INLINE HbMemoryManager::MemoryType memoryType() const
     {
         return mType;
     }
 
-    pointer operator->() const           
+    HB_ALWAYS_INLINE pointer operator->() const      
     {
         return get();
     }
 
-    smart_ptr & operator = ( const smart_ptr &other )
+    HB_ALWAYS_INLINE smart_ptr & operator = ( const smart_ptr &other )
     { 
         mType = other.mType;    
-        pointer p(other.get());
-        this->setOffset(p); 
+        this->setOffset(other.get()); 
         return *this;
     }
 
@@ -182,43 +181,42 @@ public:
 * Assignment From other smart_ptr
 */
     template <class T2>
-    smart_ptr & operator = ( const smart_ptr<T2> & other )
+    HB_ALWAYS_INLINE smart_ptr & operator = ( const smart_ptr<T2> & other )
     {  
         mType = other.memoryType();
-        pointer p(other.get());
-        setOffset(p);
+        setOffset(other.get());
         return *this;
     }
 
-    smart_ptr & operator = ( pointer from )
+    HB_ALWAYS_INLINE smart_ptr & operator = ( pointer from )
     {
         setOffset(from);
         return *this;
     }
 
-    smart_ptr operator+ ( difference_type offset ) const   
+    HB_ALWAYS_INLINE smart_ptr operator+ ( difference_type offset ) const
     {  
         return smart_ptr(get() + offset, mType);
     }
 
-    smart_ptr operator- ( difference_type offset ) const   
+    HB_ALWAYS_INLINE smart_ptr operator- ( difference_type offset ) const 
     {  
         return smart_ptr(get() - offset, mType);
     }
 
-    smart_ptr &operator += ( difference_type offset )
+    HB_ALWAYS_INLINE smart_ptr &operator += ( difference_type offset )
     {  
         incOffset(offset * sizeof(T));
         return *this; 
     }
 
-    smart_ptr &operator-= ( difference_type offset )
+    HB_ALWAYS_INLINE smart_ptr &operator-= ( difference_type offset )
     {  
         decOffset(offset * sizeof(T));
         return *this;
     }
 
-    operator void *()
+    HB_ALWAYS_INLINE operator void *()
     {
         return (void*)get();
     }
@@ -230,33 +228,31 @@ private:
    void unspecified_bool_type_func() const {}
    typedef void ( self_t::*unspecified_bool_type )() const;
 
-   void setOffset( const void *ptr )
+   HB_ALWAYS_INLINE void setOffset( const void *ptr )
    {
-      const char *p = static_cast<const char*>(ptr);
+      const char *p = reinterpret_cast<const char*>(ptr);
       // mOffset -1 is Null pointer.    
       if( !ptr ){
          mOffset = -1;
       }
       else{
           GET_MEMORY_MANAGER(mType);
-          Q_ASSERT( HbMemoryManager::InvalidMemory  !=  mType );
           mOffset = p - (char*)manager->base();
           Q_ASSERT( mOffset != -1 );
       }
    }
     
-   void * rawPointer() const
+   HB_ALWAYS_INLINE void * rawPointer() const
    { 
-       Q_ASSERT( HbMemoryManager::InvalidMemory  !=  mType );
        GET_MEMORY_MANAGER(mType);
        // mOffset -1 is Null pointer.
        return ( mOffset == -1 ) ? 0: ( (char*)manager->base() + mOffset );
    }
 
-   void incOffset( difference_type bytes )
+   HB_ALWAYS_INLINE void incOffset( difference_type bytes )
    { mOffset += bytes; }
 
-   void decOffset( difference_type bytes )
+   HB_ALWAYS_INLINE void decOffset( difference_type bytes )
    { mOffset -= bytes; }
 
 private:
@@ -264,6 +260,43 @@ private:
     HbMemoryManager::MemoryType mType;
    
 };
+
+#if defined(__arm__) // this only works with arm compiler
+template<typename T1, typename T2>
+inline bool operator == ( const smart_ptr<T1> &pt1,
+                         const smart_ptr<T2> &pt2 ) HB_ALWAYS_INLINE
+{  return pt1.get() == pt2.get(); }
+
+template<class T1, class T2>
+inline bool operator!= ( const smart_ptr<T1> &pt1, 
+                        const smart_ptr<T2> &pt2 ) HB_ALWAYS_INLINE
+{  return pt1.get() != pt2.get();  }
+
+template<class T1, class T2>
+inline bool operator< ( const smart_ptr<T1> &pt1, 
+                       const smart_ptr<T2> &pt2 ) HB_ALWAYS_INLINE
+{  return pt1.get() < pt2.get();  }
+
+template<class T1, class T2>
+inline bool operator<= ( const smart_ptr<T1> &pt1, 
+                        const smart_ptr<T2> &pt2 ) HB_ALWAYS_INLINE
+{  return pt1.get() <= pt2.get();  }
+
+template<class T1, class T2>
+inline bool operator> ( const smart_ptr<T1> &pt1, 
+                       const smart_ptr<T2> &pt2 ) HB_ALWAYS_INLINE
+{  return pt1.get() > pt2.get();  }
+
+template<class T1, class T2>
+inline bool operator>= ( const smart_ptr<T1> &pt1, 
+                        const smart_ptr<T2> &pt2 ) HB_ALWAYS_INLINE
+{  return pt1.get() >= pt2.get();  }
+
+template<class T, class T2>
+inline int operator- ( const smart_ptr<T> &pt, const smart_ptr<T2> &pt2 ) HB_ALWAYS_INLINE
+{  return pt.get() - pt2.get();   }
+
+#else
 
 template<typename T1, typename T2>
 inline bool operator == ( const smart_ptr<T1> &pt1,
@@ -298,5 +331,6 @@ inline bool operator>= ( const smart_ptr<T1> &pt1,
 template<class T, class T2>
 inline int operator- ( const smart_ptr<T> &pt, const smart_ptr<T2> &pt2 )
 {  return pt.get() - pt2.get();   }
+#endif
 
 #endif // HBSMARTPOINTER_P_H

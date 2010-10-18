@@ -46,16 +46,23 @@
     
     SelectionDialog is a modal dialog, for which user has to use default or custom action buttons to dismiss the dialog.
 
-    There are 2 modes of selection for SelectionDialog. SingleSelection or MultiSelection.<br>
+    There are 3 modes of selection for SelectionDialog. NoSelection, SingleSelection or MultiSelection.<br>
 
     <b>SingleSelection</b>: User can select one item from the list at a time and the SelectionDialog will be dismissed 
-    as soon as the user selects the item.<br>
+    as soon as the user selects the item.Selection is indicated by a tick mark on the left of selected row.<br>
+
+    <b>NoSelection</b>: User can select one item from the list at a time and the SelectionDialog will be dismissed 
+    as soon as the user selects the item.No indicator is show on selection.<br>
 
     <b>MultiSelection</b>: User can select multiple items from the list. To dismiss the dialog user has to explicitly press "OK/Cancel" button.
     User can anytime press "Cancel" button to close the dialog without any selection.
 
     User can provide the data for options in different forms. It can be simple list of strings, list of custom 
     items or a model itself.
+
+    Selecion Dialog emit following signal(s):
+
+    \li selectionChanged(). Emitted when item(s) is/are selected.This signal is emitted only in MultiSelection mode.
 
     Below is a snippet of code which shows SelectionDialog in a single selection mode.
 
@@ -96,10 +103,36 @@ void HbSelectionDialog::showEvent(QShowEvent *event)
     HbDialog::showEvent(event);
 }
 
+/*! 
+  Returns string used to denote Mark All items functionality. This display text is located on top of the list,
+  acts as a prompt for the checkbox for marking all items and is valid only in MultiSelection mode.    
+
+  \sa setSelectionTitle() 
+*/     
+QString HbSelectionDialog::selectionTitle() const 
+{ 
+    Q_D(const HbSelectionDialog);
+    return d->selectionTitle();
+} 
+
+/*! 
+  Sets the string used to denote Mark All items functionality. This display text is located on top of the list,
+  acts as a prompt for the checkbox for marking all items and is valid only in MultiSelection mode.    
+  Default value is "Mark All"
+   
+      \sa selectionTitle() 
+*/     
+void HbSelectionDialog::setSelectionTitle(const QString& title) 
+{ 
+    Q_D(HbSelectionDialog);
+    d->setSelectionTitle(title);
+} 
+
+
 /*!
     Sets the \a SelectionMode of the list.
     
-    \param mode It can be SingleSelection or MultiSelection.
+    \param mode It can be NoSelection, SingleSelection or MultiSelection.
 
     \sa selectionMode()
 */
@@ -162,7 +195,7 @@ QList<QVariant> HbSelectionDialog::selectedItems() const
 
 /*!
     set the item selected.
-    It can select one item if \a Selection mode is \a SingleSelection
+    It can select one item if \a Selection mode is \a SingleSelection or \a NoSelection
     it can select more item if \a SelectionMode is \a MultiSelection.
 
     \param items indices of the items to be selected in SelectionDialog.

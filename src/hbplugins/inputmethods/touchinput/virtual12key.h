@@ -28,7 +28,6 @@
 
 #include <QPointer>
 #include <hbinputabstractbase.h>
-#include <hbinputvirtualrocker.h>
 #include <hbinputvkbwidget.h>
 
 class HbKeymap;
@@ -78,7 +77,6 @@ public: // From HbInputMethod
 
 public:
     void initializePredictiveMode();
-    void closeCandidatePopup();
     void showAutoCompletionFieldCandidates();
     void initializeModeHandlers();
     bool isSctModeActive() const;
@@ -87,12 +85,13 @@ public:
     void selectSpecialCharacterTableMode();
     void launchAutoCompletionPopup(const QStringList &candidates);
     void closeAutoCompletionPopup();
+    void closeCandidatePopup();
     void switchMode(int keyCode);
     void starKeySelected();
     HbKeyboardType currentKeyboardType() const;
 private:
-    void openKeypad(HbInputVkbWidget * keypadToOpen,bool inMinimizedMode = false);
-    void switchToAlphaMode(bool openAlphaInMinimizedMode = false);
+    void openKeypad(HbInputVkbWidget *keypadToOpen);
+    void switchToAlphaMode();
     void setSpecialCharacters();
     void loadKeymap(const HbInputLanguage &newLanguage);
     Hb12KeyTouchKeyboard *construct12Keyboard();
@@ -101,9 +100,8 @@ private:
 public slots:
     void keypadClosed();
     void keypadOpened();
-    void keypadCloseEventDetected(HbInputVkbWidget::HbVkbCloseMethod vkbCloseMethod);
-    void rockerDirection(int direction, HbInputVirtualRocker::RockerSelectionMode selectionMode);
-    void orientationAboutToChange();
+    void keypadCloseEventDetected(HbInputVkbWidget::HbVkbCloseMethod vkbCloseMethod);   
+    void orientationChanged();
     void candidatePopupClosed(int closingKey, const QString &candidate);
     void flickEvent(HbInputVkbWidget::HbFlickDirection direction);
     void mouseMovedOutOfButton();
@@ -111,6 +109,7 @@ public slots:
     void predictiveInputStateChanged(HbKeyboardSettingFlags keyboardType, bool newState);
     void aboutToActivateCustomAction(HbAction *custAction);
     void autocompletionStateChanged(HbKeyboardSettingFlags keyboardType, bool newState);
+    void restorePreviousState();
 
 private:
     // mCurrentKeypad contains currently active keypad, we don't need to have
@@ -123,7 +122,6 @@ private:
 
     //Owned by the keymap factory
     const HbKeymap* mKeymap;
-    bool mOrientationAboutToChange;
 
     // Owned
     HbCandidateList* mCandidatePopup;
@@ -134,9 +132,8 @@ private:
     HbInputPrediction12KeyHandler *mPredictionModeHandler;
     HbInputBasic12KeyHandler *mBasicModeHandler;
     HbInputNumeric12KeyHandler *mNumericModeHandler;
-	
-    QPointer<HbVkbHost> mVkbHost;
-    bool mKeyboardChangeAlreadyInprogress;
+    
+    QPointer<HbVkbHost> mVkbHost; 
 };
 
 #endif // _Virtual12Key_H

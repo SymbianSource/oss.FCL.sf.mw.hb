@@ -1,16 +1,11 @@
-<layers>
-	<visual>
-		<param name="opacity" type="anim">
-			<style>linear</style>
-			<duration>0.4</duration>
-			<keyframe at="0.0">0.0</keyframe>
-			<keyframe at="1.0">1.0</keyframe>
-		</param>
-		<param name="translation_y" type="anim">
-			<duration>0.4</duration>
-			<keyframe at="0.0">-25.0</keyframe>
-			<keyframe at="1.0">0.0</keyframe>
-			<style>outquad</style>
-		</param>
-	</visual>
+<layers>
+	<visual>
+		<param name="opacity" type="anim">
+			<style>linear</style>
+			<duration>0.2</duration>
+			<keyframe at="0.0">0.0</keyframe>
+			<keyframe at="1.0">1.0</keyframe>
+		</param>
+
+	</visual>
 </layers>

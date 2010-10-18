@@ -54,7 +54,7 @@ class  const_vector_iterator
 public:
     typedef const T value_type;
     typedef value_type & reference;
-    typedef int difference_type;
+    typedef qptrdiff difference_type;
 
 public :
     Pointer ptr() const { return mPtr; }
@@ -85,10 +85,10 @@ public :
         return const_vector_iterator(tmp);
     }
 
-    const_vector_iterator operator+ (int offset) const
+    const_vector_iterator operator+ (qptrdiff offset) const
     {  return const_vector_iterator(mPtr + offset); }
 
-     int operator- (const_vector_iterator &other) const
+     qptrdiff operator- (const_vector_iterator &other) const
     { return mPtr - other.mPtr; }
 
      const_vector_iterator & operator-- ()
@@ -100,7 +100,7 @@ public :
     bool operator!= (const const_vector_iterator &other) const
     { return mPtr != other.mPtr;  }
 
-    int operator- (Pointer right) const
+    qptrdiff operator- (Pointer right) const
     { return mPtr - right; }
 
     bool operator< (const_vector_iterator & other)  const
@@ -132,7 +132,7 @@ class  vector_iterator
 public:
     typedef T value_type;
     typedef value_type & reference;
-    typedef int difference_type;
+    typedef qptrdiff difference_type;
 public:
 
     vector_iterator()
@@ -236,11 +236,11 @@ public:
          mShared(false)
    {
        if (type == HbMemoryManager::HeapMemory) {
-           static int heapNullOffset(createNullOffset(HbMemoryManager::HeapMemory));
+           static qptrdiff heapNullOffset(createNullOffset(HbMemoryManager::HeapMemory));
            mData.setOffset(heapNullOffset);
            mData->mRef.ref();
        } else if (type == HbMemoryManager::SharedMemory) {
-           static int sharedNullOffset(createNullOffset(HbMemoryManager::SharedMemory));
+           static qptrdiff sharedNullOffset(createNullOffset(HbMemoryManager::SharedMemory));
            mData.setOffset(sharedNullOffset);
            mData->mRef.ref();
 #ifdef HB_BIN_CSS
@@ -401,8 +401,8 @@ public:
         if( newSize > 0
             && (mShared || newSize > mData->mCapacity || mData->mRef != 1)) {
             HbMemoryManager *manager = memoryManager();
-            int offset = (char*)mData->mStart.get() - (char*)manager->base();
-            int newOffset = -1;
+            qptrdiff offset = (char*)mData->mStart.get() - (char*)manager->base();
+            qptrdiff newOffset = -1;
             if(newSize > mData->mCapacity)
                 newOffset = reAlloc(offset, newSize, mData->mSize);
             else
@@ -414,9 +414,9 @@ public:
 
     iterator erase(const_iterator first, const_iterator last)
     {
-        int firstDiff = first - mData->mStart;
-        int lastDiff = last - mData->mStart;
-        int diff = lastDiff - firstDiff;
+        qptrdiff firstDiff = first - mData->mStart;
+        qptrdiff lastDiff = last - mData->mStart;
+        qptrdiff diff = lastDiff - firstDiff;
         detach();
         if(QTypeInfo<value_type>::isComplex) {
             copy(mData->mStart + lastDiff, mData->mStart + mData->mSize, mData->mStart + firstDiff);
@@ -508,7 +508,7 @@ public:
 
     HbVector<T> & operator+= (const HbVector<T>& other)
     {
-        int newSize = mData->mSize + other.mData->mSize;
+       qptrdiff newSize = mData->mSize + other.mData->mSize;
         reserve(newSize);
         Inserter it(mData->mStart + mData->mSize, mData->mStart + newSize);
         pointer otherFirst = other.mData->mStart;
@@ -632,7 +632,7 @@ private:
 // reallocate the data with new size , in implicit sharing we have new copy of data.
 // This function can throw because it calls a throwing function (manager->realloc),
 // the exception is propagated to the caller
-    int reAlloc(int oldOffset, int newSize , int oldSize)
+    qptrdiff reAlloc(qptrdiff oldOffset, int newSize , int oldSize)
     {   
         HbMemoryManager *manager = memoryManager();
         if(mData->mRef != 1 || mShared) {
@@ -643,7 +643,7 @@ private:
             return (char*)mData->mStart.get() - (char*)manager->base();
         } else {
             // this statement can throw
-            int offset = -1;
+            qptrdiff offset = -1;
             if (capacity() > 0) {
                 offset = manager->realloc(oldOffset, newSize * sizeof(T));
             } else {
@@ -661,10 +661,10 @@ private:
    }
 
 private : // Data
-    static int createNullOffset(HbMemoryManager::MemoryType type)
+    static qptrdiff createNullOffset(HbMemoryManager::MemoryType type)
     {
         GET_MEMORY_MANAGER(type);
-        int nullOffset(manager->alloc(sizeof(HbVectorData)));
+        qptrdiff nullOffset(manager->alloc(sizeof(HbVectorData)));
         HbVectorData* data = HbMemoryUtils::getAddress<HbVectorData>(type, nullOffset);
         new(data) HbVectorData(type);
         return nullOffset;
@@ -673,7 +673,7 @@ private : // Data
     {
        HbMemoryManager *manager = memoryManager();
        mData->deAllocateAll(manager);
-       int dataOffset = (char*) mData.get() - (char*)manager->base();
+       qptrdiff dataOffset = (char*) mData.get() - (char*)manager->base();
        manager->free(dataOffset);
        mData = 0;
     }
@@ -706,7 +706,7 @@ private : // Data
 
         ~HbVectorData()
         { 
-#ifdef HB_BIN_CSS	
+#ifdef HB_BIN_CSS   
             HbCssConverterUtils::unregisterOffsetHolder(mStart.offsetPtr());
 #endif //HB_BIN_CSS
             destroyAll();
@@ -715,7 +715,7 @@ private : // Data
         void deAllocateAll(HbMemoryManager *manager)
         {
             if(!mCapacity) return;
-            int offset = (char*) mStart.get() - (char*) manager->base();
+            qptrdiff offset = (char*) mStart.get() - (char*) manager->base();
             manager->free(offset);
             mStart = 0;
             mSize = 0;
@@ -779,11 +779,11 @@ template <typename T>
 Q_TYPENAME HbVector<T>::iterator
 HbVector<T>::insert(const_iterator before, int count, const_reference value)
 {
-    int offset = before - mData->mStart;
+    qptrdiff offset = before - mData->mStart;
     if(count != 0) {
         if(mShared || mData->mRef != 1 || mData->mSize + count > mData->mCapacity) {
             HbMemoryManager *manager = memoryManager();
-            int offset = (char*)mData->mStart.get() - (char*)manager->base();
+            qptrdiff offset = (char*)mData->mStart.get() - (char*)manager->base();
             int newCapacity = mData->mSize + count;
             if(newCapacity < mData->mCapacity) {
                 newCapacity = mData->mCapacity;
@@ -833,13 +833,13 @@ void HbVector<T>::append(const value_type &value)
         }
     } else {
         HbMemoryManager *manager = memoryManager();
-        int offset = (char*)mData->mStart.get() - (char*)manager->base();
+        qptrdiff offset = (char*)mData->mStart.get() - (char*)manager->base();
 #ifdef HB_BIN_CSS
         int capacity = (mData->mCapacity == 0) ? HbVectorDefaultCapacity : mData->mCapacity + 1;
-        int newOffset = reAlloc(offset, capacity, mData->mSize);
+        qptrdiff newOffset = reAlloc(offset, capacity, mData->mSize);
 #else
         int capacity = (mData->mCapacity == 0) ? HbVectorDefaultCapacity : mData->mCapacity * 2;
-        int newOffset = reAlloc(offset, capacity, mData->mSize);
+        qptrdiff newOffset = reAlloc(offset, capacity, mData->mSize);
 #endif
         mData->mCapacity = capacity;
         mData->mStart.setOffset(newOffset);

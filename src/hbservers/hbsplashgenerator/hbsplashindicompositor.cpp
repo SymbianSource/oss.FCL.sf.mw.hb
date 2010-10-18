@@ -35,6 +35,8 @@
 
 #ifdef Q_OS_SYMBIAN
 #include <fbs.h>
+_LIT_SECURITY_POLICY_PASS(KRdPolicy); // all pass
+_LIT_SECURITY_POLICY_S0(KWrPolicy, hbsplash_server_uid3.iUid); // pass hbsplashgenerator only
 #endif
 
 // The indicator compositor renders a part of the mainwindow (the
@@ -45,13 +47,16 @@
 //
 // This ensures that there will be relatively up-to-date indicators in
 // the splash screens.
+//
+// This module also publishes the global statusbar image that can be
+// accessed in other processes via HbGlobalStatusBar.
 
 HbSplashIndicatorCompositor::HbSplashIndicatorCompositor(HbSplashGenerator *gen)
     : mGenerator(gen), mSleeping(false), mSignalsConnected(false)
 {
     // When the splash screens are regenerated the statusbar must be rendered
     // again too because the theme or the splashml files may have changed.
-    connect(mGenerator, SIGNAL(finished()), SLOT(renderStatusBar()), Qt::QueuedConnection);
+    connect(mGenerator, SIGNAL(regenerateStarted()), SLOT(renderStatusBar()), Qt::QueuedConnection);
 
     // Regenerate once using a singleshot timer (to have a little delay) but
     // then start listening to change notifications from the statusbar instead.
@@ -64,6 +69,28 @@ HbSplashIndicatorCompositor::HbSplashIndicatorCompositor(HbSplashGenerator *gen)
     // mode events too.
     HbSleepModeListener::instance(); // just to make sure it is created
     QApplication::instance()->installEventFilter(this);
+
+#ifdef Q_OS_SYMBIAN
+    // The statusbar images will also be stored as CFbsBitmap and the
+    // handles will be published in P&S properties.
+    mStatusBarBitmapPrt = mStatusBarBitmapLsc = 0;
+    RProperty::Define(hbsplash_server_uid3, HbSplashSbBitmapPrtKey,
+                      RProperty::EInt, KRdPolicy, KWrPolicy);
+    RProperty::Define(hbsplash_server_uid3, HbSplashSbBitmapLscKey,
+                      RProperty::EInt, KRdPolicy, KWrPolicy);
+    mStatusBarBitmapHandlePropPrt.Attach(hbsplash_server_uid3, HbSplashSbBitmapPrtKey);
+    mStatusBarBitmapHandlePropLsc.Attach(hbsplash_server_uid3, HbSplashSbBitmapLscKey);
+#endif
+}
+
+HbSplashIndicatorCompositor::~HbSplashIndicatorCompositor()
+{
+#ifdef Q_OS_SYMBIAN
+    delete mStatusBarBitmapPrt;
+    delete mStatusBarBitmapLsc;
+    mStatusBarBitmapHandlePropPrt.Close();
+    mStatusBarBitmapHandlePropLsc.Close();
+#endif
 }
 
 void HbSplashIndicatorCompositor::release()
@@ -91,7 +118,7 @@ void HbSplashIndicatorCompositor::queueRender(bool lazy)
 {
     // Compress subsequent change notifications into one update.
     if (!mRenderTimer->isActive() && !mSleeping) {
-        mRenderTimer->start(lazy ? 10000 : 100); // 10 sec or 0.1 sec
+        mRenderTimer->start(lazy ? 1500 : 100); // 1.5s if charging, 0.1s otherwise
     }
 }
 
@@ -121,7 +148,12 @@ void HbSplashIndicatorCompositor::renderStatusBar()
         doRender(mw, &mStatusBarImagePrt, &mStatusBarRectPrt);
         mw->setOrientation(Qt::Horizontal, false);
         doRender(mw, &mStatusBarImageLsc, &mStatusBarRectLsc);
+#ifdef Q_OS_SYMBIAN
+        publishAsBitmap(mStatusBarImagePrt, &mStatusBarBitmapPrt, &mStatusBarBitmapHandlePropPrt);
+        publishAsBitmap(mStatusBarImageLsc, &mStatusBarBitmapLsc, &mStatusBarBitmapHandlePropLsc);
+#endif
     } catch (const std::bad_alloc &) {
+        qWarning("[hbsplashindicompositor] caught bad_alloc");
         mStatusBarImagePrt = mStatusBarImageLsc = QImage();
     }
     mGenerator->unlockMainWindow();
@@ -183,3 +215,39 @@ bool HbSplashIndicatorCompositor::eventFilter(QObject *obj, QEvent *event)
     }
     return QObject::eventFilter(obj, event);
 }
+
+#ifdef Q_OS_SYMBIAN
+void HbSplashIndicatorCompositor::publishAsBitmap(const QImage &image,
+                                                  CFbsBitmap **bitmap,
+                                                  RProperty *prop)
+{
+    int w = image.width();
+    int h = image.height();
+    if (*bitmap) {
+        TSize bitmapSize = (*bitmap)->SizeInPixels();
+        if (bitmapSize.iWidth != w || bitmapSize.iHeight != h) {
+            delete *bitmap;
+            *bitmap = 0;
+        }
+    }
+    if (!*bitmap) {
+        *bitmap = new CFbsBitmap;
+        if ((*bitmap)->Create(TSize(w, h), EColor16MAP) != KErrNone) {
+            qWarning("[hbsplashindicompositor] bitmap Create() failed for size %dx%d", w, h);
+            delete *bitmap;
+            *bitmap = 0;
+            return;
+        }
+    }
+    uchar *dst = reinterpret_cast<uchar *>((*bitmap)->DataAddress());
+    int dstBpl = CFbsBitmap::ScanLineLength(w, (*bitmap)->DisplayMode());
+    const uchar *src = image.bits();
+    int srcBpl = image.bytesPerLine();
+    if (dstBpl == srcBpl) {
+        qMemCopy(dst, src, h * srcBpl);
+        prop->Set((*bitmap)->Handle());
+    } else {
+        qWarning("[hbsplashindicompositor] bpl mismatch (%d - %d)", srcBpl, dstBpl);
+    }
+}
+#endif // Q_OS_SYMBIAN

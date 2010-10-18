@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
 <svg baseProfile="tiny" height="15px" version="1.1" viewBox="0 0 15 15" width="15px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<g>
+<path d="M0,0c0,4.963,4.037,9,9,9h6V0H0z" fill="#14141E" fill-opacity="0.1" fill-rule="evenodd" stroke-opacity="0.1"/>
+<path d="M0,0v1c0,4.41,3.589,7,8,7h7V0H0z" fill="url(#SVGID_1_)" fill-rule="evenodd"/>
+<path d="M14,7H8C4.516,7,1,5.145,1,1V0H0v1c0,4.41,3.589,7,8,7h6h1V7H14z" fill-opacity="0.2" stroke-opacity="0.2"/>
+<path d="M8,6C5.232,6,2,4.691,2,1V0H1v1   c0,4.145,3.516,6,7,6h7V6H8z" fill="#FFFFFF" fill-opacity="0.2" fill-rule="evenodd" stroke-opacity="0.2"/>
 <rect fill="none" height="15" width="15"/>
-<rect fill="none" height="15" width="15"/>
-<path d="M0,0c0,4.963,4.038,9,9,9h6V0H0z" fill="#14141E" fill-opacity="0.1" fill-rule="evenodd" stroke-opacity="0.1"/>
-<path d="M1,0c0,4.411,3.589,8,8,8h6V0H1z" fill="#14141E" fill-opacity="0.2" fill-rule="evenodd" stroke-opacity="0.2"/>
-<path d="M1,0c0,4.411,3.589,7,8,7h6V0H1z" fill="url(#SVGID_1_)" fill-rule="evenodd"/>
-<path d="M9,6C5.516,6,2,4.145,2,0H1c0,4.411,3.589,7,8,7h6V6H9z" fill-opacity="0.2" fill-rule="evenodd" stroke-opacity="0.2"/>
-<path d="M9,5C6.232,5,3,3.691,3,0H2c0,4.145,3.516,6,7,6h6V5  H9z" fill="#FFFFFF" fill-opacity="0.2" fill-rule="evenodd" stroke-opacity="0.2"/>
 <defs>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="8" x2="8" y1="7.249" y2="-43.5196">
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="7.5005" x2="7.5005" y1="7.812" y2="-37.8517">
 <stop offset="0" style="stop-color:#59B397"/>
 <stop offset="1" style="stop-color:#2A7362"/>
 </linearGradient>
 </defs>
+</g>
 </svg>

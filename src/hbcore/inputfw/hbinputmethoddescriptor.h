@@ -61,6 +61,9 @@ private:
     QList<HbIcon> mIcons;
 };
 
+HB_CORE_EXPORT QDataStream &operator<<(QDataStream &stream, const HbInputMethodDescriptor &descriptor);
+HB_CORE_EXPORT QDataStream &operator>>(QDataStream &stream, HbInputMethodDescriptor &descriptor);
+
 #endif // HB_INPUT_METHOD_DESCRIPTOR_H
 
 // End of file

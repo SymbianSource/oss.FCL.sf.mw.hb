@@ -27,16 +27,19 @@
 #include "hblistitemcontainer_p.h"
 #include "hblistitemcontainer_p_p.h"
 #include "hbmodeliterator.h"
+#include "hbstyleprimitivedata.h"
 
 #include <hbtumbleview.h>
 #include <hbtumbleviewitem.h>
 #include <hbevent.h>
 #include <hbstyleoption_p.h>
+#include <hbstyleframeprimitivedata.h>
 
 #include <QGraphicsSceneMouseEvent>
 #include <QStringListModel>
 #include <QItemSelectionModel>
 #include <QTapGesture>
+
 
 #define HB_TUMBLE_ITEM_ANIMATION_TIME 500
 #define HB_TUMBLE_PREFERRED_ITEMS 3
@@ -113,12 +116,13 @@ private:
     QTimer mDelayedSelectTimer;
 
     //primitives
-    QGraphicsItem   *mBackground;
-    QGraphicsItem   *mFrame;//overlay
-    QGraphicsItem   *mHighlight;
+    QGraphicsObject   *mBackground;
+    QGraphicsObject   *mFrame;//overlay
+    QGraphicsObject   *mHighlight;
+    QGraphicsObject   *mDivider;
     int             mSelected;
     bool mNeedScrolling;
-    QGraphicsItem   *mDivider;
+    
 };
 
 
@@ -394,9 +398,10 @@ HbTumbleViewPrivate::HbTumbleViewPrivate()
     ,mBackground(0)
     ,mFrame(0)
     ,mHighlight(0)
-    ,mSelected(-1)
-    ,mNeedScrolling(true)
     ,mDivider(0)
+    ,mSelected(-1)
+    ,mNeedScrolling(true) 
+    
 {
 }
 
@@ -572,16 +577,20 @@ void HbTumbleViewPrivate::createPrimitives()
     Q_Q(HbTumbleView);
 
     //this is the highlight which is placed at center
+    
     if(!mHighlight) {
-        mHighlight = q->style()->createPrimitive(HbStyle::P_TumbleView_highlight,q);
-        q->style()->setItemName(mHighlight,"highlight");
-    }
-    if(!mDivider){
-        mDivider = q->style()->createPrimitive(HbStyle::P_DateTimePicker_separator,q);
-        q->style()->setItemName(mDivider,"separator");
+        mHighlight = q->style()->createPrimitive(HbStyle::PT_FrameItem,"highlight",q);
+        }
+    if(!mDivider) {
+        mDivider = q->style()->createPrimitive(HbStyle::PT_FrameItem,"separator",q);
         mDivider->hide();
-    }
-
+        }
+    if(!mFrame) {
+        mFrame = q->style()->createPrimitive(HbStyle::PT_FrameItem,"frame",q);
+        }
+    if(!mBackground) {
+        mBackground = q->style()->createPrimitive(HbStyle::PT_FrameItem,"background",q);
+        }
 }
 
 
@@ -754,36 +763,6 @@ int HbTumbleView::selected() const
 }
 
 /*!
-    \deprecated HbTumbleView::primitive(HbStyle::Primitive)
-        is deprecated.
-
-    \reimp
-*/
-QGraphicsItem *HbTumbleView::primitive(HbStyle::Primitive id) const
-{
-    Q_D(const HbTumbleView);
-
-    switch(id) {
-        case HbStyle::P_TumbleView_background:
-            return d->mBackground;
-        case HbStyle::P_TumbleView_frame:
-            return d->mFrame;
-        case HbStyle::P_TumbleView_highlight:
-            return d->mHighlight;
-        default:
-            return HbListView::primitive(id);
-    }
-}
-
-/*!
-    \reimp
-*/
-QGraphicsItem *HbTumbleView::primitive(const QString &itemName) const
-{
-    return HbListView::primitive(itemName);
-}
-
-/*!
     \reimp
 */
 void HbTumbleView::currentIndexChanged(const QModelIndex &current, const QModelIndex &previous)
@@ -806,29 +785,69 @@ void HbTumbleView::currentIndexChanged(const QModelIndex &current, const QModelI
     }
 }
 
+void HbTumbleView::initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive)
+{
+    HbWidget::initPrimitiveData(primitiveData, primitive);
+    QString itemName = HbStyle::itemName(primitive);
+    if(itemName == QLatin1String("separator")) {
+        HbStyleFramePrimitiveData *frameItem  = hbstyleprimitivedata_cast<HbStyleFramePrimitiveData*>(primitiveData);
+        frameItem->frameGraphicsName= QLatin1String("qtg_graf_tumbler_divider");
+        frameItem->frameType = HbFrameDrawer::OnePiece;
+        (const_cast<QGraphicsObject *> (primitive))->setZValue(2);
+        }
+        
+    if(itemName == QLatin1String("highlight")) {
+       HbStyleFramePrimitiveData *frameItem  = hbstyleprimitivedata_cast<HbStyleFramePrimitiveData*>(primitiveData);
+       frameItem->frameGraphicsName= QLatin1String("qtg_fr_tumbler_highlight_pri");
+       frameItem->frameType = HbFrameDrawer::ThreePiecesHorizontal;
+       (const_cast<QGraphicsObject *> (primitive))->setZValue(-1);
+       }
+
+    if (itemName == QLatin1String("frame")) {
+        HbStyleFramePrimitiveData *frameItem  = hbstyleprimitivedata_cast<HbStyleFramePrimitiveData*>(primitiveData);
+        frameItem->frameGraphicsName= QLatin1String("qtg_fr_tumbler_overlay");
+        frameItem->frameType = HbFrameDrawer::NinePieces;
+        (const_cast<QGraphicsObject *> (primitive))->setZValue(-4);
+        }
+
+    if (itemName == QLatin1String("background")) {
+        HbStyleFramePrimitiveData *frameItem  = hbstyleprimitivedata_cast<HbStyleFramePrimitiveData*>(primitiveData);
+        frameItem->frameGraphicsName= QLatin1String("qtg_fr_tumbler_bg");
+        frameItem->frameType = HbFrameDrawer::NinePieces;
+        (const_cast<QGraphicsObject *> (primitive))->setZValue(-5);
+        }
+}
+
 /*!
     \reimp
 */
 void HbTumbleView::updatePrimitives()
 {                   
     Q_D(HbTumbleView);
-
-    HbStyleOption opt;
-    initStyleOption(&opt);
-
-    if(d->mBackground) {
-        style()->updatePrimitive(d->mBackground,HbStyle::P_TumbleView_background,&opt);
-    }
-    if(d->mFrame) {
-        style()->updatePrimitive(d->mFrame,HbStyle::P_TumbleView_frame,&opt);
-    } 
-    if(d->mHighlight) {
-        style()->updatePrimitive(d->mHighlight,HbStyle::P_TumbleView_highlight,&opt);
-    }
-    if(d->mDivider){
-        style()->updatePrimitive(d->mDivider, HbStyle::P_DateTimePicker_separator, &opt);
-    }
     HbListView::updatePrimitives();
+    if(d->mBackground){
+        HbStyleFramePrimitiveData data;
+        initPrimitiveData(&data,d->mBackground);
+        style()->updatePrimitive(d->mBackground,&data,this);
+       }
+
+    if(d->mFrame) {
+        HbStyleFramePrimitiveData data;
+        initPrimitiveData(&data,d->mFrame);
+        style()->updatePrimitive(d->mFrame,&data,this);
+       }
+
+    if(d->mHighlight) {
+        HbStyleFramePrimitiveData data;
+        initPrimitiveData (&data,d->mHighlight);
+        style()->updatePrimitive(d->mHighlight,&data,this);
+       }
+
+    if (d->mDivider) {
+        HbStyleFramePrimitiveData data;
+        initPrimitiveData (&data,d->mDivider);
+        style()->updatePrimitive(d->mDivider,&data,this);
+        }
 
 }
 
@@ -1120,5 +1139,26 @@ void HbTumbleView::gestureEvent(QGestureEvent *event)
     }
     HbListView::gestureEvent(event);
 }
+
+QGraphicsItem *HbTumbleView::primitive(const QString &itemName) const
+{
+    Q_D(const HbTumbleView);
+
+    if(!itemName.compare(QString("background"))){
+        return d->mBackground;
+    }
+    if(!itemName.compare(QString("frame"))){
+        return d->mFrame;
+    }
+    if(!itemName.compare(QString("highlight"))){
+        return d->mHighlight;
+    }
+    if(!itemName.compare(QString("separator"))){
+        return d->mDivider;
+    }
+
+    return HbListView::primitive(itemName);
+}
+
 
 #include "moc_hbtumbleview.cpp"

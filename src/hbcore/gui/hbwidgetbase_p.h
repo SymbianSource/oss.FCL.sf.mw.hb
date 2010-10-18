@@ -42,10 +42,11 @@
 //
 
 class HbCssInspectorWindow;
+class HbWidget;
 
 class HB_CORE_PRIVATE_EXPORT HbWidgetBasePrivate
 {
-	Q_DECLARE_PUBLIC(HbWidgetBase)
+    Q_DECLARE_PUBLIC(HbWidgetBase)
 
 public:
     HbWidgetBasePrivate();
@@ -58,29 +59,30 @@ public:
 
     virtual void setInsidePopup(bool insidePopup);
 
-	enum ApiCssProtectionFlags {
-		AC_TextColor = 0x01,
-		AC_TextAlign = 0x02,
-		AC_IconBrush = 0x04,
-		AC_IconAspectRatioMode = 0x08,
-        AC_IconAlign = 0x10,
-        AC_TextWrapMode = 0x20,
-        AC_TextLinesMin = 0x40,
-        AC_TextLinesMax = 0x80
-	};
+    enum ApiCssProtectionFlags {
+        AC_TextColor = 0x0001,
+        AC_TextAlign = 0x0002,
+        AC_IconBrush = 0x0004,
+        AC_IconAspectRatioMode = 0x0008,
+        AC_IconAlign = 0x0010,
+        AC_TextWrapMode = 0x0020,
+        AC_TextLinesMin = 0x0040,
+        AC_TextLinesMax = 0x0080,
+        AC_TextElideMode = 0x0100
+    };
 
-	inline void setApiProtectionFlag(HbWidgetBasePrivate::ApiCssProtectionFlags att, bool value)
-	{
-		if(value)
-			mApiProtectionFlags |= att;
-		else
-			mApiProtectionFlags &= ~att;
-	}
+    inline void setApiProtectionFlag(HbWidgetBasePrivate::ApiCssProtectionFlags att, bool value)
+    {
+        if(value)
+            mApiProtectionFlags |= att;
+        else
+            mApiProtectionFlags &= ~att;
+    }
 
-	inline bool testApiProtectionFlag(HbWidgetBasePrivate::ApiCssProtectionFlags att) const
-	{
-		return mApiProtectionFlags & att;
-	}
+    inline bool testApiProtectionFlag(HbWidgetBasePrivate::ApiCssProtectionFlags att) const
+    {
+        return mApiProtectionFlags & att;
+    }
 
     inline int attributeToBitIndex(Hb::WidgetAttribute att) const
     {
@@ -89,18 +91,32 @@ public:
             // Does not overlap with values set in attributeToBitIndex(Qt::WidgetAttribute)
             case Hb::InteractionDisabled: bit = 1; break;
         case Hb::InsidePopup: bit = 2; break;
-        case Hb::InputMethodNeutral: bit = 3; break;
-        case Hb::Widget: bit = 4; break;
+        case Hb::Widget: bit = 3; break;
         default: break;
         }
         return bit;
+    }
+
+    /*
+        In case when \a newAlign has no set vertical or horizontal part,
+        missing part is replaced with respective part of \a oldAlign.
+     */
+    static inline Qt::Alignment combineAlignment (Qt::Alignment newAlign, Qt::Alignment oldAlign)
+    {
+        newAlign &= Qt::AlignVertical_Mask | Qt::AlignHorizontal_Mask;
+        if ((newAlign & Qt::AlignHorizontal_Mask) == 0) {
+            newAlign |= oldAlign & Qt::AlignHorizontal_Mask;
+        }
+        if ((newAlign & Qt::AlignVertical_Mask) == 0) {
+            newAlign |= oldAlign & Qt::AlignVertical_Mask;
+        }
+        return newAlign;
     }
 
     quint32 mApiProtectionFlags;
     quint32 attributes : 5;
     HbFontSpec fontSpec;
     HbWidgetBase *q_ptr;
-
 private:
 
     static HbWidgetBasePrivate *d_ptr(HbWidgetBase *base) {

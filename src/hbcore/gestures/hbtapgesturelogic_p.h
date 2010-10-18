@@ -26,9 +26,7 @@
 #ifndef HBTAPGESTURELOGIC_P_H
 #define HBTAPGESTURELOGIC_P_H
 
-#include "hbgestures_p.h"
 #include "hbglobal.h"
-#include "hbtapgesture_p.h"
 
 #include <QMouseEvent>
 #include <QGestureRecognizer>

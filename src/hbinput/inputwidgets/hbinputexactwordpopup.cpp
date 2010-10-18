@@ -30,6 +30,9 @@
 #include <QGraphicsLinearLayout>
 
 #include <hbinputregioncollector_p.h>
+#include <HbFrameDrawer>
+#include <hbframeitem.h>
+#include <hbframedrawerpool_p.h>
 #include "hbdeviceprofile.h"
 #include "hbdialog.h"
 #include "hblabel.h"
@@ -37,13 +40,21 @@
 #include "hbinputexactwordpopup.h"
 #include "hbiconitem.h"
 #include "hbinputsettingproxy.h"
-#include "hbframeitem.h"
-#include "hbframedrawer.h"
-#include "hbdialog_p.h"
+#include "hbinputpopupbase_p.h"
 
-const qreal HbExactWordPopupHeight = 50.0;
+/*!
+@stable
+@hbinput
+\class HbExactWordPopup
+\brief Displays exact typing popup for predictive input.
 
-class HbExactWordPopupPrivate : public HbDialogPrivate
+This class is used together with predictive input. If a predictive engine makes error corrections to typed text,
+input method implementation can use this class to display the uncorrected text to provide visual indication
+of error correction and a way to override the correction if needed.
+*/
+
+const QString HbCandidateListBackground("qtg_fr_popup_secondary");
+class HbExactWordPopupPrivate : public HbInputPopupBasePrivate
 {
     Q_DECLARE_PUBLIC(HbExactWordPopup)
 
@@ -51,15 +62,14 @@ public:
     HbExactWordPopupPrivate();
     ~HbExactWordPopupPrivate();
 
-    void initBackground();
+    void setBackground();
 
 public:
     HbLabel *mText;
-    HbFrameItem *mPopupBackground;
 };
 
 HbExactWordPopupPrivate::HbExactWordPopupPrivate()
- : mText(0), mPopupBackground(0)
+ : mText(0)
 {
 }
 
@@ -67,20 +77,15 @@ HbExactWordPopupPrivate::~HbExactWordPopupPrivate()
 {
 }
 
-void HbExactWordPopupPrivate::initBackground()
+void HbExactWordPopupPrivate::setBackground()
 {
     Q_Q(HbExactWordPopup);
 
-    mPopupBackground = static_cast<HbFrameItem*>(q->primitive(HbStyle::P_Popup_background));
-
-    if (!mPopupBackground) {
-        mPopupBackground = static_cast<HbFrameItem*>(q->style()->createPrimitive((HbStyle::Primitive)(HbStyle::P_Popup_background), q));
-    }
-
-    if (mPopupBackground->frameDrawer().isNull()) {
-        HbFrameDrawer *fd = new HbFrameDrawer("qtg_fr_popup_secondary", HbFrameDrawer::NinePieces);
-        mPopupBackground->setFrameDrawer(fd);
-    }
+    HbFrameDrawer *drawer = HbFrameDrawerPool::get(HbCandidateListBackground, HbFrameDrawer::NinePieces, QSizeF(q->boundingRect().width(), q->boundingRect().height()));
+  if (drawer) {
+    drawer->setFillWholeRect(true);
+    q->setBackgroundItem(new HbFrameItem(drawer));
+  }
 }
 
 HbExactWordPopup* HbExactWordPopup::instance(HbExactWordPopupIndicator indicatorArrow)
@@ -98,7 +103,7 @@ HbExactWordPopup* HbExactWordPopup::instance(HbExactWordPopupIndicator indicator
     \param parent An optional parameter.
 */
 HbExactWordPopup::HbExactWordPopup(QGraphicsWidget *parent, HbExactWordPopupIndicator indicatorArrow)
- : HbDialog(*new HbExactWordPopupPrivate(), parent)
+ : HbInputPopupBase(*new HbExactWordPopupPrivate(), parent)
 {
     Q_D(HbExactWordPopup);
     HbInputRegionCollector::instance()->attach(this);
@@ -110,7 +115,7 @@ HbExactWordPopup::HbExactWordPopup(QGraphicsWidget *parent, HbExactWordPopupIndi
 
     setContentWidget(d->mText);
 
-    d->initBackground();
+    d->setBackground();
 
     setTimeout(HbPopup::NoTimeout);
     setBackgroundFaded(false);
@@ -118,10 +123,6 @@ HbExactWordPopup::HbExactWordPopup(QGraphicsWidget *parent, HbExactWordPopupIndi
     setFocusPolicy(Qt::ClickFocus);
     setModal(false);
     setContentsMargins(0, 0, 0, 0);
-
-    // Make sure the exact word popup never steals focus.
-    setFlag(QGraphicsItem::ItemIsPanel, true);
-    setActive(false);
 
     setIndicatorArrow(indicatorArrow);
 }
@@ -159,12 +160,11 @@ void HbExactWordPopup::showText(QPointF pos)
     Q_D(HbExactWordPopup);
 
     QFontMetrics fontMetrics(HbFontSpec(HbFontSpec::Primary).font());
-    qreal width = fontMetrics.width(text());
+    qreal width = fontMetrics.width(text()) + 1;
 
     d->mText->setMinimumWidth(width);
     d->mText->setMaximumWidth(width);
   
-    pos.setY(pos.y() - HbExactWordPopupHeight);
     setPos(pos);
 
     show();
@@ -193,17 +193,10 @@ void HbExactWordPopup::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 
 }
 
-void HbExactWordPopup::updatePrimitives()
-{
-    Q_D(HbExactWordPopup);
-
-    d->mPopupBackground->frameDrawer().setFrameType(HbFrameDrawer::NinePieces);
-    d->mPopupBackground->frameDrawer().setFrameGraphicsName("qtg_fr_popup_secondary");
-    d->mPopupBackground->setGeometry(boundingRect());
-}
-
-// this method is called whenever there is a switch of keypad usage from h/w to virtual
-// h/w keypad needs an indicator, whereas virtual does not, hence set the image appropriately.
+/*!
+This method is called whenever there is a switch of keypad usage from hw to virtual
+Hardware keypad needs an indicator, whereas virtual does not, hence set the image appropriately.
+*/
 void HbExactWordPopup::setIndicatorArrow(HbExactWordPopupIndicator indicatorArrow)
 {
     Q_D(HbExactWordPopup);

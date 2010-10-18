@@ -3,7 +3,7 @@
 <svg baseProfile="tiny" height="30" viewBox="0 0 30 30" width="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g>
 <rect fill="none" height="30" width="30"/>
-<g fill-opacity="0.5" stroke-opacity="0.5">
+<g opacity="0.5">
 <rect fill="none" height="30" width="30"/>
 </g>
 <ellipse cx="15.37" cy="27.279" fill="#333333" fill-opacity="0.2" rx="7.052" ry="2.721" stroke-opacity="0.2"/>

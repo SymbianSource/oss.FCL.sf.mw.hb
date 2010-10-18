@@ -65,6 +65,7 @@ public:
     void actionAdded(QActionEvent *actionEvent);
     void actionRemoved(QActionEvent *actionEvent);
     void actionChanged(QActionEvent *actionEvent);
+    void handleBackgroundMouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     HbAction *activeAction(HbMenuItem *&activeItem) const;
     HbAction *activeAction() const;
     HbMenuItem *menuItem(QAction *action); // krazy:exclude=qclasses
@@ -85,6 +86,7 @@ public:
     QPointer<QObject> receiverToDisconnectOnClose;
     QByteArray memberToDisconnectOnClose;
     int mNumberOfColumns;
+    bool mCloseAllMenus;
 
 private:
     static bool menuEffectsLoaded;
@@ -96,6 +98,7 @@ private:
     friend class HbMenuItem;
     friend class HbMenuListView;
     friend class HbView;
+    friend class HbViewPrivate;
     friend class HbMenuContainer;
 };
 

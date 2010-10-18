@@ -55,6 +55,8 @@ public:
     void setFlags(HbIcon::Flags flags);
     void setMirroringMode(HbIcon::MirroringMode mode);
     void setBrush(const QBrush &brush);
+    void setIconScaling(bool enabled = true);
+    void setAsync(bool async = true);
 
     void setColor(const QColor &color);
     QColor color() const;
@@ -70,6 +72,8 @@ public:
     HbIcon::Flags flags() const;
     HbIcon::MirroringMode mirroringMode() const;
     QBrush brush() const;
+    bool iconScaling() const;
+    bool async() const;
 
     bool isNull() const;
 

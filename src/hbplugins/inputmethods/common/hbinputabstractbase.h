@@ -52,15 +52,18 @@ public:
     virtual void starKeySelected();
     virtual void getCandidatePositionAndSize(HbCandidateList *candidatePopup,
                     HbInputVkbWidget *currentKeypad, QPointF & pos,QSizeF & size);
-	virtual bool isSctModeActive() const;
-	virtual QChar previousChar();
+    virtual bool isSctModeActive() const;
+    virtual QChar previousChar();
     virtual HbKeyboardType currentKeyboardType() const;
 public: // From HbInputMethod
     void focusReceived();    
+    void focusLost();
+
 public slots:
     void switchKeypad(bool isActive);    
 private:
     HbAction *mVanillQwertySwitch;
+    bool mIsFocusOnVanillaQtEditor;
     Q_DISABLE_COPY(HbInputAbstractMethod)
 };
 

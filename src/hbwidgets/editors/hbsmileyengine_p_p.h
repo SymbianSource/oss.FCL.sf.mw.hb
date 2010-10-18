@@ -36,10 +36,10 @@ class HbIconAnimator;
 QT_FORWARD_DECLARE_CLASS(QTextDocument)
 
 struct HbSmileyDataType {
-    HbSmileyDataType():cursor(0),animator(0),scaleFactor(1){}
+    HbSmileyDataType():cursor(0),animator(0),engine(0){}
     QTextCursor* cursor;
     HbIconAnimator* animator;
-    qreal scaleFactor;
+    HbSmileyEngine* engine;
 };
 
 

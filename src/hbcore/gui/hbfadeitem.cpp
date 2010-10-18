@@ -67,7 +67,7 @@ void HbFadeItemPrivate::init()
 {
     Q_Q(HbFadeItem);
 
-    setBackgroundItem(HbStyle::P_Fade_background);
+    setBackgroundItem(HbStylePrivate::P_Fade_background);
 
     q->setAcceptHoverEvents(true);
     // This is needed to be able to block moving the focus to items behind background item by

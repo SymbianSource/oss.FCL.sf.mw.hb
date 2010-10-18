@@ -23,8 +23,8 @@
 **
 ****************************************************************************/
 
-#ifndef HBSTATUSBAR_H_H
-#define HBSTATUSBAR_H_H
+#ifndef HBSTATUSBAR_P_P_H
+#define HBSTATUSBAR_P_P_H
 
 #include "hbstatusbar_p.h"
 #include <hbwidget_p.h>
@@ -33,6 +33,8 @@ class HbSignalIndicator;
 class HbBatteryIndicator;
 class HbIndicatorGroup;
 class HbIndicatorPrivate;
+class HbDeviceDialogServerStatus;
+
 #if defined(Q_OS_SYMBIAN)
 class CEnvironmentChangeNotifier;       // Receive system event notifications
 #endif
@@ -48,6 +50,9 @@ public:
     void delayedConstruction();
     void init();
     void updateTime();
+    QString timeFormat();
+    void startClockTimer();
+    void killClockTimer();
     
 #if defined(Q_OS_SYMBIAN)
     static TInt EnvChangeCallback(TAny *aObject);
@@ -72,6 +77,8 @@ public:
     // Notifications about locale and time changes
     CEnvironmentChangeNotifier *mEnvChangeNotifier;
 #endif    
+    
+    HbDeviceDialogServerStatus *mServerStatus;
 
     void _q_signalLevelChanged();
     void _q_batteryLevelChanged();
@@ -79,4 +86,4 @@ public:
 };
 
 
-#endif // HBSTATUSBAR_H_H
+#endif // HBSTATUSBAR_P_P_H

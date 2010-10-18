@@ -37,6 +37,7 @@
 #include "hbsignalindicator_p.h"
 #include "hbbatteryindicator_p.h"
 #include "hbindicatorgroup_p.h"
+#include "hbdevicedialogserverstatus_p.h"
 
 #if defined(Q_OS_SYMBIAN)
 #include "hbindicatorsym_p.h"
@@ -46,17 +47,16 @@
 #include "hbindicatorwin32_p.h"
 #endif // defined(Q_OS_SYMBIAN)
 
-const int clockUpdateDelay = 10000; // 10 s
-
 /*
     \class HbStatusBar
     \brief HbStatusBar is the class implementing statusbar decorator.
     Statusbar is a container for two indicator groups (left and right),
     a clock which is located in the middle of indicator groups and for
-	a battery and signal status indicators.
+    a battery and signal status indicators.
  */
 
 HbStatusBarPrivate::HbStatusBarPrivate() : 
+    mClockTimerId(0),
     mTimeTextItem(0),
     mSignalIndicator(0),
     mBatteryIndicator(0),
@@ -64,7 +64,8 @@ HbStatusBarPrivate::HbStatusBarPrivate() :
     mSettingsIndicatorGroup(0),
     mMainWindow(0),
     mPreviousProperties(0),
-    mIndicatorPrivate(0)
+    mIndicatorPrivate(0),
+    mServerStatus(0)
 {
 #if defined(Q_OS_SYMBIAN)
     // Register for system environment changes
@@ -75,6 +76,7 @@ HbStatusBarPrivate::HbStatusBarPrivate() :
 
     mEnvChangeNotifier->Start();
 #endif
+    mServerStatus = new HbDeviceDialogServerStatus(false);
 }
 
 HbStatusBarPrivate::~HbStatusBarPrivate()
@@ -90,6 +92,7 @@ HbStatusBarPrivate::~HbStatusBarPrivate()
         delete mEnvChangeNotifier;
         }
 #endif
+    delete mServerStatus;
 }
 
 void HbStatusBarPrivate::delayedConstruction()
@@ -125,6 +128,8 @@ void HbStatusBarPrivate::delayedConstruction()
         q, SIGNAL(allActivated(const QList<IndicatorClientInfo> &)));
     q->connect(mIndicatorPrivate, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)),
         q, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)));
+    q->connect(mIndicatorPrivate, SIGNAL(updated(const QList<IndicatorClientInfo> &)),
+        q, SIGNAL(updated(const QList<IndicatorClientInfo> &)));
 
     q->connect(mIndicatorPrivate, SIGNAL(activated(const QList<IndicatorClientInfo> &)),
         q, SLOT(_q_indicatorsChanged()));
@@ -135,7 +140,10 @@ void HbStatusBarPrivate::delayedConstruction()
     q->connect(mIndicatorPrivate, SIGNAL(deactivated(const QList<IndicatorClientInfo> &)),
         q, SLOT(_q_indicatorsChanged()));
 
-    mClockTimerId = q->startTimer(clockUpdateDelay);
+    q->connect(mMainWindow, SIGNAL(currentViewChanged(HbView*)), q, SLOT(currentViewChanged(HbView*)));
+
+    q->connect(mMainWindow, SIGNAL(revealed()), q, SLOT(startClockTimer()));
+
     mIndicatorPrivate->startListen();
 
     q->grabGesture(Qt::TapGesture);
@@ -152,15 +160,15 @@ void HbStatusBarPrivate::init()
     HbStyle::setItemName(q, "statusbar");
 
     mSignalIndicator = new HbSignalIndicator(q);
-    q->style()->setItemName(mSignalIndicator, "signal");
+    HbStyle::setItemName(mSignalIndicator, "signal");
     mBatteryIndicator = new HbBatteryIndicator(q);
-    q->style()->setItemName(mBatteryIndicator, "battery");
+    HbStyle::setItemName(mBatteryIndicator, "battery");
 
     mNotificationIndicatorGroup = new HbIndicatorGroup(HbIndicatorGroup::NotificationType, q);
-    q->style()->setItemName(mNotificationIndicatorGroup, "notificationindicators");
+    HbStyle::setItemName(mNotificationIndicatorGroup, "notificationindicators");
 
     mSettingsIndicatorGroup = new HbIndicatorGroup(HbIndicatorGroup::SettingsType, q);
-    q->style()->setItemName(mSettingsIndicatorGroup, "settingsindicators");
+    HbStyle::setItemName(mSettingsIndicatorGroup, "settingsindicators");
 
     mIndicatorPrivate = new HbIndicatorPrivate;
     mIndicatorPrivate->init();
@@ -191,30 +199,79 @@ void HbStatusBarPrivate::_q_indicatorsChanged()
     emit q->contentChanged(HbStatusBar::IndicatorsChanged);
 }
 
+QString HbStatusBarPrivate::timeFormat()
+{
+    QString timeFormat;
+    HbExtendedLocale extendedLocale = HbExtendedLocale();
+
+    // time separator
+    timeFormat.append("hh");
+    // Index0 HH Index1 MM Index2 SS Index3
+    int indexOfHourMinuteSeparator(1);
+    timeFormat.append(extendedLocale.timeSeparator(indexOfHourMinuteSeparator));
+    timeFormat.append("mm");
+
+    if (extendedLocale.timeStyle() == HbExtendedLocale::Time24){
+        // 24-hour format
+        return timeFormat;
+    }
+
+    // 12-hour time format
+    QString amPm = "ap";
+    QString space = " ";
+    if (extendedLocale.amPmSpace()){
+        // case: space between time & amPm text
+        if (extendedLocale.amPmSymbolPosition() == HbExtendedLocale::After){
+            amPm.prepend(space);
+            timeFormat.append(amPm);
+        }else if (extendedLocale.amPmSymbolPosition() == HbExtendedLocale::Before){
+            amPm.append(space);
+            timeFormat.prepend(amPm);
+        }
+    } else {
+        // case: no space between time & amPm text
+        if (extendedLocale.amPmSymbolPosition() == HbExtendedLocale::After){
+            timeFormat.append(amPm);
+        }else if (extendedLocale.amPmSymbolPosition() == HbExtendedLocale::Before){
+            timeFormat.prepend(amPm);
+        }
+    }
+    return timeFormat;
+}
+
+
 void HbStatusBarPrivate::updateTime()
 {
     Q_Q(HbStatusBar);
-
-    QString timeFormat;
-    // set the time format accordingly
-    if (HbExtendedLocale().timeStyle() == HbExtendedLocale::Time12) {
-        timeFormat.clear();
-        timeFormat.insert(0, "hh:mm ap");
-    } else {
-        timeFormat.clear();
-        timeFormat.insert(0, "hh:mm");
-    }
 
     QTime current = QTime::currentTime();
 
     // set time, using a proper formatting
     QString oldTimeText = mTimeText;
-    mTimeText = current.toString(timeFormat);
-
-    q->updatePrimitives();
+    mTimeText = current.toString(timeFormat());
 
     if (mTimeText != oldTimeText) {
+        q->updatePrimitives();
         emit q->contentChanged(HbStatusBar::TimeChanged);
+    }
+}
+
+void HbStatusBarPrivate::startClockTimer()
+{
+    Q_Q(HbStatusBar);
+    updateTime();
+    if (mClockTimerId == 0) {
+        int delay = (60 - QTime::currentTime().second()) * 1000;
+        mClockTimerId = q->startTimer(delay);
+    }
+}
+
+void HbStatusBarPrivate::killClockTimer()
+{
+    Q_Q(HbStatusBar);
+    if (mClockTimerId != 0) {
+        q->killTimer(mClockTimerId);
+        mClockTimerId = 0;
     }
 }
 
@@ -248,7 +305,9 @@ HbStatusBar::HbStatusBar(HbMainWindow *mainWindow, QGraphicsItem *parent)
     d->q_ptr = this;
     d->mMainWindow = mainWindow;
     d->init();
+    setFlag(QGraphicsItem::ItemHasNoContents, true);
     createPrimitives();
+    qApp->installEventFilter(this);
 }
 
 /*
@@ -258,10 +317,9 @@ HbStatusBar::~HbStatusBar()
 { 
     Q_D(HbStatusBar);
     
-    if (d->mClockTimerId != 0) {
-        killTimer(d->mClockTimerId);
-        d->mClockTimerId = 0;
-    }
+    d->killClockTimer();
+
+    qApp->removeEventFilter(this);
 }
 
 /*
@@ -277,7 +335,13 @@ void HbStatusBar::propertiesChanged()
 {
     Q_D(HbStatusBar);
     if (d->mMainWindow && d->mMainWindow->currentView()) {
-        currentViewChanged(d->mMainWindow->currentView());
+        // only do repolish if properties have changed
+        HbView *view = d->mMainWindow->currentView();
+        if (d->mPreviousProperties != view->viewFlags()) {
+            d->mPreviousProperties = view->viewFlags();
+            repolish();
+            updatePrimitives();
+        }
     }
 }
 
@@ -285,8 +349,8 @@ void HbStatusBar::createPrimitives()
 {
     Q_D(HbStatusBar);
 
-    d->mTimeTextItem = style()->createPrimitive(HbStyle::P_StatusBar_timetext, this);
-    d->setBackgroundItem(HbStyle::P_StatusBar_background);
+    d->mTimeTextItem = HbStylePrivate::createPrimitive(HbStylePrivate::P_StatusBar_timetext, this);
+    d->setBackgroundItem(HbStylePrivate::P_StatusBar_background);
 
     d->updateTime();
 }
@@ -297,8 +361,8 @@ void HbStatusBar::updatePrimitives()
     HbStyleOptionStatusBar option;
     
     initStyleOption(&option);
-    style()->updatePrimitive(backgroundItem(), HbStyle::P_StatusBar_background, &option);
-    style()->updatePrimitive(d->mTimeTextItem, HbStyle::P_StatusBar_timetext, &option);
+    HbStylePrivate::updatePrimitive(backgroundItem(), HbStylePrivate::P_StatusBar_background, &option);
+    HbStylePrivate::updatePrimitive(d->mTimeTextItem, HbStylePrivate::P_StatusBar_timetext, &option);
 }
 
 /*
@@ -315,18 +379,13 @@ void HbStatusBar::currentViewChanged(HbView *view)
     d->mNotificationIndicatorGroup->currentViewChanged(view);
     d->mSettingsIndicatorGroup->currentViewChanged(view);
 
-    // only do repolish if properties have changed
-    if (d->mPreviousProperties != view->viewFlags()) {
-        d->mPreviousProperties = view->viewFlags();
-        repolish();
-        updatePrimitives();
-    }
+    propertiesChanged();
 }
 
 void HbStatusBar::initStyleOption(HbStyleOptionStatusBar *option) const
 {
     const Q_D(HbStatusBar);
-	HbWidget::initStyleOption(option);
+    HbWidget::initStyleOption(option);
 
     option->timeText = d->mTimeText;
 
@@ -342,6 +401,8 @@ void HbStatusBar::timerEvent(QTimerEvent *event)
     Q_D(HbStatusBar);
     if (event->timerId() == d->mClockTimerId) {
         d->updateTime(); // get current time
+        d->killClockTimer();
+        d->startClockTimer();
     }
 }
 
@@ -351,7 +412,7 @@ void HbStatusBar::timerEvent(QTimerEvent *event)
 QGraphicsItem *HbStatusBar::primitive(const QString &itemName) const
 {
     const Q_D(HbStatusBar);
-    if (itemName == "") {
+    if (itemName.isEmpty()) {
         return 0;
     } else {
         if (itemName == "background") {
@@ -392,16 +453,35 @@ void HbStatusBar::gestureEvent(QGestureEvent *event)
 bool HbStatusBar::event(QEvent *e)
 {
     Q_D(HbStatusBar);
-    if (e->type() == HbEvent::SleepModeEnter) {
-        if (d->mClockTimerId != 0) {
-            killTimer(d->mClockTimerId);
-            d->mClockTimerId = 0;
-        }
-    } else if (e->type() == HbEvent::SleepModeExit) {
-        d->updateTime();
-        d->mClockTimerId = startTimer(clockUpdateDelay);
+    if (e->type() == HbEvent::SleepModeEnter || e->type() == QEvent::Hide) {
+        d->killClockTimer();
+    } else if (e->type() == HbEvent::SleepModeExit || e->type() == QEvent::Show) {
+        d->startClockTimer();
     }
     return HbWidget::event(e);
+}
+
+bool HbStatusBar::eventFilter(QObject *obj, QEvent *event)
+{
+    Q_D(HbStatusBar);
+    if (event->type() == QEvent::ApplicationActivate) {
+        d->startClockTimer();
+        d->mBatteryIndicator->chargingEvent(true);
+    } else if (event->type() == QEvent::ApplicationDeactivate) {
+        HbDeviceDialogServerStatus::StatusFlags flags = d->mServerStatus->status();
+        if ((flags & HbDeviceDialogServerStatus::ShowingDialog) == HbDeviceDialogServerStatus::NoFlags ||
+            flags & HbDeviceDialogServerStatus::ShowingScreenSaver) {
+            d->killClockTimer();
+            d->mBatteryIndicator->chargingEvent(false);
+        }
+    }
+    return HbWidget::eventFilter(obj, event);
+}
+
+void HbStatusBar::startClockTimer()
+{
+    Q_D(HbStatusBar);
+    d->startClockTimer();
 }
 
 #include "moc_hbstatusbar_p.cpp"

@@ -40,7 +40,7 @@ public:
     bool isActive() const; 
     void mouseHandler(int cursorPosition, QMouseEvent* mouseEvent);
 protected:
-	HbInputPrediction12KeyHandler(HbInputPrediction12KeyHandlerPrivate &dd, HbInputAbstractMethod* inputMethod);
+    HbInputPrediction12KeyHandler(HbInputPrediction12KeyHandlerPrivate &dd, HbInputAbstractMethod* inputMethod);
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputPrediction12KeyHandler)
     Q_DISABLE_COPY(HbInputPrediction12KeyHandler)

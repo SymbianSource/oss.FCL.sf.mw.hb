@@ -269,27 +269,6 @@ inline int directionMultiplier( HbAnchor *anchor )
 }
 
 
-/*!
-    Returns list of effective anchors - those which has mappings to QGraphicsItem
-    \return list of effective anchors.
-*/
-QList<HbAnchor*> HbAnchorLayout::effectiveAnchors()
-{
-    Q_D( HbAnchorLayout );
-    d->resolveAnchors();
-    return d->mResolvedAnchors;
-}
-
-/*!
-    Returns list of all anchors set to this layout
-    \return list of all anchors.
-*/
-QList<HbAnchor*> HbAnchorLayout::anchors() const
-{
-    Q_D( const HbAnchorLayout );
-    return d->mAllAnchors;
-}
-
 /*
     \class HbAnchorLayoutPrivate
     \internal
@@ -1008,6 +987,13 @@ void HbAnchorLayoutPrivate::createEquations( EdgeType type )
 
         vs->clear();
         el->clear();
+
+        if( type == Vertical ) {
+            mLayoutVarV = 0;
+        } else {
+            mLayoutVarH = 0;
+        }
+
 
 
         GraphVertex *layoutStart = new GraphVertex();
@@ -1780,6 +1766,11 @@ bool HbAnchorLayout::setMapping( QGraphicsLayoutItem *item, const QString& nodeI
 
     if ( !nodeId.isNull() && ( item != 0 ) ) {
 
+        QString oldMapping = this->nodeId( item );
+        if (!oldMapping.isEmpty()) {
+            removeMapping(oldMapping);
+        }
+
         for( int i = 0; i < d->mAllAnchors.size(); i++ ) {
             HbAnchor *anchor = d->mAllAnchors.at(i);
             if( anchor->startItem() == item ) {
@@ -2007,10 +1998,7 @@ bool HbAnchorLayout::isValid() const
 QString HbAnchorLayout::nodeId( QGraphicsLayoutItem *item ) const
 {
     Q_D( const HbAnchorLayout );
-    if( d->mItemToNodeIdMap.contains( item ) ) {
-        return d->mItemToNodeIdMap.value( item );
-    }
-    return QString();
+    return d->mItemToNodeIdMap.value( item );
 }
 
 /*!
@@ -2045,6 +2033,50 @@ QGraphicsLayoutItem *HbAnchorLayout::itemByNodeId( const QString& nodeId ) const
     Q_D( const HbAnchorLayout );
     return d->mItemToNodeIdMap.key( nodeId );
 }
+
+/*!
+    Returns list of effective anchors - those which has mappings to QGraphicsItem
+    \return list of effective anchors.
+*/
+QList<HbAnchor*> HbAnchorLayout::effectiveAnchors()
+{
+    Q_D( HbAnchorLayout );
+    d->resolveAnchors();
+    return d->mResolvedAnchors;
+}
+
+/*!
+    Returns list of all anchors set to this layout
+    \return list of all anchors.
+*/
+QList<HbAnchor*> HbAnchorLayout::anchors() const
+{
+    Q_D( const HbAnchorLayout );
+    return d->mAllAnchors;
+}
+
+
+/*!
+    Returns actual length of given anchor in current layout configuration
+    \param anchor whose length need to be determined.
+    \return actual length of anchor or -1 if this anchor is not layouted (or doesn't exist at all)
+*/
+qreal HbAnchorLayout::anchorLength( HbAnchor *anchor ) const
+{
+    Q_D( const HbAnchorLayout );
+
+    Variable *anchorVar = d->mVariablesHorizontal.findVariable( anchor );
+    if( anchorVar && d->mSolutionHorizontal.contains( anchorVar ) ) {
+        return qAbs( d->mSolutionHorizontal.value( anchorVar ) );
+    }
+
+    anchorVar = d->mVariablesVertical.findVariable( anchor );
+    if( anchorVar && d->mSolutionVertical.contains( anchorVar ) ) {
+        return qAbs( d->mSolutionVertical.value( anchorVar ) );
+    }
+    return -1;
+}
+
 
 
 /*!

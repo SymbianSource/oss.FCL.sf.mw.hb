@@ -49,7 +49,7 @@ void HbSensorNotifyHandler::ConstructL()
 {
     TRAPD(err, mRepository = CRepository::NewL(KHbSensorCenrepUid));
     if (err) {
-        qWarning("mRepository::NewL fails, error code = %d", err);
+        hbWarning("mRepository::NewL fails, error code = %d", err);
     }
     CActiveScheduler::Add(this);
 }

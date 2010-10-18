@@ -43,6 +43,7 @@
 #include <QGraphicsSceneResizeEvent>
 #include <QWidget> // for QWIDGETSIZE_MAX
 #include <QActionEvent>
+#include <QMetaMethod>
 #include <QDebug>
 
 #ifdef HB_EFFECTS
@@ -66,16 +67,16 @@ HbToolBarPrivate::HbToolBarPrivate() :
         delayedHide(false),
         delayedStartEffects(false),
         emitVisibilityChangeSignal(false),
-        polishButtons(false),
         minimumToolButtonSize(QSizeF()),
         maxToolBarButtons(-1),
         moreExtension(0),
         moreExtensionButton(0),
         mDialogToolBar(false),
-        mDoLayout(true),
         mDoLayoutPending(true),
         mOrientationEffectsRunning(false),
-        mSuppressNextAppearEffect(false)
+        mSuppressNextAppearEffect(false),
+        mAppearedOnce(false),
+        initialButtonsPolish(true)
 {
 }
 
@@ -156,19 +157,16 @@ void HbToolBarPrivate::doLazyInit()
 //toolbar layouting is handled
 void HbToolBarPrivate::delayedConstruction()
 {
-    mDoLayout = true;
-    doLazyInit();
-    doLayout();
+
 }
 
 void HbToolBarPrivate::setOrientation( Qt::Orientation orientation )
 {
     if ( mOrientation != orientation ) {
         mOrientation = orientation;
-        polishButtons = true;
         emit core.orientationChanged();
+        updateButtonsLayoutDirection();
     }
-
 }
 
 void HbToolBarPrivate::calculateMaximumButtons() {
@@ -196,7 +194,7 @@ void HbToolBarPrivate::actionAdded(int index)
     }
     if (mVisibleToolButtons.count()<=maxToolBarButtons){
         HbToolButton *button = mVisibleToolButtons.at(index);
-        prepareButtonForToolbar(button, index);
+        prepareButtonForToolbar(button);
         mLayout->insertItem(index, button);
     }
     else{
@@ -298,7 +296,7 @@ void HbToolBarPrivate::calculateButtonMinimumSize()
 {
     HbToolButton *button = mVisibleToolButtons.first();
     //Avoiding unnecessary polish, so setting parameters for first button
-    prepareButtonForToolbar(button,false);
+    prepareButtonForToolbar(button);
     minimumToolButtonSize = HbToolButtonPrivate::d_ptr(button)->getMinimumSize();
 }
 
@@ -313,6 +311,7 @@ void HbToolBarPrivate::prepareButtonForExtension(HbToolButton *button)
     setExtensionLayout(button, true);
     if (!button->parentItem() || button->parentItem() != moreExtension->contentWidget()){
         button->setSizePolicy(QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred));
+        button->setPreferredSize(QSizeF());
         QAction *action = HbToolButtonPrivate::d_ptr(button)->action;
         QObject::connect(action, SIGNAL(triggered(bool)),
                          moreExtension, SLOT(close()));
@@ -321,12 +320,13 @@ void HbToolBarPrivate::prepareButtonForExtension(HbToolButton *button)
 }
 
 //We prepare button to be added for toolbar
-void HbToolBarPrivate::prepareButtonForToolbar(HbToolButton *button,bool handlePolish)
+void HbToolBarPrivate::prepareButtonForToolbar(HbToolButton *button)
 {
     Q_Q(HbToolBar);
     updateButtonStyle(button, true);
     if (!button->parentItem() || button->parentItem() != q){
         bool movingFromExtension = moreExtension && (button->parentItem() == moreExtension->contentWidget());
+        button->setParentItem(q);
         setExtensionLayout(button, false);
         // tool buttons should eat all the space in the toolbar
         if (mOrientation == Qt::Horizontal)
@@ -339,14 +339,9 @@ void HbToolBarPrivate::prepareButtonForToolbar(HbToolButton *button,bool handleP
             QObject::disconnect(action, SIGNAL(triggered(bool) ),
                                 moreExtension, SLOT(close()));
             HbToolButtonPrivate::d_ptr(button)->setExtensionBackgroundVisible(false);
-            polishButtons = true;
         }
-        button->setParentItem(q);
     }
-    if (polishButtons && handlePolish){
-        QApplication::sendPostedEvents(button,QEvent::Polish);
-        QApplication::sendPostedEvents(button,QEvent::LayoutRequest);
-    }
+ 
 }
 
 //resets all visible buttons list.This is called when actionChange event is received
@@ -395,6 +390,11 @@ void HbToolBarPrivate::createToolButton(QAction *newAction, bool update)
             }
             
         }
+        HbToolBarExtension *extension = hbAction->toolBarExtension();
+        if (extension && HbToolBarExtensionPrivate::d_ptr(extension)->mToolBar != q) {
+            initToolBarExtension(extension);
+        }
+
         button->setAction(hbAction);
     }
     else {
@@ -446,8 +446,7 @@ void HbToolBarPrivate::updateExtension(bool moreButtonNeeded)
         moreExtension->extensionAction()->setIcon(extensionIcon);
         initToolBarExtension(moreExtension);
         HbToolButtonPrivate::d_ptr(moreExtensionButton)->setToolBarPosition(
-                HbStyleOptionToolButton::TB_End);
-        moreExtensionButton->setToolButtonStyle(HbToolButton::ToolButtonIcon);
+                HbToolButtonPrivate::TB_End);
     }
 }
 
@@ -518,7 +517,7 @@ void HbToolBarPrivate::startDisappearOrientEffect()
 
 //Does a complete update of toolbar
 void HbToolBarPrivate::doLayout()
-{
+{    
     Q_Q(HbToolBar);
     if (q->actions().isEmpty()){
         mDoLayoutPending = false;
@@ -540,6 +539,10 @@ void HbToolBarPrivate::doLayout()
     }
     //Saving minimumSize for the more button calculations
     bool firstButton =  mToolButtons.count() == 1 ? true : false;
+
+    mLayout = new QGraphicsLinearLayout( q->orientation() );
+    mLayout->setSpacing(0);
+    mLayout->setContentsMargins(0,0,0,0);
 
     // Recalculate minimum button size when adding first button.
     // minimumToolButtonSize might have wrong value incase it has been
@@ -563,10 +566,6 @@ void HbToolBarPrivate::doLayout()
         updateExtension(moreButtonNeeded);
     }
 
-    mLayout = new QGraphicsLinearLayout( q->orientation() );
-    mLayout->setSpacing(0);
-    mLayout->setContentsMargins(0,0,0,0);
-
     //Add toolbuttons to layout or in toolbar extension
     int buttonsinToolBar = moreButtonNeeded ? maxToolBarButtons-1 :maxToolBarButtons;
     for (int i = 0; i < visibleItemsCount; i++) {
@@ -587,12 +586,26 @@ void HbToolBarPrivate::doLayout()
         HbToolBarExtensionPrivate::d_ptr(moreExtension)->doLayout();
     }    
     updateButtons(maxToolBarButtons);        
-
     q->setLayout(mLayout);
     q->layout()->setMinimumSize(minimumToolButtonSize);
-    QApplication::sendPostedEvents(q,QEvent::LayoutRequest);
-    polishButtons = false;
-    if (delayedStartEffects && hasEffects){
+    //This needs to be done when toolbar is not in a dialog and being added first time to view.
+    //Since toolbar needs to make a decision of having a more button or not based on the no of actions and
+    //its width. Width is not set correctly till hbscreen layout is activated.HbScreen layout is activated before
+    //the paint but its too late for toolbar since all the polish handling is done beforei.e toolbuttons layout is not
+    //activated before the paint
+    if (initialButtonsPolish && !mDialogToolBar && q->scene()) {
+        int slotIndex = q->scene()->metaObject()->indexOfSlot("_q_polishItems()");
+        QMetaMethod method = q->scene()->metaObject()->method(slotIndex);
+        method.invoke(q->scene());
+        for (int i = 0; i < visibleItemsCount; i++) {
+            HbToolButton *button = mVisibleToolButtons.at(i);
+            if (button && button->layout() && !button->layout()->isActivated())
+                button->layout()->activate();
+        }
+        q->layout()->activate();
+    }
+    initialButtonsPolish = false;
+    if (delayedStartEffects && hasEffects && !mSuppressNextAppearEffect) {
         startAppearEffect();
         delayedStartEffects = false;
     }
@@ -616,8 +629,13 @@ void HbToolBarPrivate::actionAdded( QActionEvent *event )
 {
     Q_Q(HbToolBar);
     // Emit signal when the first action is added
-    if (!emitVisibilityChangeSignal && polished && event->action()->isVisible() && !mVisibleToolButtons.count())
+    if (!emitVisibilityChangeSignal && event->action()->isVisible() && !mVisibleToolButtons.count())
         emitVisibilityChangeSignal = true;
+
+    HbAction *action = qobject_cast<HbAction*>(event->action());
+    if (action && action->toolBarExtension()) {
+        initToolBarExtension(action->toolBarExtension());
+    }
 
     if (!polished)
         mDoLayoutPending = true;
@@ -672,9 +690,10 @@ void HbToolBarPrivate::actionRemoved( QActionEvent *event )
     }
 }
 
-void HbToolBarPrivate::updateButtonStyle(HbToolButton *button,bool notInExtension)
+void HbToolBarPrivate::updateButtonStyle(HbToolButton *button, bool notInExtension)
 {
     Q_Q(HbToolBar);
+    Q_UNUSED(notInExtension);
     if (!button)
         return;
     // Set style for all toolbuttons. If toolbar orientation is vertical then
@@ -683,21 +702,10 @@ void HbToolBarPrivate::updateButtonStyle(HbToolButton *button,bool notInExtensio
     // button orientation is orthogonal to the toolbar orientation
     Qt::Orientation buttonOrientation = q->orientation() == Qt::Vertical ?
                                         Qt::Horizontal : Qt::Vertical;
-    HbToolButtonPrivate::d_ptr(button)->setOrientation( buttonOrientation );
-    QAction *qAction = HbToolButtonPrivate::d_ptr(button)->action;
-    HbAction *hbAction = qobject_cast<HbAction *>(qAction);
-
-    if ((hbAction && !hbAction->icon().isNull()) || !qAction->icon().isNull()) {
-        if ((notInExtension) &&
-            q->orientation() == Qt::Vertical) {
-            button->setToolButtonStyle(HbToolButton::ToolButtonIcon);
-        } else if (!HbToolButtonPrivate::d_ptr(button)->action->text().isEmpty()) {
-            button->setToolButtonStyle(HbToolButton::ToolButtonTextAndIcon);
-        } else {
-            button->setToolButtonStyle(HbToolButton::ToolButtonIcon);
-        }
+    if (buttonOrientation != HbToolButtonPrivate::d_ptr(button)->orientation) {
+        HbToolButtonPrivate::d_ptr(button)->setOrientation( buttonOrientation );
     } else {
-        button->setToolButtonStyle(HbToolButton::ToolButtonText);
+        button->updatePrimitives();
     }
 }
 
@@ -723,20 +731,20 @@ void HbToolBarPrivate::updateButtons(int maxToolbarButtons)
 
     if (totalVisibleItems == 1 && !moreButtonNeeded) {
         HbToolButtonPrivate *first = HbToolButtonPrivate::d_ptr(mVisibleToolButtons.first());
-        first->setToolBarPosition(HbStyleOptionToolButton::TB_OnlyOne);
+        first->setToolBarPosition(HbToolButtonPrivate::TB_OnlyOne);
     } else if (maxToolbarButtons > 1 && mVisibleToolButtons.count() > 1) {
         HbToolButtonPrivate *first = HbToolButtonPrivate::d_ptr(mVisibleToolButtons.first());
-        first->setToolBarPosition(HbStyleOptionToolButton::TB_Beginning);
+        first->setToolBarPosition(HbToolButtonPrivate::TB_Beginning);
         
         int lastMiddleButton = (moreButtonNeeded) ?
                                maxToolbarButtons - 2 : mVisibleToolButtons.count() - 2;
         if (!moreButtonNeeded) {
             HbToolButtonPrivate *last = HbToolButtonPrivate::d_ptr(mVisibleToolButtons.last());
-            last->setToolBarPosition(HbStyleOptionToolButton::TB_End);        
+            last->setToolBarPosition(HbToolButtonPrivate::TB_End);
         }
         for (int i = 1; i <= lastMiddleButton; ++i) {
             HbToolButtonPrivate *middle = HbToolButtonPrivate::d_ptr(mVisibleToolButtons.at(i));
-            middle->setToolBarPosition(HbStyleOptionToolButton::TB_Middle);
+            middle->setToolBarPosition(HbToolButtonPrivate::TB_Middle);
         }
     }
 }
@@ -755,7 +763,7 @@ void HbToolBarPrivate::initToolBarExtension(HbToolBarExtension *extension) {
 
     if (q->scene()) q->scene()->addItem(extension);
 
-    q->connect(&core, SIGNAL(orientationChanged()), extension, SLOT(_q_orientationChanged()));
+    q->connect(&core, SIGNAL(orientationChanged()), extension, SLOT(_q_toolbarOrientationChanged()));
 }
 
 void HbToolBarPrivate::updateToolBarExtensions() {
@@ -780,14 +788,38 @@ void HbToolBarPrivate::updateToolBarExtensions() {
 
 void HbToolBarPrivate::setButtonLayoutDirection( HbToolButton& button ) {
     Q_Q(HbToolBar);
-    if (q->layoutDirection() !=  button.layoutDirection()) {
+    if (q->layoutDirection() !=  button.layoutDirection() && q->orientation() == Qt::Horizontal) {
         button.setLayoutDirection(q->layoutDirection());
+    }
+    if (q->layoutDirection() ==  button.layoutDirection() && q->orientation() == Qt::Vertical) {
+        if (q->layoutDirection() == Qt::RightToLeft) {
+            button.setLayoutDirection(Qt::LeftToRight);
+        }
+        else {
+            button.setLayoutDirection(Qt::RightToLeft);
+        }
     }
 }
 
 void HbToolBarPrivate::updateButtonsLayoutDirection() {
     foreach (HbToolButton *button, mToolButtons) {
         setButtonLayoutDirection(*button);
+    }
+    if (moreExtensionButton) {
+        setButtonLayoutDirection(*moreExtensionButton);
+    }
+}
+
+void HbToolBarPrivate::updateDialogToolbar(bool enable)
+{
+    mDialogToolBar = enable;
+    foreach (HbToolButton *button, mToolButtons) {
+        HbToolButtonPrivate::d_ptr(button)->mDialogToolBar = mDialogToolBar;
+        button->updatePrimitives();
+    }
+    if (moreExtensionButton) {
+        HbToolButtonPrivate::d_ptr(moreExtensionButton)->mDialogToolBar = mDialogToolBar;
+        moreExtensionButton->updatePrimitives();
     }
 }
 
@@ -813,6 +845,15 @@ void HbToolBarPrivate::_q_delayedHide(HbEffect::EffectStatus status)
 
 void HbToolBarPrivate::startAppearEffect()
 {
+    mSuppressNextAppearEffect = false;
+    // The first appear effect is suppressed regardless of requested or not.
+    // There are too many cases to support during application start-up
+    // (where the appear effect is very wrong) so disable it everywhere
+    // for the first time.
+    if (!mAppearedOnce) {
+        mAppearedOnce = true;
+        return;
+    }
 #ifdef HB_EFFECTS
     Q_Q(HbToolBar);
     QGraphicsItem *parentItem = q->parentItem();

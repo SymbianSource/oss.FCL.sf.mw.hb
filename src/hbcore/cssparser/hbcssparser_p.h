@@ -42,12 +42,16 @@
 #include <hbfontspec.h>
 #include <hbanchor.h>
 
-// smart containers and memory manager inclusion
+// containers and memory manager inclusion
 #include "hbmemorymanager_p.h"
 #include "hbvector_p.h"
 #include "hbstring_p.h"
 #include "hbvariant_p.h"
 #include "hbstringvector_p.h"
+
+#include "hbexpressionparser_p.h"
+
+class HbLayoutParameters;
 
 namespace HbCss
 {
@@ -105,6 +109,7 @@ enum Property {
     Property_TextWrapMode,
     Property_Top,
     Property_ZValue,
+    Property_TextElideMode,
     NumProperties
 };
 
@@ -157,6 +162,9 @@ enum KnownValue {
     Value_Positive,
     Value_Negative,
 
+    Value_WrapAtWordBoundaryOrAnywhere,
+    Value_Middle,
+
     NumKnownValues
 };
 
@@ -193,7 +201,10 @@ struct HB_CORE_PRIVATE_EXPORT Value //krazy:exclude=multiclasses
         Variable,  //added for variable support
         VariableNegative,  //added for variable support
         Expression, //added for expression support
-        ExpressionNegative //added for expression support
+        ExpressionNegative, //added for expression support
+        LengthInUnits,
+        LengthInPixels,
+        LengthInMillimeters
     };
 
     inline Value(HbMemoryManager::MemoryType memType = HbMemoryManager::HeapMemory) 
@@ -201,6 +212,12 @@ struct HB_CORE_PRIVATE_EXPORT Value //krazy:exclude=multiclasses
           type(Unknown),
           original(memType),
           variant(memType)
+    { }
+    inline Value(const Value &other)
+        : memoryType(other.memoryType),
+          type(other.type),
+          original(other.original),
+          variant(other.variant)
     { }
 
 #ifdef CSS_PARSER_TRACES
@@ -407,6 +424,7 @@ enum KnownPropertyFlag {
     ExtractedMaxLines   = 0x00800000,
     ExtractedFont       = 0x01000000,
     ExtractedFontSpec   = 0x02000000,
+    ExtractedElideMode  = 0x04000000,
 
     // Icon specific
     ExtractedAspectRatioMode    = 0x10000000,
@@ -430,6 +448,7 @@ struct KnownProperties
 
     Hb::TextWrapping mTextWrapMode;
     int mMinLines, mMaxLines;
+    Qt::TextElideMode mTextElideMode;
 
     QFont mFont;
     HbFontSpec mFontSpec;
@@ -446,51 +465,37 @@ struct KnownProperties
 struct HB_CORE_PRIVATE_EXPORT ValueExtractor //krazy:exclude=multiclasses
 {
     ValueExtractor(const HbVector<Declaration> &declarations, const HbDeviceProfile &profile);
-    ValueExtractor(const HbVector<Declaration> &declarations, const QHash<QString, HbCss::Declaration> &varDeclarations,
-                   const HbDeviceProfile &profile);
-    ValueExtractor(const HbVector<Declaration> &varDeclarations, bool isVariable, const HbDeviceProfile &profile = HbDeviceProfile());
-    ValueExtractor(const QHash<QString, HbCss::Declaration> &varDecls, bool isVariable, const HbDeviceProfile &profile = HbDeviceProfile());
+    ValueExtractor(const HbDeviceProfile &profile = HbDeviceProfile());
 
-    bool extractVariableValue(const QString &variableName, HbVector<HbCss::Value>& values) const;
-    bool extractVariableValue(const QString &variableName, qreal& value);
+    void setLayoutParameters(const HbLayoutParameters &layoutParams) { layoutParameters = &layoutParams; }
+    void setVariables(const QHash<quint32, HbCss::Declaration> &vars) { variables = &vars; }
+
+    bool extractVariableValue(quint32 hashValue, HbCss::Value &value) const;
+    bool extractVariableValue(quint32 hashValue, qreal &value) const;
     bool extractVariableValue(const QString &variableName, HbCss::Value &value) const;
-    bool extractExpressionValue(QString &expression, qreal &value);
+    bool extractVariableValue(const QString &variableName, qreal &value) const;
+    bool extractExpressionValue(const QList<int> &tokens, qreal &value) const;
+    bool extractExpressionValue(const QString &expression, qreal &value) const;
 
-    bool extractKnownProperties(KnownProperties &prop);
-    bool extractCustomProperties(const QList<QString> &keys, QList<QVariant> &values);
-    bool extractLayout(QString &layoutName, QString &sectionName);
+    bool extractKnownProperties(KnownProperties &prop) const;
+    bool extractCustomProperties(const QList<QString> &keys, QList<QVariant> &values) const;
+    bool extractLayout(QString &layoutName, QString &sectionName) const;
     bool extractColor(QColor &color) const;
 
 private:
 
-    qreal asReal(const Declaration &decl, bool *ok = 0);
-    qreal asReal(const Value &v, bool *ok = 0);
-    qreal asReal(QString &s, Value::Type type, bool *ok = 0);
-    bool asReals(const Declaration &decl, qreal *m);
-
-    struct ExpressionValue
-    {
-        enum Token {
-            None = 0,
-            Minus = 1,
-            Plus = 2,
-            Star = 3,
-            Slash = 4,
-            UnaryMinus = 5
-        };
-
-        ExpressionValue() : mToken(None), mPrecedence(0), mValue(0) {}
-        ExpressionValue(Token token, int precedence, qreal value) : mToken(token), mPrecedence(precedence), mValue(value) {}
-        Token mToken;
-        int mPrecedence;
-        qreal mValue;
-    };
+    qreal asReal(const Declaration &decl, bool *ok = 0) const;
+    qreal asReal(const Value &v, bool *ok = 0) const;
+    qreal asReal(QString &s, Value::Type type, bool *ok = 0) const;
+    qreal asReal(int token, HbExpressionParser::Token type, bool &ok) const;
+    bool asReals(const Declaration &decl, qreal *m) const;
 
     HbVector<Declaration> declarations;
-    HbVector<Declaration> variableDeclarations; //for variables
-    QHash<QString, HbCss::Declaration> variableDeclarationsHash;
+
+    const HbLayoutParameters *layoutParameters;
+    const QHash<quint32, HbCss::Declaration> *variables;
+
     HbDeviceProfile currentProfile;
-    QList<ExpressionValue> expressionValues; // for parsed expression string
 };
 
 struct StyleSheet;
@@ -604,7 +609,11 @@ enum StyleSheetOrigin {
 struct WidgetStyleRules 
 {
 WidgetStyleRules(uint widgetNameHash, HbMemoryManager::MemoryType type = HbMemoryManager::HeapMemory)
-        : classNameHash(widgetNameHash), styleRules(type), portraitRules(type), landscapeRules(type)
+        : classNameHash(widgetNameHash), 
+        styleRules(type), 
+        portraitRules(type), 
+        landscapeRules(type),
+        dependsOnScreen(false)
     { 
     }
 #ifdef CSS_PARSER_TRACES
@@ -612,10 +621,11 @@ WidgetStyleRules(uint widgetNameHash, HbMemoryManager::MemoryType type = HbMemor
 #endif
 
     // Data
-	uint classNameHash;
+    uint classNameHash;
     HbVector<StyleRule> styleRules;
     HbVector<StyleRule> portraitRules;
     HbVector<StyleRule> landscapeRules;
+    bool dependsOnScreen;
 };
 
 struct HB_AUTOTEST_EXPORT StyleSheet //krazy:exclude=multiclasses
@@ -701,17 +711,21 @@ public:
     StyleSelector(const StyleSelector &copy);
     virtual ~StyleSelector();
 
-    union NodePtr {
-        void *ptr;
-        int id;
-    };
+    typedef void* NodePtr;
 
     bool hasOrientationSpecificStyleRules(NodePtr node) const;
-    QVector<WeightedRule> weightedStyleRulesForNode(NodePtr node, const Qt::Orientation orientation) const;
-    QVector<WeightedDeclaration> weightedDeclarationsForNode(NodePtr node, const Qt::Orientation orientation, const char *extraPseudo = 0) const;
+    void weightedStyleRulesForNode(
+        NodePtr node, 
+        const Qt::Orientation orientation, 
+        QList<WeightedRule> *matchedRules) const;
+    void weightedDeclarationsForNode(
+        NodePtr node, 
+        const Qt::Orientation orientation, 
+        QList<WeightedDeclaration> *matchedDecls,
+        const char *extraPseudo = 0) const;
     HbVector<StyleRule> styleRulesForNode(NodePtr node, const Qt::Orientation orientation) const;
     HbVector<Declaration> declarationsForNode(NodePtr node, const Qt::Orientation orientation, const char *extraPseudo = 0) const;
-    void variableRuleSets(QHash<QString, HbCss::Declaration> *variables) const;
+    void variableRuleSets(QHash<quint32, HbCss::Declaration> *variables) const;
 
     virtual int nodeNameEquals(NodePtr node, const HbString& nodeName) const = 0;
     virtual bool attributeMatches(NodePtr node, const AttributeSelector &attr) const = 0;
@@ -730,12 +744,26 @@ public:
     QHash<uint, QVector<StyleSheet*> > widgetSheets;
     QString medium;
 private:
-    void matchRules(NodePtr node, const HbVector<StyleRule> &rules, StyleSheetOrigin origin,
-                    int depth, QVector<WeightedRule> *weightedRules, bool nameCheckNeeded=true) const;
-    int selectorMatches(const Selector &rule, NodePtr node, bool nameCheckNeeded) const;
-    int basicSelectorMatches(const BasicSelector &rule, NodePtr node, bool nameCheckNeeded) const;
+    void matchRules(
+        NodePtr node, 
+        const HbVector<StyleRule> &rules, 
+        StyleSheetOrigin origin,
+        int depth, 
+        QList<WeightedRule> *weightedRules, 
+        QSet<NodePtr> *dirtyNodes, 
+        bool nameCheckNeeded=true) const;
+    int selectorMatches(const Selector &rule, NodePtr node, 
+                    QSet<NodePtr> *dirtyNodes, bool nameCheckNeeded) const;
+    int basicSelectorMatches(const BasicSelector &rule, NodePtr node, 
+                    QSet<NodePtr> *dirtyNodes, bool nameCheckNeeded) const;
     int inheritanceDepth(NodePtr node, HbString &elementName) const;
 };
+
+inline uint qHash(const StyleSelector::NodePtr &key)
+{
+    quintptr k = reinterpret_cast<quintptr>(key);
+    return ::qHash(k);
+}
 
 enum TokenType {
     NONE,
@@ -804,15 +832,15 @@ public:
 class HB_CORE_PRIVATE_EXPORT Parser //krazy:exclude=multiclasses
 {
 public:
-	enum Error{
-		NoError,
-		OutOfMemoryError,
-		UnknownError
-	};
+    enum Error{
+        NoError,
+        OutOfMemoryError,
+        UnknownError
+    };
     Parser();
     explicit Parser(const QString &css, bool file = false);
 
-    void init(const QString &css, bool file = false);
+    bool init(const QString &css, bool file = false);
     bool parse(StyleSheet *styleSheet);
     Symbol errorSymbol();
 
@@ -839,8 +867,9 @@ public:
     bool parseFunction(HbString *name, HbString *args);
     bool parseHexColor(QColor *col);
     bool testAndParseUri(HbString *uri);
-	
-	void addRuleToWidgetStack(StyleSheet *sheet, const QString &stackName, StyleRule &rule);
+    bool testDependsOnScreen(StyleRule &rule);
+
+    void addRuleToWidgetStack(StyleSheet *sheet, uint stackNameHash, StyleRule &rule);
 
     inline bool testRuleset() { return testSelector(); }
     inline bool testSelector() { return testSimpleSelector(); }
@@ -893,7 +922,7 @@ public:
     QVector<Symbol> symbols;
     int index;
     int errorIndex;
-	Error errorCode;
+    Error errorCode;
     bool hasEscapeSequences;
     QString sourcePath;
     QString sourceFile;

@@ -1,17 +1,22 @@
 <hbwidget version="0.1" type="HbDialog">
 
   <layout name="default" type="mesh">      
-	<meshitem src="content" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="content" srcEdge="TOP" dst="" dstEdge="TOP" />
     <meshitem src="content" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="content" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-	<meshitem src="content" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-	
+    <meshitem src="content" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+
     <meshitem src="heading" srcEdge="TOP" dst="" dstEdge="TOP" />
     <meshitem src="heading" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
     <meshitem src="heading" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="heading" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />	
-	
-	<meshitem src="controls" srcEdge="TOP" dst="" dstEdge="TOP" />
+
+    <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="background" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
+    <meshitem src="controls" srcEdge="TOP" dst="" dstEdge="TOP" />
     <meshitem src="controls" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
     <meshitem src="controls" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="controls" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />	
@@ -20,20 +25,25 @@
   <layout name="content_header" type="mesh">      
     <meshitem src="content" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="content" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-	<meshitem src="content" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
-	
-	<meshitem src="heading" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="heading" srcEdge="BOTTOM" dst="content" dstEdge="TOP" />
+    <meshitem src="content" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
+    <meshitem src="content" srcEdge="TOP" dst="background" dstEdge="BOTTOM" />
+
+    <meshitem src="heading" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="heading" srcEdge="BOTTOM" dst="background" dstEdge="BOTTOM"/>
     <meshitem src="heading" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="heading" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />	
+
+    <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />	
   </layout> 
   
   <layout name="content_controls" type="mesh">      
-	<meshitem src="content" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="content" srcEdge="TOP" dst="" dstEdge="TOP" />
     <meshitem src="content" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="content" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-	
-	<meshitem src="controls" srcEdge="TOP" dst="content" dstEdge="BOTTOM" />
+    <meshitem src="content" srcEdge="BOTTOM" dst="controls" dstEdge="TOP" />
+
     <meshitem src="controls" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
     <meshitem src="controls" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="controls" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
@@ -42,13 +52,18 @@
   <layout name="content_header_controls" type="mesh">      
     <meshitem src="content" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="content" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-	
-	<meshitem src="heading" srcEdge="TOP" dst="" dstEdge="TOP" />
-    <meshitem src="heading" srcEdge="BOTTOM" dst="content" dstEdge="TOP" />
+    <meshitem src="content" srcEdge="TOP" dst="background" dstEdge="BOTTOM" />
+    <meshitem src="content" srcEdge="BOTTOM" dst="controls" dstEdge="TOP" />
+
+    <meshitem src="heading" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="heading" srcEdge="BOTTOM" dst="background" dstEdge="BOTTOM" />
     <meshitem src="heading" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="heading" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-	
-	<meshitem src="controls" srcEdge="TOP" dst="content" dstEdge="BOTTOM" />
+
+    <meshitem src="background" srcEdge="TOP" dst="" dstEdge="TOP" />
+    <meshitem src="background" srcEdge="LEFT" dst="" dstEdge="LEFT" />
+    <meshitem src="background" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
+
     <meshitem src="controls" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
     <meshitem src="controls" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="controls" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />

@@ -88,6 +88,14 @@ QPixmap HbSgimageIconImpl::pixmap()
         return currentPixmap;
     }
 
+    if (vgImageRenderer) {
+        VGImage image = vgImageRenderer->image();
+        if (image != VG_INVALID_HANDLE) {
+            currentPixmap = createPixmapFromVGImage(image, contentSize);
+            return currentPixmap;
+        }
+    }
+    
     EGLDisplay display = eglGetCurrentDisplay();
     if (display == EGL_NO_DISPLAY) {
         display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
@@ -163,36 +171,9 @@ QPixmap HbSgimageIconImpl::pixmap()
         }
         return currentPixmap;
     }
-
-    VGint imgWidth = contentSize.width();
-    VGint imgHeight = contentSize.height();
-
-    QImage image(imgWidth, imgHeight, QImage::Format_ARGB32_Premultiplied);
-
-    vgGetImageSubData(localVgImage, image.bits(),
-                      image.bytesPerLine(),
-                      VG_sARGB_8888_PRE,
-                      0,
-                      0,
-                      imgWidth,
-                      imgHeight);
-
-    currentPixmap = QPixmap::fromImage(image);
-
-    // Apply mode
-    if (this->mode != QIcon::Normal) {
-        QStyleOption opt(0);
-        opt.palette = QApplication::palette();
-        currentPixmap = QApplication::style()->generatedIconPixmap(this->mode, currentPixmap, &opt);
-    }
-
-    // Apply color
-    if (this->color().isValid() && (this->mode != QIcon::Disabled)) {
-        QPixmap mask = currentPixmap.alphaChannel();
-        currentPixmap.fill(this->color());
-        currentPixmap.setAlphaChannel(mask);
-    }
-	
+    
+    currentPixmap = createPixmapFromVGImage(localVgImage, contentSize);
+    
     vgDestroyImage(localVgImage);
 
     if (eglNewContext != EGL_NO_CONTEXT || eglNewSurface != EGL_NO_SURFACE) {
@@ -205,6 +186,47 @@ QPixmap HbSgimageIconImpl::pixmap()
         eglMakeCurrent(display, eglSurfacePrevDraw, eglSurfacePrevRead, eglContextPrev);
     }
     return currentPixmap;
+}
+
+QPixmap HbSgimageIconImpl::createPixmapFromVGImage(VGImage vgImage, const QSize & size)
+{
+    VGint imgWidth = size.width();
+    VGint imgHeight = size.height();
+
+    bool applyMode = this->mode != QIcon::Normal;
+    if (this->mode == QIcon::Disabled) {
+        // Do disabled look via vg rendering
+        applyMode = false;
+        vgImage = HbVgImageIconRenderer::disabledImage(vgImage, size);
+    }
+
+    QImage image(imgWidth, imgHeight, QImage::Format_ARGB32_Premultiplied);
+
+    vgGetImageSubData(vgImage, image.bits(),
+                      image.bytesPerLine(),
+                      VG_sARGB_8888_PRE,
+                      0,
+                      0,
+                      imgWidth,
+                      imgHeight);
+
+    QPixmap pixmap = QPixmap::fromImage(image);
+
+    // Apply mode
+    if (applyMode) {
+        QStyleOption opt(0);
+        opt.palette = QApplication::palette();
+        pixmap = QApplication::style()->generatedIconPixmap(this->mode, pixmap, &opt);
+    }
+
+    // Apply color
+    if (this->color().isValid() && (this->mode != QIcon::Disabled)) {
+        QPixmap mask = pixmap.alphaChannel();
+        pixmap.fill(this->color());
+        pixmap.setAlphaChannel(mask);
+    }
+    
+    return pixmap; 
 }
 
 QSize HbSgimageIconImpl::defaultSize() const
@@ -246,7 +268,7 @@ void HbSgimageIconImpl::paint(QPainter *painter,
 
     QPaintEngine *paintEngine = painter->paintEngine();
     if (!paintEngine || paintEngine->type() != QPaintEngine::OpenVG
-            || maskApplied || pixmapIconRenderer) {
+            || maskApplied || pixmapIconRenderer || (mode == QIcon::Selected)) {
         // going to pixmap, vgimage may not be required any more
         if (vgImageRenderer) {
             delete vgImageRenderer;
@@ -258,7 +280,7 @@ void HbSgimageIconImpl::paint(QPainter *painter,
             pixmap();
             painter->endNativePainting();
 
-            pixmapIconRenderer = new HbPixmapIconRenderer(currentPixmap, this);
+            pixmapIconRenderer = new HbPixmapIconRenderer(currentPixmap, this, true);
             pixmapIconRenderer->setColor(iconColor);
             pixmapIconRenderer->setMode(mode);
         }
@@ -293,13 +315,13 @@ QPointF HbSgimageIconImpl::setAlignment(const QRectF &rect,
     if (alignment & Qt::AlignRight) {
         topLeft.setX(rect.right() - renderSize.width());
     } else if (alignment & Qt::AlignHCenter) {
-        topLeft.setX(topLeft.x() + (rect.width() - renderSize.width()) / 2);
+        topLeft.setX(topLeft.x() + (qRound(rect.width()) - qRound(renderSize.width())) / 2.0f);
     }
 
     if (alignment & Qt::AlignBottom) {
         topLeft.setY(rect.bottom() - renderSize.height());
     } else if (alignment & Qt::AlignVCenter) {
-        topLeft.setY(topLeft.y() + (rect.height() - renderSize.height()) / 2);
+        topLeft.setY(topLeft.y() + (qRound(rect.height()) - qRound(renderSize.height())) / 2.0f);
     }
     return topLeft;
 }
@@ -321,9 +343,7 @@ VGImage HbSgimageIconImpl::getVgImageFromSgImage()
 #endif
     }
 
-
-
-    EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    EGLDisplay display = eglGetCurrentDisplay();
 
     // Retrieve the extensions
     pfnEglCreateImageKHR eglCreateImageKHR = (pfnEglCreateImageKHR)
@@ -360,9 +380,35 @@ QSize HbSgimageIconImpl::size()
     return  contentSize;
 }
 
+HbIconImpl::ErrorCode HbSgimageIconImpl::initialize()
+{
+    ErrorCode error = ErrorNone;
+
+    if (!vgImageRenderer) {
+        VGImage vgImage = getVgImageFromSgImage();
+        if (vgImage != VG_INVALID_HANDLE) {
+            vgImageRenderer = new HbVgImageIconRenderer(vgImage, contentSize, this);
+            if (vgImageRenderer) {
+                vgImageRenderer->setVgImageCreator(getVgImage);
+                vgImageRenderer->setColor(iconColor);
+                vgImageRenderer->setMode(mode);
+            } 
+        } else {
+            if ((eglGetError() == EGL_BAD_ALLOC) ||
+                    (vgGetError() == VG_OUT_OF_MEMORY_ERROR)) {
+                error = ErrorLowGraphicsMemory;
+            } else {
+                error = ErrorUnknown;
+            }
+        }
+    }
+    return error;
+}
 
 void HbSgimageIconImpl::destroyMaskedData(HbIconMaskedData *data)
 {
-    pixmapIconRenderer->destroyMaskedData(data);
+    if (pixmapIconRenderer) {
+        pixmapIconRenderer->destroyMaskedData(data);
+    }
 }
 

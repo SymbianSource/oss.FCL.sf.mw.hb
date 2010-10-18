@@ -28,6 +28,7 @@
 
 #include <hbstring_p.h>
 #include <hbvector_p.h>
+#include "hblayoutparameters_p.h"
 
 struct HbOffsetItem
 {
@@ -38,8 +39,8 @@ struct HbOffsetItem
             offsetLayoutIndexTable(-1) {}
 
     quint32 widgetHash;
-    qint32 offsetCSS;
-    qint32 offsetColorCSS;
+    qptrdiff offsetCSS;
+    qptrdiff offsetColorCSS;
     qint32 offsetLayoutIndexTable;
 };
 
@@ -58,7 +59,7 @@ struct HbLayoutIndexItem
                           offset(-1) {}
     quint32 layoutNameHash;
     quint32 sectionNameHash;
-    qint32 offset;
+    qptrdiff offset;
 };
 
 inline
@@ -79,13 +80,13 @@ class HB_CORE_PRIVATE_EXPORT HbSharedCache
 private:
     struct CacheItem {
         HbString key;
-        int offset;
+        qptrdiff offset;
         CacheItem()
            : key(HbMemoryManager::SharedMemory), offset(-1)
         {
         }
         CacheItem(const QString &cacheKey,
-                  int cacheOffset )
+                  qptrdiff cacheOffset )
                     : key(cacheKey, HbMemoryManager::SharedMemory), offset(cacheOffset)
         {
         }
@@ -97,21 +98,20 @@ public:
         Effect
     };
     static HbSharedCache *instance();
-    static quint32 hash(const QStringRef &string);
-    bool add(ItemType itemType, const QString &key, int offset);
+    bool add(ItemType itemType, const QString &key, qptrdiff offset);
     bool addLayoutDefinition(const QString &filePath,
                              const QString &layout,
                              const QString &section,
-                             int offset);
-    int layoutDefinitionOffset(const QString &filePath,
+                             qptrdiff offset);
+    qptrdiff layoutDefinitionOffset(const QString &filePath,
                                const QString &layout,
                                const QString &section) const;
-    int offset(ItemType itemType, const QString &key) const;
+    qptrdiff offset(ItemType itemType, const QString &key) const;
     bool remove(ItemType itemType, const QString &key);
     bool removeLayoutDefinition(const QString &filePath,
                                 const QString &layout,
                                 const QString &section);
-
+    HbLayoutParametersPrivate *layoutParameters() const;
 private:
     HbSharedCache();
     void initServer();
@@ -119,16 +119,21 @@ private:
     void freeResources();
     HbVector<CacheItem> &itemCache(ItemType type);
     const HbVector<CacheItem> &itemCache(ItemType type) const;
-    void addOffsetMap(const char *offsetMapData, int size, int offsetItemCount);
-    int findOffsetFromDynamicMap(ItemType itemType, const QStringRef &key) const;
-    const HbLayoutIndexItem *layoutIndexItemBegin(int offset, int *size) const
+    void setContent(const char *dataArray, int size, int offsetItemCount, int globalParametersOffset);
+    qptrdiff findOffsetFromDynamicMap(ItemType itemType, const QStringRef &key) const;
+    const HbLayoutIndexItem *layoutIndexItemBegin(qptrdiff offset, int *size) const
     {
         return const_cast<HbSharedCache*>(this)->layoutIndexItemBegin(offset, size);
     }
-    HbLayoutIndexItem *layoutIndexItemBegin(int offset, int *size);
+    HbLayoutIndexItem *layoutIndexItemBegin(qptrdiff offset, qint32 *size);
     static QString layoutDefinitionKey(const QString &filePath,
                                        const QString &layout,
                                        const QString &section);
+    HbParameterItem *parameterItemBegin(qint32 *size);
+    const HbParameterItem *parameterItemBegin(qint32 *size) const
+    {
+        return const_cast<HbSharedCache*>(this)->parameterItemBegin(size);
+    }
 
     friend class HbSharedMemoryManager;
     friend class HbSharedMemoryManagerUt;
@@ -138,6 +143,7 @@ private:
     HbVector<CacheItem> mLayoutDefCache;
     HbVector<CacheItem> mStylesheetCache;
     HbVector<CacheItem> mEffectCache;
+    int mGlobalParameterOffset;
     int mOffsetItemCount;
     HbOffsetItem mOffsetItems[1]; //actual size of array is mOffsetItemCount
 };

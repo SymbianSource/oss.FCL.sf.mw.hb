@@ -66,7 +66,13 @@ public:
         vgImageCreator =  vgCreator;
     }
 
+    VGImage image() const {
+        return vgImage;
+    }
+    
     bool draw(QPainter *painter, const QPointF &topLeft, const QPainterPath &clipPath);
+
+    static VGImage disabledImage(VGImage originalImage, const QSize &size);
 
 private:
     void applyIconProperties();
@@ -77,8 +83,6 @@ private:
     QIcon::Mode iconMode;
     bool specialCaseApplied;
     QSize   rendersize;
-    HbEglStates *eglStates;
-    bool    addedToStates;
     VGPaint opacityPaint;
     qreal   lastOpacity;
     HbIconImpl *iconImpl;

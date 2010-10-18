@@ -38,11 +38,10 @@
 #include "hbselectioncontrol_p.h"
 #include "hbsmileyengine_p.h"
 #include "hbinputeditorinterface.h"
-#include "hbfeaturemanager_r.h"
-#include "hbtextmeasurementutility_p.h"
-#include "hbtapgesture.h"
-#include "hbpangesture.h"
-#include "hbnamespace_p.h"
+#ifdef HB_TEXT_MEASUREMENT_UTILITY
+#include "hbtextmeasurementutility_r.h"
+#include "hbtextmeasurementutility_r_p.h"
+#endif
 
 #include <QApplication>
 #include "hbpopup.h"
@@ -93,8 +92,9 @@
     editor widget only one or the other type might be supported. Plain text content is set with 
     method \ref setPlainText. Method \ref toPlainText returns the content converted to plain text. 
 
-    \li Focus control: Editor is responsble for controlling the input panel visibility. In some situations special editor may need to also handle this, but in general it is always handled by HbAbstractEdit. 
-    Input panel is closed when editor loses focus.
+    \li Focus control: Editor is responsble for controlling the input panel visibility. In some situations special editor may need to also handle this,
+    but in general it is always handled by HbAbstractEdit. Input panel is closed when editor loses focus.
+    However when setting the editor focus programmatically with setFocus() it is the responsibility of client to control the visibility of input panel.
 
     \li Cursor control: A convenience method \ref moveCursor can also be used to move the cursor.
 
@@ -107,14 +107,7 @@
 
     \section composition Widget composition
 
-    Editor widget consists of these sub-items visible in the picture. 
-    In this example editor shows only one visible line of the content.
-
-    \image html editor_composition.jpg
-
-    The size of the canvas is always same as the size of the document, and the width of the scroll area 
-    is same as the width of the document. The editor margins are defined in the CSS.
-
+    The size of the canvas is always same as the size of the document, and the width of the scroll area is same as the width of the document.
 */
 
 /*!
@@ -152,6 +145,9 @@
 */
 
 #define Hb_Invalid_Position QPointF(-1.0, -1.0)
+
+
+
 
 /*!
     Constructs a HbAbstractEdit with parent \a parent.
@@ -225,6 +221,18 @@ bool HbAbstractEdit::event(QEvent* event)
             d->smileyEngineInstance()->insertSmiley(matchCursor);
 
             d->cursorChanged(HbValidator::CursorChangeFromContentUpdate);
+        } else if (p == "Magnifier") {
+            QString param = property("Magnifier").toString();
+
+            if (param == "Enabled") {
+                d->enableMagnifier = true;
+            } else if (param == "Disabled") {
+                d->enableMagnifier = false;
+            }
+
+            if (d->selectionControl) {
+                d->selectionControl->setMagnifierEnabled(d->enableMagnifier);
+            }
         }
     } else { //HbEvent handler
         if (event->type() == HbEvent::InputMethodFocusIn) {
@@ -283,6 +291,10 @@ void HbAbstractEdit::inputMethodEvent (QInputMethodEvent *e)
     d->cursor.beginEditBlock();
 
     if (isGettingInput) {
+        if (d->selectionControl) {
+            d->selectionControl->hideHandles();
+            d->updateCursorType();
+        }
         if (!d->imEditInProgress) {
             d->imEditInProgress = true;
             d->imPosition = d->selectionCursor.selectionStart();
@@ -345,10 +357,8 @@ void HbAbstractEdit::inputMethodEvent (QInputMethodEvent *e)
         d->_q_contentsChanged();
     }
 
-    if(d->hasInputFocus()) {
-        d->cursorOn = true;
-    }
     d->ensureCursorVisible();
+    d->canvas->setPreferredSize(d->calculatePreferredDocSize());
 }
 
 /*!
@@ -358,8 +368,10 @@ void HbAbstractEdit::keyPressEvent(QKeyEvent *event)
 {
     Q_D(HbAbstractEdit);
 
-    if (d->interactionFlags & Qt::NoTextInteraction)
-        return;
+    if (d->selectionControl) {
+        d->selectionControl->hideHandles();
+        d->updateCursorType();
+    }
 
 #ifndef QT_NO_SHORTCUT
 #ifndef QT_NO_CLIPBOARD
@@ -489,9 +501,7 @@ void HbAbstractEdit::focusInEvent(QFocusEvent *event)
     HbWidget::focusInEvent(event);
 
     d->selectionControl = HbSelectionControl::attachEditor(this);
-
-    if (d->interactionFlags & Qt::NoTextInteraction)
-        return;
+    d->selectionControl->setMagnifierEnabled(isSelectionControlEnabled()&&d->enableMagnifier);
 
     // It sets the cursor the focus item's depending on if
     // the input panel is connceted or not
@@ -508,9 +518,6 @@ void HbAbstractEdit::focusOutEvent(QFocusEvent *event)
     HbWidget::focusOutEvent(event);
 
     Q_D(HbAbstractEdit);
-
-    if (d->interactionFlags & Qt::NoTextInteraction)
-        return;
 
     // It sets the cursor the focus item's depending on if
     // the input panel is connceted or not
@@ -680,7 +687,7 @@ void HbAbstractEdit::setReadOnly (bool value)
 
     Returns pointer to a \a primitive of HbAbstractEdit.
 
-    Available primitive is HbStyle::P_Edit_text.
+    Available primitive is HbStylePrivate::P_Edit_text.
 
     \reimp
     \sa HbStyle::Primitive, HbWidget::primitive()
@@ -688,8 +695,8 @@ void HbAbstractEdit::setReadOnly (bool value)
 QGraphicsItem *HbAbstractEdit::primitive (HbStyle::Primitive primitive) const
 {
     Q_D(const HbAbstractEdit);
-
-    if (primitive == HbStyle::P_Edit_text) {
+    const HbStylePrivate::Primitive p = (HbStylePrivate::Primitive)primitive;
+    if (p == HbStylePrivate::P_Edit_text) {
         return d->scrollArea;
     } else {
         return HbWidget::primitive(primitive);
@@ -723,6 +730,7 @@ void HbAbstractEdit::updatePrimitives()
         }
 
         d->canvas->setGeometry(canvasGeom);
+        d->canvas->setPreferredSize(d->calculatePreferredDocSize());
 
         d->ensureCursorVisible();
         if (d->selectionControl) {
@@ -777,12 +785,15 @@ void HbAbstractEdit::timerEvent(QTimerEvent *e)
     Q_D(HbAbstractEdit);
 
     if (e->timerId() == d->cursorBlinkTimer.timerId()) {
-        d->cursorOn = !d->cursorOn;
-
-        if (d->cursor.hasSelection())
-            d->cursorOn &= (QApplication::style()->styleHint(QStyle::SH_BlinkCursorWhenTextSelected) != 0);
-
+        d->cursorOn = !d->cursorOn;       
         d->repaintCursor();
+    } else if (e->timerId() == d->doubleTapTimer.timerId()) {
+        d->doubleTapTimer.stop();
+
+        if (d->tapCounter == 1 && d->showContextMenu && contextMenuFlags().testFlag(Hb::ShowTextContextMenuOnSelectionClicked)) {
+            showContextMenu(mapToScene(d->tapPosition));
+        }
+        d->tapCounter = 0;
     }
 }
 
@@ -885,8 +896,9 @@ void HbAbstractEdit::cut()
     Q_D(HbAbstractEdit);
     if (!(d->interactionFlags & Qt::TextEditable) || !d->cursor.hasSelection())
         return;
-    copy();
+    copy();    
     d->cursor.removeSelectedText();
+    d->cursorChanged(HbValidator::CursorChangeFromContentUpdate);
 #endif//QT_NO_CLIPBOARD
 }
 
@@ -926,8 +938,8 @@ void HbAbstractEdit::paste()
         if (md) {
             insertFromMimeData(md);
         }
+        d->cursorChanged(HbValidator::CursorChangeFromContentUpdate);
     }
-
 #endif//QT_NO_CLIPBOARD
 }
 
@@ -945,7 +957,7 @@ void HbAbstractEdit::selectClickedWord()
     if (cursorPos == -1)
         return;
 
-    setCursorPosition(cursorPos);
+    d->cursor.setPosition(cursorPos);
     d->cursor.select(QTextCursor::WordUnderCursor);
     d->cursorChanged(HbValidator::CursorChangeFromMouse);
 }
@@ -1064,6 +1076,7 @@ QRectF HbAbstractEdit::rectForPosition(int position, QTextLine::Edge edge) const
     return rect;
 }
 
+
 /*!
     Returns the contents as plain text. If smiley recognition is enabled
     all the smiley images will be replaced by their textual representations.
@@ -1111,7 +1124,9 @@ void HbAbstractEdit::setValidator(HbValidator* validator)
     Q_D(HbAbstractEdit);
 
     d->validator = validator;
-    d->initValidator();
+    if (d->validator) {
+        d->initValidator();
+    }
 }
 
 /*!
@@ -1202,8 +1217,24 @@ void HbAbstractEdit::drawContents(QPainter *painter, const QStyleOptionGraphicsI
     Q_D(HbAbstractEdit);
 #ifdef HB_DEBUG_EDITOR_DRAW_RECTS
     painter->setPen(Qt::green);
-    /*for(QTextBlock tb = d->doc->begin(); tb.isValid(); tb=tb.next()) {
-        painter->drawRect(blockBoundingRect(tb));
+    /*
+    for(QTextBlock tb = d->doc->begin(); tb.isValid(); tb=tb.next()) {
+       painter->drawRect(blockBoundingRect(tb));
+
+        // Draw lines
+        const QPointF layoutPos = blockBoundingRect(tb).topLeft();
+
+        painter->setPen(Qt::red);
+        const QTextLayout *layout = tb.layout();
+        for(int i = 0;i < layout->lineCount();i++) {
+            QTextLine line = layout->lineAt(i);
+
+            // Draw descent rect
+            QRectF rect = QRectF(layoutPos.x() + line.x(),
+                                 layoutPos.y() + line.y() + line.ascent(),
+                                 line.width(),line.descent()+1);
+            painter->drawRect(rect);
+        }
     }*/
     painter->drawRect(d->doc->documentLayout()->frameBoundingRect(
         d->doc->rootFrame()).adjusted(2,2,-2,-2));
@@ -1218,13 +1249,14 @@ void HbAbstractEdit::drawContents(QPainter *painter, const QStyleOptionGraphicsI
 
 
     QAbstractTextDocumentLayout::PaintContext ctx = d->getPaintContext();
-    // Save painter state that will be modified
-    QRegion clipRegion = painter->clipRegion();
 
     if (option.exposedRect.isValid()){
         painter->setClipRect(intersected, Qt::IntersectClip);
     }
     ctx.clip = intersected;
+    // Disable drawing of Qt cursor and save old cursor position
+    int oldCursorPosition = ctx.cursorPosition;
+    ctx.cursorPosition = -1;
 
     d->drawContentBackground(painter, option);
 
@@ -1235,19 +1267,16 @@ void HbAbstractEdit::drawContents(QPainter *painter, const QStyleOptionGraphicsI
         if(!layout->preeditAreaText().length()) {
             QColor textColor(ctx.palette.color(QPalette::Text));
             QColor hintText(ctx.palette.color(QPalette::NoRole));
-            int cursorPos = ctx.cursorPosition;
-            ctx.cursorPosition = -1;
             ctx.palette.setColor(QPalette::Text, hintText);
 
             d->placeholderDoc->documentLayout()->draw(painter, ctx);
 
             ctx.palette.setColor(QPalette::Text, textColor);
-            ctx.cursorPosition = cursorPos;
         }
     }
     document()->documentLayout()->draw(painter, ctx);
-    // Draw the pins for the selection handle
-    d->drawSelectionEdges(painter, ctx);
+    ctx.cursorPosition = oldCursorPosition;
+    d->drawCursor(painter, ctx);
 
 #ifdef HB_DEBUG_EDITOR_HANDLES
     QRectF a = rectForPosition(d->cursor.anchor());
@@ -1260,8 +1289,6 @@ void HbAbstractEdit::drawContents(QPainter *painter, const QStyleOptionGraphicsI
     painter->setPen(Qt::red);
     painter->drawRect(d->cursorRect());
 #endif
-    // Restore state
-    painter->setClipRegion(clipRegion);
 }
 
 /*!
@@ -1310,45 +1337,36 @@ void HbAbstractEdit::showContextMenu(QPointF position)
 
     if (d->cursor.hasSelection() && d->canCut()) {
         connect(
-            menu->addAction(hbTrId("txt_common_menu_cut")), SIGNAL(triggered()),
-            this, SLOT(cut()));       
+            menu->addAction(hbTrId("txt_common_menu_cut")), SIGNAL(triggered()), this, SLOT(cut()));
     }
     if (d->cursor.hasSelection() && d->canCopy()) {
         connect(
-            menu->addAction(hbTrId("txt_common_menu_copy")), SIGNAL(triggered()),
-            this, SLOT(copy()));
+            menu->addAction(hbTrId("txt_common_menu_copy")), SIGNAL(triggered()), this, SLOT(copy()));
     }
     if (!d->cursor.hasSelection() && !d->doc->isEmpty() && d->canCopy()){
         connect(
-            menu->addAction(hbTrId("txt_common_menu_select")), SIGNAL(triggered()),
-            this, SLOT(selectClickedWord()));
-        connect(
-            menu->addAction(hbTrId("txt_common_menu_select_all_contents")), SIGNAL(triggered()),
-            this, SLOT(selectAll()));
+            menu->addAction(hbTrId("txt_common_menu_select_all_contents")), SIGNAL(triggered()), this, SLOT(selectAll()));
     }
     if (d->canPaste()) {
         connect(
-            menu->addAction(hbTrId("txt_common_menu_paste")), SIGNAL(triggered()),
-            this, SLOT(paste()));
+            menu->addAction(hbTrId("txt_common_menu_paste")), SIGNAL(triggered()), this, SLOT(paste()));
     }
     if (d->cursor.hasSelection()) {
         connect(
-            menu->addAction(hbTrId("txt_common_menu_deselect")), SIGNAL(triggered()),
-            this, SLOT(deselect()));
+            menu->addAction(hbTrId("txt_common_menu_deselect")), SIGNAL(triggered()), this, SLOT(deselect()));
     }
     if (d->canFormat()) {
         connect(
-            menu->addAction(hbTrId("txt_common_menu_format")), SIGNAL(triggered()),
-            this, SLOT(format()));
+            menu->addAction(hbTrId("txt_common_menu_format")), SIGNAL(triggered()), this, SLOT(format()));
     }
 
     emit aboutToShowContextMenu(menu, d->tapPosition);
 
     if(menu->actions().count() > 0){
-//        d->minimizeInputPanel();
         menu->setPreferredPos(position);
         menu->show();
     }
+    d->showContextMenu = false;
 }
 
 /*!
@@ -1416,8 +1434,8 @@ Qt::Alignment HbAbstractEdit::alignment() const
 }
 
 /*!
-    Returns current flags describing on which events context menu is shown
-
+    Returns current flags describing on which events context menu is shown.
+    The default value is both Hb::ShowTextContextMenuOnSelectionClicked and Hb::ShowTextContextMenuOnLongPress are set.
     \sa Hb::TextContextMenuFlag
  */
 Hb::TextContextMenuFlags HbAbstractEdit::contextMenuFlags() const
@@ -1428,7 +1446,8 @@ Hb::TextContextMenuFlags HbAbstractEdit::contextMenuFlags() const
 }
 
 /*!
-    Sets \a flags describing on which events context menu is shown
+    Sets \a flags describing on which events context menu is shown.
+    To disable context menu completely set \a flags to 0.
     \sa Hb::TextContextMenuFlag
  */
 void HbAbstractEdit::setContextMenuFlags(Hb::TextContextMenuFlags flags)
@@ -1492,7 +1511,7 @@ void HbAbstractEdit::setPlaceholderText(const QString& placeholderText)
 
     QString txt( placeholderText );
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
-    if ( HbFeatureManager::instance()->featureStatus( HbFeatureManager::TextMeasurement ) ) {
+    if (HbTextMeasurementUtility::instance()->locTestMode()) {
         if (placeholderText.endsWith(QChar(LOC_TEST_END))) {
             int index = placeholderText.indexOf(QChar(LOC_TEST_START));
             setProperty( HbTextMeasurementUtilityNameSpace::textIdPropertyName,  placeholderText.mid(index + 1, placeholderText.indexOf(QChar(LOC_TEST_END)) - index - 1) );
@@ -1520,7 +1539,7 @@ void HbAbstractEdit::setPlaceholderText(const QString& placeholderText)
 QString HbAbstractEdit::anchorAt(const QPointF &pos) const
 {
     Q_D(const HbAbstractEdit);
-    return d->doc->documentLayout()->anchorAt(pos);
+    return d->doc->documentLayout()->anchorAt(mapToItem(d->canvas,pos));
 }
 
 /*!
@@ -1670,11 +1689,19 @@ void HbAbstractEdit::polish( HbStyleParameters& params )
  */
 QVariant HbAbstractEdit::itemChange(GraphicsItemChange change, const QVariant &value)
 {
-    Q_D(const HbAbstractEdit);
+    Q_D(HbAbstractEdit);
     if (change == QGraphicsItem::ItemScenePositionHasChanged) {
         if (d->selectionControl) {
             d->selectionControl->updatePrimitives();
         }
+    } else if (change == QGraphicsItem::ItemEnabledHasChanged) {
+        if(!value.toBool()) {
+            if (d->hasInputFocus()) {
+                d->closeInputPanel();
+            }
+            deselect();
+        }
+        updatePrimitives();
     }
     return HbWidget::itemChange(change, value);
 }
@@ -1687,55 +1714,41 @@ QChar HbAbstractEdit::characterAt(int pos) const
     return document()->characterAt(pos);
 }
 
+/*!
+    Activates or deactivates the selection control in the editor.
+    The selection control can be used to resize the selection or fine tune the cursor position.
+    Note: if the selection control is disabled the word selection is still possible by double-tap on word of text.
+*/
+void HbAbstractEdit::setSelectionControlEnabled(bool enabled)
+{
+    Q_D(HbAbstractEdit);
+    if(d->enableSelectionControl != enabled) {
+        d->enableSelectionControl = enabled;
+        if(enabled && (d->hasInputFocus() || d->cursor.hasSelection())) {
+            d->selectionControl = HbSelectionControl::attachEditor(this);
+            d->selectionControl->setMagnifierEnabled(d->enableMagnifier);
+            d->selectionControl->showHandles();
+        } else if (d->selectionControl) {
+            d->selectionControl->hideHandles();
+        }
+        d->updateCursorType();
+    }
+}
+
+/*!
+    Return true if selection control is enabled in the editor otherwise returns false.
+*/
+bool HbAbstractEdit::isSelectionControlEnabled() const
+{
+    Q_D(const HbAbstractEdit);
+    return d->enableSelectionControl;
+}
+
+
 void HbAbstractEdit::gestureEvent(QGestureEvent* event) {
     Q_D(HbAbstractEdit);
 
-    if(HbTapGesture *tap = qobject_cast<HbTapGesture*>(event->gesture(Qt::TapGesture))) {
-        // QTapGesture::position() is in screen coordinates and thus
-        // needs to be transformed into items own coordinate system.
-        // The QGestureEvent knows the viewport through which the gesture
-        // was triggered.
-        QPointF pos = mapFromScene(event->mapToGraphicsScene(tap->position()));
-        switch(tap->state()) {
-        case Qt::GestureStarted:
-            scene()->setProperty(HbPrivate::OverridingGesture.latin1(),Qt::TapGesture);
-            if (!tap->property(HbPrivate::ThresholdRect.latin1()).toRect().isValid()) {
-                tap->setProperty(HbPrivate::ThresholdRect.latin1(), mapRectToScene(boundingRect()).toRect());
-            }
-
-            d->tapPosition = pos;
-            HbWidgetFeedback::triggered(this, Hb::InstantPressed);
-            break;
-        case Qt::GestureUpdated:
-            if(tap->tapStyleHint() == HbTapGesture::TapAndHold) {
-                d->openInputPanel();
-                d->longTapGesture(pos);                
-            }
-            break;
-      case Qt::GestureFinished:
-            scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
-
-            if(tap->tapStyleHint() == HbTapGesture::TapAndHold) {
-            } else {
-                d->tapGesture(pos);
-            }
-
-            HbWidgetFeedback::triggered(this, Hb::InstantReleased);
-
-            d->openInputPanel();
-            
-            break;
-      case Qt::GestureCanceled:
-            scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
-
-            break;
-      default:
-            break;
-        }
-        event->accept();
-    } else {
-        event->ignore();
-    }
+    d->gestureEvent(event);
 }
 
 /*!

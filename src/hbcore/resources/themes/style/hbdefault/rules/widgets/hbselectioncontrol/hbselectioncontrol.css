@@ -1,13 +1,27 @@
+HbSelectionControl{
+    handle-margin-from-line:1.25un;
+    magnifier-margin-from-line:7.0un;
+    magnifier-left-right-margin-from-handle:7.0un;
+    magnifier-max-descent:0.6un;
+}
+
+
 HbSelectionControl::handle-icon
 {
-    fixed-width:var(hb-param-graphic-size-secondary);
-    fixed-height:var(hb-param-graphic-size-secondary);
+    fixed-width:3.0un;
+    fixed-height:3.0un;
 }
 
 HbSelectionControl::handle-toucharea
 {
-   fixed-height:var(hb-param-touch-area-gene-primary-large);
-   fixed-width:var(hb-param-touch-area-gene-primary-large);
+    fixed-height:var(hb-param-touch-area-gene-primary-large);
+    fixed-width:var(hb-param-touch-area-gene-primary-large);
+}
+
+HbSelectionControl::magnifier
+{
+    fixed-width:15.0un;
+    fixed-height:6.0un;
 }
 
 

@@ -1,10 +1,16 @@
 HbToolBarExtension {
-	content-margins: var(hb-param-margin-gene-popup-list);
-	max-rows-portrait: 4;
-	max-rows-landscape: 3;
-	max-columns-portrait: 3;
-	max-columns-landscape: 4;
-        max-width:var(hb-param-screen-width);
-        max-height:var(hb-param-screen-height);
-        min-width:0un;
+    max-rows-portrait: 4;
+    max-rows-landscape: 3;
+    max-columns-portrait: 3;
+    max-columns-landscape: 4;
+    max-width:var(hb-param-screen-width);
+    max-height:var(hb-param-screen-height);
+    min-width:0un;
+}
+
+HbToolBarExtension::content {
+    left:-var(hb-param-margin-gene-popup-list);
+    right:var(hb-param-margin-gene-popup-list);
+    top:-var(hb-param-margin-gene-popup-list);
+    bottom:var(hb-param-margin-gene-popup-list);
 }

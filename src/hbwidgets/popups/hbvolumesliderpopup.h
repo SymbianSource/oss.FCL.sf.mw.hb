@@ -35,6 +35,7 @@ class HB_WIDGETS_EXPORT HbVolumeSliderPopup : public HbSliderPopup
     Q_OBJECT
     Q_PROPERTY(bool currentValueVisible READ isCurrentValueVisible 
         WRITE setCurrentValueVisible USER true)
+    Q_PROPERTY(bool muted READ isMuted WRITE setMuted)    
 
 public:
     explicit HbVolumeSliderPopup();
@@ -45,6 +46,8 @@ public:
 
     void setCurrentValueVisible(bool visible);
     bool isCurrentValueVisible()const;
+    void setMuted( bool mute );
+    bool isMuted( ) const;
 
 signals:
     void iconToggled(bool checked); 

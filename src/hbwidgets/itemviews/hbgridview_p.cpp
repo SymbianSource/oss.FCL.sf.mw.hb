@@ -223,41 +223,9 @@ void HbGridViewPrivate::setContentPosition(qreal value, Qt::Orientation orientat
     }
 }
 
-QModelIndex HbGridViewPrivate::indexInTheCenter(Qt::Orientations scrollDirection) const
+QModelIndex HbGridViewPrivate::firstFullyVisibleIndex() const
 {
-    Q_Q(const HbGridView);
-    QModelIndex centerViewModelIndex; // nearest to center of the screen
-    if (!mContainer->items().isEmpty()) {
-        qreal centerPos;
-        HbGridItemContainer *container = itemContainer();
-        if (scrollDirection == Qt::Vertical) {
-            // calculating row:
-            centerPos = -container->pos().y() + q->boundingRect().height() / 2
-                        // take rather item that is just above of view center instead of bottom one
-                        - container->viewLayout()->effectiveSizeHint(Qt::MinimumSize).height() / 2;
-            // calculate item row
-            centerPos /= container->viewLayout()->effectiveSizeHint(Qt::MinimumSize).height();
-            //calculate item index
-            centerPos *= itemContainer()->columnCount();
-            // go to center column
-            centerPos += itemContainer()->columnCount() / 2;
-        } else {
-            // calculating row:
-            centerPos = -container->pos().x() + q->boundingRect().width() / 2
-                        // take rather item that is just on the left of view center instead of right one
-                        - container->viewLayout()->effectiveSizeHint(Qt::MinimumSize).width() / 2;
-            // calculate buffer row
-            centerPos /= container->viewLayout()->effectiveSizeHint(Qt::MinimumSize).width();
-            //calculate item index
-            centerPos *= itemContainer()->rowCount();
-            // go to center row
-            centerPos += itemContainer()->rowCount() / 2;
-        }
-        int centerIndex = qRound(centerPos);
-        if (centerIndex >= container->items().size()) {
-            centerIndex = container->items().size() / 2;
-        }
-        centerViewModelIndex = container->items().at(centerIndex)->modelIndex();
-    }
-    return centerViewModelIndex;
+    QModelIndex first, last;
+    mContainer->firstAndLastVisibleModelIndex(first, last, true);
+    return first;
 }

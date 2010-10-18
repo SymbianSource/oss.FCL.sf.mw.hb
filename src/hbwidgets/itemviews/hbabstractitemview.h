@@ -42,7 +42,7 @@ class HB_WIDGETS_EXPORT HbAbstractItemView : public HbScrollArea
 {
     Q_OBJECT
     
-    Q_ENUMS(SelectionMode ScrollHint)  
+    Q_ENUMS(SelectionMode ScrollHint IconLoadPolicy)  
     Q_FLAGS(ItemAnimations)
 
     Q_PROPERTY(bool itemRecycling READ itemRecycling WRITE setItemRecycling)
@@ -50,9 +50,18 @@ class HB_WIDGETS_EXPORT HbAbstractItemView : public HbScrollArea
     Q_PROPERTY(QString layoutName READ layoutName WRITE setLayoutName)
     Q_PROPERTY(bool uniformItemSizes READ uniformItemSizes WRITE setUniformItemSizes)
     Q_PROPERTY(ItemAnimations enabledAnimations READ enabledAnimations WRITE setEnabledAnimations)
-    Q_PROPERTY(bool longPressEnabled  READ longPressEnabled  WRITE setLongPressEnabled )
+    Q_PROPERTY(bool longPressEnabled  READ longPressEnabled  WRITE setLongPressEnabled)
+    Q_PROPERTY(IconLoadPolicy iconLoadPolicy READ iconLoadPolicy WRITE setIconLoadPolicy)
+    Q_PROPERTY(QString emptyText READ emptyText WRITE setEmptyText)
 
 public:
+
+    enum IconLoadPolicy
+    {
+        LoadSynchronously,
+        LoadAsynchronouslyWhenScrolling,
+        LoadAsynchronouslyAlways
+    };
 
     enum SelectionMode
     {
@@ -114,7 +123,7 @@ public:
 
     HbAbstractViewItem *itemByIndex(const QModelIndex &index) const;
 
-    virtual void scrollTo(const QModelIndex &index, ScrollHint hint = EnsureVisible) = 0;
+    virtual void scrollTo(const QModelIndex &index, ScrollHint hint = EnsureVisible);
     QList<HbAbstractViewItem *> visibleItems() const;
 
     QString layoutName() const;
@@ -130,6 +139,15 @@ public:
 
     void setLongPressEnabled(bool enabled);
     bool longPressEnabled() const;
+
+    virtual void setItemPixmapCacheEnabled(bool enabled);
+    bool itemPixmapCacheEnabled() const;
+
+    void setIconLoadPolicy(IconLoadPolicy policy);
+    IconLoadPolicy iconLoadPolicy() const;
+
+    QString emptyText() const;
+    void setEmptyText(const QString &emptyText);
 
 public slots:
     void setCurrentIndex(const QModelIndex &index,
@@ -211,6 +229,8 @@ private:
     Q_PRIVATE_SLOT(d_func(), void _q_scrolling(QPointF newPosition))
     Q_PRIVATE_SLOT(d_func(), void _q_scrollingEnded())
     Q_PRIVATE_SLOT(d_func(), void _q_scrollingStarted())
+    Q_PRIVATE_SLOT(d_func(), void _q_itemAboutToBeDeleted(HbAbstractViewItem *item))
+
 
     friend class HbAbstractItemContainer;
     friend class HbAbstractViewItemPrivate;

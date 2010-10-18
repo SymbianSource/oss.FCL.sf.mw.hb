@@ -23,65 +23,41 @@
 **
 ****************************************************************************/
 
-#include <QTranslator>
 #if defined(Q_OS_SYMBIAN)
 #include <e32base.h> 
 #endif // Q_OS_SYMBIAN
+#include <hbtranslator.h>
 #include "hbdntxmlreader_p.h"
 
 #define DirectoryLocalizerFile ":/i18n/hbdirectorylocalizer.xml"
-#define DirectoryLocalizerTranslationsFile "/resource/hbi18n/translations/directorylocalizer_"
 
 /*!
     Constructor of class.  
 */ 
 HbDNTXmlReader::HbDNTXmlReader()
 {
-	fullPaths = NULL;
-	pathStrings = NULL;
-	
-	
-	parseDirectoryPaths = false; 
-	parsePathStrings = false;
-	elementNumber = 0;
-	validElement = false;
-	twoDone = false;
-    QLocale locale = QLocale::system();
+    fullPaths = NULL;
+    pathStrings = NULL;
+    parseDirectoryPaths = false; 
+    parsePathStrings = false;
+    elementNumber = 0;
+    validElement = false;
+    twoDone = false;
+    validElement = false;
     
-    trans = new QTranslator();
-	QString languageStr;
-	languageStr.append(DirectoryLocalizerTranslationsFile);
-
-	languageStr.append(locale.name());
-
-// Support for checking both Z and C drives 
-	
-#if defined(Q_OS_SYMBIAN)
-	bool succeed = false;
-	succeed = trans->load("z:" + languageStr);
-	if ( succeed == false ) {
-		trans->load("c:" + languageStr);
-	}
-#else // Q_OS_SYMBIAN
-	trans->load(languageStr);
-#endif // Q_OS_SYMBIAN
-
-	QCoreApplication::installTranslator(trans);
-	validElement = false;
-	
-	QFile xmlFile(DirectoryLocalizerFile);
-
-	pathStrings = new QMap<QString, QString>;
-	fullPaths = new QMap<QString,QString>;
-
-	if( xmlFile.exists() )
-		{
-			QXmlInputSource source( &xmlFile );
-			QXmlSimpleReader reader; 
-			reader.setContentHandler( this );  
-			reader.parse( source ) ;
-		}
-	
+    HbTranslator* trans = new HbTranslator("directorynamelocalizer");
+    Q_UNUSED(trans);
+    
+    QFile xmlFile(DirectoryLocalizerFile);
+    pathStrings = new QMap<QString, QString>;
+    fullPaths = new QMap<QString,QString>;
+    
+    if ( xmlFile.exists() ) {
+        QXmlInputSource source( &xmlFile );
+        QXmlSimpleReader reader;
+        reader.setContentHandler( this );
+        reader.parse( source );
+    }
 }
 
 /*!
@@ -91,8 +67,6 @@ HbDNTXmlReader::~HbDNTXmlReader()
 {
     delete fullPaths;
     delete pathStrings;
-	QCoreApplication::removeTranslator(trans);
-	delete trans;
 }
 
 /*!
@@ -112,50 +86,50 @@ bool HbDNTXmlReader::startDocument()
     \return true 
 */ 
 bool HbDNTXmlReader::startElement( const QString & ,
-				   const QString & ,
-				   const QString & qName,
-				   const QXmlAttributes & )
+                   const QString & ,
+                   const QString & qName,
+                   const QXmlAttributes & )
 {
     if( qName == DirectoryLocalizerPathStringsStr ) {
-    	parsePathStrings = true;  // set to parse Path 
-    	parseDirectoryPaths = false;
-    	elements.clear();
-    	elementNumber = 0;  // Set current path element number as undefined
-    	twoDone = false;
+        parsePathStrings = true;  // set to parse Path 
+        parseDirectoryPaths = false;
+        elements.clear();
+        elementNumber = 0;  // Set current path element number as undefined
+        twoDone = false;
     } else if( qName == DirectoryLocalizerFullDirectoryPathsStr ) {
-    	parsePathStrings = false;
-    	parseDirectoryPaths = true;  // set to parse localized path
-    	elements.clear();
-    	elementNumber = 0;  // set current path element as undefined
-    	twoDone = false;
+        parsePathStrings = false;
+        parseDirectoryPaths = true;  // set to parse localized path
+        elements.clear();
+        elementNumber = 0;  // set current path element as undefined
+        twoDone = false;
     } else if( qName == DirectoryLocalizerNameStr ) {
-    	elementNumber = 1;  // 
-    	validElement = true;
-    	twoDone = false;
+        elementNumber = 1;  // 
+        validElement = true;
+        twoDone = false;
     } else if( qName == DirectoryLocalizerPathStr ){
-    	elementNumber = 2;
-    	validElement = true;
-    	twoDone = false;
+        elementNumber = 2;
+        validElement = true;
+        twoDone = false;
     } else if( qName == DirectoryLocalizerTranslationStr){
-    	elementNumber = 3;
-    	validElement = true;	
+        elementNumber = 3;
+        validElement = true;    
     } else if( qName == DirectoryLocalizerRootPathStr ){
-    	elementNumber = 1;
-    	validElement = true;
-    	twoDone = false;
+        elementNumber = 1;
+        validElement = true;
+        twoDone = false;
     } else if( qName == DirectoryLocalizerLocalizedPathStr ){
-    	elementNumber = 2;
-    	validElement = true;
-    	twoDone = false;
+        elementNumber = 2;
+        validElement = true;
+        twoDone = false;
     } else if( qName == DirectoryLocalizerLocalizedNameStr ){
-    	elementNumber = 3;
-    	validElement = true;
-    	twoDone = false;
+        elementNumber = 3;
+        validElement = true;
+        twoDone = false;
     } else {
         elementNumber++;
     }
-	
-    return true;	
+    
+    return true;    
 }
 
 /*!
@@ -179,14 +153,14 @@ bool HbDNTXmlReader::characters(const QString& text)
     }
     
     if( validElement ) {
-		if(parsePathStrings) {
-			switch(elementNumber) {
+        if(parsePathStrings) {
+            switch(elementNumber) {
             case 1:  // DirectoryLocalizerNameStr     
                 t=t.toLower();
                 elements.insert(0,t);
                 break;
             case 2:  // DirectoryLocalizerPathStr  
-                t= t.replace(DirectoryLocalizerDirectorySeparatorX2,DirectoryLocalizerDirectorySeparatorX1);					
+                t= t.replace(DirectoryLocalizerDirectorySeparatorX2,DirectoryLocalizerDirectorySeparatorX1);                    
                 t=t.toLower();
                 if ( elements.count() > 1 ) {
                     elements.insert(1,t);
@@ -194,15 +168,15 @@ bool HbDNTXmlReader::characters(const QString& text)
                     elements.append(t);
                 }
                 break;
-            case 3:  // DirectoryLocalizerTranslationStr 			
+            case 3:  // DirectoryLocalizerTranslationStr            
                 elements.insert(0,t);
                 
-                localizedStr = QCoreApplication::translate(0,charPtr);
+                localizedStr = hbTrId(charPtr);
                 delete ba;
                 ba = 0;
                 
                 if( localizedStr == t ){
-					localizedStr = "";                
+                    localizedStr = "";                
                 }
                 elements.append(localizedStr);
                 break;
@@ -210,13 +184,13 @@ bool HbDNTXmlReader::characters(const QString& text)
                 elements.append(t); 
                 break;
             }
-            validElement = false;    	
-		} else if(parseDirectoryPaths) {			
-			switch(elementNumber) {
+            validElement = false;       
+        } else if(parseDirectoryPaths) {            
+            switch(elementNumber) {
             case 1: // DirectoryLocalizerRootPathStr
                 temp = t;
                 break;
-            case 2: // DirectoryLocalizerLocalizedPathStr							
+            case 2: // DirectoryLocalizerLocalizedPathStr                           
                 x = pathStrings->value(temp);
                 y = pathStrings->value(t);
                     
@@ -230,12 +204,12 @@ bool HbDNTXmlReader::characters(const QString& text)
                  x = pathStrings->value(t);
                  elements.insert(1, x);
                 break;
-            default:			
+            default:            
                 break;
-			}
-			validElement = false;    				
-		}
-	}
+            }
+            validElement = false;                   
+        }
+    }
     if (ba) {
         delete ba;
     }
@@ -252,26 +226,26 @@ bool HbDNTXmlReader::endElement( const QString &,
         const QString &,
         const QString & qName )
 {
-	if( qName == DirectoryLocalizerPathStringsStr ) {
-		parsePathStrings = false;
-		parseDirectoryPaths = false;
-		elements.clear();
-		elementNumber = 0;
-	} else if( qName == DirectoryLocalizerFullDirectoryPathsStr ) {
-		parsePathStrings = false;
-		
-		parseDirectoryPaths = false;
-		elements.clear();
-		elementNumber = 0;
-	}
-	
-	if( parsePathStrings && elements.count() > 1 ) {
+    if( qName == DirectoryLocalizerPathStringsStr ) {
+        parsePathStrings = false;
+        parseDirectoryPaths = false;
+        elements.clear();
+        elementNumber = 0;
+    } else if( qName == DirectoryLocalizerFullDirectoryPathsStr ) {
+        parsePathStrings = false;
+        
+        parseDirectoryPaths = false;
+        elements.clear();
+        elementNumber = 0;
+    }
+    
+    if( parsePathStrings && elements.count() > 1 ) {
         pathStrings->insertMulti(elements.at(0), elements.at(1));
-        elements.clear();		
+        elements.clear();       
     } else if(parseDirectoryPaths && elements.count() > 1) {
-		QString element1, element2;
-		switch(elements.count()) {				
-        case 2:					
+        QString element1, element2;
+        switch(elements.count()) {              
+        case 2:                 
             if(!twoDone){
                 fullPaths->insertMulti(elements.at(0),elements.at(1));
                 twoDone = true;
@@ -280,9 +254,9 @@ bool HbDNTXmlReader::endElement( const QString &,
             break;
         default:
             break;
-		}
-	}
-	return true;
+        }
+    }
+    return true;
 }
 
 /*!
@@ -300,7 +274,7 @@ bool HbDNTXmlReader::endDocument()
 */ 
 QMap<QString,QString> HbDNTXmlReader::getFullPaths()
 {
-	return *fullPaths;
+    return *fullPaths;
 }
 
 

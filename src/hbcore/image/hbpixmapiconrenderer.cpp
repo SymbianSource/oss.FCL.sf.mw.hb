@@ -33,9 +33,11 @@ struct HbPixmapIconMaskedData {
     QPixmap    currentPixmap;
 };
 
-HbPixmapIconRenderer::HbPixmapIconRenderer(const QPixmap &pixmap, HbIconImpl *impl)
+HbPixmapIconRenderer::HbPixmapIconRenderer(const QPixmap &pixmap,
+                                           HbIconImpl *impl,
+                                           bool propertiesApplied)
     : iconMode(QIcon::Normal),
-      iconPropertiesApplied(false),
+      iconPropertiesApplied(propertiesApplied),
       pixmapData(pixmap),
       iconImpl(impl)
 {
@@ -100,19 +102,17 @@ void HbPixmapIconRenderer::doDraw(QPainter *painter,
 
 void HbPixmapIconRenderer::applyIconProperties()
 {
-    if ((iconColor.isValid()) && (iconMode != QIcon::Disabled)) {
+    if (iconMode != QIcon::Normal) {
+        QStyleOption opt(0);
+        opt.palette = QApplication::palette();
+        pixmapData = QApplication::style()->generatedIconPixmap(iconMode, pixmapData, &opt);
+    }
+    if (iconColor.isValid()) {
         if (!pixmapData.isNull()) {
             QPixmap mask = pixmapData.alphaChannel();
             pixmapData.fill(iconColor);
             pixmapData.setAlphaChannel(mask);
         }
-    }
-
-    // Apply the mode
-    if (iconMode != QIcon::Normal) {
-        QStyleOption opt(0);
-        opt.palette = QApplication::palette();
-        pixmapData = QApplication::style()->generatedIconPixmap(iconMode, pixmapData, &opt);
     }
     iconPropertiesApplied = true;
 }

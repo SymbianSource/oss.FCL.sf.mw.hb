@@ -41,14 +41,11 @@
 #include <hbwidget_p.h>
 
 #define HB_INDEXFEEDBACK_TYPE "indexfeedback"
-#define EFFECT_IFAPPEAR "appear"
 #define EFFECT_IFDISAPPEAR "disappear"
 
-QT_BEGIN_NAMESPACE
 class QGraphicsWidget;
-class QGraphicsItem;
+class QGraphicsObject;
 class QRectF;
-QT_END_NAMESPACE
 
 class HbIndexFeedbackPrivate : public HbWidgetPrivate
 {
@@ -72,7 +69,6 @@ public:
     void _q_itemViewDestroyed();
     void _q_hideIndexFeedbackNow();
 
-    void updatePrimitives();
     void createPrimitives();
 
     void calculatePopupRects();
@@ -80,6 +76,8 @@ public:
     qreal textWidth() const;
 
     QString displayText(const QVariant &data) const;
+
+    void cancelEffect(const QString& effect);
 
 public:
     int mIndexFeedbackPressTimeout;
@@ -98,8 +96,8 @@ public:
     QTimer *mDisappearTimer;
 
     QString mPopupContent;
-    QGraphicsItem *mTextItem;
-    QGraphicsItem *mPopupItem;
+    QGraphicsObject *mTextItem;
+    QGraphicsObject *mPopupItem;
 
     HbAbstractItemView *mItemView;
 

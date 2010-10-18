@@ -32,7 +32,7 @@
 #include <QEventLoop>
 #include <e32base.h>
 
-const TInt KHbMessageBufferSize = 255;
+
 //
 //  W A R N I N G
 //  -------------
@@ -55,7 +55,8 @@ public:
     virtual ~HbDeviceDialogPrivate();
 
     void init(HbDeviceDialog::DeviceDialogFlags f);
-    int initialize();
+    int connect();
+    int initialize(bool connect = true);
     bool show(const QString &deviceDialogType, const QVariantMap &parameters);
     bool update(const QVariantMap &parameters);
     bool cancel();
@@ -89,9 +90,14 @@ public:
     int mLastError;
     CActiveSchedulerWait iWait;
     TBool iRequesting;
-
+    TBool iConnecting;
     HbDeviceDialog::DeviceDialogFlags mDeviceDialogFlags;
     QEventLoop* mEventLoop;
+
+    static HbDeviceDialogPrivate *d_ptr(HbDeviceDialog *dialog) {
+        Q_ASSERT(dialog);
+        return dialog->d_func();
+    }
 };
 
 #endif // HBDEVICEDIALOGSYM_P_H

@@ -35,9 +35,9 @@
 // There is only one fade control setter, all other applications are getters.
 // Device dialog is the setter.
 const TUid PropertyCategoryUid = {0x20022FC5};
-const TUint FadeKey = 'fade';
+const TUint FadeKey = 0x66616465; // 'fade';
 
-class HbDeviceFadeControlPrivate  : public CActive
+NONSHARABLE_CLASS(HbDeviceFadeControlPrivate)  : public CActive
 {
 public:
     struct FadeControl {
@@ -190,7 +190,7 @@ void HbDeviceFadeControl::setFadeOff(bool fadeOff)
     d->set(control);
 }
 
-// Return if this fade controll is a setter. There is only one setter
+// Return if this fade control is a setter. There is only one setter
 // (device dialog server)in a device. All other instances are getters.
 bool HbDeviceFadeControl::isSetter()
 {

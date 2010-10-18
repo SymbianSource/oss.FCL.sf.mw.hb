@@ -85,7 +85,7 @@ protected:
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const;
     void resizeEvent ( QGraphicsSceneResizeEvent * event );
     void changeEvent(QEvent *event);
-
+    void  updateGeometry();
     HbTextItem(HbTextItemPrivate &dd, QGraphicsItem *parent );
 
 private:

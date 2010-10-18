@@ -76,11 +76,10 @@ TEMPLATE = subdirs
 }
 
 # do not build host tools on symbian
-!symbian:!contains(HB_NOMAKE_PARTS, hbtools) {
+!symbian:!host_tools:!contains(HB_NOMAKE_PARTS, hbtools) {
     hbtools.depends = hbcore hbwidgets hbutils
     SUBDIRS *= hbcore hbwidgets hbutils
     SUBDIRS += hbtools
 }
 
 include(hbcommon.pri)
-include(symbian_installs/symbian_installs.pri)

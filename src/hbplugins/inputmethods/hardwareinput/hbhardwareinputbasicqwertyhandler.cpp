@@ -63,43 +63,43 @@ HbHardwareInputBasicQwertyHandlerPrivate::~HbHardwareInputBasicQwertyHandlerPriv
 
 bool HbHardwareInputBasicQwertyHandlerPrivate::buttonPressed(const QKeyEvent * event)
 {
-	mButton = event->key();
-	if (!mTimer->isActive()){
-		mTimer->start(HbLongPressTimerTimeout);
-	}
+    mButton = event->key();
+    if (!mTimer->isActive()){
+        mTimer->start(HbLongPressTimerTimeout);
+    }
 
-	if (event->key() != Qt::Key_Delete && event->key() != Qt::Key_Backspace) {
-		return true;
-	} else {
-		return false;
-	}
+    if (event->key() != Qt::Key_Delete && event->key() != Qt::Key_Backspace) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 bool HbHardwareInputBasicQwertyHandlerPrivate::buttonReleased(const QKeyEvent * event)
 {
 // Kept for handling button released specific logic
-	
-	Q_Q(HbHardwareInputBasicQwertyHandler);
-	HbInputFocusObject *focusObject = 0;
+    
+    Q_Q(HbHardwareInputBasicQwertyHandler);
+    HbInputFocusObject *focusObject = 0;
     focusObject = mInputMethod->focusObject();
     if (!focusObject) {
         qDebug("HbHardwareInputBasicQwertyHandler::virtualButtonClicked : no focused editor widget!");
         return false;
     }
-	
-	// If the timer is not active and it is alpha mode, it is a long press
+    
+    // If the timer is not active and it is alpha mode, it is a long press
     // and handled in another function. So just return.
     if (mTimer->isActive()) {
         mTimer->stop();
     }
-	int eventKey = event->key();
+    int eventKey = event->key();
 
-	//Handle long key press here
+    //Handle long key press here
    
     switch(eventKey) {
     case Qt::Key_Alt:
-		//handle function key (fn key) states here using fn & shift handler helper class
-		break;
+        //handle function key (fn key) states here using fn & shift handler helper class
+        break;
     case Qt::Key_Shift: {
         //If the shift key state is EShiftKeyPressed and a second shift key press is received before any other
         //key events, then current text case should not be changed.
@@ -125,42 +125,42 @@ bool HbHardwareInputBasicQwertyHandlerPrivate::buttonReleased(const QKeyEvent * 
     }
         break;
     case Qt::Key_Control:{
-		return true;
-		}
-		
-		break;
-	case Qt::Key_Backspace:
-	case Qt::Key_Delete: {
-		// let's pass the backspace event to the focused editor.
-		//return q->HbInputBasicHandler::filterEvent(event);
-		break;
-	}
-	case Qt::Key_Return:
-	case Qt::Key_Enter:
-	case Qt::Key_Space: {
-		QChar qc(eventKey);
-		if(Qt::Key_Space == eventKey && (event->modifiers() & Qt::ControlModifier)){
-			if (HbInputSettingProxy::instance()->predictiveInputStatus()) {
-					HbInputSettingProxy::instance()->setPredictiveInputStatus(0);
-				} else {
-					HbInputSettingProxy::instance()->setPredictiveInputStatus(1);
-				}
-			break;
-		}
+        return true;
+        }
+        
+        break;
+    case Qt::Key_Backspace:
+    case Qt::Key_Delete: {
+        // let's pass the backspace event to the focused editor.
+        //return q->HbInputBasicHandler::filterEvent(event);
+        break;
+    }
+    case Qt::Key_Return:
+    case Qt::Key_Enter:
+    case Qt::Key_Space: {
+        QChar qc(eventKey);
+        if(Qt::Key_Space == eventKey && (event->modifiers() & Qt::ControlModifier)){
+            if (HbInputSettingProxy::instance()->predictiveInputStatus()) {
+                    HbInputSettingProxy::instance()->setPredictiveInputStatus(0);
+                } else {
+                    HbInputSettingProxy::instance()->setPredictiveInputStatus(1);
+                }
+            break;
+        }
 
-		if (qc == Qt::Key_Enter || qc == Qt::Key_Return) {
-			qc = QChar('\n');  // Editor expects normal line feed.
-		}
-		if(focusObject){
-			q->commitAndUpdate(qc);	
-		}
-		break;
-		}
+        if (qc == Qt::Key_Enter || qc == Qt::Key_Return) {
+            qc = QChar('\n');  // Editor expects normal line feed.
+        }
+        if(focusObject){
+            q->commitAndUpdate(qc); 
+        }
+        break;
+        }
     default: {
-		if (q->HbInputBasicHandler::filterEvent(event)) {
-				return true;
-			}   
-		QList<QInputMethodEvent::Attribute> list;
+        if (q->HbInputBasicHandler::filterEvent(event)) {
+                return true;
+            }   
+        QList<QInputMethodEvent::Attribute> list;
         QString newText;
         int currentTextCase = focusObject->editorInterface().textCase();
         // If function key is pressed, get the functionized 
@@ -194,20 +194,20 @@ bool HbHardwareInputBasicQwertyHandlerPrivate::buttonReleased(const QKeyEvent * 
         mInputMethod->updateState();
         }
         break;
-    }	
-	return true;
+    }   
+    return true;
 }
 
 void HbHardwareInputBasicQwertyHandlerPrivate::_q_timeout()
 {
     mTimer->stop();
-	qDebug("Timer stoped");
-	if (mButton == Qt::Key_Shift ){
+    qDebug("Timer stoped");
+    if (mButton == Qt::Key_Shift ){
         mShiftKeyState = EShiftKeyPressed;
-	} else {		
-		mFnState = HbFnNext;
-	}
-	return;
+    } else {        
+        mFnState = HbFnNext;
+    }
+    return;
 }
 
 HbHardwareInputBasicQwertyHandler::HbHardwareInputBasicQwertyHandler(HbInputAbstractMethod* inputMethod)
@@ -228,13 +228,13 @@ bool HbHardwareInputBasicQwertyHandler::filterEvent(const QKeyEvent* event)
 {
     Q_D(HbHardwareInputBasicQwertyHandler);
 
-	if (!event->isAutoRepeat()) {
-		if ((event->type() == QEvent::KeyRelease) ) {
-			return d->buttonReleased(event);
-		} else {
-			return d->buttonPressed(event);
-		}
-	}
+    if (!event->isAutoRepeat()) {
+        if ((event->type() == QEvent::KeyRelease) ) {
+            return d->buttonReleased(event);
+        } else {
+            return d->buttonPressed(event);
+        }
+    }
     return false;
 }
 
@@ -258,7 +258,7 @@ bool HbHardwareInputBasicQwertyHandler::actionHandler(HbInputModeAction action)
     case HbInputModeActionReset:
         if (d->mTimer->isActive()) {
             d->mTimer->stop();
-			qDebug("Timer stoped");
+            qDebug("Timer stoped");
         }
         break;
     default: {

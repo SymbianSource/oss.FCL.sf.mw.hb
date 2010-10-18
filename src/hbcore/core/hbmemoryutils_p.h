@@ -38,7 +38,7 @@
 */
 #define GET_MEMORY_MANAGER(type) \
     Q_ASSERT(HbMemoryManager::SharedMemory == type || HbMemoryManager::HeapMemory == type); \
-        HbMemoryManager * manager = HbMemoryManager::instance(type);
+    HbMemoryManager * manager = HbMemoryManager::instance(type);
 
 #define RETURN_IF_READONLY(manager) if (!manager->isWritable()) { return; }
 #define RETURN_OBJECT_IF_READONLY(manager, object) if (!manager->isWritable()) { return (object); }
@@ -102,10 +102,10 @@ public:
     * 
     * This function can throw
     */
-    static int allocateMemory(HbMemoryManager::MemoryType type, int size)
+    static qptrdiff allocateMemory(HbMemoryManager::MemoryType type, int size)
     {
         GET_MEMORY_MANAGER(type);
-        int offset =  manager->alloc(size);
+        qptrdiff offset =  manager->alloc(size);
     
         return offset;
     }
@@ -113,7 +113,7 @@ public:
     /*
     * To free memory at given offset in given type of memory.
     */
-    static void freeMemory(HbMemoryManager::MemoryType type, int &offset)
+    static void freeMemory(HbMemoryManager::MemoryType type, qptrdiff &offset)
     {
         GET_MEMORY_MANAGER(type)
         manager->free(offset);
@@ -124,7 +124,7 @@ public:
     * To get pointer to an object of type T at given offset in memory of given type.
     */
     template <typename T>
-    static T * getAddress(HbMemoryManager::MemoryType type, int offset)
+    static T * getAddress(HbMemoryManager::MemoryType type, qptrdiff offset)
     {
         // Do not change the condition to (<0), valid address can be negative.
         if (offset == -1) {

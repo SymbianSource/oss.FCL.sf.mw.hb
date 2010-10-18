@@ -24,9 +24,10 @@
 ****************************************************************************/
 #include "hbshrinkingvkbhost.h"
 #include "hbabstractvkbhost_p.h"
+#include "hbvkbhostcontainerwidget_p.h"
 
-#include <hbinputvirtualkeyboard.h>
-#include <hbinputmethod.h>
+#include "hbinputvirtualkeyboard.h"
+#include "hbinputmethod.h"
 
 #include "hbwidget.h"
 #include "hbmainwindow.h"
@@ -34,6 +35,7 @@
 
 /*!
 \proto
+@hbcore
 \class HbShrinkingVkbHost
 \brief A virtual keyboard host that doesn't move the active mainwindow view but shrinks it.
 
@@ -41,11 +43,15 @@ The default virtual keyboard host moves the editor container widget in order to 
 cursor line visible. In some situations that doesn't work and the container should be shrunk
 and relayouted instead.
 
-This virtual keyboard host does that. It works with editors that live inside in main window's
+The shrinking virtual keyboard host does that. It works with editors that live inside in main window's
 active view and shrinks the view instead of moving it around when the virtual keyboard comes up.
-*/
 
-/// @cond
+See \ref vkbHandling "virtual keyboard handling guide" for more information
+
+\sa HbVkbHost
+\sa HbAbstractVkbHost
+\sa HbStaticVkbHost
+*/
 
 class HbShrinkingVkbHostPrivate : public HbAbstractVkbHostPrivate
 {
@@ -53,17 +59,20 @@ class HbShrinkingVkbHostPrivate : public HbAbstractVkbHostPrivate
 
 public:
     HbShrinkingVkbHostPrivate(HbAbstractVkbHost *myHost, HbWidget *widget);
+    ~HbShrinkingVkbHostPrivate();
     bool prepareContainerAnimation(HbVkbHost::HbVkbStatus status);
     void closeKeypad();
     void closeKeypadWithoutAnimation();
     void openKeypadWithoutAnimation();
-    void minimizeKeypadWithoutAnimation();
+    void cancelAnimationAndHideVkbWidget();
 
     void shrinkView();
     void resetViewSize();
 
 public:
     QSizeF mContainerOriginalSize;
+    QSizeF mKeyboardSize;
+    QSizeF mActiveViewSize;
 };
 
 HbShrinkingVkbHostPrivate::HbShrinkingVkbHostPrivate(HbAbstractVkbHost *myHost, HbWidget *widget)
@@ -71,17 +80,31 @@ HbShrinkingVkbHostPrivate::HbShrinkingVkbHostPrivate(HbAbstractVkbHost *myHost, 
 {
 }
 
+HbShrinkingVkbHostPrivate::~HbShrinkingVkbHostPrivate()
+{
+    resetViewSize();
+}
+
 bool HbShrinkingVkbHostPrivate::prepareContainerAnimation(HbVkbHost::HbVkbStatus status)
 {
-    Q_UNUSED(status);
+    if (status == HbVkbHost::HbVkbStatusOpened) {
+        if (mContainerWidget &&
+            (mKeypadStatus == HbVkbHost::HbVkbStatusClosed)) {
+            mContainerMovementVector = mContainerWidget->fixedContainerMovement();
+            return true;
+        }
+    } else if (status == HbVkbHost::HbVkbStatusClosed) {
+        if (mContainerMovementStartingPoint != mOriginalContainerPosition) {
+           mContainerMovementVector = mOriginalContainerPosition - mContainerMovementStartingPoint;
+           return true;
+        }
+    }
 
-    // This host doesn't move the container, only the keypad.
     return false;
 }
 
 void HbShrinkingVkbHostPrivate::closeKeypad()
 {
-    resetViewSize();
     HbAbstractVkbHostPrivate::closeKeypad();
 }
 
@@ -97,10 +120,10 @@ void HbShrinkingVkbHostPrivate::openKeypadWithoutAnimation()
     shrinkView();
 }
 
-void HbShrinkingVkbHostPrivate::minimizeKeypadWithoutAnimation()
+void HbShrinkingVkbHostPrivate::cancelAnimationAndHideVkbWidget()
 {
-    HbAbstractVkbHostPrivate::minimizeKeypadWithoutAnimation();
-    shrinkView();
+    resetViewSize();
+    HbAbstractVkbHostPrivate::cancelAnimationAndHideVkbWidget();
 }
 
 void HbShrinkingVkbHostPrivate::resetViewSize()
@@ -121,11 +144,15 @@ void HbShrinkingVkbHostPrivate::shrinkView()
         if (!mContainerOriginalSize.isValid()) {
             mContainerOriginalSize = HbMainWindowPrivate::d_ptr(mainWin)->viewPortSize();
         }
-        HbMainWindowPrivate::d_ptr(mainWin)->setViewportSize(q->applicationArea().size());
+        if (mTimeLine.state() != QTimeLine::Running) {
+            QSizeF newViewportSize = q->applicationArea().size();
+            newViewportSize.setHeight(newViewportSize.height() - mContainerWidget->fixedContainerMovement().y());
+            HbMainWindowPrivate::d_ptr(mainWin)->setViewportSize(newViewportSize);
+        } else {
+            HbMainWindowPrivate::d_ptr(mainWin)->setViewportSize(mActiveViewSize);
+        }
     }
 }
-
-/// @endcond
 
 /*!
 Constructs the object.
@@ -145,9 +172,34 @@ HbShrinkingVkbHost::~HbShrinkingVkbHost()
 /*!
 \reimp
 */
-int HbShrinkingVkbHost::priority() const
+void HbShrinkingVkbHost::animValueChanged(qreal value)
 {
-    return 0;
+    Q_D(HbShrinkingVkbHost);
+
+    HbAbstractVkbHost::animValueChanged(value);
+
+    QSizeF vpSize = d->screenSize();
+    QRectF viewport = QRectF(QPointF(0.0, 0.0), QPointF(vpSize.width(), vpSize.height()));
+
+    if (!d->mKeyboardSize.isValid()) {
+        d->mKeyboardSize = confirmedKeyboardSize();
+    }
+    
+    // Calculate available space above the keyboard
+    if (d->mKeypadStatus == HbVkbHost::HbVkbStatusOpened) {
+        viewport.setHeight(viewport.height() - d->mKeyboardSize.height() * value);
+    } else {
+        viewport.setHeight(viewport.height() - d->mKeyboardSize.height() * (1 - value));
+    }
+
+    if (d->mContainerWidget) {
+        viewport.setHeight(viewport.height() - d->mContainerWidget->fixedContainerMovement().y());
+    }
+
+    d->mActiveViewSize = viewport.size();
+
+    d->shrinkView();
+    d->ensureVisibilityInsideScrollArea();
 }
 
 /*!
@@ -157,14 +209,16 @@ void HbShrinkingVkbHost::animationFinished()
 {
     Q_D(HbShrinkingVkbHost);
 
-
     HbAbstractVkbHost::animationFinished();
 
-    if (d->mKeypadStatus == HbVkbHost::HbVkbStatusOpened ||
-        d->mKeypadStatus == HbVkbHost::HbVkbStatusMinimized) {
+    if (d->mKeypadStatus == HbVkbHost::HbVkbStatusOpened) {
         d->shrinkView();
+    } else {
+        d->resetViewSize();
     }
+
+    d->mKeyboardSize = QSizeF();
+    d->ensureVisibilityInsideScrollArea();
 }
 
 // End of file
-

@@ -25,6 +25,8 @@
 
 #include "hbxmlloaderbasesyntax_p.h"
 
+#include "hbexpressionparser_p.h"
+
 #include <QMetaEnum>
 #include <QDebug>
 
@@ -463,7 +465,7 @@ bool HbXmlLoaderBaseSyntax::readTargetSection()
 
 bool HbXmlLoaderBaseSyntax::readContainerStartItem()
 {
-	qWarning() << "Internal error, wrong container type, line " << mReader.lineNumber();
+    qWarning() << "Internal error, wrong container type, line " << mReader.lineNumber();
     return false;
 }
 
@@ -479,7 +481,7 @@ bool HbXmlLoaderBaseSyntax::readContainerEndItem()
 
 bool HbXmlLoaderBaseSyntax::readLayoutStartItem()
 {
-	qWarning() << "Internal error, wrong layout type, line " << mReader.lineNumber();
+    qWarning() << "Internal error, wrong layout type, line " << mReader.lineNumber();
     return false;
 }
 
@@ -552,12 +554,12 @@ bool HbXmlLoaderBaseSyntax::readAnchorLayoutStartItem(bool idBased)
         sizepolicyVal = QSizePolicy::Preferred;
         sizepolicyValP = &sizepolicyVal;
         anchorId = spacer;
-        if (prefVal.mType != HbXmlLengthValue::None) {
+        if (prefVal.mValues.count()) {
             // previously set by "spacing"
             minVal = prefVal;
         } else {
-            prefVal.mType = HbXmlLengthValue::PlainNumber;
-            prefVal.mValue = 0;
+            prefVal.mValues.append(HbExpressionParser::LengthInPixels);
+            prefVal.mValues.append(HbExpressionParser::toFixed(0.0));
         }
         if ( !directionValP ) {
             // direction not yet set, use heuristics
@@ -716,13 +718,13 @@ bool HbXmlLoaderBaseSyntax::processDocument()
 
 bool HbXmlLoaderBaseSyntax::processLayout()
 {
-	qWarning() << "Unknown layout type, line " << mReader.lineNumber();
+    qWarning() << "Unknown layout type, line " << mReader.lineNumber();
     return false;
 }
 
 bool HbXmlLoaderBaseSyntax::processContainer()
 {
-	qWarning() << "Unknown container type, line " << mReader.lineNumber();
+    qWarning() << "Unknown container type, line " << mReader.lineNumber();
     return false;
 }
 
@@ -774,9 +776,10 @@ HbXml::ElementType
                 ( stringName == lexemValue(TYPE_ALIGNMENT) )) {
         return HbXml::PROPERTY;
     } else if ( ( stringName == lexemValue(TYPE_CONTENTSMARGINS) ) ||
-                 ( stringName == lexemValue(TYPE_SIZEPOLICY) ) ||
+                ( stringName == lexemValue(TYPE_SIZEPOLICY) ) ||
                 ( stringName == lexemValue(TYPE_SIZEHINT) ) ||
-                ( stringName == lexemValue(TYPE_TOOLTIP) ) ) {
+                ( stringName == lexemValue(TYPE_TOOLTIP) ) ||
+                ( stringName == lexemValue(TYPE_BACKGROUND ) ) ) {
         return HbXml::VARIABLE;
     } else if ( stringName == lexemValue(TYPE_ZVALUE) ) {
         qWarning() << "zvalue variable in docml is deprecated. Use z property instead.";

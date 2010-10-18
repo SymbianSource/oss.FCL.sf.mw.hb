@@ -6,13 +6,13 @@ HbStatusBar
 
 HbStatusBar::timetext
 {
-    font-variant: secondary;
+    font-variant: primary;
     text-align: center;
     size-policy-horizontal: ignored;
     text-line-count-min: 1;
     text-line-count-max: 1;
     text-wrap-mode: no-wrap;
-    fixed-height: 2.5un;
+    fixed-height: 2.7un;
 }
 
 HbStatusBar::signal

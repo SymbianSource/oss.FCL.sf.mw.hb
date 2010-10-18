@@ -1,10 +1,6 @@
-HbSelectionDialogContentWidget[!multiSelection]{
+HbSelectionDialogContentWidget{
 	layout:default;
 }
 
-HbSelectionDialogContentWidget[multiSelection]{
-	layout:list_with_markall;
-	
-}
 
  

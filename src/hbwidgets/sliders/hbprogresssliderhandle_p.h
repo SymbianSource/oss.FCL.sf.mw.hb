@@ -29,20 +29,22 @@
 #include "hbnamespace_p.h"
 #include <hbwidget.h>
 #include <hbprogressslider.h>
+#include <QTimeLine>
 
 class HbStyleOptionProgressSliderHandle;
+
+static const int TOUCHAREA_ZVALUE = 1000;
 
 class HbHandleParent
 {
 public:
-    virtual HbStyle* style() const = 0;
+
     virtual void emitSliderPressed() = 0;
     virtual void emitSliderMoved(int vlaue) = 0;
     virtual void emitSliderReleased() = 0;
     virtual QRectF boundingRect() const = 0;
     virtual QGraphicsItem* parentGraphicsItem() const = 0;
     virtual HbWidget* parentGraphicsWidget() const = 0;
-
     virtual ~HbHandleParent(){};
     virtual int progressValue()const = 0;
     virtual int maximum() const = 0;
@@ -77,18 +79,20 @@ public:
     enum { Type = HbPrivate::ItemType_ProgressSliderHandle };
     int type() const { return Type; }
     void setHandleIcon(const HbIcon &icon);
-    void handleTrackRelease(QGraphicsSceneMouseEvent * event);
-    void handleTrackPress(QGraphicsSceneMouseEvent * event);
+    void handleTrackRelease(QGestureEvent *event);
+    void handleTrackPress(QGestureEvent *event);
     QVariant processItemChange(const QVariant &value);
     void setHandlePosForValue(int progressValue);
     QPointF normalizedPos(const QPointF&  pos,bool inverted) const;
     bool isHandlePressed() const;
     bool isHandleMoving() const;
-
-    QGraphicsItem* primitive(HbStyle::Primitive primitive) const;
+    void setGeometry(const QRectF & rect);
+    QGraphicsItem *primitive(const QString &itemName) const;
+    void setHandleNormalState();
 
 public slots:
     void updatePrimitives();
+    void frameChanged(int val);
 
 protected:
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event);
@@ -96,6 +100,7 @@ protected:
     virtual void mouseMoveEvent ( QGraphicsSceneMouseEvent * event );
     virtual void gestureEvent(QGestureEvent *event);
     void initStyleOption( HbStyleOptionProgressSliderHandle *option ) const;
+    void initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive);
 
 private:
     StateFlags mFlags;
@@ -103,9 +108,18 @@ private:
     QPointF mMousePressPos;
     QPointF mItemPosAtPress;
     QPointF mItemCurPos;
-    QGraphicsItem *mHandleIconItem; 
-    QGraphicsItem *mTouchItem;
+    QPointF oldCord;
+
+
+    QGraphicsObject *mHandleIconItem; 
+    QGraphicsObject *mTouchItem;
+
     HbIcon mHandleIcon;
+    bool mPressedState;
+    QTimeLine  *mTimeline;
+    QPointF mStartPoint;
+    qreal mIncrValue;
+    bool mOutOfBound;
 };
 
 #endif  //HBPROGRESSSLIDERHANDLE_P_H

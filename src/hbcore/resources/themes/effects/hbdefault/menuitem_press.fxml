@@ -1,23 +1,23 @@
-<layers>
-<visual>
-
-<param name="opacity" type="anim">
-<duration>0.25</duration>
-<style>linear</style>
-<keyframe at="0.0">0.2</keyframe>
-<keyframe at="1.0">1.0</keyframe>
-</param>
-<param name="scale_x" type="anim">
-<duration>0.25</duration>
-<style>linear</style>
-<keyframe at="0.0">1</keyframe>
-<keyframe at="1.0">1</keyframe>
-</param>
-<param name="scale_y" type="anim">
-<keyframe at="0.0">1.3</keyframe>
-<keyframe at="1.0">1</keyframe>
-</param>
-
-</visual>
-</layers>
-
+<layers>
+<visual>
+
+<param name="opacity" type="anim">
+<duration>0.25</duration>
+<style>linear</style>
+<keyframe at="0.0">0.2</keyframe>
+<keyframe at="1.0">1.0</keyframe>
+</param>
+<param name="scale_x" type="anim">
+<duration>0.25</duration>
+<style>linear</style>
+<keyframe at="0.0">1</keyframe>
+<keyframe at="1.0">1</keyframe>
+</param>
+<param name="scale_y" type="anim">
+<keyframe at="0.0">1.3</keyframe>
+<keyframe at="1.0">1</keyframe>
+</param>
+
+</visual>
+</layers>
+

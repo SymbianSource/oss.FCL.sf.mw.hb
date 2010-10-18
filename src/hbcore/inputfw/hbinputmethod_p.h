@@ -25,15 +25,14 @@
 #ifndef HB_INPUT_METHOD_P_H
 #define HB_INPUT_METHOD_P_H
 
-#include <QString>
 #include <QPointer>
 
 #include <hbinputmodeproperties.h>
 #include <hbinputstate.h>
 #include <hbinputlanguage.h>
+
 #include "hbinputcontextproxy_p.h"
 
-class HbInputStateMachine;
 class HbInputFilter;
 class HbInputMethod;
 class HbInputMainWindow;
@@ -81,8 +80,7 @@ public:
     void editorRootState(HbInputState &result) const;
     void constructLatinState(HbInputState &result) const;
     HbTextCase initialTextCase(HbInputModeType inputMode) const;
-    HbInputModeType initialInputMode(const HbInputLanguage &language) const;
-    HbInputModeType defaultInputMode(const HbInputLanguage &inputLanguage) const;
+    HbInputModeType initialInputMode(const HbInputLanguage &language) const;    
     void setUpFocusedObjectAsDigitsOnlyEditor();
     void setUpFocusedObjectAsFormattedNumberEditor();
     void setUpFocusedObjectAsPhoneNumberEditor();
@@ -93,6 +91,12 @@ public:
     void showMainWindow();
     void hideMainWindow();
     bool ignoreFrameworkFocusRelease(QObject *object) const;
+    HbInputFocusObject *createAndSetupFocusObject(QObject *editorWidget);
+    void switchOwner(HbInputFocusObject *fo, HbInputMethod *newOwner);
+
+    void _q_refresh();
+    void _q_startOrientationSequence();
+    void _q_endOrientationSequence();
 
 public:
     HbInputMethod *q_ptr;
@@ -111,6 +115,8 @@ private: // For unit test.
         return inputMethod->d_func();
     }
     friend class TestHbInputMethodPrivate;
+    friend class TestHbAbstractVkbHostPrivate;
+    friend class HbInputContextProxy;
 };
 
 #endif // HB_INPUT_METHOD_P_H

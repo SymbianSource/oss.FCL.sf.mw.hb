@@ -19,7 +19,7 @@
 <polygon fill="#FFFFFF" fill-opacity="0.4" points="9.737,19.059 9.737,18.059 2,23.029 2.778,23.529 " stroke-opacity="0.4"/>
 <polygon fill="#FFFFFF" fill-opacity="0.4" points="28,6.971 20.263,2 20.263,3 27.222,7.471 " stroke-opacity="0.4"/>
 <rect fill="#FFFFFF" fill-opacity="0.4" height="1" stroke-opacity="0.4" width="15.263" x="5" y="5.313"/>
-<g fill-opacity="0.5" stroke-opacity="0.5">
+<g opacity="0.5">
 <rect fill="none" height="30" width="30"/>
 </g>
 </g>

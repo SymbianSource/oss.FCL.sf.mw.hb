@@ -187,6 +187,14 @@ void HbIconDataCache::clear()
         delete   iter.value();
     }
     cache->clear();
+    
+    // close the sgimage driver after all the 
+    // sgimage items and its memory were deleted.
+#ifdef HB_SGIMAGE_ICON
+    if (!goodMemory && (currentGpuCacheSize <= 0) ) {
+        HbSgImageRenderer::global()->terminate();
+    }
+#endif
 
     //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
@@ -215,12 +223,11 @@ HbIconCacheItem *HbIconDataCache::getCacheItem(const HbIconKey &key,
         bool isMultiIconPiece)
 {
     HbIconCacheItem *item = 0;
-
     if (!cache->contains(key)) {
         return 0;
     }
     // Get the cache item associated with the key
-    item = (*cache)[(key)];
+    item = (*cache)[key];
 
 //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
@@ -252,10 +259,15 @@ HbIconCacheItem *HbIconDataCache::getCacheItem(const HbIconKey &key,
     if ((item->rasterIconData.type == INVALID_FORMAT) &&
             (goodMemory && !isMultiIconPiece)) {
         if (item->vectorIconData.type == NVG) {
+            int gpuItemCost = HbThemeServerUtils::computeGpuCost(key, NVG, false);
+            if (!isItemCachableInGpu(gpuItemCost, NVG)) {
+                return 0;
+            }
             HbIconCacheItemCreator::createCacheItem(*item, key, currentRenderingMode);
-            if (item->rasterIconData.type != INVALID_FORMAT) {
+            if (item->rasterIconData.type == SGIMAGE) {
                 currentGpuCacheSize += item->rasterIconDataCost;
             }
+            
         }
 //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
@@ -290,9 +302,10 @@ HbIconCacheItem *HbIconDataCache::getCacheItem(const HbIconKey &key,
     if ((item->vectorIconData.type == INVALID_FORMAT) &&
             (item->rasterIconData.type == SGIMAGE)) {
 
-        if ((item->vectorIconDataCost < (maxCpuCacheLimit - currentCpuCacheSize))) {
+        if ((item->vectorIconDataCost > 0 ) && 
+            (item->vectorIconDataCost < (maxCpuCacheLimit - currentCpuCacheSize))) {
             HbIconCacheItemCreator::createCacheItem(*item, key, currentRenderingMode);
-            if (item->vectorIconData.type != INVALID_FORMAT) {
+            if (item->vectorIconData.type == NVG) {
                 currentCpuCacheSize += item->vectorIconDataCost;
             }
         }
@@ -306,7 +319,14 @@ HbIconCacheItem *HbIconDataCache::getCacheItem(const HbIconKey &key,
              << "Cache hit in Server-Cache for" << key.filename;
     qDebug() << "HbIconDataCache::getCacheItem: Server RefCount now = " << item->refCount;
 #endif
-
+    if( EHWRendering == key.renderMode && 
+        ESWRendering == currentRenderingMode && 
+        INVALID_FORMAT == item->rasterIconData.type &&
+        NVG == item->vectorIconData.type ) {
+        HbIconCacheItemCreator::createCacheItem(*item, key, currentRenderingMode);
+        //deleting the vectordata type here.
+        releaseVectorItem(item);
+     }
     return item;
 }
 
@@ -329,49 +349,49 @@ bool HbIconDataCache::insert(const HbIconKey &key, HbIconCacheItem *item)
         return false;
     }
 
-    // Check if Item can be accomdated in GPU cache
-    bool gpuCaching = isItemCachableInGpu(item);
-    // Check if Item can be accomdated in CPU cache
-    bool cpuCaching = isItemCachableInCpu(item);
-
-    // Item cannot be inserted either into GPU cache memory or CPU cache memory
-    if ((!gpuCaching) && (!cpuCaching)) {
+    //Check if item can be inserted 
+    bool caching = isItemCacheable(item);
+    if (!caching) {
         return false;
     }
+    
     // Item can be accomdated in GPU cache
-    if (gpuCaching) {
+    if (item->rasterIconData.type == SGIMAGE) {
         // Increment the GPU cache size
-        if( item->rasterIconDataCost <=  maxGpuCacheLimit ) {
+        if ( item->rasterIconDataCost <=  (maxGpuCacheLimit - currentGpuCacheSize) ) {
             currentGpuCacheSize += item->rasterIconDataCost;
-        } 
+        } else {
+            createGpuCacheSpace(item->rasterIconDataCost);
+            currentGpuCacheSize += item->rasterIconDataCost;
+        }
     }
 
     // Item can be accomdated in CPU cache
-    if (cpuCaching) {
-        if (item->rasterIconData.type == OTHER_SUPPORTED_FORMATS) {
-            if (item->rasterIconDataCost <= (maxCpuCacheLimit - currentCpuCacheSize)) {
-                currentCpuCacheSize += item->rasterIconDataCost;
-            } else {
-                createCpuCacheSpace(item->rasterIconDataCost);
-                currentCpuCacheSize += item->rasterIconDataCost;
-            }
-        }
-        if (item->vectorIconData.type != INVALID_FORMAT) {
-            // Increment the CPU cache size
-            if (item->vectorIconDataCost <= (maxCpuCacheLimit - currentCpuCacheSize)) {
-                currentCpuCacheSize += item->vectorIconDataCost;
-            } else {
-                // New item's icon data cost is more than available free CPU cahe size
-                // Check if some items, whose ref count is 0,
-                // can be removed to make way for new item
-                createCpuCacheSpace(item->vectorIconDataCost);
-                currentCpuCacheSize += item->vectorIconDataCost;
-            }
-        }
-        if (currentCpuCacheSize > maxCpuCacheLimit) {
-            currentCpuCacheSize = maxCpuCacheLimit;
+    if (item->rasterIconData.type == OTHER_SUPPORTED_FORMATS) {
+        if (item->rasterIconDataCost <= (maxCpuCacheLimit - currentCpuCacheSize)) {
+            currentCpuCacheSize += item->rasterIconDataCost;
+        } else {
+            createCpuCacheSpace(item->rasterIconDataCost);
+            currentCpuCacheSize += item->rasterIconDataCost;
         }
     }
+    if (item->vectorIconData.type != INVALID_FORMAT  ||
+        item->blobIconData.type != INVALID_FORMAT) {
+        // Increment the CPU cache size
+        if (item->vectorIconDataCost <= (maxCpuCacheLimit - currentCpuCacheSize)) {
+            currentCpuCacheSize += item->vectorIconDataCost;
+        } else {
+            // New item's icon data cost is more than available free CPU cahe size
+            // Check if some items, whose ref count is 0,
+            // can be removed to make way for new item
+            createCpuCacheSpace(item->vectorIconDataCost);
+            currentCpuCacheSize += item->vectorIconDataCost;
+        }
+    }
+    if (currentCpuCacheSize > maxCpuCacheLimit) {
+        currentCpuCacheSize = maxCpuCacheLimit;
+    }
+    
     QHash<HbIconKey, HbIconCacheItem*>::iterator iter =
             cache->insert(key, const_cast<HbIconCacheItem*>(item));
     if (iter == cache->end()) {
@@ -384,11 +404,7 @@ bool HbIconDataCache::insert(const HbIconKey &key, HbIconCacheItem *item)
 #ifdef HB_ICON_CACHE_DEBUG
     cacheMiss++;
     addedItemRefCount = item->refCount;
-    if (gpuCaching) {
-        addedItemMem = item->rasterIconDataCost;
-    } else if (cpuCaching) {
-        addedItemMem = item->vectorIconDataCost;
-    }
+    
     qDebug() << "HbIconDataCache::insert: " << "Item " << key.filename
              << " inserted in Server-Cache";
     qDebug() << "HbIconDataCache::insert: Server RefCount now = " << item->refCount;
@@ -423,12 +439,23 @@ bool HbIconDataCache::remove(const HbIconKey &key, bool keepInCache)
 
     if (item->refCount == 0) {
         if (item->rasterIconData.type == SGIMAGE) {
-            if (keepInCache) {
+            if (keepInCache && goodMemory) {
                 gpuLruList.insertBack(item);
                 updateGpuLruSize(item->rasterIconDataCost);
             } else {
-                releaseRasterItem(item);
-                removeFromCache(key, item);
+#ifdef HB_SGIMAGE_ICON                                     
+                HbSgImageRenderer::removeSgImageFromHash(
+                        item->rasterIconData.sgImageData.id);
+                item->rasterIconData.type = INVALID_FORMAT;
+#endif
+                removeFromCache(key, item);   
+                // close the sgimage driver after all the 
+                // sgimage items and its memory were deleted.
+#ifdef HB_SGIMAGE_ICON
+                if (!goodMemory && (currentGpuCacheSize <= 0) ) {
+                    HbSgImageRenderer::global()->terminate();
+                }
+#endif  
                 return true;
             }
         }
@@ -464,7 +491,8 @@ bool HbIconDataCache::remove(const HbIconKey &key, bool keepInCache)
         }
 #endif
 
-        if ((item->vectorIconData.type != INVALID_FORMAT) &&  item->refCount == 0) {
+        if (item->vectorIconData.type != INVALID_FORMAT 
+            && item->blobIconData.type != INVALID_FORMAT) {
 
             //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
@@ -591,17 +619,26 @@ HbIconCacheItem *HbIconDataCache::value(const HbIconKey &key) const
     \a item is the new item to be cached
   BLOB is always cached in cpu so this function always returns false for such items.
  */
-bool HbIconDataCache::isItemCachableInGpu(const HbIconCacheItem *item) const
+bool HbIconDataCache::isItemCachableInGpu(int itemCost, HbIconFormatType type) const
 {
-    if (maxGpuCacheLimit <= 0 || item->rasterIconDataCost <= 0
-        || item->blobIconData.type != INVALID_FORMAT || item->rasterIconData.type != SGIMAGE) {
+    if (maxGpuCacheLimit <= 0) {
         return false;
     }
-    // Item's GPU Icon's cost is greater than the max GPU Limit
-    if (item->rasterIconDataCost  > maxGpuCacheLimit) {
+    
+    // SgImage is only created from NVG data
+    if (type != NVG) {
         return false;
     }
-    return true;
+    if (itemCost <= 0 || itemCost > maxGpuCacheLimit) {
+        return false;
+    }
+    if (itemCost <= (maxGpuCacheLimit - currentGpuCacheSize)) {
+        return true;
+    } else {
+        return (itemCost <= (maxGpuCacheLimit - currentGpuCacheSize)
+                                                + gpuLruListSize);
+    }
+   
 }
 
 /*!
@@ -610,35 +647,63 @@ bool HbIconDataCache::isItemCachableInGpu(const HbIconCacheItem *item) const
     \a item is the new item to be cached
   BLOB is always cached in cpu, never in gpu.
  */
-bool HbIconDataCache::isItemCachableInCpu(const HbIconCacheItem *item) const
+bool HbIconDataCache::isItemCachableInCpu(int itemCost, HbIconFormatType type) const
 {
     if (maxCpuCacheLimit <= 0) {
         return false;
     }
-    if (item->rasterIconData.type == OTHER_SUPPORTED_FORMATS) {
-        if (item->rasterIconDataCost <= 0 || item->rasterIconDataCost > maxCpuCacheLimit) {
-            return false;
+    if (!(type == SVG || type == NVG || type == BLOB)) {
+        return false;
+    }
+    
+    if (itemCost <= 0 || itemCost > maxCpuCacheLimit) {
+        return false;
+    }
+    if (itemCost <= (maxCpuCacheLimit - currentCpuCacheSize)) {
+        return true;
+    } else {
+        return (itemCost <= (maxCpuCacheLimit - currentCpuCacheSize)
+                                                 + cpuLruListSize);
+    }
+      
+}
+
+bool HbIconDataCache::isItemCacheable(const HbIconCacheItem * item )
+{
+    // For a Hardware icon, check if SGIMAGE can be accomdated in GPU 
+    if (item->rasterIconData.type == SGIMAGE) {
+        if (item->rasterIconDataCost <= (maxGpuCacheLimit - currentGpuCacheSize)) {
+            return true;
+        } else {
+            return (item->rasterIconDataCost <= ((maxGpuCacheLimit - currentGpuCacheSize)
+                                                + gpuLruListSize));
         }
+    }
+    
+    // For a Software Icon, check if pixmap can be accomdated in CPU
+    if (item->rasterIconData.type == OTHER_SUPPORTED_FORMATS) {
         if (item->rasterIconDataCost <= (maxCpuCacheLimit - currentCpuCacheSize)) {
             return true;
         } else {
-            return (item->rasterIconDataCost <= (maxCpuCacheLimit - currentCpuCacheSize)
-                                                 + cpuLruListSize);
-        }
+            return (item->rasterIconDataCost <= ((maxCpuCacheLimit - currentCpuCacheSize)
+                                                    + cpuLruListSize));
+        }    
     }
-    if (item->vectorIconData.type != INVALID_FORMAT) {
-        if (item->vectorIconDataCost <= 0 || item->vectorIconDataCost > maxCpuCacheLimit) {
-            return false;
-        }
+    
+    // For a BLOB, check if BLOB data can be accomdated in CPU 
+    // For a individual piece of Multi piece icon, check if it can be accomdated in CPU 
+    if (item->blobIconData.type == BLOB || item->vectorIconData.type == NVG) {
         if (item->vectorIconDataCost <= (maxCpuCacheLimit - currentCpuCacheSize)) {
             return true;
         } else {
-            return (item->vectorIconDataCost <= (maxCpuCacheLimit - currentCpuCacheSize)
-                                                 + cpuLruListSize);
+            return (item->vectorIconDataCost <= ((maxCpuCacheLimit - currentCpuCacheSize)
+                                                        + cpuLruListSize));
         }
     }
+    
     return false;
 }
+
 
 /*!
     \fn HbIconDataCache::createGpuCacheSpace()
@@ -699,6 +764,13 @@ void HbIconDataCache::createGpuCacheSpace(int itemCost)
                 delete itemToRemove;
             }
         }
+        // close the sgimage driver after all the 
+        // sgimage items and its memory were deleted.
+#ifdef HB_SGIMAGE_ICON
+        if (!goodMemory && (currentGpuCacheSize <= 0) ) {
+            HbSgImageRenderer::global()->terminate();
+        }
+#endif     
     }
 }
 
@@ -787,15 +859,16 @@ void HbIconDataCache::memoryGood()
 void HbIconDataCache::freeGpuRam(int bytes, bool useSwRendering)
 {
     goodMemory = false;
-    if (bytes  <= gpuLruListSize) {
+    if ((bytes  <= gpuLruListSize) && !useSwRendering) {
         createGpuCacheSpace(bytes);
     } else {
         createGpuCacheSpace(gpuLruListSize);
     }
-    
-    if (useSwRendering) {
-    // Iterate through the cache and remove any active SgImages, before the context
-    // is destroyed.
+}
+
+int HbIconDataCache::cachedSgImagesCount() const 
+{
+    int sgImagesCount = 0;
     QHash<HbIconKey, HbIconCacheItem*>::const_iterator itEnd(cache->constEnd());
     for (QHash<HbIconKey,
             HbIconCacheItem *>::const_iterator iter = cache->constBegin();
@@ -803,18 +876,48 @@ void HbIconDataCache::freeGpuRam(int bytes, bool useSwRendering)
             ++iter) {
         HbIconCacheItem *temp = iter.value();
         if( temp->rasterIconData.type == SGIMAGE ){
-#ifdef HB_SGIMAGE_ICON
-            HbSgImageRenderer::removeSgImageFromHash(temp->rasterIconData.sgImageData.id);
-#endif
-            temp->rasterIconData.type = INVALID_FORMAT;
-            currentGpuCacheSize -= temp->rasterIconDataCost;
+            sgImagesCount++;
         }
     }
-    gpuLruList.removeAll();
-    gpuLruListSize = 0;
-    }    	    
+    return sgImagesCount;
 }
 
+int HbIconDataCache::totalSgImagesCost() const
+{
+    int sgImagesCost = 0;
+    QHash<HbIconKey, HbIconCacheItem*>::const_iterator itEnd(cache->constEnd());
+    for (QHash<HbIconKey,
+            HbIconCacheItem *>::const_iterator iter = cache->constBegin();
+            iter != itEnd;
+            ++iter) {
+        HbIconCacheItem *temp = iter.value();
+        if( temp->rasterIconData.type == SGIMAGE ){
+            sgImagesCost += temp->rasterIconDataCost;
+        }
+    }
+    return sgImagesCost;
+}
+
+int HbIconDataCache::cachedPixmapCount() const
+{
+    int pixmapCount = 0;
+    QHash<HbIconKey, HbIconCacheItem*>::const_iterator itEnd(cache->constEnd());
+    for (QHash<HbIconKey,
+            HbIconCacheItem *>::const_iterator iter = cache->constBegin();
+            iter != itEnd;
+            ++iter) {
+        HbIconCacheItem *temp = iter.value();
+        if( temp->rasterIconData.type == OTHER_SUPPORTED_FORMATS ){
+            pixmapCount++;
+        }
+    }
+    return pixmapCount;
+}
+
+void HbIconDataCache::freeGpuRam()
+{
+    createGpuCacheSpace(gpuLruListSize);
+}
 /*!
     \fn HbIconDataCache::freeUnusedGpuResources()
     This function internally calls createGpuCacheSpace() which will free up
@@ -892,6 +995,7 @@ void HbIconDataCache::releaseVectorItem(HbIconCacheItem *releaseItem)
         manager->free(releaseItem->vectorIconData.nvgData.offset);
     } else if (releaseItem->blobIconData.type == BLOB) {
         manager->free(releaseItem->blobIconData.blobData.offset);
+        releaseItem->blobIconData.type = INVALID_FORMAT;
     }
     releaseItem->vectorIconData.type = INVALID_FORMAT;
     releaseItem->cpuLink.setNext(0);

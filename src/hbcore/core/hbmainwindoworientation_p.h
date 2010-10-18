@@ -58,7 +58,7 @@ private slots:
 private:
     HbMainWindowOrientation(QObject *parent = 0);
     void sensorOrientationChanged(Qt::Orientation newOrientation);
-    void sensorStatusChanged(bool status, bool notify);
+    void sensorStatusChanged(bool status, bool resetOrientation);
     void notifyOrientationChange(bool animate, bool notifyWhenDisabled = false);
 
 private:

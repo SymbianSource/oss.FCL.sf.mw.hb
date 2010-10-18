@@ -35,7 +35,6 @@
 
 class HbAction;
 class HbMenuItemPrivate;
-class HbStyleOptionMenuItem;
 
 class HB_AUTOTEST_EXPORT HbMenuItem : public HbWidget
 {
@@ -63,10 +62,15 @@ public:
     bool submenuExists();
     bool separatorExists();
 
-protected:
+public slots:
+    void recreatePrimitives();
+    void updatePrimitives();
 
-    void initStyleOption(HbStyleOptionMenuItem *option) const;
-    void changeEvent(QEvent *event);    
+protected:
+    void initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive);
+    void changeEvent(QEvent *event);
+    QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+
 #ifdef HB_GESTURE_FW
     void gestureEvent(QGestureEvent *event);
 #endif

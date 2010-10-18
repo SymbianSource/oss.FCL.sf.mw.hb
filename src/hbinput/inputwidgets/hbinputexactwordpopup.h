@@ -26,12 +26,12 @@
 #ifndef HB_INPUT_EXACT_WORD_POPUP_H
 #define HB_INPUT_EXACT_WORD_POPUP_H
 
-#include <hbdialog.h>
+#include <hbinputpopupbase.h>
 #include <hbinputdef.h>
 
 class HbExactWordPopupPrivate;
 
-class HB_INPUT_EXPORT HbExactWordPopup : public HbDialog
+class HB_INPUT_EXPORT HbExactWordPopup : public HbInputPopupBase
 {
     Q_OBJECT
 
@@ -57,7 +57,6 @@ public slots:
 protected:
     HbExactWordPopup(QGraphicsWidget *parent = 0, HbExactWordPopupIndicator indicatorArrow = HbNoIndicatorArrow);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
-    void updatePrimitives();
 
 signals:
     void exactWordSelected();

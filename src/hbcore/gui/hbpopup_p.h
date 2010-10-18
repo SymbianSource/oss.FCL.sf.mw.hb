@@ -28,6 +28,7 @@
 #include <QPointer>
 
 #include "hbpopup.h"
+#include "hbframeitem.h"
 #include "hbwidget_p.h"
 #include "hbnamespace_p.h"
 #ifdef HB_EFFECTS
@@ -63,18 +64,21 @@ public:
         AlwaysOnTop = 255
     };
 
-	CSystemToneService *systemToneService();
+    CSystemToneService *systemToneService();
 
 // Private features
 public:
     quint8 priority() const { return priorityValue; }
     void setPriority( quint8 priority );
 
+    virtual void doSetFrameType(HbPopup::FrameType newFrameType);
+
 public:
     QEventLoop *eventLoop;
     bool hasEffects;
     bool closed;
     bool hidingInProgress;
+    bool showingInProgress;
     bool delayedHide;
     bool deleteOnClose;
     bool modal;
@@ -91,6 +95,8 @@ public:
 
     bool timedOut;
     int timeout;
+    bool timeoutPending;
+    HbPopup::DefaultTimeout pendingTimeout;
 
     quint8 priorityValue;
 
@@ -114,26 +120,31 @@ public:
     qreal mScreenMargin;
     bool mAutoLayouting;
     bool mOriginalAutoLayouting;
+    bool mActivePopup;
+    QHash<HbPopup::DefaultTimeout, int> defaultTimeouts;
+    QGraphicsItem *mMaskedItem;
+    HbFrameItem *mPopupMask;
 
 public:
 #ifdef HB_EFFECTS
     void _q_delayedHide(HbEffect::EffectStatus status);
-	virtual void _q_appearEffectEnded(HbEffect::EffectStatus status);
+    virtual void _q_appearEffectEnded(HbEffect::EffectStatus status);
     void _q_orientationAboutToChange(Qt::Orientation orient, bool animate);
+    void _q_maskEffectDestroyed();
 #endif // HB_EFFECTS
     void _q_timeoutFinished();
     void _q_orientationChanged();
 
     bool addPopupToScene();
     void handleBackgroundMousePressEvent();
-    void handleBackgroundMouseReleaseEvent(QGraphicsSceneMouseEvent *event);
+    virtual void handleBackgroundMouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     void calculateShape();
 
-    static int timeoutValue(HbPopup::DefaultTimeout timeout);
     void setTimeout(int msec);
 
     void forceHide();
     virtual void addPopupEffects();
+    virtual void setFullScreen(bool enable);
 
     void stopTimeout();
     void startTimeout();
@@ -142,6 +153,8 @@ public:
     QString effectType;
     HbVgMaskEffect *mVgMaskEffect;
     bool mOrientationEffectHide;
+    bool mGestureOverride;
+    bool mFullScreen;
 private:
     static bool popupEffectsLoaded;
     static HbPopupPrivate *d_ptr(HbPopup *popup) {
@@ -152,6 +165,9 @@ private:
     friend class HbPopupManagerPrivate;
     friend class HbPopupLayoutProxy;
     friend class HbDeviceDialogManagerPrivate;
+    friend class HbInputCommonDialogs;
+    friend class HbInputFocusObject;
+    friend class HbAbstractVkbHostPrivate;
     // To be able to unit test private features
     friend class TestHbPopup;
 

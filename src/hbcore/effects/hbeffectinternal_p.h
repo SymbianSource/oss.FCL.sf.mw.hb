@@ -60,7 +60,8 @@ public:
         ClearEffectWhenFinished = 1,
         ShowItemOnFirstUpdate = 2,
         HideRegItemBeforeClearingEffect = 4,
-        HideTargetItemBeforeClearingEffect = 8
+        HideTargetItemBeforeClearingEffect = 8,
+        UpdateAtEachStep = 16
     };
     Q_DECLARE_FLAGS(EffectFlags, EffectFlag)
 
@@ -85,6 +86,7 @@ public:
 
     static bool add(const QString &itemType, const QString &filePath, const QString &effectEvent = QString());
     static bool add(const QStringList &itemType, const QStringList &filePath, const QStringList &effectEvent = QStringList());
+    static bool add(const char *itemType[], const char *filePath[], const char *effectEvent[], int count);
     static bool add(QGraphicsItem *item, const QString &filePath, const QString &effectEvent = QString());
     static bool add(QGraphicsItem *item, const QStringList &filePath, const QStringList &effectEvent = QStringList());
 

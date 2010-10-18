@@ -39,9 +39,7 @@ public:
 
     ~HbVkbHostBridge();
     void openKeypad(HbVirtualKeyboard *vkb, HbInputMethod *owner, bool animationAllowed);
-    void openMinimizedKeypad(HbVirtualKeyboard *vkb, HbInputMethod *owner);
     void closeKeypad(bool animationAllowed);
-    void minimizeKeypad(bool animationAllowed);
     HbVkbStatus keypadStatus() const;
     QSizeF keyboardArea() const;
     HbVirtualKeyboard *activeKeypad() const;

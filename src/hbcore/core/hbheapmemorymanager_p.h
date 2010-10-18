@@ -27,28 +27,30 @@
 #define HBHEAPMEMORYMANAGER_P_H
 
 #include "hbmemorymanager_p.h"
+#include "hbglobal.h"
 #include <new>
 
 class HB_CORE_PRIVATE_EXPORT HbHeapMemoryManager
     : public HbMemoryManager
 {
 public:
-    int alloc( int size );
-    int realloc( int oldOffset, int newSize );
-    void free( int offset );
+    qptrdiff alloc( int size );
+    qptrdiff realloc( qptrdiff oldOffset, int newSize );
+    void free( qptrdiff offset );
     void * base()
     { 
         return 0;
     }
-    bool isWritable()
-    { 
-        return true;
+    
+    // To get new instance of memory manager
+    static inline HbHeapMemoryManager * create() HB_ALWAYS_INLINE
+    {
+        return new HbHeapMemoryManager();
     }
-    static HbMemoryManager * instance();
-    static void releaseInstance();
+    
 private:
     HbHeapMemoryManager();
-    static HbMemoryManager * memManager;
+    bool initialize() { return true; }
 };
 
 #endif // HBHEAPMEMORYMANAGER_P_H

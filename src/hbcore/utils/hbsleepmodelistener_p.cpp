@@ -78,6 +78,7 @@ void CSleepModeListenerPrivate::RunL()
                 if (!lastStatusValid || lastStatus != status) {
                     lastStatusValid = true;
                     lastStatus = status;
+#ifndef __WINSCW__ 
                     RProcess process;
                     // If process is something else than themeserver
                     if (process.SecureId().iId != KHbPsHardwareCoarseOrientationCategoryUid.iUid) {
@@ -93,6 +94,7 @@ void CSleepModeListenerPrivate::RunL()
                         HbEvent event(status == CHWRMLight::ELightOff ? HbEvent::SleepModeEnter : HbEvent::SleepModeExit);
                         QCoreApplication::sendEvent(qApp, &event);
                     }
+#endif //__WINSCW__
                 }
             }
         }

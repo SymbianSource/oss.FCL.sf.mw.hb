@@ -24,6 +24,9 @@
 ****************************************************************************/
 
 #include <QtPlugin>
+#ifdef Q_OS_SYMBIAN
+#include <e32capability.h>
+#endif // Q_OS_SYMBIAN
 
 #include <hbdevicedialog.h>
 #include <hbdevicedialogtrace_p.h>
@@ -40,6 +43,7 @@ static const struct {
     {"com.nokia.hb.devicemessagebox/1.0"}
 };
 
+/// \cond
 class HbDeviceMessageBoxPluginPrivate
 {
 public:
@@ -47,6 +51,7 @@ public:
 
     int mError;
 };
+/// \endcond
 
 // Constructor
 HbDeviceMessageBoxPlugin::HbDeviceMessageBoxPlugin()
@@ -70,13 +75,20 @@ bool HbDeviceMessageBoxPlugin::accessAllowed(const QString &deviceDialogType,
 {
     TRACE_ENTRY
     Q_UNUSED(deviceDialogType)
+
+#ifdef Q_OS_SYMBIAN
+    // If show group is higher than normal, a swEvent capability is required
+    if (showLevel(parameters) != NormalLevel) {
+        return (securityInfo["sym-caps"].toInt() >> ECapabilitySwEvent) & 1;
+    } else {
+        return true; // all clients are allowed to use.
+    }
+#else
     Q_UNUSED(parameters)
     Q_UNUSED(securityInfo)
-
-    // This plugin doesn't perform operations that may compromise security.
     // All clients are allowed to use.
     return true;
-    TRACE_EXIT
+#endif // Q_OS_SYMBIAN
 }
 
 // Create device dialog widget
@@ -128,13 +140,16 @@ bool HbDeviceMessageBoxPlugin::deviceDialogInfo(const QString &deviceDialogType,
     const QVariantMap &parameters, DeviceDialogInfo *info) const
 {
     TRACE_ENTRY
-    Q_UNUSED(parameters)
     Q_UNUSED(deviceDialogType)
 
+    unsigned int level = static_cast<unsigned int>(showLevel(parameters));
+    if (level > CriticalLevel) {
+        return false;
+    }
+
     info->group = GenericDeviceDialogGroup;
-    info->flags = NoDeviceDialogFlags;
-    info->priority = DefaultPriority;
-    TRACE_EXIT
+    info->flags = level == NormalLevel ? NoDeviceDialogFlags : SecurityCheck;
+    info->showLevel = static_cast<ShowLevel>(level);
     return true;
 }
 
@@ -165,4 +180,15 @@ int HbDeviceMessageBoxPlugin::error() const
     TRACE_ENTRY
     TRACE_EXIT
     return d->mError;
+}
+
+// Search parameters for show group
+int HbDeviceMessageBoxPlugin::showLevel(const QVariantMap &parameters)
+{
+    int level = NormalLevel;
+    const QString propertyName("showLevel"); 
+    if (parameters.contains(propertyName)) {
+        level = parameters[propertyName].toInt(); 
+    }
+    return level;
 }

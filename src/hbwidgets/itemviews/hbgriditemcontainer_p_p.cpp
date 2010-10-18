@@ -332,6 +332,7 @@ void HbGridItemContainerPrivate::resetBuffer()
 */
 void HbGridItemContainerPrivate::removeItem(const QModelIndex &index, bool animate)
 {
+    Q_Q(HbGridItemContainer);
     HbAbstractViewItem *viewItem = item(index);
 
     bool scrollingNeeded = false;
@@ -375,20 +376,25 @@ void HbGridItemContainerPrivate::removeItem(const QModelIndex &index, bool anima
         // when shiftDownItem return false then shift up was done
         // need to scroll visible area to be consist in grid view behaviour
         // checking boundaries after scroll is also done
-        Q_Q(HbGridItemContainer);
         QRectF viewRect(itemBoundingRect(mItemView));
         QSizeF itemsCanvas(q->layout()->preferredSize());
         QPointF pos = q->pos();
         qreal itemSize = getScrollDirectionItemSize();
         if (Qt::Vertical == mScrollDirection) {
-            pos.setY(q->pos().y() - itemSize); 
+            pos.setY(pos.y() - itemSize);
             if (pos.y() < viewRect.height() - itemsCanvas.height()) {
                 pos.setY(viewRect.height() - itemsCanvas.height()); 
             }
+            if (pos.y() > 0) {
+                pos.setY(0);
+            }
         } else {
-            pos.setX(q->pos().x() - itemSize);
+            pos.setX(pos.x() - itemSize);
             if (pos.x() < viewRect.width() - itemsCanvas.width()) {
                 pos.setX(viewRect.width() - itemsCanvas.width()); 
+            }
+            if (pos.x() > 0) {
+                pos.setX(0);
             }
         }
         q->setPos(pos);
@@ -396,6 +402,7 @@ void HbGridItemContainerPrivate::removeItem(const QModelIndex &index, bool anima
     if (layoutUpdateNeeded) {
         mLayout->invalidate();
     }
+    emit q->itemAboutToBeDeleted(viewItem);
 }
 
 

@@ -28,13 +28,14 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QStyleOptionGraphicsItem>
 #include <QInputContext>
+#include <QPointer>
 
 #include "hbinputregioncollector_p.h"
 #include "hbinstance.h"
 #include "hbwidget.h"
 #include "hbview.h"
-#include "hbnamespace_p.h"
 #include "hbstackedlayout.h"
+#include "hbpopup.h"
 
 #if defined (Q_OS_SYMBIAN)
 #include <coemain.h>
@@ -51,6 +52,32 @@ TRect qt_QRect2TRect(const QRectF &rect)
 
 Q_DECLARE_TYPEINFO(TRect, Q_MOVABLE_TYPE);
 #endif
+
+
+class HbProxyWindow: public QWidget
+{
+public:
+    HbProxyWindow()
+    {
+        setGeometry(0,0,0,0);
+    }
+    void setWindow(QWidget* window)
+    {
+        this->window = window;
+        if (window) {
+            window->setParent(this);
+        }
+    }
+    ~HbProxyWindow()
+    {
+        if (window) {
+            window->setParent(0);
+        }
+    }
+private:
+    QPointer<QWidget> window;
+};
+
 
 class HbInputTransparentWindow : public HbWidget
 {
@@ -70,7 +97,7 @@ public:
 HbInputTransparentWindow::HbInputTransparentWindow(QGraphicsItem *parent) :
     HbWidget(parent)
 {
-	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption, true);
+    setFlag(QGraphicsItem::ItemUsesExtendedStyleOption, true);
 }
 
 
@@ -90,6 +117,48 @@ void HbInputTransparentWindow::paint(QPainter *painter, const QStyleOptionGraphi
     painter->setCompositionMode(compositionMode);
 }
 
+class HbInputMainWindowPrivate
+{
+public:
+ HbInputMainWindowPrivate(HbInputMainWindow *owner)
+    :q_ptr(owner), mLastFocusedWidget(0), mSpellQueryLaunched(false), mProxyWindow(0), mIsInputWindowFocusLocked(false)
+    {
+    }
+    ~HbInputMainWindowPrivate();
+    void dismissNonModalDialogs();
+    HbInputMainWindow *q_ptr;
+    QPointer<QWidget> mLastFocusedWidget;
+    QRegion mMask;
+    bool mSpellQueryLaunched;
+    QPointer<HbProxyWindow > mProxyWindow;
+    bool mIsInputWindowFocusLocked;
+};
+
+/*
+Dismisses all non-modal dialogs with tap-outside dismiss policy which are attached to the region collector.
+*/
+void HbInputMainWindowPrivate::dismissNonModalDialogs()
+{
+    HbInputRegionCollectorPrivate *const regionColPrivate = HbInputRegionCollector::instance()->d_ptr;
+    if (regionColPrivate->mEnabled && !regionColPrivate->mModalDialogs) {
+        QList<HbWidgetFilterList> list = regionColPrivate->mInputWidgets;
+        for (int i = 0; i < list.size(); ++i) {
+            if (list.at(i).mIsVisible) {
+                HbPopup *popup = qobject_cast<HbPopup *>(list.at(i).mWidget);
+                // dismiss non-modal dialogs, which have tap-outside dismiss policy.
+                if (popup && (popup->dismissPolicy() & HbPopup::TapOutside) && !popup->isModal()) {
+                    popup->close();
+                }
+            }
+        }
+    }
+}
+
+HbInputMainWindowPrivate::~HbInputMainWindowPrivate()
+{
+    delete mProxyWindow;
+}
+
 /*
 creates an instance of HbInputMainWindow.
 */
@@ -101,13 +170,13 @@ HbInputMainWindow *HbInputMainWindow::instance()
 
 HbInputMainWindow::~HbInputMainWindow()
 {
-    delete mProxyWindow;
+    delete d_ptr;
 }
 
 // constructor.
 HbInputMainWindow::HbInputMainWindow()
 // HbMainWindow creates a background QGraphicsItem, which has the background image. we need to hide it that.
-    : HbMainWindow(0, Hb::WindowFlagTransparent), mLastFocusedWidget(0), mSpellQueryLaunched(false), mProxyWindow(0)
+    : HbMainWindow(0, Hb::WindowFlagTransparent), d_ptr(new HbInputMainWindowPrivate(this))
 {
     // We need a window which is of type Qt::Window flag at the same time does not show
     // any decorators Qt::Tool seems to be the option, and we want this window to be always on top so Qt::WindowStaysOnTopHint.
@@ -157,24 +226,23 @@ HbInputMainWindow::HbInputMainWindow()
 
 void HbInputMainWindow::updateRegion(QRegion region)
 {
-    mMask = region;
+    d_ptr->mMask = region;
 #if defined (Q_OS_SYMBIAN)
     RWindowBase *rwindow = effectiveWinId()->DrawableWindow();
     if (region.isEmpty()) {
         TRegionFix<1> tregion(TRect(TPoint(0, 0), TSize(0, 0)));
         rwindow->SetShape(tregion);
     } else {
-        // Using QVector assumes the memory layout is the same as RRegion
-        QVector<QRect> rects = region.rects();
-        QVector<TRect> trects(rects.count());
+        // Using QVector assumes the memory layout is the same as RRegion 
+        QVector<QRect> rects = region.rects(); 
+        QVector<TRect> trects(rects.count()); 
+        RRegion rregion;
         for (int i = 0; i < trects.count(); ++i) {
-            trects[i] = qt_QRect2TRect(rects.at(i));
+            rregion.AddRect(qt_QRect2TRect(rects.at(i)));
         }
-        RRegion rregion(trects.count(), trects.data());
-        if (!rregion.CheckError()) {
-            rwindow->SetShape(rregion);
-        }
-    }
+        if (!rregion.CheckError())
+            rwindow->SetShape(rregion); 
+   }
 #else
     setMask(region);
 #endif
@@ -188,8 +256,8 @@ bool HbInputMainWindow::event(QEvent *e)
 {
     switch (e->type()) {
     case QEvent::WindowActivate:
-        if (mLastFocusedWidget && !mSpellQueryLaunched) {
-            qApp->setActiveWindow(mLastFocusedWidget);
+        if (d_ptr->mLastFocusedWidget && !d_ptr->mIsInputWindowFocusLocked) {
+            qApp->setActiveWindow(d_ptr->mLastFocusedWidget);
         }
         break;
     default:
@@ -205,37 +273,22 @@ and HbInputMainWindow.
 */
 bool HbInputMainWindow::eventFilter(QObject *obj, QEvent *event)
 {
-    if (event->type() == QEvent::DynamicPropertyChange) {
-        const QString p = static_cast<QDynamicPropertyChangeEvent *>(event)->propertyName();
-        if (p == "SpellQueryLaunched") {
-            QVariant variant = obj->property("SpellQueryLaunched");
-            if (variant.isValid()) {
-                mSpellQueryLaunched = variant.toBool();
-                if (mSpellQueryLaunched) {
-                    qApp->setActiveWindow(this);
-                    setFocus(Qt::OtherFocusReason);
-                } else {
-                    if (mLastFocusedWidget) {
-                        qApp->setActiveWindow(mLastFocusedWidget);
-                    }
-                }
-            }
-            // return true as we are interested party!
-            return true;
-        }
-    }
-
     // we need to only check for spontaneous events.
-    if (event->spontaneous() && (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonRelease)) {
+    if (event->spontaneous() && (event->type() == QEvent::MouseButtonPress)) {
         QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
         if (mouseEvent) {
-            // get the top level widget at the point, and see if that widget is a HbMainWindow,
-            // If it is a HbMainWindow then do not do any thing, as events will propagate
-            // correctly. But when it is clicked inside application window then send the event to
-            // viewport as we might want to close a popup.
-            if (!mMask.contains(mouseEvent->globalPos())) {
-                qApp->sendEvent(viewport(), event);
+            // when we have only non-modal dialogs launched inside HbInputMainWindow, for instance exactword popup.
+            // in that case HbInputMainWindow's window region is such that it only has exactword popup and the 
+            // vkb. And clicking anywhere other than vkb and exactword popup will not be know to HbInputMainWindow.
+            // With the help of this eventfilter we will come to know if there are any click events outside
+            // of HbInputMainWindow's region and we should close all the non-modal with tapoutside dismiss policy.
+            if (!d_ptr->mMask.contains(mouseEvent->globalPos())) {
+                d_ptr->dismissNonModalDialogs();
             }
+        }
+    } else if(event->spontaneous() && event->type() == QEvent::WindowActivate) {
+        if(d_ptr->mIsInputWindowFocusLocked && (qApp->activeWindow()!= this)) {
+            qApp->setActiveWindow(this);
         }
     }
 
@@ -250,7 +303,7 @@ lost.
 void HbInputMainWindow::saveFocusWidget(QWidget * /*Old*/, QWidget *newFocus)
 {
     if (newFocus && !this->isAncestorOf(newFocus)) {
-        mLastFocusedWidget = newFocus;
+        d_ptr->mLastFocusedWidget = newFocus;
     }
 }
 
@@ -275,20 +328,21 @@ void HbInputMainWindow::showInputWindow()
 
     HbInputRegionCollector::instance()->setEnabled(true);
     if (win && win->windowModality() != Qt::NonModal) {
-        if (!mProxyWindow) {
-            mProxyWindow = new HbProxyWindow();
+        if (!d_ptr->mProxyWindow) {
+            d_ptr->mProxyWindow = new HbProxyWindow();
         }
-        mProxyWindow->setWindow(this);
+        d_ptr->mProxyWindow->setWindow(this);
         // since the focused widget is inside a modal dialog which blocks events to other_window.
         // and since hbinputmainwindow also comes under the other_window. It does will not get the 
         // mouse click events.
-        mProxyWindow->setParent(win);
+        d_ptr->mProxyWindow->setParent(win);
         // setParent resets the window flags, so we have to set the flags once again before show() is called.
         setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Tool | Qt::FramelessWindowHint);
         show();
     } else {
-        if (mProxyWindow && mProxyWindow->isAncestorOf(this)) {
-            mProxyWindow->setWindow(0);
+        if (d_ptr->mProxyWindow && d_ptr->mProxyWindow->isAncestorOf(this)) {
+            d_ptr->mProxyWindow->setParent(0);
+            d_ptr->mProxyWindow->setWindow(0);
             setParent(0);
             // setParent resets the window flags, so we have to set the flags once again before show is called.
             setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Tool | Qt::FramelessWindowHint);
@@ -306,7 +360,7 @@ void HbInputMainWindow::showInputWindow()
 
 void HbInputMainWindow::hideInputWindow()
 {
-    if (mSpellQueryLaunched) {
+    if (d_ptr->mIsInputWindowFocusLocked) {
         return;
     }
 
@@ -324,6 +378,36 @@ void HbInputMainWindow::hideInputWindow()
     // installing event filter to the application.. this is needed to get
     // the events happening in other vanilla windows.
     qApp->removeEventFilter(this);
+}
+
+void HbInputMainWindow::lockFocus()
+{
+    // lock only when HbinputMainWindow is active.
+    if (!isVisible())
+        return;
+
+    d_ptr->mIsInputWindowFocusLocked = true;
+    setFocus(Qt::OtherFocusReason);
+    qApp->setActiveWindow(this);
+#if defined(Q_OS_SYMBIAN)
+    // this is done to come on top of all the controls in symbian OS, done to overlap soft keys as well.
+    RWindow *rWindow = static_cast<RWindow *>(effectiveWinId()->DrawableWindow());
+    const int positionForeground(0);
+    // Now window ordinal position works with latest symbian release. So giving back this window
+    // a FEP priority. This will enable this window to come on top of any softkeys.
+    rWindow->SetOrdinalPosition(positionForeground);
+#endif
+}
+
+void HbInputMainWindow::unlockFocus()
+{
+    if (!isVisible())
+        return;
+
+    d_ptr->mIsInputWindowFocusLocked = false;
+    if (d_ptr->mLastFocusedWidget) {
+        qApp->setActiveWindow(d_ptr->mLastFocusedWidget);
+    }
 }
 
 //EOF

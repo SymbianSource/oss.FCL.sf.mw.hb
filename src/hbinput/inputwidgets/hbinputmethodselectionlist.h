@@ -26,14 +26,14 @@
 #ifndef HB_INPUT_METHOD_SELECTION_LIST_H
 #define HB_INPUT_METHOD_SELECTION_LIST_H
 
-#include <hbdialog.h>
+#include <hbinputpopupbase.h>
 #include <hbinputdef.h>
 
 class HbInputMethodSelectionListPrivate;
 class HbListWidgetItem;
 class HbInputMethodDescriptor;
 
-class HB_INPUT_EXPORT HbInputMethodSelectionList : public HbDialog
+class HB_INPUT_EXPORT HbInputMethodSelectionList : public HbInputPopupBase
 {
     Q_OBJECT
 

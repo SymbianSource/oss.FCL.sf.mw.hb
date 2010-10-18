@@ -85,8 +85,9 @@ public:
 
     void setStandardButtons(StandardButtons buttons);
     StandardButtons standardButtons() const;
+
+    QGraphicsItem *primitive(const QString &itemName) const;
     
-    QGraphicsItem *primitive(HbStyle::Primitive primitive) const;
     enum { Type = Hb::ItemType_MessageBox };
     int type() const { return Type; }
 
@@ -99,7 +100,7 @@ public:
                             QGraphicsWidget *headWidget = 0,
                             QGraphicsScene *scene = 0,
                             QGraphicsItem *parent = 0 );
-	 
+     
     static void information(const QString &informationText,
                             QObject *receiver = 0,
                             const char *member = 0,
@@ -121,7 +122,7 @@ public:
                             QGraphicsWidget *headingWidget = 0,
                             QGraphicsScene *scene = 0,
                             QGraphicsItem *parent = 0);
-	 
+     
     static void information(const QString &informationText,
                             QObject *receiver,
                             const char *member,
@@ -139,17 +140,21 @@ public:
                             QGraphicsItem *parent = 0 );
 
 public slots:
+    void recreatePrimitives();
     void updatePrimitives();
 
 protected:
+    void showEvent(QShowEvent *event);
     HbMessageBox(HbMessageBoxPrivate &dd, QGraphicsItem *parent);
     void initStyleOption(HbStyleOptionMessageBox *option) const;
+    void initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive);
+    void changeEvent(QEvent *event);
 
 private:
     Q_PRIVATE_SLOT(d_func(), void _q_buttonClicked())
     Q_DECLARE_PRIVATE_D(d_ptr, HbMessageBox)
     Q_DISABLE_COPY(HbMessageBox)    
-	
+    
 };
 Q_DECLARE_OPERATORS_FOR_FLAGS(HbMessageBox::StandardButtons)
 

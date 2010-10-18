@@ -33,12 +33,14 @@
 #include <hbtextitem.h>
 #include <hbrichtextitem.h>
 #include <hbstyle.h>
-#include <hbstyleoptionlistviewitem_p.h>
+#include <hbstyleprimitivedata.h>
+#include <hbstyletextprimitivedata.h>
+#include <hbstylerichtextprimitivedata.h>
+#include <hbstyleiconprimitivedata.h>
 
 #include <QPersistentModelIndex>
 #include <QVariant>
 #include <QItemSelectionModel>
-#include <QStyleOption>
 #include <QSizePolicy>
 
 /*!
@@ -48,9 +50,20 @@
     \brief The HbListViewItem class represents a single row in a list.
 
     The HbListViewItem class provides an item that is used by the HbListView class to
-    visualize content within single model index. By default HbListViewItem supports 
-    QStringList that is stored into Qt::DisplayRole role and a list of QIcons or 
-    HbIcons that is stored into Qt::DecoratorRole role within the index. 
+    visualize content within single model index. 
+    
+    HbListViewItem supports following model item types in Hb::ItemTypeRole role of data model
+    \li Hb::StandardItem. 
+    \li Hb::SeparatorItem. 
+    HbAbstractViewItem documentation provides details how these item types distinguish from each other. 
+
+    Following item data roles are supported by HbListViewItem
+    \li QString and QStringList stored in Qt::DisplayRole role of the data model
+    \li QIcon, HbIcon or list of them in QVariantList stored in Qt::DecoratorRole role. 
+    QIcon is supported only for compatibility reasons. If QIcon is used the limitations 
+    described in the HbIcon::HbIcon(const QIcon &icon) apply.
+    
+    Handling Qt::BackgroundRole item data role takes place in base class HbAbstractViewItem.
 
     This class is provided mainly for customization purposes but it also acts as a default
     item prototype inside HbListView. See HbListView how to set customized class as a item prototype.
@@ -102,12 +115,13 @@
     \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,45}
 
     \primitives
-    \primitive{icon-1} HbIconItem representing the icon-1 as described in the table above. 
-    \primitive{icon-2} HbIconItem representing the icon-2 as described in the table above. 
-    \primitive{text-1} HbTextItem or HbRichTextItem representing the text-1 as described in the table above. The type of the return value depends on the textFormat() of the item.
-    \primitive{text-2} HbTextItem or HbRichTextItem representing the text-2 as described in the table above.
-    \primitive{text-3} HbTextItem or HbRichTextItem representing the text-3 as described in the table above.
+    \primitive{icon-1} HbIconItem with item name "icon-1" representing icon-1 as described in the table above. 
+    \primitive{icon-2} HbIconItem with item name "icon-2" representing the icon-2 as described in the table above. 
+    \primitive{text-1} HbTextItem or HbRichTextItem with item name "text-1" representing the text-1 as described in the table above. The type of the return value depends on the textFormat() of the item.
+    \primitive{text-2} HbTextItem or HbRichTextItem with item name "text-2" representing the text-2 as described in the table above.
+    \primitive{text-3} HbTextItem or HbRichTextItem with item name "text-3" representing the text-3 as described in the table above.
 
+    \sa HbAbstractViewItem
 */
 
 /*!
@@ -219,14 +233,26 @@ void HbListViewItemPrivate::setDecorationRole(const QVariant& value,
     Q_Q( HbListViewItem );
 
     // create icon item and set it to layout
-    HbStyle::Primitive primitive = decorationPrimitive(value);
+     HbStyle::PrimitiveType primitive = decorationPrimitive(value);
 
-    if (primitive != HbStyle::P_None) {
-        QGraphicsItem *item = mDecorationRoleItems.value(index);
+     if (primitive != HbStyle::PT_None) {
+        QGraphicsObject *item = mDecorationRoleItems.value(index);
         if (!item) {
             mItemsChanged = true;
             themingPending = true;
-            item = q->style()->createPrimitive(primitive, q);
+
+            QString name;
+            if (index == 0) {
+                name = QLatin1String("icon-1");
+            } else if (index == 1) {
+                name = QLatin1String("icon-2");
+            } else {
+                name = QLatin1String("icon-") + QString::number(index + 1);
+            }
+
+            item = q->style()->createPrimitive(primitive, name, 0);
+            item->setParentItem(q); // To enable asynchronous icon loading.
+            item->setZValue(index + 1);
 
             if (index < mDecorationRoleItems.count()) {
                 mDecorationRoleItems.replace(index, item);
@@ -252,13 +278,29 @@ void HbListViewItemPrivate::setDisplayRole(const QString& value,
 
     // create text item  and set it to layout
     if (!value.isNull()) {
-        QGraphicsItem *textItem = mDisplayRoleTextItems.value(index);
+        QGraphicsObject *textItem = mDisplayRoleTextItems.value(index);
 
-        HbStyle::Primitive primitive = displayPrimitive();
+        HbStyle::PrimitiveType primitive = displayPrimitive();
         if (!textItem) {
             mItemsChanged = true;
             themingPending = true;
-            textItem = q->style()->createPrimitive(primitive, q);
+
+            QString name;
+            if (index == 0) {
+                name = QLatin1String("text-1");
+            } else if (index == 1) {
+                name = QLatin1String("text-2");
+            } else if (index == 2) {
+                name = QLatin1String("text-3");
+            } else {
+                name = QLatin1String("text-") + QString::number(index + 1);
+            }
+
+            textItem = q->style()->createPrimitive(primitive, name, q);
+            HbTextItem *realTextItem = qobject_cast<HbTextItem*>(textItem);
+            if (realTextItem) {
+                realTextItem->setTextWrapping(Hb::TextNoWrap);
+            }
             if (index < mDisplayRoleTextItems.count()) {
                 mDisplayRoleTextItems.replace(index, textItem);
             } else {
@@ -360,7 +402,11 @@ void HbListViewItem::updateChildItems()
     QVariant displayRole = d->mIndex.data(Qt::DisplayRole);
     QStringList stringList;
     if (displayRole.isValid()) {
-        if (displayRole.canConvert<QString>()) {
+        if (displayRole.type() == QVariant::String) {
+            stringList.append(displayRole.toString());
+        } else if (displayRole.type() == QVariant::StringList) {
+            stringList = displayRole.toStringList();
+        } else if (displayRole.canConvert<QString>()) {
             stringList.append(displayRole.toString());
         } else if (displayRole.canConvert<QStringList>()) {
             stringList = displayRole.toStringList();
@@ -385,7 +431,12 @@ void HbListViewItem::updateChildItems()
     QVariant decorationRole = d->mIndex.data(Qt::DecorationRole);
     QVariantList variantList;
     if (decorationRole.isValid()) {
-        if (decorationRole.canConvert<QIcon>()
+        if (decorationRole.type() == QVariant::Icon 
+            || decorationRole.userType() == qMetaTypeId<HbIcon>()) {
+            variantList.append(decorationRole);
+        } else if (decorationRole.type() == QVariant::List) { 
+            variantList = decorationRole.toList();
+        } else if (decorationRole.canConvert<QIcon>()
              || decorationRole.canConvert<HbIcon>()) {
             variantList.append(decorationRole);
         } else if (decorationRole.canConvert< QList<QVariant> >()) {
@@ -410,42 +461,98 @@ void HbListViewItem::updateChildItems()
 }
 
 /*!
+  Initializes the HbListViewItem primitive data. 
+  
+  This function calls HbWidgetBase::initPrimitiveData().
+  \a primitiveData is data object, which is populated with data. \a primitive is the primitive.
+  \a index is used to index data item in the internal store.
+*/
+void HbListViewItem::initPrimitiveData(HbStylePrimitiveData     *primitiveData, 
+                                       const QGraphicsObject    *primitive,
+                                       int                      index)
+{
+    Q_ASSERT_X(primitive && primitiveData, "HbListViewItem::initPrimitiveData" , "NULL data not permitted");
+    HB_SDD(HbListViewItem);
+
+    HbWidgetBase::initPrimitiveData(primitiveData, primitive);
+    if (primitiveData->type == HbStylePrimitiveData::SPD_Text) {
+        HbStyleTextPrimitiveData *textPrimitiveData = hbstyleprimitivedata_cast<HbStyleTextPrimitiveData*>(primitiveData);
+
+         textPrimitiveData->text = d->mStringList.at(index);
+
+        if (index == 1) {
+            textPrimitiveData->textWrapping = Hb::TextNoWrap;
+            textPrimitiveData->elideMode = Qt::ElideNone;
+            if (d->isMultilineSupported()) {
+                if (sd->mMinimumSecondaryTextRowCount != -1) {
+                    // min & max secondary text row counts set by app
+                    if (sd->mMaximumSecondaryTextRowCount != 1) {
+                        textPrimitiveData->textWrapping = Hb::TextWordWrap;
+                        textPrimitiveData->elideMode = Qt::ElideRight;
+                    }
+                    textPrimitiveData->minimumLines = sd->mMinimumSecondaryTextRowCount;
+                    textPrimitiveData->maximumLines = sd->mMaximumSecondaryTextRowCount;
+                }
+                else {
+                    // min & max secondary text row counts not set by app. Allow setting those from .css
+                    // Needed when multilineSecondaryTextSupported changed from FALSE to TRUE and
+                    // min & max secondary text row counts has not been set by app
+                    HbWidgetBasePrivate *widgetBaseP = HbStylePrivate::widgetBasePrivate(
+                        qobject_cast<HbWidgetBase*>(const_cast<QGraphicsObject*>(primitive)));
+                    if (widgetBaseP) {
+                        widgetBaseP->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextWrapMode, false);
+                        widgetBaseP->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin, false);
+                        widgetBaseP->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMax, false);
+                    }
+                }
+            } else {
+                // min & max secondary text row counts must always be 1. They cannot be overridden by .css
+                textPrimitiveData->minimumLines = 1;
+                textPrimitiveData->maximumLines = 1;
+            }
+        } 
+    } else if (primitiveData->type == HbStylePrimitiveData::SPD_RichText) {
+        hbstyleprimitivedata_cast<HbStyleRichTextPrimitiveData*>(primitiveData)->text = d->mStringList.at(index);
+    } else if (primitiveData->type == HbStylePrimitiveData::SPD_Icon) {
+        if (d->mDecorationList.at(index).canConvert<HbIcon>()){
+            hbstyleprimitivedata_cast<HbStyleIconPrimitiveData*>(primitiveData)->icon = d->mDecorationList.at(index).value<HbIcon>();
+        } else if (d->mDecorationList.at(index).canConvert<QIcon>()){
+            hbstyleprimitivedata_cast<HbStyleIconPrimitiveData*>(primitiveData)->icon = HbIcon(d->mDecorationList.at(index).value<QIcon>());
+        }
+    }
+}
+
+
+/*!
     \reimp
 */
 void HbListViewItem::updatePrimitives()
 {
-    HB_SDD(HbListViewItem);
-    HbStyleOptionListViewItem styleOption;
-    initStyleOption(&styleOption);
+    Q_D( HbListViewItem );
 
     int count = d->mStringList.count();
     for (int i = 0; i < count; ++i) {
-        QGraphicsItem *item = d->mDisplayRoleTextItems.value(i);
+        QGraphicsObject *item = d->mDisplayRoleTextItems.value(i);
         if (item) {
-            styleOption.index = i;
-            styleOption.content = d->mStringList.at(i);
-            styleOption.multilineSecondaryTextSupported = d->isMultilineSupported();
-
-            if (i == 1) {
-                // criteria of secondary text in middle column is fulfilled
-                styleOption.minimumLines = sd->mMinimumSecondaryTextRowCount;
-                styleOption.maximumLines = sd->mMaximumSecondaryTextRowCount;
-            } 
-            style()->updatePrimitive(item, d->displayPrimitive(), &styleOption);
+            if (d->displayPrimitive() == HbStyle::PT_TextItem) {
+                HbStyleTextPrimitiveData textPrimitiveData;
+                initPrimitiveData(&textPrimitiveData, item, i);
+                style()->updatePrimitive(item,&textPrimitiveData,this);
+            } else {
+                HbStyleRichTextPrimitiveData richTextPrimitiveData;
+                initPrimitiveData(&richTextPrimitiveData, item, i);
+                style()->updatePrimitive(item,&richTextPrimitiveData,this);
+            }
         }
     }
 
-    styleOption.role = Qt::DecorationRole;
     count = d->mDecorationList.count();
     for (int i = 0; i < count; ++i) {
-        QGraphicsItem *item = d->mDecorationRoleItems.value(i);
+        QGraphicsObject *item = d->mDecorationRoleItems.value(i);
         if (item) {
-            styleOption.index = i;
-            styleOption.content = d->mDecorationList.at(i);
-            style()->updatePrimitive(   
-                        item, 
-                        d->decorationPrimitive(d->mDecorationList.at(i)), 
-                        &styleOption);
+            HbStyleIconPrimitiveData iconPrimitiveData;
+            initPrimitiveData(&iconPrimitiveData, item, i);
+            style()->updatePrimitive(item,&iconPrimitiveData,this);
         }
     }
     HbAbstractViewItem::updatePrimitives();
@@ -568,7 +675,7 @@ void HbListViewItem::setGraphicsSize(GraphicsSize size)
 
 /*!
     Returns secondary text item maximum and minimum row counts. 
-	The default maximum row count is 1 and minimum row count is 1.
+    The default maximum row count is 1 and minimum row count is 1.
 
     \note This function does not return values from .css although they were effective. 
 

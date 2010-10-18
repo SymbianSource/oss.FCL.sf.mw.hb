@@ -85,7 +85,7 @@ public:
 #endif
 
 private:
-    void copyString( const QChar *arr, int size, int dataOffset );
+    void copyString( const QChar *arr, int size, qptrdiff dataOffset );
     bool compareString( const QChar *rhs, int len ) const;
     void detach( int size );
 
@@ -93,7 +93,7 @@ private: // Data
 
     HbMemoryManager::MemoryType mMemoryType;
     bool mShared;
-    int mDataOffset;
+    qptrdiff mDataOffset;
 };
 
 #endif // HBSTRING_P_H

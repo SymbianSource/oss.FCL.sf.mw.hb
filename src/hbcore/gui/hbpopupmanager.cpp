@@ -39,15 +39,14 @@
 #include <QGraphicsWidget>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsLayout>
-#include <QDebug>
 #include <QEvent>
+
+extern const char* KPositionManagedByVKB;
 
 HbPopupLayoutSpacer::HbPopupLayoutSpacer( QGraphicsItem *parent )
 : HbWidgetBase( parent )
 {
-#if QT_VERSION >= 0x040600
     setFlag(QGraphicsItem::ItemHasNoContents, true);
-#endif
     setAcceptedMouseButtons(Qt::NoButton);
 }
 
@@ -61,23 +60,10 @@ QSizeF HbPopupLayoutSpacer::sizeHint(Qt::SizeHint which, const QSizeF &constrain
     return QSizeF(0.f,0.f);
 }
 
-/*
-\reimp
-*/
-void HbPopupLayoutSpacer::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget )
-{
-    Q_UNUSED(option)
-    Q_UNUSED(widget);
-    Q_UNUSED(painter);
-}
-
-
 HbPopupLayoutProxy::HbPopupLayoutProxy( HbPopup *popup, QGraphicsItem *parent )
 : HbWidgetBase(parent), mPopup(popup)
 {
-#if QT_VERSION >= 0x040600
     setFlag(QGraphicsItem::ItemHasNoContents, true);
-#endif
     setAcceptedMouseButtons(Qt::NoButton);
     popup->installEventFilter(this);
 }
@@ -92,7 +78,7 @@ QSizeF HbPopupLayoutProxy::sizeHint(Qt::SizeHint which, const QSizeF &constraint
 
 void HbPopupLayoutProxy::setGeometry(const QRectF &rect)
 {
-    if (!mPopup.isNull()) {
+     if (!mPopup.isNull()) {
         const QSizeF popupPreferredSize = 
                 mPopup->effectiveSizeHint(Qt::PreferredSize);
         const QSizeF usedSize( qMin(rect.width(),   popupPreferredSize.width() ),
@@ -137,8 +123,16 @@ void HbPopupLayoutProxy::setGeometry(const QRectF &rect)
                 usedy = qMin(y-uh/2, ph-uh);
                 break;
             case HbPopup::BottomEdgeCenter:
+                {
                 usedx = qMin(x-uw/2, pw-uw);
-                usedy = qMin(y-uh, ph-uh);
+                HbMenu *menu = qobject_cast<HbMenu*>(mPopup);
+                if(menu && ((y-uh) < 0)) {
+                    usedy = qMin(y,ph-uh);
+                }
+                else {
+                    usedy = qMin(y-uh, ph-uh);
+                }
+                }
                 break;
             case HbPopup::LeftEdgeCenter:
                 usedx = qMin(x, pw-uw);
@@ -152,14 +146,29 @@ void HbPopupLayoutProxy::setGeometry(const QRectF &rect)
                 //should not happen
                 break;
             }
+
             if ( usedx < screenMargin ) usedx = screenMargin;
             if ( usedy < screenMargin ) usedy = screenMargin;
-
             usedPos = QPointF(usedx, usedy);
+        }
+        if (mPopup->isFullScreen()) {
+            mPopup->setMaximumSize(parentItem()->boundingRect().width(), parentItem()->boundingRect().height());
+            mPopup->setGeometry(0, 0, parentItem()->boundingRect().width(), parentItem()->boundingRect().height());
+            ((HbPopupPrivate*)HbPopupPrivate::d_ptr(mPopup))->mAutoLayouting = true;
+            return;
         }
         if (((HbPopupPrivate*)HbPopupPrivate::d_ptr(mPopup))->mAutoLayouting) {
             mPopup->setGeometry(QRectF(usedPos, usedSize));
+            ((HbPopupPrivate*)HbPopupPrivate::d_ptr(mPopup))->mAutoLayouting = true;            
+        } else if (mPopup->property(KPositionManagedByVKB).isValid() &&
+                   mPopup->property(KPositionManagedByVKB).toBool()) {
+            //Special case for the popups which y-position is handled by VKB
+            QPointF currentPos = mPopup->pos();
+            currentPos.setX(usedPos.x());
+            bool previousLayouting = ((HbPopupPrivate*)HbPopupPrivate::d_ptr(mPopup))->mAutoLayouting;
             ((HbPopupPrivate*)HbPopupPrivate::d_ptr(mPopup))->mAutoLayouting = true;
+            mPopup->setGeometry(QRectF(currentPos, usedSize));
+            ((HbPopupPrivate*)HbPopupPrivate::d_ptr(mPopup))->mAutoLayouting = previousLayouting;
         } else {
             mPopup->resize(usedSize);
         }
@@ -183,7 +192,9 @@ bool HbPopupLayoutProxy::eventFilter(QObject *obj, QEvent *event)
     Q_UNUSED( obj );
     switch( event->type() ) {
         case QEvent::LayoutRequest:
-        case QEvent::ContextMenu:
+        {
+            activateParentLayout();
+        } //fallthrough
         case QEvent::Close:
             {
             updateGeometry();
@@ -195,25 +206,23 @@ bool HbPopupLayoutProxy::eventFilter(QObject *obj, QEvent *event)
     return false;
 }
 
-
-/*
-\reimp
-*/
-void HbPopupLayoutProxy::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget )
+void HbPopupLayoutProxy::activateParentLayout()
 {
-    Q_UNUSED(option);
-    Q_UNUSED(widget);
-    Q_UNUSED(painter);
+    if ( mPopup && parentLayoutItem() && parentLayoutItem()->isLayout()
+        && !static_cast<QGraphicsLayout*>(parentLayoutItem())->isActivated()) {
+        static_cast<QGraphicsLayout*>(parentLayoutItem())->activate();
+    }
 }
 
 HbPopupLayoutManager::HbPopupLayoutManager( HbPopup *popup, QGraphicsScene *scene ) 
 : HbWidget()
 {        
-#if QT_VERSION >= 0x040600
     setFlag(QGraphicsItem::ItemHasNoContents, true);
-#endif
     setAcceptedMouseButtons(Qt::NoButton);
     scene->addItem( this );
+    //adjust the size of popuplayoutmanager to its preferredSize
+    //since it defines the geometries of popups.
+    adjustSize();
 
     // create proxy
     HbPopupLayoutProxy *childItem = new HbPopupLayoutProxy( popup, this );
@@ -235,7 +244,7 @@ HbPopupLayoutManager::HbPopupLayoutManager( HbPopup *popup, QGraphicsScene *scen
     } else if ( metaObject->className() == QLatin1String("HbToolBarExtension" ) ) {
         HbStyle::setItemName( childItem, "toolbar-extension" );
     } else {
-        HbStyle::setItemName( childItem, "popup" );        
+        HbStyle::setItemName( childItem, "popup" );
     }
     setZValue(popup->zValue() - 1);
     if ( metaObject->className() == QLatin1String("HbVolumeSliderPopup") ) {
@@ -270,20 +279,10 @@ QSizeF HbPopupLayoutManager::sizeHint(Qt::SizeHint which, const QSizeF &constrai
 void HbPopupLayoutManager::changeEvent(QEvent *event)
 {
     HbWidget::changeEvent(event);
-    if (event && event->type() == QEvent::LayoutDirectionChange) {
+    if (event->type() == QEvent::LayoutDirectionChange) {
         repolish();
     }
 
-}
-
-/*
-\reimp
-*/
-void HbPopupLayoutManager::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget )
-{
-    Q_UNUSED(option)
-    Q_UNUSED(widget);
-    Q_UNUSED(painter);
 }
 
 
@@ -311,7 +310,9 @@ HbPopupManagerPrivate::~HbPopupManagerPrivate()
 */
 void HbPopupManagerPrivate::mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
-    foreach (QGraphicsItem *item, scene->items(mouseEvent->scenePos())) {
+    //This function can be removed since popup background is handling the events
+    Q_UNUSED(mouseEvent);
+    /*foreach (QGraphicsItem *item, scene->items(mouseEvent->scenePos())) {
         if (eventBlockItem(item)) {
             break;
         }
@@ -322,7 +323,7 @@ void HbPopupManagerPrivate::mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEve
                 break;
             }
         }
-    }
+    }*/
 }
 
 /*
@@ -379,9 +380,11 @@ void HbPopupManagerPrivate::updateHash( int priority, qreal zValueOfRemovedPopup
 
 void HbPopupManagerPrivate::eventHook(QEvent *event)
 {
-    if (event && event->type() == QEvent::GraphicsSceneMouseRelease && popupList.count() && scene) {
+    Q_UNUSED(event);
+    //This function can be removed since popup background is handling the events
+   /* if (event && event->type() == QEvent::GraphicsSceneMouseRelease && popupList.count() && scene) {
         mouseReleaseEvent(static_cast<QGraphicsSceneMouseEvent *>(event));
-    }
+    }*/
 }
 
 void HbPopupManagerPrivate::showPopup(HbPopup *popup)
@@ -420,7 +423,7 @@ void HbPopupManagerPrivate::addPopup(HbPopup *popup)
                  popup->metaObject()->className() != QLatin1String("HbExactWordPopup") &&
                  popup->metaObject()->className() != QLatin1String("HbInputSmileyPicker") &&
                  popup->metaObject()->className() != QLatin1String("Hb12KeyCustomKeypad") &&
-				 !popup->inherits("HbInputVkbWidget")) {
+                 !popup->inherits("HbInputVkbWidget")) {
                 setGeometryForPopup( popup );
             }
         }
@@ -453,9 +456,9 @@ void HbPopupManagerPrivate::removePopup(HbPopup *popup)
     //only if its in its destruction
     bool popupInDestruction = (HbPopupPrivate::d_ptr(popup))->inDestruction;
     if ( parentItems.contains( popup ) && (popupInDestruction)) {
-        //HbPopupLayoutManager *parentItem = parentItems[popup];        
+        HbPopupLayoutManager *parentItem = parentItems[popup];
         parentItems.remove( popup );
-        //delete parentItem;
+        delete parentItem;
     }
 
     // Only execute if close if popup was in popupList before
@@ -464,7 +467,7 @@ void HbPopupManagerPrivate::removePopup(HbPopup *popup)
         updateHash(HbPopupPrivate::d_ptr(popup)->priority(), popup->zValue());
 
         // Update fading
-        updateFading(true);
+        updateFading();
 
         // Find new top level popup
         if (topLevelFocusablePopup && topLevelFocusablePopup == popup) {
@@ -480,11 +483,13 @@ void HbPopupManagerPrivate::removePopup(HbPopup *popup)
         bool wasActivePopup = true;
         // If the previous popup was an inactive panel, then it would not have
         // gained focused. So no need to set the focus to the next topmost popup.
-        if (popup->isPanel() && !popup->isActive()) {
+        if (popup->isPanel() && !HbPopupPrivate::d_ptr(popup)->mActivePopup) {
             wasActivePopup = false;
         }
         if (topLevelFocusablePopup && wasActivePopup ) {
             topLevelFocusablePopup->setFocus();
+            if (HbPopupPrivate::d_ptr(topLevelFocusablePopup)->mActivePopup)
+                topLevelFocusablePopup->setActive(true);
         }
         //TODO: this is not very efficient way of deciding if has already been deleted or not
         else if (initialFocusedItem && scene &&
@@ -535,6 +540,8 @@ void HbPopupManagerPrivate::updateFading(bool unfadeFirst /* false */)
         if (topFadingPopup) {
             HbMainWindowPrivate::d_ptr(mainWindow)->fadeScreen(
                     HbPopupPrivate::d_ptr(topFadingPopup)->backgroundItem->zValue() - HbPrivate::FadingItemZValueUnit );
+        } else {
+            HbMainWindowPrivate::d_ptr(mainWindow)->unfadeScreen();
         }
     }
 }
@@ -593,7 +600,9 @@ HbPopupManager::~HbPopupManager()
 
 void HbPopupManager::eventHook(QEvent *event)
 {
-    d->eventHook(event);
+    //This function can be removed
+    Q_UNUSED(event);
+    //d->eventHook(event);
 }
 
 void HbPopupManager::showPopup(HbPopup *popup)

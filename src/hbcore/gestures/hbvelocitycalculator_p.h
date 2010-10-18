@@ -30,17 +30,16 @@
 
 class HbPointRecorder;
 class QPointF;
-class QTime;
 
 class HB_CORE_PRIVATE_EXPORT HbVelocityCalculator
 {
 public:
     HbVelocityCalculator( const HbPointRecorder& listX, const HbPointRecorder& listY );
 
-    QPointF velocity( const QTime& time ) const;
+    QPointF velocity( qint64 currentTime ) const;
 
 private:
-    qreal calculate_velocity( const HbPointRecorder& list, const QTime& time ) const;
+    qreal calculate_velocity( const HbPointRecorder& list, qint64 currentTime ) const;
 
     const HbPointRecorder& mListX;
     const HbPointRecorder& mListY;

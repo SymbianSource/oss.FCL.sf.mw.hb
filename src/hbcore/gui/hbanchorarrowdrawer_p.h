@@ -30,6 +30,7 @@
 #include <hbglobal.h>
 
 class HbAnchorLayout;
+class HbAnchor;
 
 class HB_CORE_PRIVATE_EXPORT HbAnchorArrowDrawer : public HbWidgetBase
 {
@@ -43,6 +44,9 @@ public slots:
     void setDrawOutlines(bool enabled) { mDrawOutlines = enabled; };
     void setDrawArrows(bool enabled) { mDrawArrows = enabled; };
     void setDrawSpacers(bool enabled) { mDrawSpacers = enabled; };
+    void setDrawMinLength(bool enabled) { mDrawMinLength = enabled; };
+    void setDrawPrefLength(bool enabled) { mDrawPrefLength = enabled; };
+    void setDrawMaxLength(bool enabled) { mDrawMaxLength = enabled; };
     void updateFocusItem(const QGraphicsItem* item);
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 
@@ -51,10 +55,25 @@ protected:
     void updateColors();
 
 private:
+    enum ArrowType {
+        Actual,
+        Minimum,
+        Preferred,
+        Maximum,
+        Spacer
+    };
+
+    void paintAnchor(QPainter *painter, HbAnchor *anchor, bool layoutMirrored, ArrowType type);
+
+private:
     HbAnchorLayout* mLayout;
     bool mDrawOutlines;
     bool mDrawArrows;
     bool mDrawSpacers;
+    bool mDrawMinLength;
+    bool mDrawPrefLength;
+    bool mDrawMaxLength;
+
     QColor mValidColor;
     QColor mInvalidColor;
     QColor mBoxColor;

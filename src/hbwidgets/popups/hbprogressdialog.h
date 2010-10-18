@@ -69,10 +69,10 @@ public:
     void setProgressDialogType(HbProgressDialog::ProgressDialogType type );
     HbProgressDialog::ProgressDialogType progressDialogType() const;
 
+    QGraphicsItem *primitive(const QString &itemName) const;
+
     enum { Type = Hb::ItemType_ProgressDialog };
     int type() const { return Type; }
-
-    QGraphicsItem* primitive(HbStyle::Primitive primitive) const;
 
 signals:
     void cancelled();
@@ -83,11 +83,14 @@ public slots:
     void setMinimum(int min);
     void setMaximum(int max);
     void delayedShow();
+    void updatePrimitives();
+    void recreatePrimitives();
 
 protected:
     void initStyleOption(HbStyleOptionProgressDialog *option) const;
     void showEvent(QShowEvent *event);
     void closeEvent(QCloseEvent *event);
+    void initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbProgressDialog)

@@ -42,6 +42,8 @@
 HbVgReflectionEffectPrivate::HbVgReflectionEffectPrivate()
     : fade(0), fadeInited(false)
 {
+    // Reset to invalid color, regardless of what the base class sets.
+    color = QColor();
 }
 
 HbVgReflectionEffectPrivate::~HbVgReflectionEffectPrivate()

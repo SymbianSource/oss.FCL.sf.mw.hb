@@ -40,37 +40,6 @@
 #include <hbtapgesture.h>
 #endif
 
-
-/*
-    Spacer class.
-*/
-class HbCheckBoxSpacer: public HbWidgetBase
-{
-
-public:
-    HbCheckBoxSpacer( QGraphicsItem *parent = 0 );
-    QSizeF sizeHint(  Qt::SizeHint which, const QSizeF &constraint = QSizeF( ) ) const;
-};
-
-HbCheckBoxSpacer::HbCheckBoxSpacer( QGraphicsItem *parent )
-    : HbWidgetBase( parent )
-{
-#if QT_VERSION >= 0x040600
-    setFlag(QGraphicsItem::ItemHasNoContents, true);
-#endif
-}
-
-QSizeF HbCheckBoxSpacer::sizeHint( Qt::SizeHint which, const QSizeF &constraint ) const
-{
-    Q_UNUSED( constraint );
-
-    if ( which == Qt::MaximumSize ) {
-        return QSizeF( QWIDGETSIZE_MAX, QWIDGETSIZE_MAX );
-    }
-    return QSizeF( 0.f, 0.f );
-}
-
-
 /*
   private class
 */
@@ -126,52 +95,58 @@ void HbCheckBoxPrivate::createPrimitives( )
 {
     Q_Q( HbCheckBox );
     if( !mTouchArea ) {
-        mTouchArea = q->style( )->createPrimitive( HbStyle::P_CheckBox_toucharea, q );
+        mTouchArea = HbStylePrivate::createPrimitive( HbStylePrivate::P_CheckBox_toucharea, q );
         if( QGraphicsObject *ta = qgraphicsitem_cast<QGraphicsObject*>( mTouchArea ) ) {
             ta->grabGesture( Qt::TapGesture );
         }
     }
     if ( !mTextItem ) {
-        mTextItem = q->style( )->createPrimitive( HbStyle::P_CheckBox_text, q );
+        mTextItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_CheckBox_text, q );
         }
     if ( !mIconItem ) {
-        mIconItem = q->style( )->createPrimitive( HbStyle::P_CheckBox_icon, q );
+        mIconItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_CheckBox_icon, q );
     }
 }
 
 /*!
-    @beta
     @hbwidgets
     \class HbCheckBox
-    \brief The HbCheckBox widget provides a checkbox with a text label.
+    \brief The HbCheckBox class provides a check box widget with a text label.
     
-    \image html checkbox_unchecked.png A checkbox with unchecked state.
+    A check box is an option button that can be in checked, unchecked, and 
+    partially checked states as shown in the pictures below. Check boxes are 
+    typically used to represent application features that can be enabled or 
+    disabled without affecting other features, but you can also subclass it to 
+    implement different behavior.
 
-    \image html checkbox_checked.png A checkbox with checked state.
+    \image html checkbox_unchecked.png A check box in unchecked state.
 
-    \image html checkbox_partiallychecked.png A checkbox with partiallychecked state.
+    \image html checkbox_checked.png A check box in checked state.
 
-    A HbCheckBox is an option button that can be switched on (checked)
-    or off (unchecked). Checkboxes are typically used to represent
-    features in an application that can be enabled or disabled without
-    affecting others, but different types of behavior can be
-    implemented.
+    \image html checkbox_partiallychecked.png A check box in partially checked state.
+    
+    When a user checks or unchecks a check box, it emits the stateChanged() 
+    signal. Connect a slot to this signal if you want to trigger an action every 
+    time the check box state changes. You can use isChecked() to query whether a 
+    check box is checked or not.
 
-    Whenever a checkbox is checked or cleared it emits the signal
-    stateChanged(). Connect to this signal if you want to trigger an
-    action each time the checkbox changes state. You can use
-    isChecked() to query whether or not a checkbox is checked.
+    In addition to checked and unchecked states, %HbCheckBox provides 
+    an optional partially checked state. This state is useful when you handle 
+    hierarchical list items, for example. If you need the partially checked 
+    state, enable it with setTristate() and query the state of the check box 
+    with checkState().
 
-    In addition to checked and unchecked states, HbCheckBox
-    optionally provides a third state which is PartiallyChecked. This
-    is useful for Hierarchical list item. If you need this third state,
-    enable it with setTristate(), and use checkState() to query the current
-    toggle state.
+    A check box has default icons for checked, unchecked, and partially checked 
+    states. The text can be set in the constructor or with setText(). If the 
+    check box text is long, it is shown in multiple lines. By default a check box 
+    can have up to three lines of text.
 
-    Checkbox has default icon for checked,unchecked and partiallyChecked states.
-    The text can be set in the constructor or with setText().
+    \section _usecases_hbcheckbox Using the HbCheckBox class
+    
+    \subsection _uc_hbcheckbox_001 Creating a check box.
+    
+    The following code snippet creates a check box in the layout.
 
-    Example usage:
     \code
     HbCheckBox *checkbox = new HbCheckBox(QString("checkbox_text"));
     layout->addItem(checkbox);
@@ -181,19 +156,28 @@ void HbCheckBoxPrivate::createPrimitives( )
 
 
 /*!
+
     \fn void HbCheckBox::stateChanged(int state)
-    This signal is emitted whenever the check box's state changes,
-    i.e. whenever the user checks or unchecks it.
-    \a state contains the check box's new Qt::CheckState.
+
+    This signal is emitted when the user checks or unchecks a check box causing a 
+    state change of the check box.
+    
+    \param  state The new state (Qt::CheckState) of the check box.
+
+    \sa Qt
+
 */
 
 
-
 /*!
-    @beta
-    Constructor an object of HbCheckBox with default parameters.
-    By default the state of check box will be Unchecked, text will
-    be empty and tristate will be false.
+    
+    Constructs a check box with the following default values:
+    - \a state is \c Qt::CheckState::Unchecked.
+    - \a text is empty.
+    - \a tristate is \c false.
+    
+    \sa Qt
+    
 */
 HbCheckBox::HbCheckBox( QGraphicsItem *parent )
     : HbAbstractButton( *new HbCheckBoxPrivate, parent )
@@ -202,9 +186,6 @@ HbCheckBox::HbCheckBox( QGraphicsItem *parent )
     d->q_ptr = this;
     setCheckable( true );
     d->createPrimitives( );
-    // creattion of top and bottom spacer.
-    HbStyle::setItemName( new HbCheckBoxSpacer( this ), "topSpacer" );
-    HbStyle::setItemName( new HbCheckBoxSpacer( this ), "bottomSpacer" );
 #ifdef HB_GESTURE_FW
     grabGesture( Qt::TapGesture );
 #endif
@@ -212,10 +193,13 @@ HbCheckBox::HbCheckBox( QGraphicsItem *parent )
 }
 
 /*!
-    @beta
-    Constructor an object of HbCheckBox with \a text passed.
-    By default the state of check box will be Unchecked.
-    Tristate will be false by default.
+    
+    Constructs a check box with \a text and the following default values:
+    - \a state is \c Qt::CheckState::Unchecked.
+    - \a tristate is \c false.
+    
+    \sa Qt
+
 */
 HbCheckBox::HbCheckBox( const QString &text, QGraphicsItem *parent )
     : HbAbstractButton( *new HbCheckBoxPrivate, parent )
@@ -225,10 +209,6 @@ HbCheckBox::HbCheckBox( const QString &text, QGraphicsItem *parent )
     d->mText = text;
     setCheckable( true );
     d->createPrimitives( );
-    // creattion of top and bottom spacer.
-    HbStyle::setItemName( new HbCheckBoxSpacer(this), "topSpacer");
-    HbStyle::setItemName( new HbCheckBoxSpacer(this), "bottomSpacer");
-
 }
 
 /*!
@@ -239,9 +219,9 @@ HbCheckBox::~HbCheckBox( )
 }
 
 /*!
-    @beta
-    Sets the text of checkbox.
-    UpdatePrimitive is called by this functions once the text is changed.
+
+    Sets the \a text shown on a check box.
+
     \sa text()
 */
 void HbCheckBox::setText( const QString &text )
@@ -253,14 +233,15 @@ void HbCheckBox::setText( const QString &text )
         if( d->mTextItem ){
             HbStyleOptionCheckBox checkBoxOption;
             initStyleOption( &checkBoxOption );
-            style( )->updatePrimitive( d->mTextItem, HbStyle::P_CheckBox_text, &checkBoxOption );
+            HbStylePrivate::updatePrimitive( d->mTextItem, HbStylePrivate::P_CheckBox_text, &checkBoxOption );
         }
     }    
 }
 
 /*!
-    @beta
-    Returns the text of checkbox.
+    
+    Returns the text of a check box.
+
     \sa setText()
 */
 QString HbCheckBox::text( ) const
@@ -270,9 +251,11 @@ QString HbCheckBox::text( ) const
 }
 
 /*!
-    @beta
-    Sets tristate support for checkbox based upon \a flag.
-    By default tristate is false and checkbox has got only two states.
+    
+    Sets a check box to:
+    - tristate-enabled mode if \a isTristate is \c true.
+    - twostate-enabled mode if \a isTristate is \c false (default).
+    
     \sa isTristate( )
 */
 void HbCheckBox::setTristate( bool isTristate )
@@ -282,8 +265,12 @@ void HbCheckBox::setTristate( bool isTristate )
 }
 
 /*!
-    @beta
-    Returns whether tristate is enabled for checkbox or not.
+    
+    Checks whether a check box can have two or three states.
+    
+    \return \c true if a check box is tristate-enabled.
+    \return \c false if a check box is twostate-enabled.
+
     \sa setTristate( )
 */
 bool HbCheckBox::isTristate( ) const
@@ -293,8 +280,10 @@ bool HbCheckBox::isTristate( ) const
 }
 
 /*!
-    @beta
-    Returns the current state of HbCheckBox.
+    
+    Returns the current state (checked, unchecked, or partially checked) of a 
+    check box.
+
 */
 Qt::CheckState HbCheckBox::checkState() const
 {
@@ -320,11 +309,11 @@ QGraphicsItem *HbCheckBox::primitive( HbStyle::Primitive primitive ) const
     Q_D( const HbCheckBox );
 
     switch ( primitive ) {
-        case HbStyle::P_CheckBox_text:
+        case HbStylePrivate::P_CheckBox_text:
             return d->mTextItem;
-        case HbStyle::P_CheckBox_toucharea:
+        case HbStylePrivate::P_CheckBox_toucharea:
             return d->mTouchArea;
-        case HbStyle::P_CheckBox_icon:
+        case HbStylePrivate::P_CheckBox_icon:
             return d->mIconItem;
         default:
             return 0;
@@ -332,10 +321,10 @@ QGraphicsItem *HbCheckBox::primitive( HbStyle::Primitive primitive ) const
 }
 
 /*!
-    @beta
-    Sets the state of HbCheckBox to the \a state passed.
-    Calls updatePrimitive when state is changed.
-    Emits signal stateChanged(state).
+    
+    Sets the state of a check box to \a state and emits the stateChanged() 
+    signal. If the check box state changes, updatePrimitives() is called
+    
 */
 void HbCheckBox::setCheckState( Qt::CheckState state )
 {
@@ -358,7 +347,7 @@ void HbCheckBox::setCheckState( Qt::CheckState state )
 }
 
 /*!
-    Updates the icon and text primitives.
+    Updates the icon and the text primitives of a check box.
 */
 void HbCheckBox::updatePrimitives( )
 {
@@ -369,18 +358,18 @@ void HbCheckBox::updatePrimitives( )
     initStyleOption( &checkBoxOption );
 
     if ( d->mTextItem ) {
-        style( )->updatePrimitive( d->mTextItem, HbStyle::P_CheckBox_text, &checkBoxOption );
+        HbStylePrivate::updatePrimitive( d->mTextItem, HbStylePrivate::P_CheckBox_text, &checkBoxOption );
     }
     if ( d->mIconItem ) {
-        style( )->updatePrimitive( d->mIconItem, HbStyle::P_CheckBox_icon, &checkBoxOption );
+        HbStylePrivate::updatePrimitive( d->mIconItem, HbStylePrivate::P_CheckBox_icon, &checkBoxOption );
     }
     if (d->mTouchArea) {
-        style( )->updatePrimitive( d->mTouchArea, HbStyle::P_CheckBox_toucharea, &checkBoxOption );
+        HbStylePrivate::updatePrimitive( d->mTouchArea, HbStylePrivate::P_CheckBox_toucharea, &checkBoxOption );
     }
 }
 
 /*!
-    Initializes the style for check box with the \a option passed.
+    Initializes the style of a check box with the \a option style.
 */
 void HbCheckBox::initStyleOption(HbStyleOptionCheckBox *option) const
 {
@@ -398,7 +387,7 @@ void HbCheckBox::initStyleOption(HbStyleOptionCheckBox *option) const
 }
 
 /*!
-    Updates the primitive as per new size.
+
 */
 void HbCheckBox::resizeEvent( QGraphicsSceneResizeEvent *event )
 {
@@ -406,7 +395,7 @@ void HbCheckBox::resizeEvent( QGraphicsSceneResizeEvent *event )
 }
 
 /*!
-  Overloaded hit detection to include touch area
+
  */
 bool HbCheckBox::hitButton( const QPointF &pos ) const
 {
@@ -417,7 +406,7 @@ bool HbCheckBox::hitButton( const QPointF &pos ) const
 }
 
 /*!
-    \reimp.
+
 */
 void HbCheckBox::checkStateSet( )
 {
@@ -434,7 +423,7 @@ void HbCheckBox::checkStateSet( )
 }
 
 /*!
-    \reimp.
+
 */
 void HbCheckBox::nextCheckState( )
 {
@@ -447,7 +436,7 @@ void HbCheckBox::nextCheckState( )
 
 #ifndef HB_GESTURE_FW
 /*!
-    \reimp.
+
 */
 void HbCheckBox::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
 {
@@ -456,7 +445,7 @@ void HbCheckBox::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
 }
 
 /*!
-    \reimp.
+
 */
 void HbCheckBox::mouseMoveEvent( QGraphicsSceneMouseEvent *event )
 {
@@ -477,7 +466,7 @@ void HbCheckBox::gestureEvent( QGestureEvent *event )
 }
 #endif
 /*!
-    \reimp.
+
 */
 void HbCheckBox::keyPressEvent(QKeyEvent *keyEvent)
 {
@@ -493,7 +482,7 @@ void HbCheckBox::keyPressEvent(QKeyEvent *keyEvent)
 }
 
 /*!
-    \reimp
+
  */
 QVariant HbCheckBox::itemChange( GraphicsItemChange change, const QVariant &value )
 {

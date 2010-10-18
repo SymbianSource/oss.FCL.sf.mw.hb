@@ -31,6 +31,8 @@
 #include <hbgriditemcontainer_p_p.h>
 #include <hbmodeliterator.h>
 
+#include <QMetaObject>
+
 /*!
     \class HbGridItemContainer
     \brief HbGridItemContainer implements HbAbstractItemContainer.
@@ -513,7 +515,8 @@ void HbGridItemContainer::animationFinished(const HbEffect::EffectStatus &status
     }
 
     d->mLayout->removeItem(item, true);  
-    item->deleteLater();
+    item->hide();
+    QMetaObject::invokeMethod(item, "deleteLater", Qt::QueuedConnection);
 }
 
 void HbGridItemContainer::layoutAnimationFinished(QGraphicsLayoutItem *item, HbGridLayout::AnimationType animationType)

@@ -39,6 +39,7 @@
 
 #include "hbabstractitemview.h"
 #include "hbscrollarea_p.h"
+#include "hbemptyviewwidget_p.h"
 #include <hbeffect.h>
 
 #include <QItemSelectionModel>
@@ -55,6 +56,7 @@ QT_END_NAMESPACE
 class HbAbstractItemContainer;
 class HbAbstractViewItem;
 class HbModelIterator;
+class HbPanGesture;
 
 class HbAbstractItemViewPrivate : public HbScrollAreaPrivate
 {
@@ -125,7 +127,7 @@ public:
 
     virtual bool animationEnabled(bool insertOperation);
 
-    virtual void ensureVisible(QPointF position, qreal xMargin, qreal yMargin);
+    virtual void ensureVisible(const QPointF &position, qreal xMargin, qreal yMargin);
 
     void _q_modelDestroyed();
     void _q_animationEnabled();
@@ -133,10 +135,14 @@ public:
     void _q_scrolling(QPointF newPosition);
     void _q_scrollingEnded();
     void _q_scrollingStarted();
+    void _q_itemAboutToBeDeleted(HbAbstractViewItem *item);
 
     void setContentPosition(qreal value, Qt::Orientation orientation, bool animate);
 
     virtual bool panTriggered(QGestureEvent *event);
+
+    int calculatePanningDirection(HbPanGesture *gesture);
+    bool isBouncebackOngoing();
 
 public:
     QPersistentModelIndex mCurrentIndex;
@@ -179,6 +185,14 @@ public:
     bool mDoingContiguousSelection;
     QPointF mPositionInContiguousSelection;
 
+    bool mItemPixmapCacheEnabled;
+
+    HbAbstractItemView::IconLoadPolicy mIconLoadPolicy;
+
+    HbEmptyViewWidget *mEmptyView;
+    int mPanningDirection;
+    QPersistentModelIndex mStartSelectionIndex;
+
 private:
     static HbAbstractItemViewPrivate *d_ptr(HbAbstractItemView *abstractItemView) {
         Q_ASSERT(abstractItemView);
@@ -186,6 +200,7 @@ private:
     }
     friend class HbGridItemContainer;
     friend class HbAbstractItemContainerPrivate;
+    friend class HbIndexFeedbackPrivate;
 };
 
 

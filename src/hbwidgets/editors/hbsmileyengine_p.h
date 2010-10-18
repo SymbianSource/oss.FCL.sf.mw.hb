@@ -51,6 +51,8 @@ public:
     QString toPlainText() const;
     QString toHtml() const;
     void setSmileyScaleFactor(qreal scaleFactor);
+    qreal smileyScaleFactor() const;
+    void updateSmileys(QList<QTextCursor*> cursors);
 
 public slots:
     void insertSmileys();

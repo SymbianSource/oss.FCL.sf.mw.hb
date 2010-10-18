@@ -87,6 +87,7 @@ ResourceView::ResourceView(HbMainWindow *mainWindow, HbView* parent): HbView(par
     mResourceItem->setAlignment(Qt::AlignCenter);
     mResourceItem->setFontSpec(HbFontSpec(HbFontSpec::Secondary));
     mResourcesList = new HbTumbleView(mThemedIcons, this);
+    mResourcesList->setLoopingEnabled(true);
 
     layout->addItem(mResourceItem);
     layout->addItem(mResourcesList);
@@ -99,7 +100,7 @@ ResourceView::ResourceView(HbMainWindow *mainWindow, HbView* parent): HbView(par
 
     connect(mSearchPanel, SIGNAL(criteriaChanged(const QString &)), this, SLOT(criteriaChanged(const QString &)));
     connect(mResourcesList, SIGNAL(itemSelected(int)), this, SLOT(iconItemSelected(int)));
-    mMode = iconMode;
+    toggleMode(iconMode);
 
     mMainWindow->addView(this);
 }
@@ -215,19 +216,22 @@ void ResourceView::loadThemedColors()
     mThemedColors.clear();
     QString basetheme = HbThemeUtils::getThemeSetting(HbThemeUtils::BaseThemeSetting);
     basetheme = basetheme.replace("/icons/", "/style/");
-    QFile file(basetheme + "/variables/color/hbcolorgroup.css");
+    QDir colorsDir(basetheme + "/variables/color");
+    QFileInfoList files = colorsDir.entryInfoList(QDir::Files);
+    for (int i=0;i<files.count();i++) {
+        QFile file(colorsDir.absolutePath() + '/' +files[i].fileName());
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QTextStream in(&file);
 
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QTextStream in(&file);
-
-        while(!in.atEnd()) {
-            QString line = in.readLine().trimmed();
-            if (line.startsWith("qtc_")) {
-                // Extract logical name
-                mThemedColors += line.mid(0, line.indexOf(':')).trimmed();
+            while(!in.atEnd()) {
+                QString line = in.readLine().trimmed();
+                if (line.startsWith("qtc_")) {
+                    // Extract logical name
+                    mThemedColors += line.mid(0, line.indexOf(':')).trimmed();
+                }
             }
+            file.close();
         }
-        file.close();
     }
 }
 

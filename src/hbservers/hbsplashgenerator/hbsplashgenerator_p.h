@@ -60,6 +60,7 @@ public:
     bool lockMainWindow();
     void unlockMainWindow();
     static void setStatusBarElementsVisible(HbMainWindow *mw, bool visible);
+    bool newRegenPending() const;
 
 signals:
     void regenerateStarted();
@@ -73,7 +74,9 @@ public slots:
 
 private slots:
     void doStart();
+    void scheduleRegen();
     void processQueue();
+    void finishWindow();
     void processWindow();
     void onDirectoryChanged(const QString &path);
 
@@ -108,6 +111,7 @@ public:
         QList<ItemBgGraphicsRequest> mItemBgGraphics;
         QStringList mCustomTrDirs;
         quint32 mFlagsToStore;
+        bool mFirstInRegen;
     };
 
 private:
@@ -122,7 +126,6 @@ private:
     void parseSplashmlElements(QXmlStreamReader &xml, QueueItem &item, const QString &fullFileName);
     void setupAppSpecificWindow();
     void setupNameBasedWidgetProps(HbDocumentLoader &loader);
-    void finishWindow();
     void addTranslator(const QString &name);
     void clearTranslators();
     int updateOutputDirContents(const QString &outDir);
@@ -137,6 +140,7 @@ private:
     QList<QTranslator *> mTranslators;
     QTime mItemTime;
     bool mFirstRegenerate;
+    bool mSaveSplFailed;
     QHash<QString, QueueItem> mParsedSplashmls;
     QSettings *mSettings;
     QFileSystemWatcher mFsWatcher;

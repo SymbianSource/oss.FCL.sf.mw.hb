@@ -64,6 +64,8 @@ public slots:
     void setOrientation(Qt::Orientation orientation);
 
 protected:
+    friend class HbView;
+
     HbToolBar( HbToolBarPrivate &dd, QGraphicsItem *parent = 0 );
 
     QVariant itemChange( GraphicsItemChange change, const QVariant &value );

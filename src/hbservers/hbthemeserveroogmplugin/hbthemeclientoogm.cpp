@@ -150,8 +150,8 @@ void  HbThemeClientOogm::GoodMemory(TBool isUsingSwRendering)
     }
 
     if (connected) {
-    		TPckg<TBool> usingSwRendering(isUsingSwRendering);
-    		TIpcArgs args(&usingSwRendering, 0);
+            TPckg<TBool> usingSwRendering(isUsingSwRendering);
+            TIpcArgs args(&usingSwRendering, 0);
         TInt err = SendReceive(EMemoryGood, args);
         if (KErrNone != err) {
             RDebug::Print(_L("ThemeServerPlugin: Good Memory notification sent to ThemeServer"));

@@ -28,13 +28,13 @@
 /*!
     \class HbCssFormatter
     \brief Internal class for converting in-memory CSS structures (declarations and rules)
-	to string representations.
-	
-	These functions only work in builds configured with the --developer flag; in other
-	builds the implementation is defined-out to reduce ROM size, and an empty string
-	is returned from all functions.
-	
-	Example usage would be:
+    to string representations.
+    
+    These functions only work in builds configured with the --developer flag; in other
+    builds the implementation is defined-out to reduce ROM size, and an empty string
+    is returned from all functions.
+    
+    Example usage would be:
        HbVector<HbCss::WeightedRule> rules;
        [...]
        qDebug() << HbCssFormatter::weightedStyleRulesToString(rules);
@@ -47,14 +47,14 @@ static QString LAST_FILENAME_WRITTEN = "";
 */
 QString HbCssFormatter::weightedStyleRulesToString(const HbVector<HbCss::WeightedRule> &rules)
 {
-	QString str;
+    QString str;
 #ifdef HB_DEVELOPER
-	foreach (const HbCss::WeightedRule &rule, rules) {
-		if (str.length() > 0) {
-			str.append("\n");
-		}
-		str.append(styleRuleToString(rule.second, rule.first));
-	}
+    foreach (const HbCss::WeightedRule &rule, rules) {
+        if (str.length() > 0) {
+            str.append("\n");
+        }
+        str.append(styleRuleToString(rule.second, rule.first));
+    }
 #else
     Q_UNUSED( rules );
 #endif
@@ -288,18 +288,30 @@ QString HbCssFormatter::declarationToString(const HbCss::Declaration &decl, bool
                 str.append("-");
             case HbCss::Value::Expression:
                 str.append("expr(");
-                str.append(val.variant.toString());
+                str.append(val.original);
                 str.append(")");
                 break;
             case HbCss::Value::VariableNegative:
                 str.append("-");
             case HbCss::Value::Variable:
                 str.append("var(");
-                str.append(val.variant.toString());
+                str.append(val.original);
                 str.append(")");
                 break;
             case HbCss::Value::KnownIdentifier:
                 str.append(val.original);
+                break;
+            case HbCss::Value::LengthInUnits:
+                str.append(val.variant.toString());
+                str.append("un");
+                break;
+            case HbCss::Value::LengthInPixels:
+                str.append(val.variant.toString());
+                str.append("px");
+                break;
+            case HbCss::Value::LengthInMillimeters:
+                str.append(val.variant.toString());
+                str.append("mm");
                 break;
             default:
                 str.append(val.variant.toString());

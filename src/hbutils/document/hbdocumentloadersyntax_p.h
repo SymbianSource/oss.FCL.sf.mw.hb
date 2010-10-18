@@ -30,6 +30,7 @@
 
 #include <hbglobal.h>
 #include <hbfontspec.h> // Needed for the Role enum
+#include <hbframedrawer.h>
 
 #include <QHash>
 #include <QList>
@@ -78,7 +79,13 @@ private:
     bool createVariable( HbXmlVariable& variable );
 
     static bool convertSizeHintType(
-        const QString &type, Qt::SizeHint &resultHint, bool &resultFixed);
+        const QString &type, 
+        Qt::SizeHint &resultHint,
+        bool &resultFixed);
+
+    static bool convertFrameType(
+        const QString &type,
+        HbFrameDrawer::FrameType &resultType);
 
     bool readGeneralStartItem();
     bool readLayoutStartItem();

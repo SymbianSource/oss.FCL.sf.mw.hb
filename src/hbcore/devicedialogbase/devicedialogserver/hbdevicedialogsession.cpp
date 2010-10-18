@@ -241,52 +241,71 @@ void HbDeviceDialogSession::Disconnect( const RMessage2& aMessage )
     \internal
     Forward call to HbDeviceDialogManager. Store dialog id if call is successful.
 */
-void HbDeviceDialogSession::ShowDeviceDialogL( const RMessage2 &aMessage )
+void HbDeviceDialogSession::ShowDeviceDialogL(const RMessage2 &aMessage)
 {
     TRACE_ENTRY
     mEventList.clear();
     iKeepAfterClose = EFalse;
     iWriteCloseId = 0;
-    TInt dataSize = aMessage.GetDesLength( KSlot0 );
 
+    int error = KErrNone;
+    TInt dataSize = aMessage.GetDesLength(KSlot0);
     if (dataSize < 0) {
-        User::Leave(KErrBadDescriptor);
+        aMessage.Complete(KErrBadDescriptor);
+        return;
     }
 
-    HBufC8* data = HBufC8::NewLC( dataSize );
-    TPtr8 ptr( data->Des() );
-    aMessage.ReadL( KSlot0, ptr );
+    HBufC8* data = HBufC8::NewLC(dataSize);
+    TPtr8 ptr(data->Des());
+    aMessage.ReadL(KSlot0, ptr);
 
-    QByteArray resArray( (const char*) ptr.Ptr(), ptr.Size() );
-    QDataStream outStream( &resArray, QIODevice::ReadOnly );
     QString title;
+    QVariantMap mapdata;
+    QT_TRYCATCH_ERROR(error,
+        QVariant var;
+        QByteArray resArray((const char*) ptr.Ptr(), ptr.Size());
+        QDataStream outStream(&resArray, QIODevice::ReadOnly);
+        outStream >> title;
+        outStream >> var;
+        mapdata = var.toMap();
+    )
+    CleanupStack::PopAndDestroy(data);
 
-    QVariant var;
-    outStream >> title;
-    outStream >> var;
-
-    QVariantMap mapdata = var.toMap();
-
-    CleanupStack::PopAndDestroy( data );
+    if (error != KErrNone) {
+        aMessage.Complete(error);
+        return;
+    }
 
     int identifier = 0;
-    int error = Server().AddSessionToList(this);
+    struct {
+        bool mSession:1;
+        bool mId:1;
+    } cleanup;
+    error = Server().AddSessionToList(this);
+    cleanup.mSession = (error == HbDeviceDialogNoError);
+    if (error == HbDeviceDialogNoError) {
+        QT_TRYCATCH_ERROR(error, mIdList.insert(0, identifier))
+    }
+    cleanup.mId = (error == HbDeviceDialogNoError);
     if (error == HbDeviceDialogNoError) {
         HbDeviceDialogServer::DialogParameters showParameters(title, aMessage, mapdata,
             reinterpret_cast<quintptr>(this));
         identifier = Server().showDeviceDialog(showParameters);
         error = showParameters.mError;
-        if (error != HbDeviceDialogNoError) {
-            Server().RemoveSessionFromList(this);
-        }
     }
 
     if (error == HbDeviceDialogNoError) {
         TPckgBuf<int> deviceDialogId(identifier);
         error = aMessage.Write(KSlot1, deviceDialogId);
         aMessage.Complete(error);
-        mIdList.insert(0, identifier);
+        mIdList[0] = identifier;
     } else {
+        if (cleanup.mSession) {
+            Server().RemoveSessionFromList(this);
+        }
+        if (cleanup.mId) {
+            mIdList.removeFirst();
+        }
         aMessage.Complete(error);
     }
     TRACE_EXIT_ARGS("identifier " << identifier)
@@ -296,31 +315,40 @@ void HbDeviceDialogSession::ShowDeviceDialogL( const RMessage2 &aMessage )
     \internal
     Forward call to HbDeviceDialogManager. Return result.
 */
-void HbDeviceDialogSession::UpdateDeviceDialogL( const RMessage2 &aMessage )
+void HbDeviceDialogSession::UpdateDeviceDialogL(const RMessage2 &aMessage)
 {
     TRACE_ENTRY
-    TInt dataSize = aMessage.GetDesLength( KSlot0 );
+    TInt dataSize = aMessage.GetDesLength(KSlot0);
 
     if (dataSize < 0) {
-        User::Leave(KErrBadDescriptor);
+        aMessage.Complete(KErrBadDescriptor);
+        return;
     }
 
-    HBufC8* data = HBufC8::NewLC( dataSize );
-    TPtr8 ptr( data->Des() );
-    aMessage.ReadL( KSlot0, ptr );
+    HBufC8* data = HBufC8::NewLC(dataSize);
+    TPtr8 ptr(data->Des());
+    aMessage.ReadL(KSlot0, ptr);
 
-    QByteArray resArray( (const char*) ptr.Ptr(), ptr.Size() );
-    QDataStream outStream( &resArray, QIODevice::ReadOnly );
+    QVariantMap mapdata;
+    int error = KErrNone;
+    QT_TRYCATCH_ERROR(error,
+        QVariant var;
+        QByteArray resArray( (const char*) ptr.Ptr(), ptr.Size() );
+        QDataStream outStream( &resArray, QIODevice::ReadOnly );
 
-    QVariant var;
-    outStream >> var;
+        outStream >> var;
+        mapdata = var.toMap();
+    )
 
-    QVariantMap mapdata = var.toMap();
+    CleanupStack::PopAndDestroy(data);
 
-    CleanupStack::PopAndDestroy( data );
+    if (error != KErrNone) {
+        aMessage.Complete(error);
+        return;
+    }
 
-    TInt result = Server().updateDeviceDialog( DeviceDialogIdentifier(), mapdata );
-    aMessage.Complete( result );
+    TInt result = Server().updateDeviceDialog(DeviceDialogIdentifier(), mapdata);
+    aMessage.Complete(result);
     TRACE_EXIT_ARGS("result " << result)
 }
 
@@ -373,7 +401,7 @@ void HbDeviceDialogSession::UpdateChannelRequestL( const RMessage2 &aMessage )
     // not made a new request for device dialog (processing the
     // previous message).
     if ( mEventList.count() > 0 ) {
-        QVariantMap data = mEventList[0];
+        const QVariantMap data = mEventList.at(0);
 
         WriteUpdateData(data, mIdList.isEmpty() ? 0 : mIdList.first());
         mEventList.removeFirst();
@@ -400,20 +428,20 @@ void HbDeviceDialogSession::UpdateDataRequestL( const RMessage2 &aMessage )
         QVariantMap data = mEventList[0];
 
         QByteArray array;
-        QDataStream stream( &array, QIODevice::WriteOnly );
+        QDataStream stream(&array, QIODevice::WriteOnly);
 
         QVariant var(data);
         stream << var;
 
-        TPtr8 ptr( reinterpret_cast<TUint8*>(array.data()), array.size(), array.size());
+        TPtr8 ptr(reinterpret_cast<TUint8*>(array.data()), array.size(), array.size());
 
-        error = aMessage.Write( KSlot0, ptr );
+        error = aMessage.Write(KSlot0, ptr);
 
-        if ( error == KErrNone) {
+        if (error == KErrNone) {
             mEventList.removeFirst();
         }
     }
-    aMessage.Complete( error );
+    aMessage.Complete(error);
     TRACE_EXIT_ARGS("error " << error)
 }
 
@@ -442,7 +470,8 @@ void HbDeviceDialogSession::CancelUpdateChannel(const RMessage2 aMessage)
 void HbDeviceDialogSession::WriteUpdateData(const QVariantMap &parameters, int deviceDialogId)
 {
     TRACE_ENTRY
-    if ( iUpdateChannelOpen ) {
+
+    if (iUpdateChannelOpen) {
         // Client is listening and ready to receive data
         iUpdateChannelOpen = EFalse;
 

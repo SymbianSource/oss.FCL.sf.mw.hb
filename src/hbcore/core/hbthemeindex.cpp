@@ -24,6 +24,7 @@
 ****************************************************************************/
 
 #include "hbthemeindex_p.h"
+#include "hbhash_p.h"
 #include <QDebug>
 #ifndef HB_BOOTSTRAPPED
 #include "hbthemeclient_p.h"
@@ -32,7 +33,18 @@
 
 
 HbThemeIndexResource::HbThemeIndexResource(const QString &resourceName) :
-    resourceName(resourceName),
+    resourceName(&resourceName),
+    hashValue(0),
+    data(0)
+{
+#ifndef HB_BOOTSTRAPPED
+    getResourceData();
+#endif // HB_BOOTSTRAPPED
+}
+
+HbThemeIndexResource::HbThemeIndexResource(quint32 hashValue) :
+    resourceName(0),
+    hashValue(hashValue),
     data(0)
 {
 #ifndef HB_BOOTSTRAPPED
@@ -44,7 +56,11 @@ void HbThemeIndexResource::getResourceData()
 {
 #ifndef HB_BOOTSTRAPPED
 #ifdef THEME_INDEX_TRACES
-    qDebug() << "HbThemeIndexResource::getResourceData(), resourceName: " << resourceName;
+    if ( resourceName ) {
+        qDebug() << "HbThemeIndexResource::getResourceData(), resourceName: " << *resourceName;
+    } else {
+        qDebug() << "HbThemeIndexResource::getResourceData(), hashValue: " << hashValue;
+    }
 #endif
     // Theme index tables are always valid in shared memory
 
@@ -65,18 +81,22 @@ void HbThemeIndexResource::getResourceData()
     // First check base theme, which should be always valid
     HbThemeIndexInfo info = HbThemeUtils::getThemeIndexInfo(BaseTheme);
     if (!info.address) { // This shouldn't happen, as there must be valid base theme
-#ifdef THEME_INDEX_TRACES
-        qDebug("HbThemeUtils::getThemeIndexInfo(BaseTheme) returned null address");
-#endif
+        THEME_INDEX_DEBUG() << "HbThemeUtils::getThemeIndexInfo(BaseTheme) returned null address";
         return; // Data will be 0
     }
     
     HbThemeIndex baseIndex(info.address);
-    const HbThemeIndexItemData *baseItemData = baseIndex.getItemData(resourceName);
+    const HbThemeIndexItemData *baseItemData = resourceName
+        ? baseIndex.getItemData(*resourceName)
+        : baseIndex.getItemData(hashValue);
 
     if (!baseItemData) { // If the item is not found from base theme, it can't be found elsewhere
 #ifdef THEME_INDEX_TRACES
-        qDebug("HbThemeIndex::getItemData(%s) returned null data", qPrintable(resourceName));
+        if ( resourceName ) {
+            qDebug("HbThemeIndex::getItemData(%s) returned null data", qPrintable(*resourceName));
+        } else {
+            qDebug("HbThemeIndex::getItemData(%u) returned null data", hashValue);
+        }
 #endif
         return; // Data will be 0
     }
@@ -92,7 +112,9 @@ void HbThemeIndexResource::getResourceData()
     info = HbThemeUtils::getThemeIndexInfo(OperatorC);
     if (info.address) {
         HbThemeIndex operatorCIndex(info.address);
-        const HbThemeIndexItemData *operatorCItemData = operatorCIndex.getItemData(resourceName);
+        const HbThemeIndexItemData *operatorCItemData = resourceName
+            ? operatorCIndex.getItemData(*resourceName)
+            : operatorCIndex.getItemData(hashValue);
 
         if (operatorCItemData) { // Found, use it
             type = OperatorC;
@@ -107,7 +129,9 @@ void HbThemeIndexResource::getResourceData()
     info = HbThemeUtils::getThemeIndexInfo(OperatorROM);
     if (info.address) {
         HbThemeIndex operatorZIndex(info.address);
-        const HbThemeIndexItemData *operatorZItemData = operatorZIndex.getItemData(resourceName);
+        const HbThemeIndexItemData *operatorZItemData = resourceName
+            ? operatorZIndex.getItemData(*resourceName)
+            : operatorZIndex.getItemData(hashValue);
 
         if (operatorZItemData) { // Found, use it
             type = OperatorROM;
@@ -122,8 +146,9 @@ void HbThemeIndexResource::getResourceData()
     info = HbThemeUtils::getThemeIndexInfo(ActiveTheme);
     if (info.address) {
         HbThemeIndex activeThemeIndex(info.address);
-        const HbThemeIndexItemData *activeThemeItemData =
-                activeThemeIndex.getItemData(resourceName);
+        const HbThemeIndexItemData *activeThemeItemData = resourceName
+            ? activeThemeIndex.getItemData(*resourceName)
+            : activeThemeIndex.getItemData(hashValue);
 
         if (activeThemeItemData) { // Found, use it
             type = ActiveTheme;
@@ -196,7 +221,7 @@ bool HbThemeIndexResource::isLocked()
 
 QString HbThemeIndexResource::fullFileName()
 {
-    if (!data) {
+    if (!data || !resourceName) {
         return QString();
     }
 
@@ -204,57 +229,57 @@ QString HbThemeIndexResource::fullFileName()
     switch (data->itemType) {
         case HbThemeIndexItemData::SvgItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/scalable/" + resourceName + ".svg";
+            fullName = fullName + "/icons/" + themeName + "/scalable/" + *resourceName + ".svg";
             break;
             }
         case HbThemeIndexItemData::PngItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/" + resourceName + ".png";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/" + *resourceName + ".png";
             break;
             }
         case HbThemeIndexItemData::MngItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/" + resourceName + ".mng";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/" + *resourceName + ".mng";
             break;
             }
         case HbThemeIndexItemData::GifItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/" + resourceName + ".gif";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/" + *resourceName + ".gif";
             break;
             }
         case HbThemeIndexItemData::XpmItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/" + resourceName + ".xpm";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/" + *resourceName + ".xpm";
             break;
             }
         case HbThemeIndexItemData::JpgItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/" + resourceName + ".jpg";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/" + *resourceName + ".jpg";
             break;
             }
         case HbThemeIndexItemData::NvgItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/scalable/" + resourceName + ".nvg";
+            fullName = fullName + "/icons/" + themeName + "/scalable/" + *resourceName + ".nvg";
             break;
             }
         case HbThemeIndexItemData::SvgzItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/scalable/" + resourceName + ".svgz";
+            fullName = fullName + "/icons/" + themeName + "/scalable/" + *resourceName + ".svgz";
             break;
             }
         case HbThemeIndexItemData::QpicItem:
             {
-            fullName = fullName + "/icons/" + themeName + "/pixmap/" + resourceName + ".qpic";
+            fullName = fullName + "/icons/" + themeName + "/pixmap/" + *resourceName + ".qpic";
             break;
             }
         case HbThemeIndexItemData::AxmlItem:
             {
-            fullName = fullName + "/animations/" + themeName + '/' + resourceName;
+            fullName = fullName + "/animations/" + themeName + '/' + *resourceName;
             break;
             }
         case HbThemeIndexItemData::FxmlItem:
             {
-            fullName = fullName + "/effects/" + themeName + '/' + resourceName;
+            fullName = fullName + "/effects/" + themeName + '/' + *resourceName;
             break;
             }
         default:
@@ -266,9 +291,10 @@ QString HbThemeIndexResource::fullFileName()
     return fullName;
 }
 
-QString HbThemeIndexResource::fullMirroredFileName()
+QString HbThemeIndexResource::fullMirroredFileName(bool &mirroredIconFound)
 {
-    if (!data) {
+    mirroredIconFound = false;
+    if (!data || !resourceName) {
         return QString();
     }
 
@@ -277,55 +303,55 @@ QString HbThemeIndexResource::fullMirroredFileName()
         case HbThemeIndexItemData::SvgItem:
             {
             fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/"
-                       + resourceName + ".svg";
+                       + *resourceName + ".svg";
             break;
             }
         case HbThemeIndexItemData::PngItem:
             {
             fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
-                       + resourceName + ".png";
+                       + *resourceName + ".png";
             break;
             }
         case HbThemeIndexItemData::MngItem:
             {
             fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
-                       + resourceName + ".mng";
+                       + *resourceName + ".mng";
             break;
             }
         case HbThemeIndexItemData::GifItem:
             {
             fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
-                       + resourceName + ".gif";
+                       + *resourceName + ".gif";
             break;
             }
         case HbThemeIndexItemData::XpmItem:
             {
             fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
-                       + resourceName + ".xpm";
+                       + *resourceName + ".xpm";
             break;
             }
         case HbThemeIndexItemData::JpgItem:
             {
             fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
-                       + resourceName + ".jpg";
+                       + *resourceName + ".jpg";
             break;
             }
         case HbThemeIndexItemData::NvgItem:
             {
             fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/"
-                       + resourceName + ".nvg";
+                       + *resourceName + ".nvg";
             break;
             }
         case HbThemeIndexItemData::SvgzItem:
             {
             fullName = fullName + "/icons/" + themeName + "/scalable/mirrored/"
-                       + resourceName + ".svgz";
+                       + *resourceName + ".svgz";
             break;
             }
         case HbThemeIndexItemData::QpicItem:
             {
             fullName = fullName + "/icons/" + themeName + "/pixmap/mirrored/"
-                       + resourceName + ".qpic";
+                       + *resourceName + ".qpic";
             break;
             }
         default:
@@ -334,19 +360,18 @@ QString HbThemeIndexResource::fullMirroredFileName()
             }
         }
 
+    mirroredIconFound = true;
     return fullName;
 }
 
 QColor HbThemeIndexResource::colorValue()
 {
     if (!data || data->itemType != HbThemeIndexItemData::ColorItem) {
-        qWarning("HbThemeIndexResource::colorValue(): cannot fetch color for 0x%x::%i",
-                 qptrdiff(data), data ? data->itemType : (uint) -1);
+        THEME_INDEX_DEBUG("HbThemeIndexResource::colorValue(): cannot fetch color for 0x%p::%i",
+                 data, data ? data->itemType : (uint) -1);
         return QColor();
     }
-#ifdef THEME_INDEX_TRACES
-    qDebug("HbThemeIndexResource::colorValue(): constructing QColor(%x)", data->colorValue);
-#endif // THEME_INDEX_TRACES
+    THEME_INDEX_DEBUG() << "HbThemeIndexResource::colorValue(): constructing QColor with value:" << data->colorValue;
     return QColor(data->colorValue);
 }
 
@@ -379,29 +404,17 @@ void HbThemeIndex::init()
     initialized = true;
 }
 
-quint32 HbThemeIndex::hash(const QString &string)
+const HbThemeIndexItemData *HbThemeIndex::getItemData(const QString &itemName)
 {
-    quint32 hashValue = 0;
-    quint32 c;
-    QByteArray array = string.toLatin1();
-    char *data = array.data();
-    c = *data++;
-
-    while (c) {
-        hashValue = c + (hashValue << 6) + (hashValue << 16) - hashValue;
-        c = *data++;
-    }
-
-    return hashValue;
+    return getItemData(hbHash(itemName));
 }
 
-const HbThemeIndexItemData *HbThemeIndex::getItemData(const QString &itemName)
+const HbThemeIndexItemData *HbThemeIndex::getItemData(quint32 hashValue)
 {
     if (!initialized) {
         init();
     }
 
-    quint32 hashValue = hash(itemName);
     int begin = 0;
     int end = mItemCount - 1;
 
@@ -449,11 +462,9 @@ bool HbThemeIndex::validateItems(qint64 byteSize)
         indexOK = true;
     }
 
-    #ifdef THEME_INDEX_TRACES
     if (!indexOK) {
-        qDebug() <<  "ThemeIndex: Index file corrupted (index size is wrong)!";
+        THEME_INDEX_DEBUG() <<  "ThemeIndex: Index file corrupted (index size is wrong)!";
     }
-    #endif    
 
     return indexOK;
 }

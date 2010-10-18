@@ -25,6 +25,7 @@
 
 #include "hboogmwatcher_sym_p.h"
 #include "hbiconloader_p.h"
+#include "hbmainwindow_p.h"
 #include <QApplication>
 #include <QSymbianEvent>
 #include <e32debug.h>
@@ -63,9 +64,10 @@ static bool goomEventFilter(void *message, long *result)
             break;
         }
     }
-    // If there was an event filter set previously then call it. Otherwise
-    // return false (let through any events, even the ones handled above).
-    return prevEventFilter ? prevEventFilter(message, result) : false;
+    // If there was an event filter set previously then call it. Otherwise let the common
+    // helper function decide what to do (true = eat event, false = let through).
+    return prevEventFilter ? prevEventFilter(message, result)
+        : HbMainWindowPrivate::shouldStopEvent(message, result);
 }
 
 HbOogmWatcherPrivate::HbOogmWatcherPrivate()

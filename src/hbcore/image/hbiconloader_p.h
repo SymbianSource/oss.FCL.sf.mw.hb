@@ -94,6 +94,8 @@ public:
         HbIconAnimator *animator = 0,
         const QColor &color = QColor());
 
+    typedef void (*HbAsyncIconLoaderCallback)(HbIconImpl *, void *, bool);
+
     HbIconImpl *loadIcon(
         const QString &iconName,
         HbIconLoader::IconDataType type,
@@ -103,9 +105,13 @@ public:
         QIcon::Mode = QIcon::Normal,
         IconLoaderOptions options = IconLoaderOptions(ReturnUnknownIcon | BitmapIcons | VectorIcons),
         HbIconAnimator *animator = 0,
-        const QColor &color = QColor());
+        const QColor &color = QColor(),
+        HbAsyncIconLoaderCallback callback = 0,
+        void *callbackParam = 0);
 
-    void unLoadIcon(HbIconImpl *icon, bool unloadedByServer = false);
+    void cancelLoadIcon(HbAsyncIconLoaderCallback callback, void *callbackParam);
+
+    void unLoadIcon(HbIconImpl *icon, bool unloadedByServer = false, bool noKeep = false);
     void unLoadMultiIcon(QVector<HbIconImpl *> &multiPieceImpls);
 
     HbIconImpl *loadMultiPieceIcon(const QStringList &listOfIcons,
@@ -147,6 +153,7 @@ public:
     void removeFrameDrawerInfo(HbFrameDrawerPrivate *frameDrawer);
 
     void freeGpuIconData();
+    void freeIconData();
     void removeItemInCache(HbIconImpl *iconImpl);
 
     void handleForegroundLost();
@@ -158,44 +165,69 @@ signals:
 
 private slots:
     void themeChange(const QStringList &updatedFiles);
+    void themeChangeFinished();
     void destroy();
     void updateLayoutDirection();
+    void localLoadReady(const HbIconLoadingParams &loadParams, void *reqParams);
 
 private:
+    HbIconImpl *lookupInCache(const HbIconLoadingParams &params, QByteArray *outCacheKey);
+    void loadLocal(HbIconLoadingParams &params, const QString &format);
+    void loadLocalAsync(const HbIconLoadingParams &params, const QString &format,
+                        HbAsyncIconLoaderCallback callback, void *callbackParam);
+    HbIconImpl *finishLocal(HbIconLoadingParams &params);
+    void cacheIcon(const HbIconLoadingParams &params, HbIconImpl *icon, QByteArray *existingCacheKey);
+    HbIconImpl *finishGetIconFromServer(HbSharedIconInfo &iconInfo, HbIconLoadingParams &params);
     void resolveCleanIconName(HbIconLoadingParams &params) const;
     QSizeF getAnimationDefaultSize(HbIconAnimationDefinition &def, HbIconLoadingParams &params);
     void loadAnimation(HbIconAnimationDefinition &def, HbIconLoadingParams &params);
     QString resolveIconFileName(HbIconLoadingParams &params);
     HbIconImpl *getIconFromServer(HbIconLoadingParams &params);
-    void getMultiIconImplFromServer(QStringList &multiPartIconList,
-                                    QVector<QSizeF>  &sizeList,
-                                    Qt::AspectRatioMode aspectRatioMode,
-                                    QIcon::Mode mode,
-                                    bool mirrored,
-                                    bool mirroredIconFound,
-                                    HbIconLoader::IconLoaderOptions options,
-                                    const QColor &color,
-                                    HbIconLoader::IconDataType type,
-                                    HbIconLoader::Purpose,
-                                    QVector<HbIconImpl *> & iconImplList,
-                                    HbRenderingMode renderMode);
-
+    void getIconFromServerAsync(HbIconLoadingParams &params,
+                                HbAsyncIconLoaderCallback callback,
+                                void *callbackParam);
+    
+    HbIconImpl * createLocalConsolidatedIcon(const HbMultiPartSizeData &multiPartIconData,
+                               const QStringList & iconPathList,
+                               const QSizeF &consolidatedSize,
+                               Qt::AspectRatioMode aspectRatioMode,
+                               QIcon::Mode mode,
+                               const IconLoaderOptions & options,
+                               const QColor &color);
+    
     void loadSvgIcon(HbIconLoadingParams &params);
     void loadPictureIcon(HbIconLoadingParams &params);
     void loadAnimatedIcon(HbIconLoadingParams &params, const QString &format);
     void loadPixmapIcon(HbIconLoadingParams &params, const QString &format);
+    void loadNvgIcon(HbIconLoadingParams &params);
 
     QList< HbFrameDrawerPrivate *> frameDrawerInstanceList;
     QList< HbIconEngine *> iconEngineList;
-    friend class HbApplication;
-    friend class HbIconLoaderPrivate;
+
+    static bool asyncCallback(const HbSharedIconInfo &info, void *param);
 
 private:
     Q_DISABLE_COPY(HbIconLoader)
     HbIconLoaderPrivate *d;
     HbRenderingMode renderMode;
+
+    friend class HbApplication;
+    friend class HbIconLoaderPrivate;
+    friend class HbLocalIconLoader;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(HbIconLoader::IconLoaderOptions)
+
+class HbLocalIconLoader : public QObject
+{
+    Q_OBJECT
+
+public slots:
+    void load(const HbIconLoadingParams &params, const QString &format, void *reqParams);
+    void doQuit();
+
+signals:
+    void ready(const HbIconLoadingParams &loadParams, void *reqParams);
+};
 
 #endif // HBICONLOADER_P_H

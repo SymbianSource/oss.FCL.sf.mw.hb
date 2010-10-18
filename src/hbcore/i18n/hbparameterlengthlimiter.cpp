@@ -33,28 +33,111 @@
     @stable
     @hbcore
     \class HbParameterLengthLimiter
-    \brief HbParameterLengthLimiter is a class that offers support to insert different types of arguments into a QString.
+    \brief The HbParameterLengthLimiter class provides support for localizing text strings, and for limiting the length of runtime values inserted into the strings.
 
-    Supports upto 9 argument inserts per QString.
+    The HbParameterLengthLimiter class provides the same support for string 
+    localization based on unique text IDs as the global hbTrId() function, and 
+    the same support for inserting values based on the given arguments as 
+    QString::arg(). In addition, %HbParameterLengthLimiter supports limiting the 
+    length of values that are inserted into the translations using arguments. 
+    You can use up to nine arguments to insert values, as supported by QString.
+    
+    In most cases, it is simpler to use hbTrId() for localization (see hbTrId() 
+    documentation and examples). However, the number of characters in a text 
+    string can vary widely from language to language. Sometimes when space is 
+    limited, you may want to limit the number of characters that are inserted. 
+    In this case, use the HbParameterLengthLimiter class instead of %hbTrId().
+    
+    Even if the inserted value does not require limiting at the time of coding, 
+    there is one advantage in using HbParameterLengthLimiter right away: if you 
+    later need to limit the value length for some languages, no code changes are 
+    required. You only need to modify the <tt>.ts</tt> translation files for 
+    those languages. However, if you already know that all translations will fit 
+    without any limitations (for example, if you are using scrolling text with 
+    HbMarqueeItem), use hbTrId().
+    
+    The text strings in .ts localization files can have placeholders, where you 
+    insert values at runtime. HbParameterLengthLimiter supports the same 
+    placeholder formats as hbTrId() (\c \%x, \c \%Lx and \c \%Ln), and the 
+    following additional placeholder:
+    
+    <ul>
+    
+    <li><tt>%[y]x</tt> for inserting strings, where \c x is a number (1-9) that 
+    indicates the order of placeholders in the source text string. This 
+    corresponds to your argument inserting order when you use 
+    HbParameterLengthLimiter. The order of placeholders may vary in different 
+    translations, and the numbering ensures that values are inserted into the 
+    correct placeholders. <tt>[y]</tt> is a number that indicates the maximum 
+    length (in characters) for the inserted value.</li>
+    
+    </ul>
+    
+    For example, the text string \c "Downloading file %[10]1 from URL %2" has 
+    two placeholders to insert two strings, a file name and a URL. The [] 
+    notation in the first placeholder \c %[10]1 limits the length of the file 
+    name to 10 characters.
+    
+    HbParameterLengthLimiter provides all the same %arg() variants as QString, 
+    which means you can use it in place of QString::arg() when needed. The 
+    following examples describe the most common use cases that you would use 
+    %HbParameterLengthLimiter for. The other functions available can be used for 
+    more complex cases, such as processing the localized text strings.
+    
+    \section _usecases_hbparameterlengthlimiter Using the HbParameterLengthLimiter class
+    
+    \subsection _uc_001_hbparameterlengthlimiter Limiting the length of values inserted using an argument
+      
+      This example shows how you get the translation based on a given text ID, 
+      replace the two placeholders with values using runtime arguments, and 
+      limit the length of both of the inserted values.
+      
+      \code
+      // "Download file %1 from URL %2?"
+      // fileName = "test_application_data_file.txt"
+      // urlName = "www.something.org"
+      HbParameterLengthLimiter myTranslation("txt_browser_download_data");
+      label->setPlainText(myTranslation.arg(fileName, urlName));
+      \endcode
+      
+      The translation is defined in the <tt>.ts</tt> file in the following 
+      format:
+      
+      \code
+      <message id="txt_browser_download_data">
+        <source>"Download file %1 from URL %2?</source>
+        <translation variants="no">Download file %[10]1 from URL %[12]2?</translation>
+      </message>
+      \endcode
+      
+      This limits the length of the inserted values to 10 and 12 characters, 
+      producing a text string such as \c "Download file test_appli... from URL 
+      www.somethin...?".
+    
+      \subsection _uc_002_hbparameterlengthlimiter Inserting values using runtime arguments
+      
+      This example shows how you simply get a translation and replace the 
+      placeholder with a runtime value. You can achieve the same result by using 
+      hbTrId().
+      
+      \code
+      // "Enter %L1-digit passcode"
+      // int number = 4
+      label->setPlainText(HbParameterLengthLimiter("txt_give_numeric_passcode").arg(number));
+      \endcode
+      
+      This example also uses the 'L' notation in the placeholder in the text 
+      string, which formats the number in the active locale's display format.
+      
+      \sa hbTrId(), QString::arg(), HbDirectoryNameLocalizer, HbTranslator
 
-    Supports different kinds of indicators that are used for marking where arguments are inserted
-        - %x for inserting QStrings, where x is number from 1 to 9 indicating the order in which argumentss are positioned.
-        - %[y]x for inserting QStrings, x indicates argument inserting order and y is a number indicating the maximum length
-                for the argument e.g. %[10]2 would mean that the inserted QStrings maximum length is 10 characters and that the
-                limited argument is the second argument to be inserted.
-        - %Lx   for inserting numbers, x is used to indicate argument inserting order.
-
-    Example of how to use HbParameterLengthLimiter:
-    \snippet{unittest_HbParameterLengthLimiter/unittest_HbParameterLengthLimiter.cpp,1}
 
 */
 
 /*!
-    Constructs a HbParameterLengthLimiter with \a HbParameterLengthLimiter.
-    
-    \attention Cross-Platform API
-    
-    \param a HbParameterLengthLimiter that will have arguments inserted
+    Copy constructor.
+        
+    \param a The HbParameterLengthLimiter object to copy.
 */
 HbParameterLengthLimiter::HbParameterLengthLimiter( const HbParameterLengthLimiter& a )
 {
@@ -63,11 +146,9 @@ HbParameterLengthLimiter::HbParameterLengthLimiter( const HbParameterLengthLimit
 }
 
 /*!
-    Constructs a HbParameterLengthLimiter with \a QString.
+    Constructor for processing a string that has already been localized.
     
-    \attention Cross-Platform API
-    
-    \param a QString that will have arguments inserted
+    \param a A localized string containing the placeholders for inserting values.
 */
 HbParameterLengthLimiter::HbParameterLengthLimiter( QString a )
 {
@@ -76,11 +157,14 @@ HbParameterLengthLimiter::HbParameterLengthLimiter( QString a )
 }
 
 /*!
-    Constructs a HbParameterLengthLimiter with \a char*.
+
+    Constructs an HbParameterLengthLimiter using a text ID. The functionality is 
+    similar to what hbTrId() provides, except for the additional support for 
+    limiting the length of the inserted values.
     
-    \attention Cross-Platform API
+    \param a The text ID that identifies the localized string in the 
+    <tt>.ts</tt> file.
     
-    \param a char string that will have arguments inserted
 */
 HbParameterLengthLimiter::HbParameterLengthLimiter( const char* a )
 {
@@ -89,12 +173,17 @@ HbParameterLengthLimiter::HbParameterLengthLimiter( const char* a )
 }
 
 /*!
-    Constructs a HbParameterLengthLimiter with \a char* and \a int.
+
+    Constructs an HbParameterLengthLimiter using a text ID, and a numeric 
+    parameter for handling singular and plural forms correctly. The 
+    functionality is the same as provided by the hbTrId() function, except for 
+    the additional support for limiting the length of the inserted values.
     
-    \attention Cross-Platform API
+    \param a The text ID that identifies the localized string in the 
+    <tt>.ts</tt> file.    
+    \param n A numeric parameter that indicates quantity, used to determine 
+    which singular or plural translation to use from the <tt>.ts</tt> file.
     
-    \param a char string that will have arguments inserted
-    \param n used to identify which plural form to use
 */
 HbParameterLengthLimiter::HbParameterLengthLimiter( const char* a, int n )
 {
@@ -103,9 +192,7 @@ HbParameterLengthLimiter::HbParameterLengthLimiter( const char* a, int n )
 }
 
 /*!
-    Conp->structs a HbParameterLengthLimiter without a predefined QString.
-    
-    \attention Cross-Platform API  
+    Constructs an HbParameterLengthLimiter with a blank string.
 */
 HbParameterLengthLimiter::HbParameterLengthLimiter()
 {
@@ -114,7 +201,7 @@ HbParameterLengthLimiter::HbParameterLengthLimiter()
 }
 
 /*!
-    Destructor
+    Destructor.
 */
 HbParameterLengthLimiter::~HbParameterLengthLimiter()
 {
@@ -122,14 +209,17 @@ HbParameterLengthLimiter::~HbParameterLengthLimiter()
 }
 
 /*!
-    Inserts an \a argument to a HbParameterLengthLimiter QString.
     
-    \attention Cross-Platform API
+    Replaces the placeholders in the translation with runtime values using the 
+    given parameters and arguments.
     
-    \param a number that will be inserted to the QString
-    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \param base defines the number base
-    \param fillChar defines the fill character
+    This function corresponds to QString::arg(qlonglong, int, int, const QChar &) const.
+    
+    \param a The number that is to be inserted to the output string.
+    \param fieldwidth The minimum amount of space that \a a is padded to and 
+    filled with the character \a fillChar.    
+    \param base The number base.
+    \param fillChar The fill character.
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg(qlonglong a,
                                       int fieldwidth,
@@ -142,14 +232,17 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg(qlonglong a,
 }
 
 /*!
-    Inserts an \a argument to a HbParameterLengthLimiter QString.
     
-    \attention Cross-Platform API
+    Replaces the placeholders in the translation with runtime values using the 
+    given parameters and arguments.
     
-    \param a number that will be inserted to the QString
-    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \param base defines the number base
-    \param fillChar defines the fill character
+    This function corresponds to QString::arg(qulonglong, int, int, const QChar &) const.
+    
+    \param a The number that is to be inserted to the output string.    
+    \param fieldwidth The minimum amount of space that \a a is padded to and 
+    filled with the character \a fillChar.    
+    \param base The number base.
+    \param fillChar The fill character.
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( qulonglong a,
                                        int fieldwidth,
@@ -163,14 +256,17 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( qulonglong a,
  }
 
 /*!
-    Inserts an \a argument to a HbParameterLengthLimiter QString.
     
-    \attention Cross-Platform API
+    Replaces the placeholders in the translation with runtime values using the 
+    given parameters and arguments.
     
-    \param a number that will be inserted to the QString
-    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \param base defines the number base
-    \param fillChar defines the fill character
+    This function corresponds to QString::arg(long, int, int, const QChar &) const.
+    
+    \param a The number that is to be inserted to the output string.    
+    \param fieldwidth The minimum amount of space that \a a is padded to and 
+    filled with the character \a fillChar.    
+    \param base The number base.
+    \param fillChar The fill character.
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( long a,
                                        int fieldwidth,
@@ -184,14 +280,17 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( long a,
  }
 
 /*!
-    Inserts an \a argument to a HbParameterLengthLimiter QString.
     
-    \attention Cross-Platform API
+    Replaces the placeholders in the translation with runtime values using the 
+    given parameters and arguments.
     
-    \param a number that will be inserted to the QString
-    \param fieldwidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \param base defines the number base
-    \param fillChar defines the fill character
+    This function corresponds to QString::arg(ulong, int, int, const QChar &) const.
+    
+    \param a The number that is to be inserted to the output string.    
+    \param fieldwidth The minimum amount of space that \a a is padded to and 
+    filled with the character \a fillChar.    
+    \param base The number base.
+    \param fillChar The fill character.
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( ulong a,
                                        int fieldwidth,
@@ -204,14 +303,17 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( ulong a,
  }
 
 /*!
-    Inserts an \a argument to a HbParameterLengthLimiter QString.
     
-    \attention Cross-Platform API
+    Replaces the placeholders in the translation with runtime values using the 
+    given parameters and arguments.
     
-    \param a number that will be inserted to the QString
-    \param fieldWidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \param base defines the number base
-    \param fillChar defines the fill character
+    This function corresponds to QString::arg(int, int, int, const QChar &) const.
+    
+    \param a The number that is to be inserted to the output string.    
+    \param fieldWidth The minimum amount of space that \a a is padded to and 
+    filled with the character \a fillChar.    
+    \param base The number base.
+    \param fillChar The fill character.
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( int a,
                                        int fieldWidth,
@@ -225,14 +327,17 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( int a,
  }
 
 /*!
-    Inserts an \a argument to a HbParameterLengthLimiter QString.
     
-    \attention Cross-Platform API
+    Replaces the placeholders in the translation with runtime values using the 
+    given parameters and arguments.
     
-    \param a number that will be inserted to the QString
-    \param fieldWidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \param base defines the number base
-    \param fillChar defines the fill character
+    This function corresponds to QString::arg(uint, int, int, const QChar &) const.
+    
+    \param a The number that is to be inserted to the output string.    
+    \param fieldWidth The minimum amount of space that \a a is padded to and 
+    filled with the character \a fillChar.    
+    \param base The number base.
+    \param fillChar The fill character.
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( uint a,
                                        int fieldWidth,
@@ -245,14 +350,17 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( uint a,
  }
 
 /*!
-    Inserts an \a argument to a HbParameterLengthLimiter QString.
     
-    \attention Cross-Platform API
+    Replaces the placeholders in the translation with runtime values using the 
+    given parameters and arguments.
     
-    \param a number that will be inserted to the QString
-    \param fieldWidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \param base defines the number base
-    \param fillChar defines the fill character
+    This function corresponds to QString::arg(short, int, int, const QChar &) const.
+    
+    \param a The number that is to be inserted to the output string.    
+    \param fieldWidth The minimum amount of space that \a a is padded to and 
+    filled with the character \a fillChar.    
+    \param base The number base.
+    \param fillChar The fill character.
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( short a,
                                        int fieldWidth,
@@ -265,14 +373,17 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( short a,
 }
 
 /*!
-    Inserts an \a argument to a HbParameterLengthLimiter QString.
     
-    \attention Cross-Platform API
+    Replaces the placeholders in the translation with runtime values using the 
+    given parameters and arguments.
     
-    \param a number that will be inserted to the QString
-    \param fieldWidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \param base defines the number base
-    \param fillChar defines the fill character
+    This function corresponds to QString::arg(ushort, int, int, const QChar &) const.
+    
+    \param a The number that is to be inserted to the output string.    
+    \param fieldWidth The minimum amount of space that \a a is padded to and 
+    filled with the character \a fillChar.    
+    \param base The number base.
+    \param fillChar The fill character.
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( ushort a,
                                        int fieldWidth,
@@ -285,15 +396,18 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( ushort a,
 }
 
 /*!
-    Inserts an \a argument to a HbParameterLengthLimiter QString.
     
-    \attention Cross-Platform API
+    Replaces the placeholders in the translation with runtime values using the 
+    given parameters and arguments.
     
-    \param a argument a is formatted according to the specified format and precision
-    \param fieldWidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \param fmt defines the format to be used
-    \param prec defines the precision to be used
-    \param fillChar defines the fill character
+    This function corresponds to QString::arg(double, int, char, int, const QChar &) const.
+    
+    \param a Value formatted according to the specified format and precision.    
+    \param fieldWidth The minimum amount of space that \a a is padded to and 
+    filled with the character \a fillChar.    
+    \param fmt The format to be used.
+    \param prec The precision to be used.
+    \param fillChar The fill character.
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( double a,
                                        int fieldWidth,
@@ -307,13 +421,16 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( double a,
 }
 
 /*!
-    Inserts an \a argument to a HbParameterLengthLimiter QString.
     
-    \attention Cross-Platform API
+    Replaces the placeholders in the translation with runtime values using the 
+    given parameters and arguments.
     
-    \param a character that will be inserted to the QString
-    \param fieldWidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \param fillChar defines the fill character
+    This function corresponds to QString::arg(char, int, const QChar &) const.
+    
+    \param a The character that is to be inserted to the output string.    
+    \param fieldWidth The minimum amount of space that \a a is padded to and 
+    filled with the character \a fillChar.    
+    \param fillChar The fill character.
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( char a,
                                        int fieldWidth,
@@ -325,13 +442,16 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( char a,
 }
 
 /*!
-    Inserts an \a argument to a HbParameterLengthLimiter QString.
     
-    \attention Cross-Platform API
+    Replaces the placeholders in the translation with runtime values using the 
+    given parameters and arguments.
     
-    \param a character that will be inserted to the QString
-    \param fieldWidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \param fillChar defines the fill character
+    This function corresponds to QString::arg(QChar, int, const QChar &) const.
+    
+    \param a The character that is to be inserted to the output string.    
+    \param fieldWidth The minimum amount of space that \a a is padded to and 
+    filled with the character \a fillChar.    
+    \param fillChar The fill character.
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( QChar a,
                                        int fieldWidth,
@@ -343,13 +463,17 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( QChar a,
 }
 
 /*!
-    Inserts an \a argument to a HbParameterLengthLimiter QString.
     
-    \attention Cross-Platform API
+    Replaces the placeholders in the translation with runtime values using the 
+    given parameters and arguments. Limits the length of the inserted value, if 
+    this is specified in the placeholder using the [] notation.
     
-    \param a string that will be inserted to the QString
-    \param fieldWidth specifies the minimum amount of space that a is padded to and filled with the character fillChar
-    \param fillChar defines the fill character
+    This function corresponds to QString::arg(const QString &, int, const QChar &) const.
+    
+    \param a The string that is to be inserted to the output string.    
+    \param fieldWidth The minimum amount of space that \a a is padded to and 
+    filled with the character \a fillChar.    
+    \param fillChar The fill character.
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a,
                                        int fieldWidth,
@@ -483,12 +607,13 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a,
 }
 
 /*!
-    Inserts an arguments a1 and a2 to a HbParameterLengthLimiter QString.
+
+    Replaces the placeholders in the translation with the given strings using 
+    the arguments (\a a1 and \a a2). Limits the length of the inserted value, if 
+    this is specified in the placeholder using the [] notation.
     
-    \attention Cross-Platform API
+    This function corresponds to QString::arg(const QString &, const QString &) const.
     
-    \param a1 string that will be inserted to the QString
-    \param a2 string that will be inserted to the QString
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
                                        const QString &a2 )
@@ -498,13 +623,13 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
 }
 
 /*!
-    Inserts an arguments a1, a2 and a3 to a HbParameterLengthLimiter QString.
+
+    Replaces the placeholders in the translation with the given strings using 
+    the arguments (\a a1, \a a2, and so on). Limits the length of the inserted 
+    value, if this is specified in the placeholder using the [] notation.
     
-    \attention Cross-Platform API
+    This function corresponds to QString::arg(const QString &, const QString &, const QString &) const.
     
-    \param a1 string that will be inserted to the QString
-    \param a2 string that will be inserted to the QString
-    \param a3 string that will be inserted to the QString
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
                                        const QString &a2,
@@ -515,14 +640,13 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
 }
 
 /*!
-    Inserts an arguments a1, a2, a3 and a4 to a HbParameterLengthLimiter QString.
+
+    Replaces the placeholders in the translation with the given strings using 
+    the arguments (\a a1, \a a2, and so on). Limits the length of the inserted 
+    value, if this is specified in the placeholder using the [] notation.
     
-    \attention Cross-Platform API
+    This function corresponds to QString::arg(const QString &, const QString &, const QString &, const QString &) const.
     
-    \param a1 string that will be inserted to the QString
-    \param a2 string that will be inserted to the QString
-    \param a3 string that will be inserted to the QString
-    \param a4 string that will be inserted to the QString
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
                                        const QString &a2,
@@ -534,15 +658,13 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
 }
 
 /*!
-    Inserts an arguments a1, a2, a3, a4 and a5 to a HbParameterLengthLimiter QString.
+
+    Replaces the placeholders in the translation with the given strings using 
+    the arguments (\a a1, \a a2, and so on). Limits the length of the inserted 
+    value, if this is specified in the placeholder using the [] notation.
     
-    \attention Cross-Platform API
+    This function corresponds to QString::arg(const QString &, const QString &, const QString &, const QString &, const QString &) const.
     
-    \param a1 string that will be inserted to the QString
-    \param a2 string that will be inserted to the QString
-    \param a3 string that will be inserted to the QString
-    \param a4 string that will be inserted to the QString
-    \param a5 string that will be inserted to the QString
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
                                        const QString &a2,
@@ -555,16 +677,13 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
 }
 
 /*!
-    Inserts an arguments a1, a2, a3, a4, a5 and a6 to a HbParameterLengthLimiter QString.
     
-    \attention Cross-Platform API
+    Replaces the placeholders in the translation with the given strings using 
+    the arguments (\a a1, \a a2, and so on). Limits the length of the inserted 
+    value, if this is specified in the placeholder using the [] notation.
     
-    \param a1 string that will be inserted to the QString
-    \param a2 string that will be inserted to the QString
-    \param a3 string that will be inserted to the QString
-    \param a4 string that will be inserted to the QString
-    \param a5 string that will be inserted to the QString
-    \param a6 string that will be inserted to the QString
+    This function corresponds to QString::arg(const QString &, const QString &, const QString &, const QString &, const QString &, const QString &) const.
+    
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
                                        const QString &a2,
@@ -578,17 +697,13 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
 }
 
 /*!
-    Inserts an arguments a1, a2, a3, a4, a5, a6 and a7 to a HbParameterLengthLimiter QString.
     
-    \attention Cross-Platform API
+    Replaces the placeholders in the translation with the given strings using 
+    the arguments (\a a1, \a a2, and so on). Limits the length of the inserted 
+    value, if this is specified in the placeholder using the [] notation.
     
-    \param a1 string that will be inserted to the QString
-    \param a2 string that will be inserted to the QString
-    \param a3 string that will be inserted to the QString
-    \param a4 string that will be inserted to the QString
-    \param a5 string that will be inserted to the QString
-    \param a6 string that will be inserted to the QString
-    \param a7 string that will be inserted to the QString
+    This function corresponds to QString::arg(const QString &, const QString &, const QString &, const QString &, const QString &, const QString &, const QString &) const.
+    
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
                                        const QString &a2,
@@ -603,18 +718,13 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
 }
 
 /*!
-    Inserts an arguments a1, a2, a3, a4, a5, a6, a7 and a8 to a HbParameterLengthLimiter QString.
     
-    \attention Cross-Platform API
+    Replaces the placeholders in the translation with the given strings using 
+    the arguments (\a a1, \a a2, and so on). Limits the length of the inserted 
+    value, if this is specified in the placeholder using the [] notation.
     
-    \param a1 string that will be inserted to the QString
-    \param a2 string that will be inserted to the QString
-    \param a3 string that will be inserted to the QString
-    \param a4 string that will be inserted to the QString
-    \param a5 string that will be inserted to the QString
-    \param a6 string that will be inserted to the QString
-    \param a7 string that will be inserted to the QString
-    \param a8 string that will be inserted to the QString
+    This function corresponds to QString::arg(const QString &, const QString &, const QString &, const QString &, const QString &, const QString &, const QString &, const QString &) const.
+    
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
                                        const QString &a2,
@@ -630,19 +740,13 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
 }
 
 /*!
-    Inserts an arguments a1, a2, a3, a4, a5, a6, a7, a8 and a9 to a HbParameterLengthLimiter QString.
     
-    \attention Cross-Platform API
+    Replaces the placeholders in the translation with the given strings using 
+    the arguments (\a a1, \a a2, and so on). Limits the length of the inserted 
+    value, if this is specified in the placeholder using the [] notation.
     
-    \param a1 string that will be inserted to the QString
-    \param a2 string that will be inserted to the QString
-    \param a3 string that will be inserted to the QString
-    \param a4 string that will be inserted to the QString
-    \param a5 string that will be inserted to the QString
-    \param a6 string that will be inserted to the QString
-    \param a7 string that will be inserted to the QString
-    \param a8 string that will be inserted to the QString
-    \param a9 string that will be inserted to the QString
+    This function corresponds to QString::arg(const QString &, const QString &, const QString &, const QString &, const QString &, const QString &, const QString &, const QString &, const QString &) const.
+    
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
                                        const QString &a2, 
@@ -659,11 +763,10 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::arg( const QString &a1,
 }
 
 /*!
-    Changes the QString that is to be used for inserting arguments to QString.
+
+    Sets the localized string of the HbParameterLengthLimiter object to the 
+    value of the \a a string.
     
-    \attention Cross-Platform API
-    
-    \param a QString that will be used for inserting arguments
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::operator=( const QString &a )
 {
@@ -672,11 +775,10 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::operator=( const QString &a 
 }
 
 /*!
-    Changes the QString that is to be used for inserting arguments to HbParameterLengthLimiter.
+
+    Sets the localized string of the target HbParameterLengthLimiter object to 
+    the string contained in the \a a object.
     
-    \attention Cross-Platform API
-    
-    \param a HbParameterLengthLimiter holding the QString that will be used for inserting arguments
 */
 HbParameterLengthLimiter& HbParameterLengthLimiter::operator=( const HbParameterLengthLimiter &a )
 {
@@ -685,9 +787,13 @@ HbParameterLengthLimiter& HbParameterLengthLimiter::operator=( const HbParameter
 }
 
 /*!
-    Returns the current QString.
-    
-    \attention Cross-Platform API    
+
+    Implicit conversion function that allows you to pass an 
+    HbParameterLengthLimiter object in a context where a QString object is 
+    expected. For example, you can use an HbParameterLengthLimiter object when 
+    setting the localized text in a widget, rather than first getting the string 
+    out of HbParameterLengthLimiter and then passing it to the widget.
+
 */
 HbParameterLengthLimiter::operator QString() const
 {

@@ -92,15 +92,21 @@ QString HbDirectoryNameLocalizer::translate( QString& sourceText ) const
     }
 
     QString result;
-	
+    
     if ( d->localizedNames.count() > 0 ) {
-        QString searchKey = sourceText;		
+        QString searchKey = sourceText;     
 
         searchKey = searchKey.replace("\\","/");
         searchKey = searchKey.replace("\\\\","/");
         searchKey = searchKey.toLower();
 
         result = d->localizedNames.value(searchKey);
+        if ( result.isEmpty() && 
+            !searchKey.startsWith(DirectoryLocalizerPhoneMemDrive) && 
+            !searchKey.startsWith(DirectoryLocalizerRomDrive) &&
+            searchKey.indexOf(':') > 0) {
+            result = d->localizedNames.value(searchKey.remove(0,searchKey.indexOf(':')+1));
+        }
     }
 
     return result;

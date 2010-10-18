@@ -13,7 +13,7 @@ HbToolButton[!enabled]::text
 color:var(qtc_toolbar_disabled);
 }
 
-HbToolButton[checked]::text
+HbToolButton[state = "latched"]::text
 {
 color:var(qtc_toolbar_latched);
 }
@@ -33,14 +33,14 @@ HbToolButton[!enabled]::icon
 color:var(qtc_toolbar_disabled);
 }
 
-HbToolButton[checked]::icon
+HbToolButton[state = "latched"]::icon
 {
 color:var(qtc_toolbar_latched);
 }
 
 HbToolButton[toolbutton_extension_layout]::text
 {
-color:var(qtc_popup_grid_normal);
+color:var(qtc_popup_grid_trans_normal);
 }
 
 HbToolButton[state = "pressed"][toolbutton_extension_layout]::text
@@ -55,7 +55,7 @@ color:var(qtc_popup_grid_disabled);
 
 HbToolButton[toolbutton_extension_layout]::icon
 {
-color:var(qtc_popup_grid_normal);
+color:var(qtc_popup_grid_trans_normal);
 }
 
 HbToolButton[state = "pressed"][toolbutton_extension_layout]::icon

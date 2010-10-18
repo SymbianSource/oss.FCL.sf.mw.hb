@@ -22,3 +22,10 @@ HbColorDialog {
 
     color15: 11031552; /* orange - only used when none block is not visible*/
 }
+
+HbColorDialog::content {
+    left:-var(hb-param-margin-gene-popup-list);
+    right:var(hb-param-margin-gene-popup-list);
+    top:-var(hb-param-margin-gene-popup-list);
+    bottom:var(hb-param-margin-gene-popup-list);
+}

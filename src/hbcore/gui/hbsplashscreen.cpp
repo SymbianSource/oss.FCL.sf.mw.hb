@@ -26,8 +26,30 @@
 #include "hbsplashscreen.h"
 #include "hbsplashscreen_generic_p.h"
 #include "hbsplash_p.h"
+#include "hbsplashdefs_p.h"
+#include "hbapplication.h"
 #include <QPainter>
 #include <QApplication>
+
+#if QT_VERSION >= 0x040700
+#include <QElapsedTimer>
+#define ELAPSED_TIMER QElapsedTimer
+#else
+#include <QTime>
+#define ELAPSED_TIMER QTime
+#endif
+
+#if defined(Q_OS_SYMBIAN) && defined(HB_EFFECTS_OPENVG)
+// When Symbian/EGL/OpenVG is available we can use the more efficient
+// implementation which is not only faster but is able to operate
+// without having Qt or any other framework initialized. This means
+// having truly 'instant' splash screens.
+#define HB_SPLASH_DIRECT_WS
+#endif
+
+#ifdef HB_SPLASH_DIRECT_WS
+#include "hbsplashscreen_symbian_vg_p.h"
+#endif
 
 /*!
   @stable
@@ -61,6 +83,8 @@
 
   Indicates that the application will force its orientation to vertical. As a
   result the splash screen will also be forced to vertical orientation.
+
+  \sa Hb::SplashFixedVertical
 */
 
 /*!
@@ -68,6 +92,22 @@
 
   Indicates that the application will force its orientation to horizontal. As a
   result the splash screen will also be forced to horizontal orientation.
+
+  \sa Hb::SplashFixedHorizontal
+*/
+
+/*!
+  \var HbSplashScreen::Flag HbSplashScreen::ForceQt
+
+  Forces the usage of the QWidget-based implementation even on platforms where a
+  non-Qt based implementation would be available. The Qt-based version requires
+  QApplication to be constructed, while non-Qt based ones do not need this and
+  therefore they can be launched before instantiating QApplication or
+  HbApplication, providing a better startup experience. However some special
+  applications may want to stick to the Qt-based version, e.g. because they
+  force the usage of the raster graphics system.
+
+  \sa Hb::ForceQtSplash
 */
 
 static HbSplashScreenInterface *splashScreen = 0;
@@ -81,17 +121,80 @@ struct RequestProps {
 
 Q_GLOBAL_STATIC(RequestProps, requestProps)
 
+// This static function is called when the fw wants to know if the
+// splash screen can be launched before constructing QApplication.
+bool HbSplashScreenExt::needsQt()
+{
+#ifdef HB_SPLASH_DIRECT_WS
+    return false;
+#else
+    return true;
+#endif
+}
+
+// Called (by HbApplication) when QApplication is constructed and the splash was
+// launched before that. This gives a chance for the splash screen to do
+// activies that need an active scheduler or a QApplication instance.
+void HbSplashScreenExt::doQtPhase()
+{
+    // Can also be called when the splash screen was not started or is already
+    // destroyed, do nothing in such cases.
+    if (splashScreen) {
+        splashScreen->doQtPhase();
+    }
+}
+
 /*!
   Creates and shows the splash screen, if a suitable one is available for the
   current application. The splash screen is automatically destroyed by
   HbMainWindow after the window has become fully visible.
+
+  The generic splash implementation is QWidget-based and thus needs to have the
+  QApplication instance created before calling this function. On the other hand
+  for Symbian there may be a Qt-independent implementation which means that
+  this function can be called before constructing HbApplication or QApplication,
+  i.e. right after entering main().
+  
+  Normally there is no need to worry about the differences because HbApplication
+  is aware of this and will call this function at the most ideal time, depending
+  on the underlying implementation. However when start() is called directly by
+  the application, this becomes important because the application startup
+  experience can be greatly improved by making sure the splash is shown as early
+  as possible.
+
+  On Symbian the splash will be automatically suppressed (i.e. not shown) if the
+  application was started to background, that is,
+  HbApplication::startedToBackground() returns true. To override this default
+  behavior, pass HbSplashScreen::ShowWhenStartingToBackground.
+
+  Passing argc and argv is optional, however if they are omitted,
+  QCoreApplication must have already been instantiated. If neither argc and argv
+  are specified nor QCoreApplication is available, the automatic splash
+  suppression will not be available.
  */
-void HbSplashScreen::start(Flags flags)
+void HbSplashScreen::start(Flags flags, int argc, char *argv[])
 {
-    if (!splashScreen) {
-        splashScreen = new HbSplashScreenGeneric;
+    Flags realFlags = flags | requestProps()->mSplashFlags;
+    if (!realFlags.testFlag(ShowWhenStartingToBackground)
+        && HbApplication::startedToBackground(argc, argv)) {
+        splDebug("[hbsplash] app started to background, suppressing splash");
+        return;
     }
-    splashScreen->start(flags | requestProps()->mSplashFlags);
+    if (!splashScreen) {
+#ifdef HB_SPLASH_DIRECT_WS
+        // Use the Qt-based impl even on Symbian when it is forced or when there
+        // is already a QApplication instance.
+        if (realFlags.testFlag(ForceQt) || QApplication::instance()) {
+            splashScreen = new HbSplashScreenGeneric;
+        } else {
+            // Ideal case: Use the native splash.
+            splashScreen = new HbSplashScreenSymbianVg;
+        }
+#else
+        splashScreen = new HbSplashScreenGeneric;
+#endif
+    }
+    splashScreen->start(realFlags);
 }
 
 /*!
@@ -184,7 +287,7 @@ HbSplashScreenGeneric::HbSplashScreenGeneric()
 HbSplashScreenGeneric::~HbSplashScreenGeneric()
 {
     if (mImageData) {
-        qDebug("[hbsplash] destroying splash screen");
+        splDebug("[hbsplash] destroying splash screen");
         delete mImageData;
     }
 }
@@ -209,19 +312,23 @@ void HbSplashScreenGeneric::start(HbSplashScreen::Flags flags)
             }
         }
         if (!mContents.isNull()) {
-            qDebug("[hbsplash] splash screen initialized");
+            splDebug("[hbsplash] splash screen initialized");
+
 #ifdef Q_OS_SYMBIAN
             showFullScreen(); // krazy:exclude=qmethods
 #else
             show();
 #endif
+
             QApplication::processEvents();
             QApplication::flush();
+
             // The splash screen must be destroyed automatically when
             // loosing foreground.
             if (QApplication::instance()) {
                 QApplication::instance()->installEventFilter(this);
             }
+
             // The splash screen must be destroyed automatically after
             // a certain amount of time.
             mTimerId = startTimer(auto_stop_interval);
@@ -246,7 +353,7 @@ void HbSplashScreenGeneric::repaint()
 void HbSplashScreenGeneric::timerEvent(QTimerEvent *event)
 {
     if (event->timerId() == mTimerId) {
-        qDebug("[hbsplash] timeout while splash screen is active");
+        qWarning("[hbsplash] timeout while splash screen is active");
         deleteLater();
         splashScreen = 0;
     } else {
@@ -257,9 +364,254 @@ void HbSplashScreenGeneric::timerEvent(QTimerEvent *event)
 bool HbSplashScreenGeneric::eventFilter(QObject *obj, QEvent *event)
 {
     if (event->type() == QEvent::ApplicationDeactivate) {
-        qDebug("[hbsplash] foreground lost while splash screen is active");
+        qWarning("[hbsplash] foreground lost while splash screen is active");
         deleteLater();
         splashScreen = 0;
     }
     return QWidget::eventFilter(obj, event);
 }
+
+// Symbian (wserv + egl + openvg) implementation.
+
+// Unlike the generic version this works also when used
+// before constructing the QApplication instance.
+
+// No mw layer frameworks (cone, uikon) must be used here
+// because they may not be initialized at all and doing
+// initialization here would interfere with Qt.
+
+#ifdef HB_SPLASH_DIRECT_WS
+
+HbSplashScreenSymbianVg::HbSplashScreenSymbianVg()
+    : mInited(false), mImageData(0), mTimer(0)
+{
+}
+
+HbSplashScreenSymbianVg::~HbSplashScreenSymbianVg()
+{
+    delete mImageData;
+    delete mTimer;
+    if (mInited) {
+#ifdef HB_SPLASH_VERBOSE_LOGGING
+        RDebug::Printf("[hbsplash] destroying splash screen");
+#endif
+        if (eglGetCurrentContext() == mContext
+            || eglGetCurrentSurface(EGL_READ) == mSurface
+            || eglGetCurrentSurface(EGL_DRAW) == mSurface)
+        {
+            eglMakeCurrent(mDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        }
+        eglDestroySurface(mDisplay, mSurface);
+        eglDestroyContext(mDisplay, mContext);
+        delete mScr;
+        mGroup.Close();
+        mWs.Close();
+    }
+}
+
+void HbSplashScreenSymbianVg::release()
+{
+    delete this;
+}
+
+bool HbSplashScreenSymbianVg::init()
+{
+    // This is typically called before initializing anything, meaning
+    // there is no active scheduler, cleanup stack, cone, etc.
+
+#ifdef HB_SPLASH_VERBOSE_LOGGING
+    ELAPSED_TIMER t;
+    t.start();
+#endif
+
+    if (mWs.Connect() != KErrNone) { // also connects to fbserv
+        return false;
+    }
+    try {
+        mScr = new CWsScreenDevice(mWs);
+    } catch (const std::bad_alloc &) {
+        mWs.Close();
+        return false;
+    }
+    mScr->Construct();
+    mGroup = RWindowGroup(mWs);
+    mGroup.Construct(1, ETrue);
+    mWin = RWindow(mWs);
+    mWin.Construct(mGroup, 2);
+    mWin.SetExtent(TPoint(0, 0), mScr->SizeInPixels());
+    mWin.EnableVisibilityChangeEvents();
+
+#ifdef HB_SPLASH_VERBOSE_LOGGING
+    RDebug::Printf("[hbsplash] wserv init took %d ms", (int) t.restart());
+#endif
+
+    // Do not return failure when egl/openvg calls fail. Let it go, we
+    // just won't see the splash in such a case, and that's fine.
+    mDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    eglInitialize(mDisplay, 0, 0);
+    eglBindAPI(EGL_OPENVG_API);
+    EGLConfig config;
+    EGLint numConfigs;
+    const EGLint attribList[] = {
+        EGL_RENDERABLE_TYPE, EGL_OPENVG_BIT,
+        EGL_SURFACE_TYPE, EGL_WINDOW_BIT | EGL_VG_ALPHA_FORMAT_PRE_BIT,
+        EGL_RED_SIZE, 8,
+        EGL_GREEN_SIZE, 8,
+        EGL_BLUE_SIZE, 8,
+        EGL_ALPHA_SIZE, 8,
+        EGL_NONE
+    };
+    eglChooseConfig(mDisplay, attribList, &config, 1, &numConfigs);
+    mContext = eglCreateContext(mDisplay, config, EGL_NO_CONTEXT, 0);
+    if (mContext == EGL_NO_CONTEXT) {
+        RDebug::Printf("[hbsplash] eglCreateContext failed (%d)", eglGetError());
+    }
+    const EGLint attribList2[] = {
+        EGL_VG_ALPHA_FORMAT, EGL_VG_ALPHA_FORMAT_PRE,
+        EGL_NONE
+    };
+    mSurface = eglCreateWindowSurface(mDisplay, config,
+                                      (EGLNativeWindowType)(&mWin), attribList2);
+    if (mSurface == EGL_NO_SURFACE) {
+        RDebug::Printf("[hbsplash] eglCreateWindowSurface failed (%d)", eglGetError());
+    }
+
+#ifdef HB_SPLASH_VERBOSE_LOGGING
+    RDebug::Printf("[hbsplash] egl+openvg init took %d ms", (int) t.elapsed());
+#endif
+
+    return true;
+}
+
+void HbSplashScreenSymbianVg::start(HbSplashScreen::Flags flags)
+{
+    if (!mImageData) {
+        int w, h, bpl;
+        QImage::Format fmt;
+        RequestProps *props = requestProps();
+#ifdef HB_SPLASH_VERBOSE_LOGGING
+        ELAPSED_TIMER t;
+        t.start();
+#endif
+        // Start loading the splash screen data but don't wait until it's
+        // done. Instead, move on to graphics initialization.
+        uchar *asyncHandle = HbSplash::load(w, h, bpl, fmt, flags,
+                                            props->mAppId, props->mScreenId,
+                                            0, 0, true);
+#ifdef HB_SPLASH_VERBOSE_LOGGING
+        RDebug::Printf("[hbsplash] async load start took %d ms", (int) t.restart());
+#endif
+
+        if (!mInited) {
+            if (init()) {
+                mInited = true;
+            } else {
+                RDebug::Printf("[hbsplash] init() failed");
+                return;
+            }
+        }
+
+#ifdef HB_SPLASH_VERBOSE_LOGGING
+        t.restart();
+#endif
+        // The image data and its properties will shortly be needed so retrieve
+        // the result of the load operation.
+        mImageData = HbSplash::finishAsync(asyncHandle);
+#ifdef HB_SPLASH_VERBOSE_LOGGING
+        RDebug::Printf("[hbsplash] finishAsync() took %d ms", (int) t.restart());
+#endif
+
+        if (mImageData) {
+            eglMakeCurrent(mDisplay, mSurface, mSurface, mContext);
+            VGImage img = vgCreateImage(VG_sARGB_8888_PRE, w, h, VG_IMAGE_QUALITY_FASTER);
+            if (img != VG_INVALID_HANDLE) {
+                vgImageSubData(img, mImageData, bpl, VG_sARGB_8888_PRE, 0, 0, w, h);
+            } else {
+                RDebug::Printf("[hbsplash] vgCreateImage failed (%d)", vgGetError());
+            }
+
+#ifdef HB_SPLASH_VERBOSE_LOGGING
+            RDebug::Printf("[hbsplash] image init took %d ms", (int) t.restart());
+#endif
+
+            mWin.Activate();
+            mWin.Invalidate();
+            mWin.BeginRedraw();
+
+#ifdef HB_SPLASH_VERBOSE_LOGGING
+            RDebug::Printf("[hbsplash] redraw init took %d ms", (int) t.restart());
+#endif
+
+            vgSeti(VG_MATRIX_MODE, VG_MATRIX_IMAGE_USER_TO_SURFACE);
+            VGfloat mat[9];
+            mat[0] = 1.0f;
+            mat[1] = 0.0f;
+            mat[2] = 0.0f;
+            mat[3] = 0.0f;
+            mat[4] = -1.0f;
+            mat[5] = 0.0f;
+            mat[6] = 0.0f;
+            mat[7] = h;
+            mat[8] = 1.0f;
+            vgLoadMatrix(mat);
+            vgDrawImage(img);
+            vgDestroyImage(img);
+            eglSwapBuffers(mDisplay, mSurface);
+
+            mWin.EndRedraw();
+            mWs.Flush();
+
+#ifdef HB_SPLASH_VERBOSE_LOGGING
+            RDebug::Printf("[hbsplash] drawing took %d ms", (int) t.elapsed());
+#endif
+
+            bool isQtAvailable = QApplication::instance() != 0;
+#ifdef HB_SPLASH_VERBOSE_LOGGING
+            RDebug::Printf("[hbsplash] qapplication present: %d", isQtAvailable);
+#endif
+            if (isQtAvailable) {
+                doQtPhase();
+            }
+            // If there is no QApplication then there is no active scheduler,
+            // cone, etc. either so defer the creation of the timer and the
+            // visibility listener. doQtPhase() will be called later by
+            // HbApplication when QApplication is constructed. If HbApplication
+            // is not used at all and start() is called before instantiating
+            // QApplication then doQtPhase() is never called but there is not
+            // much we can do and it is not mandatory anyway.
+
+        } else {
+            HbSplashScreen::destroy();
+        }
+    }
+}
+
+TInt HbSplashScreenSymbianVg::timerCallback(TAny *param)
+{
+    HbSplashScreenSymbianVg *self = static_cast<HbSplashScreenSymbianVg *>(param);
+    self->mTimer->Cancel();
+    RDebug::Printf("[hbsplash] timeout while splash screen is active");
+    HbSplashScreen::destroy();
+    return 0;
+}
+
+void HbSplashScreenSymbianVg::doQtPhase()
+{
+#ifdef HB_SPLASH_VERBOSE_LOGGING
+    RDebug::Printf("[hbsplash] HbSplashScreenSymbianVg::doQtPhase()");
+#endif
+    // Now there is an active scheduler.
+    if (!mTimer) {
+        TRAPD(err, mTimer = CPeriodic::NewL(CActive::EPriorityStandard));
+        if (err == KErrNone) {
+            TTimeIntervalMicroSeconds32 iv = auto_stop_interval * 1000;
+            mTimer->Start(iv, iv, TCallBack(timerCallback, this));
+        }
+    }
+    // Here we could start a listener for visibility events or similar. But it
+    // is better not to, because we may get an ENotVisible event (in theory)
+    // even when the incoming window has not yet got any real content so the
+    // splash cannot be destroyed at that stage.
+}
+
+#endif // HB_SPLASH_DIRECT_WS

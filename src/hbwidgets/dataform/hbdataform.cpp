@@ -39,117 +39,295 @@
 
 #include <QGraphicsSceneMouseEvent>
 #include <QCoreApplication>
+#include <QGraphicsScene>
+#include <QGestureRecognizer>
 
+#include <hbgesturerecognizers_p.h>
+#include <hbgestures_p.h>
+
+class HbTapDelayGesture:public HbTapGesture
+{
+public:
+    using HbTapGesture::d_ptr;
+    
+    Q_DECLARE_PRIVATE_D(d_ptr, HbTapGesture)
+};
+class HbTapDelayGestureRecognizer : public HbTapGestureRecognizer
+{
+public:
+    explicit HbTapDelayGestureRecognizer(){}
+    virtual ~HbTapDelayGestureRecognizer()
+    {
+        int i = 0;
+        i++;
+    };
+
+    QGestureRecognizer::Result recognize(QGesture *state, QObject *watched, QEvent *event)
+    {
+        HbTapDelayGesture* gesture = static_cast<HbTapDelayGesture *>(state);
+        QMouseEvent* me = toMouseEvent(event);
+        Qt::GestureState gestureState = state->state();
+        switch(event->type())
+        {
+        case QEvent::MouseButtonDblClick:
+        case QEvent::MouseButtonPress:
+            if ( state->state() == Qt::NoGesture && me->button() == Qt::LeftButton){
+                
+                gesture->setPosition(me->globalPos());
+                gesture->setHotSpot(me->globalPos());
+                gesture->setStartPos(me->globalPos());
+                gesture->setScenePosition(HbGestureUtils::mapToScene(watched, me->globalPos()));
+                gesture->setSceneStartPos(HbGestureUtils::mapToScene(watched, me->globalPos()));
+                mTapRadius = (int)(HbDefaultTapRadius * HbDeviceProfile::current().ppmValue());        
+
+                HbTapGesturePrivate* d_ptr = gesture->d_func();
+                d_ptr->mTapStyleHint = HbTapGesture::Tap;
+                if ( d_ptr->mTimerId ) {
+                    gesture->killTimer(d_ptr->mTimerId);
+                }
+                d_ptr->mTimerId = gesture->startTimer(50);
+                return QGestureRecognizer::MayBeGesture;
+                
+            }
+            else {
+                return QGestureRecognizer::Ignore;
+            }
+    
+
+        case QEvent::MouseMove:
+            if(gestureState != Qt::NoGesture && gestureState != Qt::GestureCanceled) { 
+                return handleMouseMove(gestureState, gesture, watched, toMouseEvent(event));
+            }
+            else{
+                if (gesture->d_func()->mTimerId) {
+                    gesture->setPosition(me->globalPos());
+                    gesture->setScenePosition(HbGestureUtils::mapToScene(watched, me->globalPos()));
+                    gesture->setHotSpot(me->globalPos());
+
+                    int tapRadiusSquare(mTapRadius * mTapRadius);
+                    if(gesture->property(HbPrivate::TapRadius.latin1()).isValid()) {
+                        qWarning("WARNING using widget specific properties in HbTapGestureRecognizer");
+                        int tapRadius = gesture->property(HbPrivate::TapRadius.latin1()).toInt();
+                        tapRadiusSquare = tapRadius * tapRadius;
+                    }
+                    QPointF delta = me->globalPos() - gesture->startPos();
+
+                     // cancel long press with radius
+                    if((delta.x() * delta.x() + delta.y() * delta.y()) > tapRadiusSquare) {                
+                        gesture->killTimer(gesture->d_func()->mTimerId);
+                        gesture->d_func()->mTimerId = 0;
+                    }
+
+                }
+                return QGestureRecognizer::Ignore;
+            }
+
+        case QEvent::MouseButtonRelease:
+            if(gestureState != Qt::NoGesture) {
+                return handleMouseRelease(gestureState, gesture, watched, toMouseEvent(event));
+            }
+            else{
+                
+                if (gesture->d_func()->mTimerId) {
+                    gesture->killTimer(gesture->d_func()->mTimerId);
+                    gesture->d_func()->mTimerId = 0;
+                    return QGestureRecognizer::FinishGesture;
+                } else {
+                    return QGestureRecognizer::Ignore;
+                }
+            }
+
+        case QEvent::Timer:
+            {
+            QGestureRecognizer::Result result;
+            gesture->killTimer(gesture->d_func()->mTimerId);
+            gesture->d_func()->mTimerId = 0;
+            if(gestureState == Qt::NoGesture) {
+                result = QGestureRecognizer::TriggerGesture;        
+                gesture->d_func()->mTimerId = gesture->startTimer(HbTapAndHoldTimeout);
+              
+            } 
+            else {
+                result = handleTimerEvent(gesture->state(),gesture,watched);
+            }
+
+            return result;
+            }
+        case QEvent::TouchBegin:
+        case QEvent::TouchUpdate:        
+            return HbTapGestureRecognizer::recognize(state, watched, event);
+
+        default: break;
+        }
+
+        return QGestureRecognizer::Ignore;
+
+    }
+};
+
+class DelayGestureInstaller
+{
+public:
+    DelayGestureInstaller():count(0){}
+    void install()
+    {
+        if(count <=0){
+            QGestureRecognizer::unregisterRecognizer(Qt::TapGesture);
+            QGestureRecognizer::registerRecognizer(new HbTapDelayGestureRecognizer);
+            
+        }
+        count++;
+    }
+    void unInstall()
+    {
+        count--;
+        if(count <1){
+            QGestureRecognizer::unregisterRecognizer(Qt::TapGesture);
+            QGestureRecognizer::registerRecognizer(new HbTapGestureRecognizer);
+        }
+    }
+    int count;
+};
+static DelayGestureInstaller delayGestureInstaller;
 /*!
     @beta
     @hbwidgets
     \class HbDataForm
-    \brief HbDataForm represents hierarchical dataitems in form of form pages, groups, group pages
-    and data items.
-    HbDataForm implements a hierarchical representation of view items for each model items from 
-    HbDataFormModel.
 
-    HbDataForm implements the interfaces defined by the HbAbstractItemView class to allow 
-    it to display data provided by models which are derived from QAbstractItemModel class.
+    \brief The HbDataForm class is for showing and entering data in 
+    hierarchically organized pages and groups of a form.
 
-    It is simple to construct a dataform displaying data from a model. The user has to create
-    HbDataFormModel and create the hierarchy of HbDataFormModelItems.The hierarchy is 
-    similar to the following.
-    
-    - HbDataForm
-       - HbDataFormPage1
-         - HbDataGroup1
-           - HbDataGroupPage1
-             - HbDataItem
-             - HbDataItem
-             - HbDataItem
-             - HbDataItem
-       - HbDataFormPage2
-         - HbDataGroup2
-           - HbDataGroupPage2
-             - HbDataItem
-             - HbDataItem
-             - HbDataItem
-             - HbDataItem
-       - HbDataGroup3
-          - HbDataItem
-          - HbDataItem
-          - HbDataItem
-       - HbDataItem
-       - HbDataItem
- 
-    HbDataItem can be the child of HbDataForm, HbDataFormPage, HbDataGroup and 
-    HbDataGroupPage. An instance of HbDataForm has to be created and model should be set 
-    to the form using setModel( ) API.
-    The properties of each data item node can be set using HbDataFormModelItem convenient
-    API's like setContentWidgetData( ). These model data are parsed and set while the visualization 
-    instance of each item is created.
+    A data form contains data items for showing and entering data in an 
+    application. Each data item shown in a data form can contain an input widget 
+    and an optional text label. Text fields, sliders and check boxes are typical 
+    widgets used to show and collect data in an application. If a complex data 
+    form contains many data items a user may be required to scroll the data form 
+    content. To reduce the need to scroll, the data items can be organised into 
+    elements whose hierarchy is the following:
+    -  %Data form
+      - Form pages
+        - Groups
+          - Group pages
 
-    The model/view architecture ensures that the view contents are updated as and when the data in
-    model changes.
+    The data form uses a model-view architecture. HbDataFormModel represents the 
+    data model for the form. You add HbDataFormModelItem objects (i.e. form 
+    pages, groups, group pages and data items) to a data form model by creating 
+    a HbDataFormModel object and adding HbDataFormModelItem objects to it. You 
+    can then create a data form widget to show the data by creating an 
+    HbDataForm object and setting its data form model. The model-view 
+    architecture ensures that the content of the data form view is updated as 
+    the data form model changes.
 
-    Only model items that can have children can be in expanded (childrens are visible) or 
-    collapsed (childrens are hidden) state. Model items of type HbDataFormModelItem::FormPageItem,
-    HbDataFormModelItem::GroupItem and HbDataFormModelItem::GroupPageItem can be expanded 
-    or collapsed. Which in turn means that these types of model item can only have children. 
-    Each item in model is represented by either an instance of HbDataFormViewItem or classes which 
-    are derived from HbDataFormViewItem. HbDataFormViewItem can be subclassed for
-    customization purposes.
-    
-    The Model hierarchy can be created using the convenient API's provided in model class like
-    appendDataFormPage(), appendDataFormGroup(), appendDataFormGroupPage() and 
-    appendDataFormItem(). All these API's return HbDataFormModelItem instance corresponding 
-    to each HbDataFormModelItem::DataItemType type on which user can set item 
-    specific(content widget) data. Otherwise each HbDataFormModelItem can be created individually
-    by passing the corresponding type of item (GroupItem, GroupPageItem, FormPageItem) and create
-    the tree of HbDataFormModelItem using setParent API or by passing the parent 
-    HbDataFormModelItem in constructor. Later the top level HbDataFormModelItem can be added in 
+    The important thing to note is that you do not create data form widgets 
+    directly in your data form. The HbDataForm object creates the appropriate UI 
+    widget type for each data item in your data form model. You must specify the 
+    type of widget that is shown in the data form when you create your data form 
     model.
 
-    After setting model in HbDataForm using setModel(), the visualization gets created.
-    Only the items inside the expanded form page, group or group page are created. When an item's
-    visualization is created, HbDataForm emits itemShown(constQModelIndex&) signal. The application 
-    can connect to this signal and when corresponding slot is called then application can get
-    HbDataFormViewItem instance and even content widget instance. Use HbAbstractItemView::itemByIndex()
-    to get HbDataFormViewItem instance. Use HbDataFormViewItem::dataItemContentWidget() to get
-    content widget instance.
+    HbDataForm implements the interface defined by the HbAbstractItemView class 
+    to display the data provided by the data form model. This model is derived 
+    from the QAbstractItemModel class. To construct a data form for displaying 
+    the data from a data form model, create HbDataFormModel and the hierarchy of 
+    HbDataFormModelItem objects. The following rules apply in the hierarchy:
+    - A form page can be a child of the data form only.
+    - A group can be a child of the data form or a form page.
+    - A group page can be a child of a group only.
+    - A data item can be the child of data form, form page, group, and group page.
+
+    The hierarchy can be for example the following:
     
-    The signals emitted by HbDataForm
-    \li itemShown(const QModelIndex &index) Emitted when the HbDataFormViewItem corresponding to
-    \a index is shown. User can connect to this signal and can fetch the instance of 
-    HbDataFormViewItem from HbDataForm using the API dataFormViewItem(const QModelIndex &index).
-    This signal is only emitted for model items of type greater than HbDataFormModelItem::GroupPageItem
+    - %Data form
+       - Form page 1
+         - Group 1
+           - Group page 1
+             - %Data item 1
+             - %Data item 2
+             - %Data item 3
+       - %Data item 4
+       - Form page 2
+         - %Data item 5
+         - Group 2
+           - %Data item 6
+           - Group page 2
+             - %Data item 7
+             - %Data item 8
+       - Group 3
+         - %Data item 9
 
-    The user can also provide connection information to correspoding content widget of each 
-    HbDataFormModelItem using API 
-    addConnection(HbDataFormModelItem* item, const char* signal, QObject* receiver, const char* slot)
-    provided in HbDataForm. The connection will be established when the item visualization is created.
-    Using addConnection() API user can also connect to hbdialog's signals(for ex: aboutToClose) in case 
-    of popup items like radio button list item and multi selection list item. Below code snippet demonstrates
-    the same:
+    To build the structure create first the HbDataForm object and set the model 
+    to the form with the setModel() method. Set properties of each data item 
+    with methods of HbDataFormModelItem class. The data is parsed when the 
+    visualization instance of each item is created and set on each item.
 
-    \code
-    HbDataFormModelItem *days = model->appendDataFormItem(HbDataFormModelItem::MultiselectionItem,
-                                    QString("Days"), themeGeneral);
-    QStringList multiItems;
-    multiItems<<"Sunday"<<"Monday"<<"Tuesday"<<"Wednesday"<<"Thursday"<<"Friday";
-    days->setContentWidgetData(QString("items"), multiItems);
-    QList<QVariant> selected;
-    selected<<2<<3;
-    days->setContentWidgetData(QString("selectedItems"), selected);
-    days->setContentWidgetData(QString("items"), multiItems);
-    form->addConnection(days, SIGNAL(aboutToShow()), this, SLOT(aboutToShow()));
-    form->addConnection(days, SIGNAL(aboutToHide()()), this, SLOT(aboutToHide()()));
-    form->addConnection(days, SIGNAL(aboutToClose()), this, SLOT(aboutToClose()));
-    form->addConnection(days, SIGNAL(finished(HbAction*)), this, SLOT(finished(HbAction*)));
+    Items which have children (i.e. form pages, groups, and group pages) can be 
+    in expanded (i.e. children are visible) or collapsed (i.e. children are 
+    hidden) state. Each item in data form model is represented by an 
+    HbDataFormViewItem object. HbDataForm uses HbDataFormViewItem prototype to 
+    instantiate the data form items. HbDataFormViewItem can be subclassed for 
+    customization purposes.
 
-    \endcode
+    The signals emitted by HbDataForm are the following:
+    \li itemShown(const QModelIndex &index) signal is emitted when the 
+    HbDataFormViewItem corresponding to \a index is shown. You can connect to 
+    this signal and fetch the instance of HbDataFormViewItem from HbDataForm 
+    with HbAbstractItemView::itemByIndex().
+    \li dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight) 
+    signal is emitted when the HbDataFormModel is updated \a topLeft and \a 
+    bottomRight will be same since every node has only one column. You can 
+    connect to this signal and fetch the instance of
+    - HbDataFormViewItem from HbDataForm with HbAbstractItemView::itemByIndex() or
+    - HbDataFormModelItem with HbDataFormModel::itemFromIndex(). HbDataForm 
+    takes care of updating the corresponding the visualization of item when you 
+    update the model with HbDataFormModelItem::setContentWidgetData().
 
-    Similar way 
-    removeConnection(HbDataFormModelItem *item, const char* signal, QObject *receiver, const char* slot)
-    and removeAllConnection() API can be used. Connection can be established or removed even at runtime.
-    An example of how to make connection and setting the content widget property:
+    You can also provide the connection information to the corresponding content 
+    widget of each HbDataFormModelItem with the \link HbDataForm::addConnection(HbDataFormModelItem * item, const char* signal, QObject *receiver, const char* slot) HbDataForm::addConnection()\endlink 
+    method. The connection is established when the item visualization is 
+    created. You can use \link HbDataForm::removeConnection(HbDataFormModelItem *item, const char* signal, QObject *receiver, const char* slot) HbDataForm::removeConnection()\endlink and HbDataForm::removeAllConnection() 
+    methods in the same way. You can establish and remove the connection also at 
+    runtime.
 
+    \sa HbDataFormViewItem, HbDataFormModel, and HbDataFormModelItem
+    
+    \section _usecases_hbdataform Using the HbDataForm class
+    
+    \subsection _uc_hbdataform_001 Creating a data form.
+    
+    The following example shows how to create a data form. The code
+    - creates the data form and data form model
+    - adds the data form model items (i.e. groups, group pages, and data items)
+    - sets the model to the view
+    
+    
+    \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,31}
+    
+    The code creates the following structure:
+    - Group 1                              - group
+      - %Data Item 1  (check box)              - data item
+        - Check box added to group            - text property of the data item
+      - %Data Item 2 (text item)              - data item
+        - Text Item added to group            - text property of the data item
+    - %Data Item 3  (combo box)              - data item
+    - Profile                              - group
+      - Silent                              - group page
+        - Slider                              - data item
+      - General                              - group page
+      - Meeting                              - group page
+        
+    The generated data form is the following:
+
+    \image html hbsettingform.png
+
+    The picture below shows the generated data form in the landscape mode.
+
+    \image html hbsettingform_landscape.png
+
+     \subsection _uc_hbdataform_002 Connecting the "sliderReleased" signal to the "volumeChanged" slot.
+
+    In the following example the content widget is a slider whose 
+    "sliderReleased"  \a signal is connected to the "volumeChanged" slot which 
+    handles the changed volume.
+    
     \code
     HbDataForm *form = new HbDataForm();
     model = new HbDataFormModel();
@@ -166,43 +344,36 @@
     form->setModel(model);
     setWidget(form);
     \endcode
+
+     \subsection _uc_hbdataform_003 Creating the model hierarchy.
+
+    You can create the model hierarchy with the \link 
+    HbDataFormModel::appendDataFormPage() appendDataFormPage()\endlink, \link 
+    HbDataFormModel::appendDataFormGroup() appendDataFormGroup()\endlink, \link 
+    HbDataFormModel::appendDataFormGroupPage() 
+    appendDataFormGroupPage()\endlink, and \link 
+    HbDataFormModel::appendDataFormItem() appendDataFormItem()\endlink methods 
+    of the HbDataFormModel class. All of these methods will return 
+    HbDataFormModelItem object corresponding to each type in which the user can 
+    set item specific data. 
     
-    An example of how to create HbDataForm:
-    \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,31}
+    After running the setModel method the visualization is created . The items 
+    of expanded groups and group pages are created. The data form emits the 
+    itemShown(const QModelIndex &index) signal when an the  visualization of 
+    item is created. The application can get HbDataFormViewItem and content 
+    widget from HbDataForm using QModelIndex.
+*/
 
-    The output generated by the above code looks like:
+/*!
+    \fn void HbDataForm::itemShown(const QModelIndex &index)
 
-    \image html hbsettingform.png
-
-    This is how HbDataForm will look like in landscape mode:
-
-    \image html hbsettingform_landscape.png
-
-    \sa HbDataFormViewItem, HbDataFormModel, HbDataFormModelItem
-
-    Creating Custom Item:
-
-    Application developer can create custom DataItem by deriving from HbDataFormViewItem and setting this as 
-    prototype using setItemProtoType() API. Application has to override virtual API's createCustomWidget(),
-    restore()and save(). createCustomWidget() API should return the corresponding custom HbWidget which
-    can also be a compound widget. Signal connection for child widgets inside the compound widget should
-    be taken care by the application. restore() API will be called by the framework when the model data 
-    is changed. So restore() should take care of updating the visual items with correspoding data from model. 
-    save() API should update the model. App developer should connect respective widgets SIGNALs to SLOT save() 
-    and update the data to model .
+    This signal is emitted when HbDataFormViewItem corresponding to \a index is 
+    shown.
 
 */
 
 /*!
-    \fn void HbAbstractItemView::itemShown(const QModelIndex &index)
-
-    This signal is emitted when HbDataFormViewItem corresponding to \a index is shown.
-
-*/
-
-/*!
-    Constructs DataForm with given \a parent.
-    \param parent parent .
+    Constructs a data form with the given \a parent.
  */
 HbDataForm::HbDataForm(QGraphicsItem *parent)
     : HbAbstractItemView(*new HbDataFormPrivate(), new HbDataItemContainer(),
@@ -211,11 +382,11 @@ HbDataForm::HbDataForm(QGraphicsItem *parent)
     Q_D( HbDataForm );
     d->q_ptr = this;
     d->init();
-    setVerticalScrollBarPolicy(ScrollBarAlwaysOff);
+    //setVerticalScrollBarPolicy(ScrollBarAlwaysOff);
 }
 
 /*!
-    Constructs a data form with a private class object \a dd, 
+    Constructs a data form with the given private class object \a dd, 
     \a container and \a parent.
 */
 HbDataForm::HbDataForm(HbDataFormPrivate &dd, HbAbstractItemContainer *container,
@@ -228,19 +399,26 @@ HbDataForm::HbDataForm(HbDataFormPrivate &dd, HbAbstractItemContainer *container
 }
 
 /*!
-    Destructs the data form.
+    Destructor.
 */
 HbDataForm::~HbDataForm()
 {
 }
 
-/*!
-    \reimp
+/*! Scrolls the view so that the data form item of given \a index is shown at 
+the given \a hint position of the screen. By default the data form does not 
+scroll, so to make it scroll connect to the activated signal first and then call 
+this method.
+    
+    \param index - item of the data form to be scrolled to the \a hint position. 
+    \param hint - position the item is scrolled to on the view, for example to 
+    the top or center. The values of \a hint are the following:
 
-    Scrolls the view so that the item represented by \a index position is changed as per \a hint
-    parameter. By default HbDataForm does not scrolls. Application developer is supposed to 
-    call this API if he wants this behaviour. User can connect to itemShown signal and then
-    can call this API.
+    - EnsureVisible (default)
+    - PositionAtTop
+    - PositionAtBottom
+    - PositionAtCenter
+
 */
 void HbDataForm::scrollTo(const QModelIndex &index, ScrollHint hint)
 {
@@ -251,10 +429,12 @@ void HbDataForm::scrollTo(const QModelIndex &index, ScrollHint hint)
 /*!
     @beta
 
-    Sets the item referred to by \a index to either collapse or expanded state, 
-    depending on the value of \a expanded. If \a expanded is true then child item are 
-    supposed to be visible and in that case itemShown will be emitted for all the
-    new data items which were created.
+    Expands and collapses the given item specified by \a index, depending on the 
+    given \a expanded value. If it is \c true, the item is expanded. If it is \c 
+    false, the item is collapsed. When the item is
+    
+    - expanded, its child items are shown.
+    - collapsed, its child items are not shown.
 
     \sa isExpanded
 */
@@ -276,6 +456,10 @@ void HbDataForm::setExpanded(const QModelIndex &index, bool expanded)
         // significance since these items cannot expand( do not have children )
         
         else {
+            HbDataFormModelItem *modelItem = static_cast<HbDataFormModel *>(model())->itemFromIndex(index);
+            if(modelItem->type() == HbDataFormModelItem::GroupPageItem ) {
+                d->collapseAllGroupPages(index.parent());
+            }
             d->mContainer->setItemTransientStateValue(index, "expanded", expanded);
         } 
     }
@@ -284,7 +468,10 @@ void HbDataForm::setExpanded(const QModelIndex &index, bool expanded)
 /*!
     @beta
 
-    Returns true if the model item at \a index is expanded otherwise returns false.
+    Returns \c true if the given model item is expanded (i.e. children are 
+    visible), otherwise returns \c false.
+    
+    \param index - the model item
 
     \sa setExpanded
 */
@@ -302,17 +489,14 @@ bool HbDataForm::isExpanded(const QModelIndex &index) const
 /*!
     @beta
 
-    Sets the heading of HbDataForm with the \a heading provided. Heading is displayed on 
-    top of the HbDataForm. Heading is non-focusable.
+    Sets the data form's heading to be the given \a heading. The heading is 
+    displayed on the top of form and it is non-focusable.
 
-    \sa heading 
-    \sa setDescription
-    \sa description
+    \sa heading, setDescription and description
 */
 void HbDataForm::setHeading(const QString &heading)
 {
     Q_D(HbDataForm);
-
     if(heading.isEmpty() && d->mHeadingWidget) {
         if(!d->mHeadingWidget->mPageCombo && d->mHeadingWidget->mDescription.isEmpty()) {
             // delete the FormheadingWidget
@@ -341,11 +525,9 @@ void HbDataForm::setHeading(const QString &heading)
 /*!
     @beta
 
-    Returns heading of HbDataForm.
+    Returns the heading of the data form.
 
-    \sa setHeading
-    \sa setDescription
-    \sa description
+    \sa setHeading, setDescription and description
 */
 QString HbDataForm::heading() const
 {
@@ -360,17 +542,14 @@ QString HbDataForm::heading() const
 /*!
     @beta
 
-    Sets the description of HbDataForm with the \a description. Description is displayed 
-    below heading. Description is non-focusable.
+    Sets the data form's description to be the given \a description. The 
+    description is displayed below the heading and it is non-focusable.
 
-    \sa description
-    \sa setHeading
-    \sa heading
+    \sa description, setHeading and heading
 */
 void HbDataForm::setDescription(const QString &description)
 {
     Q_D(HbDataForm);
-
     if(description.isEmpty() && d->mHeadingWidget) {
         if(!d->mHeadingWidget->mPageCombo && d->mHeadingWidget->mHeading.isEmpty()) {
             // delete the FormheadingWidget
@@ -399,11 +578,9 @@ void HbDataForm::setDescription(const QString &description)
 /*!
     @beta
 
-    Returns description of HbDataForm.
+    Returns the description of the data form.
 
-    \sa setDescription
-    \sa setHeading
-    \sa heading
+    \sa setDescription, setHeading and heading
 */
 QString HbDataForm::description() const
 {
@@ -421,7 +598,7 @@ QString HbDataForm::description() const
 
     \reimp
 
-    Returns the style primitive of HbDataForm depending upon the type \a primitive.
+    Returns the style primitive of HbDataForm depending on the type \a primitive.
     \sa primitive
 */
 QGraphicsItem* HbDataForm::primitive(HbStyle::Primitive primitive) const
@@ -429,25 +606,26 @@ QGraphicsItem* HbDataForm::primitive(HbStyle::Primitive primitive) const
     Q_D(const HbDataForm);
 
     switch (primitive) {
-        case HbStyle::P_DataForm_heading_background:
+        case HbStylePrivate::P_DataForm_heading_background:
             return d->mHeadingWidget->mBackgroundItem;
-        case HbStyle::P_DataForm_heading:
+        case HbStylePrivate::P_DataForm_heading:
             return d->mHeadingWidget->mHeadingItem;
-        case HbStyle::P_DataForm_description:
+        case HbStylePrivate::P_DataForm_description:
             return d->mHeadingWidget->mDescriptionItem;
         default:
             return 0;
     }
 }
 
+
+
 /*!
-    \reimp
-
-    If \a model passed is NULL then all values of data form are reset. Calls the
-    setModel of base class. This API does not clears the heading and description set
-    for HbDataForm. If with new \a model user does not wants heading and description
-    then he should call setHeading and setDescription with empty string.
-
+    Sets the data form model to the given \a model. If the given \a model is 
+    NULL then all values of the data form are reset. This method does not clear 
+    the heading and description of the data form. If you want the heading and 
+    description of the data model to be empty, call HbDataForm::setHeading() and 
+    HbDataForm::setDescription() with an empty string as a parameter.
+    
     \sa setHeading, setDescription
 */
 void HbDataForm::setModel(QAbstractItemModel *model, HbAbstractViewItem *prototype)
@@ -466,9 +644,11 @@ void HbDataForm::setModel(QAbstractItemModel *model, HbAbstractViewItem *prototy
 }
 
 
+
 /*!
-    \reimp
+
 */
+
 void HbDataForm::dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
 {
     Q_UNUSED(bottomRight);
@@ -480,22 +660,24 @@ void HbDataForm::dataChanged(const QModelIndex &topLeft, const QModelIndex &bott
             HbDataFormModelItemPrivate *modelItem_priv = HbDataFormModelItemPrivate::d_ptr(modelItem);
 
             if(item){
-                HbDataFormViewItemPrivate::d_ptr(item)->setEnabled( modelItem->isEnabled() );
                 if( modelItem_priv->dirtyProperty() == "LabelRole"      ||
                     modelItem_priv->dirtyProperty() == "DecorationRole" || 
                     modelItem_priv->dirtyProperty() == "DescriptionRole" ) {
 
                      HbDataFormViewItemPrivate::d_ptr(item)->updateData();
                      return;
+                } else if(modelItem_priv->dirtyProperty() == "enabled") {
+                    HbDataFormViewItemPrivate::d_ptr(item)->setEnabled( modelItem->isEnabled() );
                 }
                 item->restore();
             }
     }
 }
 /*!
-    \reimp
-
-    Initializes \a option with the values from HbDataForm.
+    Initializes the style option data form defined by \a option with the data 
+    form values.
+    
+    \param option - Style option data form to be initialized.
 */
 void HbDataForm::initStyleOption(HbStyleOptionDataForm *option)
 {
@@ -505,7 +687,7 @@ void HbDataForm::initStyleOption(HbStyleOptionDataForm *option)
 
 
 /*!
-    \reimp
+
 */
 void HbDataForm::rowsInserted(const QModelIndex &parent, int start, int end)
 {
@@ -513,7 +695,7 @@ void HbDataForm::rowsInserted(const QModelIndex &parent, int start, int end)
 }
 
 /*!
-    \reimp
+
 */
 void HbDataForm::rowsAboutToBeRemoved(const QModelIndex &index, int start, int end)
 {
@@ -545,25 +727,15 @@ void HbDataForm::rowsAboutToBeRemoved(const QModelIndex &index, int start, int e
 /*!
     @beta 
 
-    This API can be used to connect with the signal of HbDataFormViewItem's content widget.
-    For example: If HbDataFormModelItem is of type DataItemType::SliderItem then user
-    can connect to the signals of slider using this API.
-    Example Usage:
-    \code
-    HbDataForm *form = new HbDataForm();
-    HbDataFormModel *model = new HbDataFormModel();
-    HbDataFormModelItem *sliderItem = model->appendDataFormItem(HbDataFormModelItem::SliderItem);
-    form->addConnection(sliderItem, SIGNAL(sliderReleased()), 
-        this, SLOT(volumeChanged()));
-    \endcode
-
-    \param item Instance of model item 
-    \param signal Signal of content widget. 
-    \param receiver Instance of object whose slot will be called 
-    \param slot Slot of \a receiver which will get called when signal is emitted
+    Connects the \a signal of content widget \a item to the \a slot of \a 
+    receiver object.
+    
+    \param item - %Data form model item.
+    \param signal - Signal of the content widget. 
+    \param receiver - Object whose slot is called. 
+    \param slot - Slot of \a receiver object which is called when \a signal is emitted.
  
-    \sa removeConnection
-    \sa removeAllConnection
+    \sa removeConnection 
 */
 void HbDataForm::addConnection(HbDataFormModelItem * item, 
                                const char* signal, 
@@ -582,11 +754,15 @@ void HbDataForm::addConnection(HbDataFormModelItem * item,
 /*!
     @beta
 
-    This API can be used to remove the signal connection which was established using the
-    addConnection API.
+    Removes the connection between the signal of content widget object and the 
+    slot of receiver object.
 
-    \sa addConnection
-    \sa removeAllConnection
+    \param item - %Data form model item.
+    \param signal - The signal of content widget object.
+    \param receiver - The object whose slot is called.
+    \param slot - The slot of \a receiver object which is called when \a signal is emitted.
+
+    \sa addConnection and removeAllConnection
 */
 void HbDataForm::removeConnection(HbDataFormModelItem * item, 
                                   const char* signal, 
@@ -600,11 +776,11 @@ void HbDataForm::removeConnection(HbDataFormModelItem * item,
 /*!
     @beta
 
-    Removes the connection of all the contentwidget of all the items which has been established.
-    The connection information stored inside data form is also cleared.
+    Removes all the connections between signals and slots of all content widgets 
+    of all items. The connection information stored in the underlying data form 
+    is also cleared.
 
-    \sa removeConnection
-    \sa addConnection
+    \sa removeConnection and addConnection
 */
 void HbDataForm::removeAllConnection()
 {   
@@ -615,9 +791,8 @@ void HbDataForm::removeAllConnection()
 /*!
     @beta
 
-    Removes all connections to the contentwidget of HbDataFormModelItem's corresponding 
-    visual Item ( HbdataFormViewItem ).The connection information of correspoding 
-    HbDataFormModelItem stored inside data form also cleared.
+    Removes all the connections of the content widget \a item. The connection 
+    information stored in the underlying data form is also cleared.
 
     \sa removeAllConnection 
 */
@@ -626,6 +801,66 @@ void HbDataForm::removeAllConnection(HbDataFormModelItem *item)
     Q_D(HbDataForm);
     d->removeAllConnection(item);
 }
+
+
+/*!
+    \reimp
+
+    This slot is called when orientation is changed.
+    \a newOrientation has the currentOrientation mode.
+    Note: Currently platform dependent orientation support is not available
+*/
+void HbDataForm::orientationChanged(Qt::Orientation newOrientation)
+{
+    Q_UNUSED(newOrientation);
+    Q_D(HbDataForm);
+
+    //Setting the uniform ites sizes to container again resets size caches.
+    d->mContainer->setUniformItemSizes(d->mContainer->uniformItemSizes());
+    d->mContainer->setPos(0,0);
+    d->mContainer->resizeContainer();
+
+    d->updateScrollMetrics();
+
+    d->stopAnimating();
+    scrollTo(d->mVisibleIndex, HbAbstractItemView::PositionAtCenter);
+    d->mVisibleIndex = QModelIndex();
+}
+
+void HbDataForm::orientationAboutToBeChanged()
+{
+    Q_D(HbDataForm);
+    QRectF rect = mapToScene(boundingRect()).boundingRect();
+    HbAbstractViewItem * item = d->itemAt((rect.center()));
+    if(item){
+        d->mVisibleIndex = item->modelIndex();
+    } else{
+        HbAbstractItemView::orientationAboutToBeChanged();
+    }
+}
+
+/*!
+    \reimp
+*/
+
+void HbDataForm::showEvent(QShowEvent * event)
+{
+    //if(!isVisible() ){
+    //    delayGestureInstaller.install();       
+    //}    
+    HbAbstractItemView::showEvent( event );
+}
+
+/*!
+    \reimp
+*/
+void HbDataForm::hideEvent ( QHideEvent * event )  
+{
+    //delayGestureInstaller.unInstall();
+    HbAbstractItemView::hideEvent( event );
+    
+}
+
 
 #include "moc_hbdataform.cpp"
 

@@ -46,6 +46,7 @@ class HbDeviceMessageBoxWidget :
     Q_PROPERTY(QString rejectAction READ rejectAction WRITE setRejectAction)
     Q_PROPERTY(QString animationDefinition READ animationDefinition WRITE setAnimationDefinition)
     Q_PROPERTY(HbMessageBox::StandardButtons standardButtons READ standardButtons WRITE setStandardButtons)
+    Q_PROPERTY(int showLevel READ showLevel WRITE setShowLevel)
 
 public:
     HbDeviceMessageBoxWidget(HbMessageBox::MessageBoxType type, const QVariantMap &parameters);
@@ -85,11 +86,13 @@ private:
     QString rejectAction() const;
     void setRejectAction(QString &actionData);
     void hideEvent(QHideEvent *event);
-    void showEvent(QShowEvent *event);
+    void closeEvent(QCloseEvent *event);
     void setAnimationDefinition(QString &animationDefinition);
     QString animationDefinition() const;
     void setStandardButtons(HbMessageBox::StandardButtons buttons);
     HbMessageBox::StandardButtons standardButtons() const;
+    void setShowLevel(int group);
+    int showLevel() const;
 
     static void parseActionData(QString &data);
     QString actionData(ActionIndex index) const;
@@ -106,7 +109,7 @@ private:
     QString mIconName;
     Action mActions[NumActions];
     int mSendAction;
-    bool mShowEventReceived;
+    bool mCloseEventReceived;
     QString mAnimationDefinition;
 };
 

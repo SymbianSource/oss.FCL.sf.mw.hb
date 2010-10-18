@@ -45,6 +45,9 @@
  * Currently the sw version only support masks set by setMask() or
  * provided via the callback.  Mask rectangles are not supported.
  *
+ * When using this effect in a chain, sw mode must always be forced
+ * via setForceSwMode().
+ *
  * \internal
  */
 
@@ -415,18 +418,23 @@ void HbVgMaskEffect::performEffect(QPainter *painter,
  * somewhat wrong, the mask is never clipped, it is just scaled down to match
  * the visible part of the item.
  */
-void HbVgMaskEffect::performEffectSw(QPainter *painter)
+void HbVgMaskEffect::performEffectSw(QPainter *devicePainter, QPixmap *result, QPointF *resultPos)
 {
     Q_D(HbVgMaskEffect);
 
+    if (!devicePainter->paintEngine()) {
+        drawSource(devicePainter);
+        return;
+    }
+
     QPoint offset;
-    QPixmap srcPixmap = sourcePixmap(Qt::DeviceCoordinates, &offset); // needs the original world transform
+    QPixmap srcPixmap = sourcePixmapForRoot(Qt::DeviceCoordinates, &offset); // needs the original world transform
     if (srcPixmap.isNull()) {
         return;
     }
 
-    QPaintDevice *pdev = painter->paintEngine()->paintDevice();
-    d->worldTransform = painter->worldTransform(); // deviceRectForSource needs this
+    QPaintDevice *pdev = devicePainter->paintEngine()->paintDevice();
+    d->worldTransform = devicePainter->worldTransform(); // deviceRectForSource needs this
     // The full source rect (without child items) would be
     // d->worldTransform.mapRect(sourceItemForRoot()->boundingRect()).toRect()
     // but we only care about the visible part here so clipping must be applied.
@@ -434,6 +442,22 @@ void HbVgMaskEffect::performEffectSw(QPainter *painter)
     QPoint pos = d->includeSourceItemOnly ? srcDevRect.topLeft() : offset;
     QSize size = d->includeSourceItemOnly ? srcDevRect.size() : srcPixmap.size();
     if (size.width() <= 0 || size.height() <= 0) {
+        return;
+    }
+
+    if (resultPos) {
+        *resultPos = pos;
+    }
+
+    QPixmap cachedPm = cached(size);
+    if (!cachedPm.isNull()) {
+        if (result) {
+            *result = cachedPm;
+        } else {
+            devicePainter->setWorldTransform(QTransform());
+            devicePainter->drawPixmap(pos, cachedPm);
+            devicePainter->setWorldTransform(d->worldTransform);
+        }
         return;
     }
 
@@ -455,7 +479,7 @@ void HbVgMaskEffect::performEffectSw(QPainter *painter)
         maskPixmap = d->scaledMask;
     } else {
         // Masking via rectangles is not supported here.
-        drawSource(painter);
+        drawSource(devicePainter);
         return;
     }
 
@@ -473,8 +497,6 @@ void HbVgMaskEffect::performEffectSw(QPainter *painter)
         srcPixmap = srcPixmap.copy(srcDevRect.adjusted(-offset.x(), -offset.y(), -offset.x(), -offset.y()));
     }
 
-    painter->setWorldTransform(QTransform());
-
     QImage image(size, QImage::Format_ARGB32_Premultiplied);
     QPainter p(&image);
     p.setCompositionMode(QPainter::CompositionMode_Source);
@@ -485,7 +507,26 @@ void HbVgMaskEffect::performEffectSw(QPainter *painter)
     p.drawPixmap(0, 0, maskPixmap);
     p.end();
 
-    painter->drawImage(pos, image);
+    if (result) {
+        *result = QPixmap(size);
+        result->fill(Qt::transparent);
+        QPainter p(result);
+        p.drawImage(QPointF(0, 0), image);
+        p.end();
+        tryCache(*result);
+    } else {
+        devicePainter->setWorldTransform(QTransform());
+        devicePainter->drawImage(pos, image);
+        devicePainter->setWorldTransform(d->worldTransform);
+        tryCache(QPixmap::fromImage(image));
+    }
+}
 
-    painter->setWorldTransform(d->worldTransform);
+HbVgEffect::ChainBehavior HbVgMaskEffect::chainBehavior() const
+{
+    Q_D(const HbVgMaskEffect);
+    // This is actually incorrect if sw mode is not forced and we are
+    // rendering on a raster painter, but mask effects without sw mode
+    // forcing should not be used in a chain at all.
+    return d->forceSwMode ? ChainBehavAsSource : ChainBehavNormal;
 }

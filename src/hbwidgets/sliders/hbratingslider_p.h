@@ -28,27 +28,39 @@
 
 #include "hbwidget_p.h"
 #include <hbratingslider.h>
+#include <hbtoucharea.h>
+
 class HbRatingSliderPrivate :public HbWidgetPrivate
 {
     Q_DECLARE_PUBLIC( HbRatingSlider )
+
 public:
     HbRatingSliderPrivate();
     ~HbRatingSliderPrivate();
+
     void init();
-	int calculateProgressValue(qreal pos);
-	void createLookupTable();
-	bool mMousePressed;
-	int *mLookupValues;
-	bool mReadOnly;
-	int mNumberOfIcons;
-	int mStepCount;
-	int mCurrentValue;
-    QGraphicsItem *mFrame;
-    QGraphicsItem *mTrack;
-    QGraphicsItem *mLayoutItem;
-	QString mUnratedIconName;
-	QGraphicsItem *mTouchArea;
-	QString mRatedIconName;
+    int calculateProgressValue(qreal pos);
+    void createLookupTable();
+
+    void updateRatedIconItem();
+    void updateUnRatedIconItem();
+
+    bool mMousePressed;
+    int *mLookupValues;
+    bool mReadOnly;
+    int mNumberOfIcons;
+    int mStepCount;
+    int mCurrentValue;
+
+    QGraphicsObject *mUnRatedItem;
+    QGraphicsObject *mRatedItem;
+    QGraphicsObject *mBackGroundItem; 
+    QGraphicsObject *mTouchArea;
+
+    QString mUnratedIconName;
+    QString mRatedIconName;
+    QString mToolTipText;
+    HbTouchArea *mToolTipArea;
 };
 
 #endif //HBRATINGSLIDER_P_H

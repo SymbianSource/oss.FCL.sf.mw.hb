@@ -37,6 +37,7 @@
 #include "hbactionmanager_p.h"
 #include "hbmainwindow_p.h"
 #include "hbcolorscheme.h"
+#include "hbevent.h"
 
 #include <hbwidgetfeedback.h>
 
@@ -55,49 +56,155 @@
     @beta
     @hbcore
     \class HbToolBar
-    \brief HbToolBar is a toolbar decorator.
+    \brief The HbToolBar class provides a widget that gives quick access to commands
+    associated with the view.
 
-    The HbToolBar class represents an HbView toolbar. It provides the
-    interface for adding actions to the toolbar.
+    A toolbar provides similar functions to an options menu (HbMenu class). Like an options
+    menu, a toolbar represents commands that apply to the entire view and not to individual
+    items in the view. However, there are some important differences. A toolbar shows the
+    options as buttons (each of which can have an image and a label) whereas a menu shows the
+    options in a simple list. Typically the toolbar gives access to the view's most important
+    commands (called first order commands) and menus provide access to second order commands.
+    In an application that has multiple views (HbView class), typically the toolbar also
+    enables the user to switch quickly between views.
 
-    Toolbar actions are added using one of the addAction() methods.
-    Calling addAction() adds an HbToolButton to the toolbar and
-    triggers the action when the button is pressed. The image and text
-    specified with the action are applied to the toolbar button.
+    \image html toolbar.png A toolbar that has five buttons
 
-    HbToolBar also provides methods for adding pop-up toolbar
-    extensions, represented by HbToolBarExtension objects.
+    Toolbars contain \b actions, which are objects of class HbAction. A toolbar can contain
+    actions that represent a button and actions that open a popup, called a toolbar extension
+    (HbToolBarExtension class). This can contain additional actions or a widget, such as a list.
 
-    Example usage:
-    \dontinclude ultimatecodesnippet/ultimatecodesnippet.cpp
-    \skip Start of snippet 1
-    \until End of snippet 1
+    Use addAction() to create an action and add it to the toolbar. There are several overloads
+    of this function, which allow you to specify both a text and image or just a text and also to
+    connect the action's \link HbAction::triggered() triggered()\endlink signal to a slot on
+    a receiver object. The image and text, if specified, are applied to the toolbar button.
+    Using an image is recommended. Use the insertAction(), addActions() and insertActions() methods
+    (which are inherited from QGraphicsWidget) to add existing actions to the toolbar. Use
+    clearActions() to clear all of the actions from a toolbar and removeAction() to remove
+    individual actions.
 
-    Note: calling hide() or setVisible(bool) on toolbar is not
-    recommended.  Instead, use \a HbView::setItemVisible(), as in 
-    this example:
+    Typically a toolbar can accommodate up to five actions. If you add more actions than can
+    fit, the additional actions are hidden behind the endmost button, which activates
+    a popup containing the extra actions. However, usability guidelines suggest that this
+    should be avoided. The order of the actions within the toolbar controls the order of the
+    buttons that the user sees.
+
+    When you add the actions directly to the toolbar, addAction() and addActions() append
+    the actions to the end of the toolbar and insertAction() and insertActions() enable you to
+    specify the required position. However, there is an alternative approach to ordering the
+    action items. That is to call HbView::addAction() to add actions to the \b view and
+    let the view distribute them to the options menu or toolbar, depending on the preference
+    set, the UI command distribution template, and taking into account the available space in
+    the toolbar. The menu and toolbar then order the actions according to their defined roles
+    and the UI command container template. This approach makes it easier to create consistent
+    user interfaces and applications that work well on a variety of different devices.
+
+    After you add an action item to a toolbar, you can connect its \link HbAction::triggered()
+    triggered()\endlink signal to a slot on a receiver object. Alternatively you can use one of
+    the addAction() overloads that allow you to add an action and specify a receiver slot at
+    the same time. The receiver is notified when the action is \link HbAction::triggered()
+    triggered()\endlink, which means that the user has selected the button; for example, by
+    tapping it.
+
+    By default, the toolbar is horizontal and positioned at the bottom of the view. Use
+    setOrientation() to change the orientation to vertical. The toolbar is then positioned on
+    the right of the view.
+
+    You add the toolbar to the view by calling HbView::setToolBar(). If you want to hide the
+    toolbar, it is recommended that you call HbView::setItemVisible() rather than calling
+    \link QGraphicsItem::hide() hide()\endlink or \link QGraphicsItem::setVisible()
+    setVisible()\endlink on the toolbar itself.
+
+    You can disable a toolbar button by calling \c setEnabled(false) on the action. This
+    property is inherited from QAction. Other properties inherited from QAction enable
+    you to specify that an action is checkable (which means it has an on/off state), to
+    set a keyboard shortcut, and so on.
+
+    \b Note: When you add an action to the toolbar, the HbToolBar implementation creates an
+    internal HbToolButton object. This is not accessible and is an implementation detail that
+    might change in the future.
+
+    \section _usecases_hbtoolbar Using the HbToolBar class
+
+    \subsection _uc_001_hbtoolbar Creating a toolbar
+
+    The following example demonstrates creating a toolbar and adding an action
+    to it and then adding the toolbar to the view:
+
+    \code
+    // Create the toolbar object.
+    HbToolBar *toolBar = new HbToolBar();
+
+    HbAction *closeAction = toolBar->addAction(tr("Close"));
+
+    // Add the toolbar to the view.
+    myView->setToolBar(toolBar);
+    \endcode
+
+    \subsection _uc_002_hbtoolbar Connecting a toolbar action's signal to a slot
+
+    You must connect the action's \link HbAction::triggered() triggered()\endlink
+    signal to a suitable slot on the receiver object that is to carry out the command.
+    For example:
+
+    \code
+    QObject::connect(closeAction, SIGNAL(triggered(bool)), this, SLOT(closeAccount(bool)));
+    \endcode
+
+    Alternatively you can add the action and connect its signal to a slot by using one of the
+    the convenience \link HbToolBar::addAction(const QString &, const QObject *, const char *)
+    addAction() \endlink overloads that let you add the action to the toolbar and connect its
+    signal to a suitable slot in one call. For example:
+
+    \code
+    toolBar->addAction(tr("Open"), d, SLOT(openAccount(bool)));
+    \endcode
+
+    \subsection _uc_003_hbtoolbar Adding actions to the view
+
+    As mentioned above, there are advantages in terms of consistency and portability to
+    adding toolbar actions to the view rather than to the toolbar itself. The following example
+    demonstrates this. It creates two action items, specifies their command roles, and then
+    adds them to the view, specifying the toolbar as the preferred container. The view takes
+    this preference into account but may place them in the options menu if, for example, the
+    toolbar is already full. The menu and toolbar order the actions according to their defined
+    command roles.
+
+    \code
+    HbAction *actionCircle = new HbAction();
+    actionCircle->setToolTip("Circle");
+    actionCircle->setIcon(HbIcon("circle.png"));
+    actionCircle->setCommandRole(HbAction::OtherRole);
+
+    HbAction *actionStar = new HbAction();
+    actionStar->setToolTip("Star");
+    actionStar->setIcon(HbIcon("star.png"));
+    actionStar->setCommandRole(HbAction::OtherRole);
+
+    // Add actions to the view.
+    myView->addAction(actionStar, HbView::ToolBar);
+    myView->addAction(actionCircle, HbView::ToolBar);
+    \endcode
+
+    \subsection _uc_004_hbtoolbar Hiding the toolbar
+
+    The next example demonstrates calling HbView::setItemVisible() to hide the
+    toolbar. This is the recommended way of hiding a toolbar:
     \dontinclude ultimatecodesnippet/ultimatecodesnippet.cpp
     \skip Start of snippet 59
     \until End of snippet 59
 
-   
+    \sa HbToolBarExtension, HbView, HbMenu, HbAction
 */
 
 /*!
-    \reimp
     \fn int HbToolBar::type() const
- */
-
-/*!
-    \fn void HbToolBar::addAction(QAction *action)
-    Adds a new action to the toolbar. It's appended to the end
-    of the toolbar. Toolbar doesn't take ownership of the QAction.
-  */
+*/
 
 // ======== MEMBER FUNCTIONS ========
 
 /*!
-    Constructs a tool bar with \a parent.
+    Constructs a toolbar with the given \a parent.
 */
 
 HbToolBar::HbToolBar( QGraphicsItem *parent )
@@ -107,7 +214,7 @@ HbToolBar::HbToolBar( QGraphicsItem *parent )
     d->q_ptr = this;
     d->init();
     setFlag(QGraphicsItem::ItemIsPanel);
-
+    setFlag(QGraphicsItem::ItemHasNoContents, true);
 }
 
 /*!
@@ -140,10 +247,11 @@ HbToolBar::~HbToolBar()
 }
 
 /*!
-    \overload
+    Creates a new action with the given \a text and adds the action to
+    the end of the toolbar. The toolbar takes ownership of the new action.
 
-    Creates a new action with the given \a text. This action is added to
-    the end of the toolbar. Toolbar retains ownership of the action.
+    \overload
+    \return The new action.
 */
 HbAction *HbToolBar::addAction( const QString &text )
 {
@@ -153,10 +261,11 @@ HbAction *HbToolBar::addAction( const QString &text )
 }
 
 /*!
-    \overload
+    Creates a new action with the given \a icon and \a text and adds the
+    action to the end of the toolbar. The toolbar takes ownership of the new action.
 
-    Creates a new action with the given \a icon and \a text. This
-    action is added to the end of the toolbar. Toolbar retains ownership of the action.
+    \overload
+    \return The new action.
 */
 HbAction *HbToolBar::addAction( const HbIcon &icon, const QString &text )
 {
@@ -166,12 +275,16 @@ HbAction *HbToolBar::addAction( const HbIcon &icon, const QString &text )
 }
 
 /*!
-    \overload
+    Creates a new action with the given \a text, adds the action to the
+    end of the toolbar, and connects the action's \link HbAction::triggered()
+    triggered()\endlink signal to a receiver object's slot. The toolbar takes ownership
+    of the new action.
 
-    Creates a new action with the given \a text. This action is added to
-    the end of the toolbar. The action's \link HbAction::triggered()
-    triggered()\endlink signal is connected to \a member in \a
-    receiver. Toolbar retains ownership of the action.
+    \overload
+    \param text The text for the new action.
+    \param receiver The object that is to receive the new action's signal.
+    \param member The slot on the receiver to which the action's signal is to connect.
+    \return The new action.
 */
 HbAction *HbToolBar::addAction( const QString &text, const QObject *receiver, const char *member )
 {
@@ -182,12 +295,17 @@ HbAction *HbToolBar::addAction( const QString &text, const QObject *receiver, co
 }
 
 /*!
-    \overload
+    Creates a new action with the given \a icon and \a text, adds the action
+    to the end of the toolbar, and connects the action's \link HbAction::triggered()
+    triggered()\endlink signal to a receiver object's slot. The toolbar takes ownership
+    of the new action.
 
-    Creates a new action with the icon \a icon and text \a text. This
-    action is added to the end of the toolbar. The action's \link
-    HbAction::triggered() triggered()\endlink signal is connected to \a
-    member in \a receiver. Toolbar retains ownership of the action.
+    \overload
+    \param icon The image for the new action.
+    \param text The text for the new action.
+    \param receiver The object that is to receive the new action's signal.
+    \param member The slot on the receiver to which the action's signal is to connect.
+    \return The new action.
 */
 HbAction *HbToolBar::addAction( const HbIcon &icon, const QString &text, const QObject *receiver, const char *member )
 {
@@ -198,8 +316,11 @@ HbAction *HbToolBar::addAction( const HbIcon &icon, const QString &text, const Q
 }
 
 /*!
-    This convenience function adds the \a extension as an extension popup
-    to the toolbar. Returns the HbAction triggering the \a extension.
+    Adds \a extension as a toolbar extension at the end of the toolbar.
+
+    \return The action that opens the new extension.
+
+    \sa insertExtension()
 */
 HbAction *HbToolBar::addExtension( HbToolBarExtension *extension )
 {
@@ -207,13 +328,13 @@ HbAction *HbToolBar::addExtension( HbToolBarExtension *extension )
 }
 
 /*!
-    This convenience function inserts the \a extension as an extension popup
-    before the action \a before.
+    Inserts \a extension as a toolbar extension in front of the \a before action, provided
+    it is a valid toolbar action. If \a before is 0 or is not valid, this function adds
+    the extension to the end of the toolbar.
 
-    It appends the action if \a before is 0 or \a before is not a valid
-    action for this widget.
+    \return The action that opens the new extension.
 
-    Returns the HbAction triggering the \a extension.
+    \sa addExtension()
 */
 HbAction *HbToolBar::insertExtension( HbAction *before, HbToolBarExtension *extension )
 {    
@@ -225,33 +346,45 @@ HbAction *HbToolBar::insertExtension( HbAction *before, HbToolBarExtension *exte
     return extension->extensionAction();
 }
 
-/*! @beta
-    \brief  Returns the orientation of the tool bar.
+/*!
+    Returns the orientation of the toolbar.
 
-    \sa setOrientation
- */
+    @beta
+
+    \sa setOrientation()
+*/
 Qt::Orientation HbToolBar::orientation() const
 {
     Q_D(const HbToolBar);
     return d->mOrientation;
 }
 
-/*! @beta
-    Sets the \a orientation of the tool bar.
+/*!
+    Sets the orientation of the toolbar.
 
-    \sa orientation
- */
+    @beta
+
+    \b Example:
+
+    \code
+    HbToolBar *toolBar = new HbToolBar();
+    toolBar->setOrientation(Qt::Vertical);
+    \endcode
+
+    \sa orientation()
+*/
 void HbToolBar::setOrientation( Qt::Orientation orientation )
 {
     Q_D(HbToolBar);
 
     d->setOrientation ( orientation );
     d->minimumToolButtonSize = QSizeF();
+   
 }
 
 /*!
-    Emits areaChanged() whenever the tool bar's visibility or position changes.
-*/
+    \reimp
+ */
 QVariant HbToolBar::itemChange( GraphicsItemChange change, const QVariant &value )
 {
     Q_D(HbToolBar);
@@ -268,7 +401,7 @@ QVariant HbToolBar::itemChange( GraphicsItemChange change, const QVariant &value
         if (d->mOrientationEffectsRunning)
             return result;
         if (value.toBool()) {
-            if (d->mDoLayout && d->mDoLayoutPending) {
+            if (d->mDoLayoutPending && d->polished) {
                 d->doLayout();
             }
             if (!d->mDialogToolBar) {
@@ -277,10 +410,10 @@ QVariant HbToolBar::itemChange( GraphicsItemChange change, const QVariant &value
                 if (!d->delayedStartEffects && d->hasEffects && !d->mSuppressNextAppearEffect) {
                     d->startAppearEffect();
                 }
-                d->mSuppressNextAppearEffect = false;
                 d->delayedHide = d->hasEffects;
             }
         } else {
+            d->mSuppressNextAppearEffect = false;
             if(d->moreExtension && d->moreExtension->isVisible()){
                d->moreExtension->setVisible(false);
             }
@@ -323,7 +456,7 @@ QVariant HbToolBar::itemChange( GraphicsItemChange change, const QVariant &value
 }
 
 /*!
-    Reimplemented from QGraphicsWidget::changeEvent().
+    \reimp
  */
 void HbToolBar::changeEvent( QEvent *event )
 {
@@ -331,19 +464,27 @@ void HbToolBar::changeEvent( QEvent *event )
     if (event->type() == QEvent::LayoutDirectionChange) {
         d->updateToolBarExtensions();
         d->updateButtonsLayoutDirection();
+    } else if (event->type() == HbEvent::ThemeChanged) {        
+        // forward change event to toolbuttons
+        if (d->moreExtensionButton) {
+            d->moreExtensionButton->event(event);
+        }
+        foreach(HbToolButton *button, d->mToolButtons) {
+            button->event(event);
+        }
     }
 
     QGraphicsWidget::changeEvent(event);
 }
 
 /*!
-    Reimplemented from QGraphicsWidget::resizeEvent().
+    \reimp
  */
 void HbToolBar::resizeEvent(QGraphicsSceneResizeEvent *event)
 {
     Q_D(HbToolBar);
     HbWidget::resizeEvent(event);
-    if (isVisible() && d->mDoLayout) {
+    if (d->polished && isVisible()) {
         d->updateToolBarForSizeChange();
     }
 }
@@ -356,9 +497,6 @@ void HbToolBar::hideEvent(QHideEvent *event)
     HbWidget::hideEvent(event);
 }
 
-/*!
-  \reimp
-  */
 /*!
     \reimp
  */
@@ -394,6 +532,9 @@ void HbToolBar::gestureEvent(QGestureEvent *)
 
 }
 
+/*!
+    \reimp
+ */
 void HbToolBar::updatePrimitives()
 {
     Q_D(HbToolBar);
@@ -406,15 +547,20 @@ void HbToolBar::updatePrimitives()
 }
 
 /*!
-  \reimp
-  */
+    \reimp
+ */
 void HbToolBar::polish(HbStyleParameters &params)
 {
     Q_D(HbToolBar);
-    HbWidget::polish(params);
-    if (d->mDoLayoutPending) {
+    bool resize = d->mDialogToolBar || testAttribute(Qt::WA_Resized) ||
+                  !parentItem() || (parentLayoutItem() && !parentLayoutItem()->isLayout())
+                  || (parentLayoutItem() && parentLayoutItem()->isLayout() && static_cast<QGraphicsLayout*>(parentLayoutItem())->isActivated())
+                  || d->polished;
+    if (d->mDoLayoutPending && isVisible() && resize) {
+        d->initialButtonsPolish = false;
         d->doLayout();
     }
+    HbWidget::polish(params);
 }
 
 #include "moc_hbtoolbar.cpp"

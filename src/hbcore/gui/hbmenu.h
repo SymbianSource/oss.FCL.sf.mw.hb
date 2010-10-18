@@ -77,6 +77,9 @@ public:
     int type() const { return Type; }
     QPainterPath shape() const;
 
+    void setPreferredPos(const QPointF& position,
+                          HbPopup::Placement placement = HbPopup::BottomEdgeCenter);
+
 public slots:
     void open(QObject *receiver = 0, const char *member = 0);
 

@@ -30,98 +30,125 @@
     @stable
     @hbcore
     \class HbNumberGrouping
-    \brief HbNumberGrouping formats numbers according to conventions of a certain country. 
-    Eg. for Finland: "123456789.00" => "123 456 789,00".
+    \brief The HbNumberGrouping class formats numbers according to the conventions of a certain locale. 
     
-    NOTE!
-    - Characters in 'number' parameter needs to be latin numbers even though the type of parameter is QString.
-    - Also '+' and '-' characters are supported.
-    - Decimal separator needs to be a dot '.' always.
-    - Any other characters than above descripted are not allowed.
-    - If grouping fails for some reason then return value is empty QString.
-    - At the moment currency mark is not added to return value (formatCurrency).
-    - Grouping for phone numbers is not activated yet.    
+    The grouping of numbers may vary in different locales. For example, for 
+    Finland, the number \c "123456789.00" would be formatted as \c "123 456 
+    789,00". The grouping may also vary depending on the context of where 
+    numbers are used. HbNumberGrouping provides functions for grouping currency 
+    values and generic numbers.
 
-    Example:
-
-    \snippet{unittest_hbnumbergrouping/unittest_hbnumbergrouping.cpp,1} 
-	
+    For example, to format \c "1234567890" according to the current system 
+    locale:
+    
+    \code
+    QString number("1234567890");
+    QString result = HbNumberGrouping::formatGeneric(number);
+    \endcode
+    
+    Use HbStringUtil to display the number using the locale digit type, and use 
+    HbExtendedLocale and QLocale for other currency formatting.
+    
 */
 
 /*!
-    Static function for creating a (generic) number group.
+       
+    Returns a number grouped based on the given country format, or the current 
+    locale.
     
-    \attention Cross-Platform API
+    \param number The source number string to be grouped. The characters must be 
+    Latin digits, and always use '.' as the decimal separator. '+' and '-' 
+    characters are also supported. No other characters are supported.
+    
+    \param country (optional) The QLocale::Country enumeration (in QLocale) that 
+    determines the format to be used for converting the number. If \a country is 
+    not given, the number is grouped based on the current locale.
 
-    \param number Source number for grouping.
-    \param country Format for number converting. 
-    If the country is not given (country = QLocale::AnyCountry) then it will be requested from QLocale::country.
-
-    \return modified string.
+    \return The modified number as a QString if successful, otherwise an empty 
+    QString.
+    
 */
 QString HbNumberGrouping::formatGeneric( const QString &number,
-							  			 QLocale::Country country )				  			 
+                                         QLocale::Country country )                          
 {
-	if ( number.size() == 0 ) {
-		return QString();
-	}
-	
-	if ( country == QLocale::AnyCountry) {
-		QLocale locale;
-		country = locale.country();
-	}
-	
+    if ( number.size() == 0 ) {
+        return QString();
+    }
+    
+    if ( country == QLocale::AnyCountry) {
+        QLocale locale;
+        country = locale.country();
+    }
+    
     return HbNgNormalNumber::normalNumberGrouping(number, country);
 }
 
 /*!
-    Static function for creating a currency group.
+   
+    Returns a currency value grouped based on the given country format, or the 
+    current locale.
+
+    \param number The source number string to be grouped. The characters must be 
+    Latin digits, and always use '.' as the decimal separator. '+' and '-' 
+    characters are also supported. No other characters are supported.
     
-    \attention Cross-Platform API
+    \param country (optional) The QLocale::Country enumeration (in QLocale) that 
+    determines the format to be used for converting the number. If \a country is 
+    not given, the number is grouped based on the current locale.
 
-    \param number Source number for grouping.
-    \param country Format for number converting.
-    If the country is not given (country = QLocale::AnyCountry) then it will be requested from QLocale::country.
-
-    \return modified string.
+    \return The modified number as a QString if successful, otherwise an empty 
+    QString.
+    
+    \note The currency symbol is not added to the return value. Use 
+    HbExtendedLocale to handle the currency symbol.
+    
 */
 QString HbNumberGrouping::formatCurrency( const QString &number,
-							  			  QLocale::Country country )				  			 
+                                          QLocale::Country country )                             
 {
-	if ( number.size() == 0 ) {
-		return QString();
-	}
-	
-	if ( country == QLocale::AnyCountry) {
-		QLocale locale;
-		country = locale.country();
-	}
-	
+    if ( number.size() == 0 ) {
+        return QString();
+    }
+    
+    if ( country == QLocale::AnyCountry) {
+        QLocale locale;
+        country = locale.country();
+    }
+    
     return HbNgNormalNumber::normalNumberGrouping(number, country);
 }
 
 /*!
-    Static function for creating a phone number group.
+    \internal
+    
+    Returns a phone number grouped based on the given country format, or the 
+    current locale.
+    
+    \note The grouping of phone numbers is not supported yet.
 
-    \attention Cross-Platform API
+    \param number The source number for grouping. The characters must be 
+    Latin digits, and always use '.' as the decimal separator. '+' and '-' 
+    characters are also supported. No other characters are supported.
+    
+    \param country (optional) The QLocale::country numeration (in QLocale) that 
+    determines the format to be used for converting the number. If \a country is 
+    not given, the number is grouped based on the current locale.
 
-    \param number Source number for grouping.
-    \param country Format for number converting.
-    If the country is not given (country = QLocale::AnyCountry) then it will be requested from QLocale::country.
-
-    \return modified string.
+    \return The modified number as a QString if successful, otherwise an 
+    empty QString.
+    
 */
 QString HbNumberGrouping::formatPhoneNumber( const QString &number,
-							  			     QLocale::Country country )				  			 
+                                             QLocale::Country country )                          
 {
-	if ( number.size() == 0 ) {
-		return QString();
-	}
-	
-	if ( country == QLocale::AnyCountry) {
-		QLocale locale;
-		country = locale.country();
-	}
+    if ( number.size() == 0 ) {
+        return QString();
+    }
+    
+    if ( country == QLocale::AnyCountry) {
+        QLocale locale;
+        country = locale.country();
+    }
 
-	return QString();
+    return QString();
 }

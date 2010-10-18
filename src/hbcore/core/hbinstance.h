@@ -56,6 +56,8 @@ public:
     QStringList libraryPaths() const;
     void setLibraryPaths(const QStringList &paths);
 
+    void enableUnloadingHiddenIconData(bool enable = true);
+
 private:
     Q_DISABLE_COPY(HbInstance)
     HbInstance();

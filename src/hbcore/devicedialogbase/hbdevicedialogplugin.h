@@ -64,7 +64,13 @@ public:
         DeviceNotificationDialogGroup,
         IndicatorGroup,
         SecurityGroup,
-        CriticalGroup
+        CriticalGroup // deprecated
+    };
+
+    enum ShowLevel{
+        NormalLevel,
+        SecurityLevel,
+        CriticalLevel
     };
 
     enum DeviceDialogFlag{
@@ -84,7 +90,8 @@ public:
         DeviceDialogGroup group;
         int flags;
         int priority;
-        quint32 spare[8];
+        ShowLevel showLevel;
+        quint32 spare[7];
     };
 
     virtual bool accessAllowed(const QString &deviceDialogType,

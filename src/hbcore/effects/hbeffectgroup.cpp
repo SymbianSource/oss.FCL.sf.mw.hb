@@ -41,7 +41,10 @@
 #ifdef HB_FILTER_EFFECTS
 #include "hbvgeffect_p.h"
 #include "hbvgchainedeffect_p.h"
+#include "hbvgmaskeffect_p.h"
 #endif
+
+static const char effect_fw_marker[] = "effw_chain";
 
 HbEffectGroup::HbEffectGroup(
     const QString &effectEventType,
@@ -165,6 +168,9 @@ void HbEffectGroup::updateItemTransform()
     }
     if (!gv) {
         mTargetItem->setTransform(transform);
+        if (mEffectFlags.testFlag(HbEffectInternal::UpdateAtEachStep)) {
+            mTargetItem->update();
+        }
     } else {
         gv->setTransform(transform);
     }
@@ -263,6 +269,7 @@ HbVgChainedEffect *HbEffectGroup::vgEffect()
 {
     if (!mVgEffect) {
         mVgEffect = new HbVgChainedEffect;
+        mVgEffect->setObjectName(effect_fw_marker);
     }
     return mVgEffect;
 }
@@ -271,6 +278,32 @@ void HbEffectGroup::activateVgEffect()
 {
     if (!mVgEffectActivated) {
         mVgEffectGuard = QPointer<QGraphicsEffect>();
+        if (mTargetItem->graphicsEffect()) {
+            // Manually installed effects should not get lost. For example a
+            // pop-up may install a mask effect before or after this
+            // function. To support the 'before' case we have to add all
+            // existing effects to the chain. Supporting the 'after' case is up
+            // to the widget. However we can only support effects that are in a
+            // chain, keeping single effects is not possible due to ownership
+            // issues.
+            HbVgChainedEffect *c = qobject_cast<HbVgChainedEffect *>(mTargetItem->graphicsEffect());
+            if (c) {
+                QList<HbVgEffect *> effects = c->takeAll();
+                HbVgChainedEffect *newChain = vgEffect();
+                // Effects set by another HbEffectGroup instance must be ignored
+                // here, those should go away because they probably would not work
+                // well together anyway.
+                bool chainIsFromEffectFw = c->objectName().compare(QLatin1String(effect_fw_marker)) == 0;
+                foreach (HbVgEffect *effect, effects) {
+                    // Special handling for mask effects: These must be preserved always.
+                    if (!chainIsFromEffectFw || qobject_cast<HbVgMaskEffect *>(effect) != 0) {
+                        newChain->add(effect);
+                    } else {
+                        delete effect;
+                    }
+                }
+            }
+        }
         vgEffect()->install(mTargetItem);
         mVgEffectActivated = true;
     }

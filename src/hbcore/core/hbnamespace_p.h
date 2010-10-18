@@ -90,6 +90,7 @@ enum GraphicsItemType {
     ItemType_StatusBar,
     ItemType_VolumeSlider,
     ItemType_ZoomSlider,
+    ItemType_Magnifier,
     ItemType_EndPrivate
 
 };
@@ -103,9 +104,9 @@ enum HbZValues {
     RootItemZValue,                  /* Z value of the root parent item */
     BackgroundZValue,                /* Z value of the background layer. */
     ContentZValue,                   /* Z value of the content layer. */
+    ToolBarZValue,                   /* Z value of the toolbar. */
     StatusBarZValue,                 /* Z value of the statusbar. */
     TitleBarZValue,                  /* Z value of the titlebar. */
-    ToolBarZValue,                   /* Z value of the toolbar. */
     DockWidgetZValue,                /* Z value of the dockwidget item. */
     TitlePaneZValue,                 /* Z value of the title pane. */
     NaviPaneZValue,                  /* Z value of the navi pane. */

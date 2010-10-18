@@ -38,6 +38,7 @@ _LIT(KDialogIconName, "iconName");
 _LIT(KCancelAction, "cancelAction");
 _LIT(KPluginIdentifier, "com.nokia.hb.deviceprogressdialog/1.0");
 _LIT(KAnimationDefinition, "animationDefinition");
+_LIT(KShowLevel, "showLevel");
 
 NONSHARABLE_CLASS(CHbDeviceProgressDialogSymbianPrivate) : public CBase,
                                                            public MHbDeviceDialogObserver
@@ -80,6 +81,7 @@ public: // data
     RBuf iText;
     RBuf iIconName;
     RBuf iAnimationDefinition;
+    TInt iShowLevel;
     struct {
         RBuf iText;
         struct {
@@ -134,6 +136,9 @@ void CHbDeviceProgressDialogSymbianPrivate::ShowL()
     AddVariantL(KDialogMinimum, &iMinimum, CHbSymbianVariant::EInt, iVariantMap);
     AddVariantL(KDialogAutoClose, &iAutoClose, CHbSymbianVariant::EBool, iVariantMap);
     AddVariantL(KDialogValue, &iProgressValue, CHbSymbianVariant::EInt, iVariantMap);
+    if (iShowLevel) { // send only if non-default
+        AddVariantL(KShowLevel, &iShowLevel, CHbSymbianVariant::EInt, iVariantMap);
+    }
 
     if (iText.Length() > 0)
         {
@@ -171,6 +176,7 @@ void CHbDeviceProgressDialogSymbianPrivate::Close()
 void CHbDeviceProgressDialogSymbianPrivate::UpdateL()
     {
     CHbSymbianVariantMap* map = CHbSymbianVariantMap::NewL();
+    CleanupStack::PushL(map);
 
     const CHbSymbianVariant* variant = Variant(KDialogMaximum);
     if (variant && *variant->Value<TInt>() != iMaximum)
@@ -238,7 +244,8 @@ void CHbDeviceProgressDialogSymbianPrivate::UpdateL()
         }
 
     TInt error = iDeviceDialog->Update(*map);
-    delete map; map = 0;
+    CleanupStack::PopAndDestroy(map);
+    map = 0;
     if (error != KErrNone) {
         User::Leave(error); // error can be positive or negative
     }
@@ -317,9 +324,17 @@ HBufC *CHbDeviceProgressDialogSymbianPrivate::CreateActionDataLC(TBool aNull, co
     return actionData;
 }
 
+// Set dialog show level
+void SetShowLevel(CHbDeviceProgressDialogSymbianPrivate *aDialog, TInt aLevel)
+{
+    aDialog->iShowLevel = aLevel;
+}
+
 /*!
     \class MHbDeviceProgressDialogObserver
-    \brief MHbDeviceProgressDialogObserver is an observer interface for observing CHbDeviceProgressDialogSymbian.
+    \brief MHbDeviceProgressDialogObserver is an observer interface for CHbDeviceProgressDialogSymbian.
+
+    \sa CHbDeviceProgressDialogSymbian
 */
 
 /*!
@@ -327,52 +342,53 @@ HBufC *CHbDeviceProgressDialogSymbianPrivate::CreateActionDataLC(TBool aNull, co
 
     This callback is called when the device progress dialog is closed by user pressing the "cancel" button.
 
-    \a aDialog - Pointer to dialog that was cancelled.
+    \param aDialog Pointer to dialog that was cancelled.
 */
 
 /*!
    \fn void MHbDeviceProgressDialogObserver::ProgressDialogClosed(const CHbDeviceProgressDialogSymbian* aDialog) = 0
 
     This callback is called when a device progress dialog is has closed. The closing may
-    be a result of Close() being called, a dialog with autoClose property has reached
+    be a result of Close() being called, a auto-closing dialog has reached
     its maximum value or user pressing cancel button. It is not called if Close() is
     called before ShowL().
 
-    \a aDialog - Pointer to dialog instance that has closed.
+    \param aDialog Pointer to dialog instance that has closed.
 */
 
 /*!
+    \stable
+    \hbwidgets
+
     \class CHbDeviceProgressDialogSymbian
     \brief CHbDeviceProgressDialogSymbian is a Symbian implementation of HbDeviceProgressDialog.
 
-    It is a client interface for s60 native application to notify user with a text message, icon
-    and progress bar, when HbDeviceProgressDialog can not be used.
+    <b>This class is Symbian only. Not available on other platforms.</b>
 
-    CHbDeviceProgressDialogSymbian provides similar interface and functionality as HbDeviceProgressDialog.
-    Main difference is that signals are replaced by observer interface. Also the parameters of methods using Qt enumerations are changed to TInt.
+    CHbDeviceProgressDialogSymbian is intended for use by servers that don't run Qt event loop
+    and cannot use HbDeviceProgressDialog.
 
-    Two progress dialog types are supported: wait and progress dialog.
+    Device progress dialog is a modal dialog. It is shown on top of applications by device dialog
+    server. CHbDeviceProgressDialogSymbian is a client of the server.
 
-    Wait dialog can be used when the progress of operation cannot be determined.
-    As the delay is unknown, the waiting progress bar will be shown until either a user
-    cancels the dialog by pressing the "cancel" button or the application showing the device
-    wait dialog closes the dialog after the operation has finished or in case of timeout.
+    To learn more about usage of device progress dialogs see HbDeviceProgressDialog
+    documentation.
 
-    Progress dialog can be used when the progress of operation is known. For example
-    when deleting a number of files, the progress of the operation could be shown as a
-    percentage of the files deleted. Application sets the progress value during the
-    operation and the dialog will be shown until either a user cancels the dialog by pressing
-    the "cancel" button or the application showing the device progress dialog closes the
-    dialog after the operation is finished or in case of error.
+    CHbDeviceProgressDialogSymbian provides similar interface and functionality as
+    HbDeviceProgressDialog. Main difference is that signals are replaced by observer
+    interface MHbDeviceProgressDialogObserver. Also parameters of methods using
+    Qt enumerations are changed to TInt.
 
-    Progress dialogs are always asynchronous by nature as the client is responsible of updating the dialog
-    according to current progress status.
+    Showing of a progress dialog is always asynchronous as an application needs to update the dialog
+    according to current progress.
 
-    The device dialog is only shown when ShowL() is called. Because each dialog update requires
-    IPC calls to be made, it's advisable to fully construct the device dialog before calling
-    ShowL() or UpdateL().
+    ShowL() displays a progress dialog asynchronously. The function returns immediately.
+    A new dialog is lauched every time ShowL() is called. The launched
+    dialog can be updated by setters and then calling UpdateL(). Closing and cancellation
+    can be observed by a callbacks. Because each UpdateL() after the ShowL() requires
+    interprocess communication, it's advisable to fully construct the dialog before displaying it.
 
-    Here is an example of using the infinite wait note:
+    Below is an example of using a device wait dialog:
 
     \code
     _LIT(KConnectText, "Connecting...");
@@ -381,7 +397,7 @@ HBufC *CHbDeviceProgressDialogSymbianPrivate::CreateActionDataLC(TBool aNull, co
     iDialog->ShowL();
     \endcode
 
-    Below is an example of using the device progress dialog:
+    Below is an example of using a device progress dialog:
 
     \code
     CHbDeviceProgressDialogSymbian* iDialog = CHbDeviceProgressDialogSymbian::NewL();
@@ -395,49 +411,37 @@ HBufC *CHbDeviceProgressDialogSymbianPrivate::CreateActionDataLC(TBool aNull, co
     iDialog->UpdateL();
     \endcode
 
-    CHbDeviceProgressDialogSymbian supports animations.
-    Supported formats are the following:
+    An example of showing an icon animation:
 
-    - GIF (.gif)
-    - MNG (.mng)
-	- Frame animations
+    \code
+    Create an animation definition file.
 
-	There is a built-in support for GIF and MNG animations.
+    <animations>
+        <icon name="frame_anim_looping" playmode="loop">
+            <frame duration="100">c:\icon1.svg</frame>
+            <frame duration="200">c:\icon2.svg</frame>
+            <frame duration="300">c:\icon3.svg</frame>
+        </icon>
+    </animations>
 
-	Frame animations can be created by following way:
+    Create CHbDeviceProgressDialogSymbian in a way described before and
+    set definition file and animation's logical name.
 
-	\code
-	Create an animation definition file.
+    _LIT(KAnimationDefinitionXML, "C:\animation.axml");
+    _LITK(KLogicalIconName, "frame_anim_looping");
 
-	<animations>
-		<icon name="frame_anim_looping" playmode="loop">
-			<frame duration="100">c:\icon1.svg</frame>
-			<frame duration="200">c:\icon2.svg</frame>
-			<frame duration="300">c:\icon3.svg</frame>
-		</icon>
-	</animations>
+    iDialog->SetAnimationDefinitionL(KAnimationDefinitionXML);
+    iDialog->SetIconNameL(KIconName);
+    iDialog->ShowL();
+    \endcode
 
-	Create CHbDeviceProgressDialogSymbian in a way described before and
-	set definition file and animation's logical name.
-
-	_LIT(KAnimationDefinitionXML, "C:\animation.axml");
-	_LITK(KLogicalIconName, "frame_anim_looping");
-
-	iDialog->SetAnimationDefinitionL(KAnimationDefinitionXML);
-	iDialog->SetIconNameL(KIconName);
-	iDialog->ShowL();
-	\endcode
-	\sa HbIconAnimationManager::addDefinitionFile
-	\note Animation definition files must be stored to a place where they
-	can be accessed.
-
-    \sa HbDeviceProgressDialog, HbDeviceDialog
-    \stable
-    \hbwidgets
+    \sa MHbDeviceProgressDialogObserver, HbDeviceProgressDialog, HbDeviceDialog
 */
 /*!
     \enum CHbDeviceProgressDialogSymbian::TType
     Progress dialog types.
+
+    \sa HbProgressDialog::ProgressDialogType
 */
 /*!
     \var CHbDeviceProgressDialogSymbian::TType CHbDeviceProgressDialogSymbian::EProgressDialog
@@ -449,11 +453,11 @@ HBufC *CHbDeviceProgressDialogSymbianPrivate::CreateActionDataLC(TBool aNull, co
 */
 
 /*!
-    Symbian two phase constructor. Returns a pointer to CHbDeviceNotificationDialogSymbian instance.
-    \param aType Must be one of the defined CHbDeviceProgressDialogSymbian::TType enumerations.
-    \param aObserver Pointer to observer.
+    Constructs a new CHbDeviceNotificationDialogSymbian and returns a pointer it. 
 
+    \param aType Must be one of the defined CHbDeviceProgressDialogSymbian::TType enumerations.
     Default value is CHbDeviceProgressDialogSymbian::EProgressDialog.
+    \param aObserver Pointer to event observer. 0 if no observer.
 */
 EXPORT_C CHbDeviceProgressDialogSymbian* CHbDeviceProgressDialogSymbian::NewL(
     TType aType,
@@ -468,7 +472,8 @@ EXPORT_C CHbDeviceProgressDialogSymbian* CHbDeviceProgressDialogSymbian::NewL(
     }
 
 /*!
-    Destructs the class.
+    Destructs CHbDeviceProgressDialogSymbian. Closes also the dialog widget launched by
+    ShowL().
 */
 EXPORT_C CHbDeviceProgressDialogSymbian::~CHbDeviceProgressDialogSymbian()
     {
@@ -476,7 +481,13 @@ EXPORT_C CHbDeviceProgressDialogSymbian::~CHbDeviceProgressDialogSymbian()
     }
 
 /*!
-    Executes the dialog asynchronously.
+    Shows a device progress dialog asyncronously. Function launches the dialog and returns
+    immediately. Closing of the dialog can be observer with MHbDeviceProgressDialogObserver.
+    CHbDeviceProgressDialogSymbian object can be used to launch several dialogs. A new one
+    is launched every time ShowL() is called. Observer receives events for the latest dialog
+    launched.
+
+    \sa SetObserver(), UpdateL()
 */
 EXPORT_C void CHbDeviceProgressDialogSymbian::ShowL()
     {
@@ -484,7 +495,11 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::ShowL()
     }
 
 /*!
-    Updates the dialog asynchronously.
+    Updates a device progress dialog asyncronously. Dialog that was launched with a lates ShowL()
+    is updated. Properties that were modified since the last ShowL() or UpdateL() are sent to
+    device dialog server.
+
+    \sa ShowL()
 */
 EXPORT_C void CHbDeviceProgressDialogSymbian::UpdateL()
     {
@@ -492,7 +507,7 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::UpdateL()
     }
 
 /*!
-    Closes the dialog.
+    Closes a device progress dialog.
 */
 EXPORT_C void CHbDeviceProgressDialogSymbian::Close()
     {
@@ -500,11 +515,12 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::Close()
     }
 
 /*!
-    Sets the minimum and maximum value of the progress bar within the dialog.
-    \param aMin minimum value of the progress bar.
-    \param aMax maximum value of the progress bar.
+    Sets progress bar minimum and maximum values.
 
-    \sa Minimum(), Maximum()
+    \param aMin Progress bar minimum value.
+    \param aMax Progress bar maximum value.
+
+    \sa Minimum(), Maximum(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceProgressDialogSymbian::SetRange(TInt aMin, TInt aMax)
     {
@@ -513,9 +529,11 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::SetRange(TInt aMin, TInt aMax)
     }
 
 /*!
-    Sets the maximum value of the progress bar within the dialog.
-    \param aMax maximum value of the progress bar.
-    \sa Maximum()
+    Sets progress bar maximum value.
+
+    \param aMax Progress bar maximum value.
+
+    \sa Maximum(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceProgressDialogSymbian::SetMaximum(TInt aMax)
     {
@@ -525,9 +543,8 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::SetMaximum(TInt aMax)
     }
 
 /*!
-    Returns the maximum value of the progress bar within the dialog.
+    Returns progress bar maximum value. Default value is 100.
 
-    The default value is 100.
     \sa SetMaximum()
 */
 EXPORT_C TInt CHbDeviceProgressDialogSymbian::Maximum() const
@@ -536,9 +553,11 @@ EXPORT_C TInt CHbDeviceProgressDialogSymbian::Maximum() const
     }
 
 /*!
-    Sets the minimum value of the progress bar within the dialog.
-    \param aMin minimum value of the progress bar.
-    \sa Minimum()
+    Sets progress bar minimum value.
+
+    \param aMin Progress bar minimum value.
+
+    \sa Minimum(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceProgressDialogSymbian::SetMinimum(TInt aMin)
     {
@@ -548,9 +567,8 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::SetMinimum(TInt aMin)
     }
 
 /*!
-    Returns the minimum value of the progress bar within the dialog.
+    Returns progress bar minimum value. Default value is 0.
 
-    The default value is 0.
     \sa SetMinimumL()
 */
 EXPORT_C TInt CHbDeviceProgressDialogSymbian::Minimum() const
@@ -559,10 +577,12 @@ EXPORT_C TInt CHbDeviceProgressDialogSymbian::Minimum() const
     }
 
 /*!
-    Sets the autoClose property value of the dialog.
+    Sets dialog auto-closing.
+
     \param aAutoClose When set, the dialog is closed when value of the progress bar reaches
     the maximum value of the progress bar.
-    \sa AutoClose()
+
+    \sa AutoClose(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceProgressDialogSymbian::SetAutoClose(TBool aAutoClose)
     {
@@ -570,10 +590,9 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::SetAutoClose(TBool aAutoClose)
     }
 
 /*!
-    Returns the value of the autoClose property of the dialog.
+    Returns dialog auto-closing property. Default value is true for progress dialog and false
+    for wait dialog.
 
-    The default value is true for CHbDeviceProgressDialogSymbian::ProgressDialod and false
-    for CHbDeviceProgressDialogSymbian::WaitDialog.
     \sa SetAutoCloseL()
 */
 EXPORT_C TBool CHbDeviceProgressDialogSymbian::AutoClose() const
@@ -582,9 +601,12 @@ EXPORT_C TBool CHbDeviceProgressDialogSymbian::AutoClose() const
     }
 
 /*!
-    Sets dialog type.
-    \param aType defines the type of the dialog.
-    \sa ProgressType()
+    Sets dialog type. Dialog properties are set to default values. After setting type,
+    ShowL() must be called to launch a new dialog.
+
+    \param aType Dialog type, wait or progress,
+
+    \sa ProgressType(), ShowL()
 */
 EXPORT_C void CHbDeviceProgressDialogSymbian::SetProgressType(
     CHbDeviceProgressDialogSymbian::TType aType)
@@ -605,6 +627,7 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::SetProgressType(
 
 /*!
     Returns dialog's type.
+
     \sa SetProgressType()
 */
 EXPORT_C CHbDeviceProgressDialogSymbian::TType CHbDeviceProgressDialogSymbian::ProgressType() const
@@ -613,9 +636,11 @@ EXPORT_C CHbDeviceProgressDialogSymbian::TType CHbDeviceProgressDialogSymbian::P
     }
 
 /*!
-    Sets the value of the progress bar within the dialog.
-    \param aProgressValue value of the progress bar.
-    \sa ProgressValue()
+    Sets progress bar value.
+
+    \param aProgressValue Progress bar value.
+
+    \sa ProgressValue(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceProgressDialogSymbian::SetProgressValue(TInt aProgressValue)
     {
@@ -623,7 +648,8 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::SetProgressValue(TInt aProgressVal
     }
 
 /*!
-    Returns the value of the progress bar within the dialog.
+    Returns progress bar value.
+
     \sa SetProgressValue()
 */
 EXPORT_C TInt CHbDeviceProgressDialogSymbian::ProgressValue() const
@@ -632,9 +658,11 @@ EXPORT_C TInt CHbDeviceProgressDialogSymbian::ProgressValue() const
     }
 
 /*!
-    Sets text of the dialog.
-    \param aText dialog text.
-    \sa Text()
+    Sets dialog text.
+
+    \param aText Dialog text.
+
+    \sa Text(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceProgressDialogSymbian::SetTextL(const TDesC& aText)
     {
@@ -647,7 +675,8 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::SetTextL(const TDesC& aText)
     }
 
 /*!
-    Returns text of the note.
+    Returns dialog text.
+
     \sa SetTextL()
 */
 EXPORT_C const TPtrC CHbDeviceProgressDialogSymbian::Text() const
@@ -656,13 +685,12 @@ EXPORT_C const TPtrC CHbDeviceProgressDialogSymbian::Text() const
     }
 
 /*!
-    Sets message box icon name or animation logical name. The message box gets updated next time ShowL() or UpdateL()
-    is called.
+    Sets dialog icon name or animation logical name.
 
-    \param aIconName Icon name. Icon can be from Hb resources or themes. Or it can be a file in
+    \param aIconName Icon or animation name. Icon can be from Hb resources or themes. Or it can be a file in
     a file system.
 
-    \sa IconName()
+    \sa IconName(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceProgressDialogSymbian::SetIconNameL(const TDesC& aIconName)
     {
@@ -675,7 +703,7 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::SetIconNameL(const TDesC& aIconNam
     }
 
 /*!
-    Returns name and path of the icon shown on dialog or animation's logical name.
+    Returns name and path of icon or animation.
 
     \sa SetIconNameL()
 */
@@ -685,13 +713,18 @@ EXPORT_C const TPtrC CHbDeviceProgressDialogSymbian::IconName() const
     }
 
 /*!
-    Sets notification dialog's animation definition name.  The dialogs get updated next when time ShowL() or UpdateL()
-    is called.
+    Sets dialog animation definition name.
+
+    Supported icon animation formats are following:
+    - GIF (.gif)
+    - MNG (.mng)
+    - Frame animations
 
     \param aAnimationDefinition Animation definition file name. Definition can be from Hb resources or themes.
-    Or can be a file in a file system.
+    Or can be a file in a file system. The definition must be stored to a place where it can be accessed by
+    device dialog service.
 
-    \sa AnimationDefinition()
+    \sa AnimationDefinition() SetIconNameL() HbIconAnimationManager::addDefinitionFile(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceProgressDialogSymbian::SetAnimationDefinitionL(const TDesC& aAnimationDefinition)
     {
@@ -704,22 +737,21 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::SetAnimationDefinitionL(const TDes
     }
 
 /*!
-    Returns an animation definition set for a dialog. If not set, return string.
+    Returns dialog icon animation definition name.
 
     \sa SetAnimationDefinitionL()
 */
 EXPORT_C TPtrC CHbDeviceProgressDialogSymbian::AnimationDefinition() const
-	{
-	return d->iAnimationDefinition;
-	}
+    {
+    return d->iAnimationDefinition;
+    }
 
 /*!
-    Sets progress dialog box button text. The dialog gets updated next time ShowL() or UpdateL()
-    is called.
+    Sets dialog button text.
 
     \param aText Button text.
 
-    \sa ButtonText()
+    \sa ButtonText(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceProgressDialogSymbian::SetButtonTextL(const TDesC& aText)
 {
@@ -733,7 +765,7 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::SetButtonTextL(const TDesC& aText)
 }
 
 /*!
-    Returns progress dialog button text.
+    Returns dialog button text.
 
     \sa SetButtonTextL()
 */
@@ -743,12 +775,11 @@ EXPORT_C const TPtrC CHbDeviceProgressDialogSymbian::ButtonText() const
 }
 
 /*!
-    Sets progress dialog button presence. The dialog updated next time ShowL() or UpdateL()
-    is called.
+    Sets progress dialog button presence.
 
     \param aEnable True enables (makes visible) the dialog button.
 
-    \sa HasButton()
+    \sa HasButton(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceProgressDialogSymbian::SetButton(TBool aEnable)
 {
@@ -758,9 +789,7 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::SetButton(TBool aEnable)
 }
 
 /*!
-    Returns progress dialog button presence.
-
-    \param aButton Selects the button.
+    Returns dialog button presence.
 
     \sa SetButton()
 */
@@ -770,7 +799,8 @@ EXPORT_C TBool CHbDeviceProgressDialogSymbian::HasButton() const
 }
 
 /*!
-    Sets progress dialog observer. The observer is called when progress dialog is closed.
+    Sets dialog observer. The observer is called when the dialog is closed or cancelled.
+
     \param aObserver Pointer to observer.
 
     \sa MHbDeviceProgressDialogObserver
@@ -780,8 +810,8 @@ EXPORT_C void CHbDeviceProgressDialogSymbian::SetObserver(MHbDeviceProgressDialo
     d->iObserver = aObserver;
     }
 
-/*
-    Constructor.
+/*!
+    Constructs CHbDeviceProgressDialogSymbian.
 */
 CHbDeviceProgressDialogSymbian::CHbDeviceProgressDialogSymbian()
     {

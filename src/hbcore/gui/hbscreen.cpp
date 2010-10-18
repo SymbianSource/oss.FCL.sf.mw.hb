@@ -152,12 +152,7 @@ void HbScreen::polish(HbStyleParameters &params)
     mScreenPolished = true;
     HbWidget::polish(params);
 
-    if (mTb && mDelayedConstructionHandled) {
-        HbToolBarPrivate::d_ptr(mTb)->mDoLayout = true;
-    }
-    if (layout()) {
-        layout()->activate();
-    }
+
     HbMainWindow *w = mainWindow();
     HbMainWindowPrivate::d_ptr(w)->postIdleEvent(HbMainWindowPrivate::IdleOrientationEvent);
 }
@@ -171,7 +166,6 @@ void HbScreen::delayedConstruction()
     if (mTb) {
         connect(&HbToolBarPrivate::d_ptr(mTb)->core, SIGNAL(orientationChanged()), this, SLOT(toolBarOrientationChanged()));
         connect(&HbToolBarPrivate::d_ptr(mTb)->core, SIGNAL(visibilityChanged()), this, SLOT(decoratorVisibilityChanged()));
-        HbToolBarPrivate::d_ptr(mTb)->delayedConstruction();
     }
     if (mDock) {
         connect(&HbDockWidgetPrivate::d_ptr(mDock)->core, SIGNAL(visibilityChanged()), this, SLOT(decoratorVisibilityChanged()));
@@ -248,7 +242,6 @@ void HbScreen::setToolBarOrientation(Qt::Orientation orientation)
 {
     if (orientation != mToolBarOrientation) {
         if (mTb) {
-            HbToolBarPrivate::d_ptr(mTb)->mDoLayout = false;
             repolish();
         }
         mToolBarOrientation = orientation;
@@ -263,11 +256,7 @@ void HbScreen::decoratorVisibilityChanged()
             && mScreenOrientation != HbMainWindowPrivate::d_ptr(window)->mOrientation) {
         return;
     }
-    if (mTb) {
-        HbToolBarPrivate::d_ptr(mTb)->mDoLayout = false;
-    }
     repolish();
-    QCoreApplication::sendPostedEvents(this, QEvent::Polish);
 }
 
 void HbScreen::currentViewChanged(HbView *view)

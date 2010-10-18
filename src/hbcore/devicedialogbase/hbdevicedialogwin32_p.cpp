@@ -43,14 +43,15 @@
 // Device dialogs are implemented only for Symbian/S60 OS. All others use a stub which shows
 // device dialogs in the calling process.
 
+extern HbDeviceDialogManager *managerInstance();
+extern void releaseManagerInstance();
+
 HbDeviceDialogManager *HbDeviceDialogPrivate::mDeviceDialogManager = 0;
 
 HbDeviceDialogPrivate::HbDeviceDialogPrivate()
 {
+    HbDeviceDialogPrivate::mDeviceDialogManager = managerInstance();
     mInitDone = false;
-    if (!mDeviceDialogManager) {
-        mDeviceDialogManager = new HbDeviceDialogManager;
-    }
 }
 
 HbDeviceDialogPrivate::~HbDeviceDialogPrivate()
@@ -61,6 +62,7 @@ HbDeviceDialogPrivate::~HbDeviceDialogPrivate()
     if (mEventLoop && mEventLoop->isRunning()) {
         mEventLoop->exit(HbDeviceDialog::CancelledError);
     }
+    releaseManagerInstance();
 }
 
 void HbDeviceDialogPrivate::init(HbDeviceDialog::DeviceDialogFlags f)

@@ -37,7 +37,7 @@ PUBLIC_HEADERS += $$PWD/hbiconanimator.h
 PRIVATE_HEADERS += $$PWD/hbframedrawer_p.h
 PRIVATE_HEADERS += $$PWD/hbframebackground_p.h
 PRIVATE_HEADERS += $$PWD/hbicon_p.h
-PRIVATE_HEADERS += $$PWD/hbiconanimation_p.h 
+PRIVATE_HEADERS += $$PWD/hbiconanimation_p.h
 PRIVATE_HEADERS += $$PWD/hbiconanimator_p.h
 PRIVATE_HEADERS += $$PWD/hbiconanimationdatatypes_p.h
 PRIVATE_HEADERS += $$PWD/hbiconanimationmanager_p.h
@@ -78,15 +78,17 @@ SOURCES += $$PWD/hbpixmapiconrenderer.cpp
 
 symbian {
     nvg {
-        PRIVATE_HEADERS += $$PWD/hbnvgiconimpl_p.h   
-        PRIVATE_HEADERS += $$PWD/hbeglstate_p.h   
+        PRIVATE_HEADERS += $$PWD/hbnvgiconimpl_p.h
+        PRIVATE_HEADERS += $$PWD/hbeglstate_p.h
         PRIVATE_HEADERS += $$PWD/hbvgimageiconrenderer_p.h
-	
-        SOURCES += $$PWD/hbnvgiconimpl_p.cpp    
+        PRIVATE_HEADERS += $$PWD/hbnvgrasterizer_p.h
+
+        SOURCES += $$PWD/hbnvgiconimpl_p.cpp
         SOURCES += $$PWD/hbeglstate.cpp
-	SOURCES += $$PWD/hbvgimageiconrenderer.cpp
+        SOURCES += $$PWD/hbvgimageiconrenderer.cpp
+        SOURCES += $$PWD/hbnvgrasterizer_p.cpp
     }
-    sgimage {    
+    sgimage {
         SOURCES += $$PWD/hbsgimageiconimpl_p.cpp
         PRIVATE_HEADERS += $$PWD/hbsgimageiconimpl_p.h
     }

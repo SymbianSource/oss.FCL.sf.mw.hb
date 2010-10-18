@@ -37,17 +37,30 @@
 #include <QApplication>
 
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
-#include "hbtextmeasurementutility_p.h"
-#include "hbfeaturemanager_r.h"
+#include "hbtextmeasurementutility_r.h"
+#include "hbtextmeasurementutility_r_p.h"
 #endif
 
-// #define HB_TEXT_ITEM_LOGS
 #define EPSILON 0.01
 
-#ifdef HB_TEXT_ITEM_LOGS
-#   include <QDebug>
-const int KMaxLogedTextLength = 30;
-#endif // HB_TEXT_ITEM_LOGS
+// #define HB_DEBUG_TEXT_ITEM_LOGS
+#ifdef HB_DEBUG_TEXT_ITEM_LOGS
+    #include <QDebug>
+
+    #define HB_TEXT_ITEM_LOG(args) qDebug() << "HbTextItem::" << __FUNCTION__ \
+            << "(" << __LINE__ << ")"\
+            << ", objectName:" << this->objectName() \
+            << ", text: " << this->text().left(30) \
+            << " " << args;
+    #define HB_TEXT_ITEM_PRIV_LOG(args) qDebug() << "HbTextItemPrivate::" << __FUNCTION__ \
+            << "(" << __LINE__ << ")"\
+            << ", objectName:" << q_ptr->objectName() \
+            << ", text: " << this->mText.left(30) \
+            << " " << args;
+#else
+    #define HB_TEXT_ITEM_LOG(args)
+    #define HB_TEXT_ITEM_PRIV_LOG(args)
+#endif // HB_DEBUG_TEXT_ITEM_LOGS
 
 bool HbTextItemPrivate::outlinesEnabled = false;
 
@@ -69,15 +82,17 @@ HbTextItemPrivate::HbTextItemPrivate () :
     mMinWidthForAdjust(-1),
     mMaxWidthForAdjust(-1),
     mDefaultHeight(-1),
+    mHasMultiTrans(false),
     mUpdateColor(true),
-    mEventPosted(false)
+    mEventPosted(false),
+    inConstructor(1)
 {
 }
 
 void HbTextItemPrivate::init(QGraphicsItem *)
 {
     Q_Q(HbTextItem);
-
+    inConstructor = 1;
     q->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     q->setFlag(QGraphicsItem::ItemClipsToShape, false);
     q->setFlag(QGraphicsItem::ItemIsSelectable, false);
@@ -88,6 +103,7 @@ void HbTextItemPrivate::init(QGraphicsItem *)
     mTextLayout.setTextOption(textOption);
     mTextLayout.setCacheEnabled(true);
     mTextLayout.setFont(q->font());
+    inConstructor = 0;
 }
 
 void HbTextItemPrivate::clear()
@@ -136,7 +152,7 @@ void HbTextItemPrivate::rebuildTextLayout(const QSizeF &newSize)
         tempText.replace('\n', QChar::LineSeparator);
     }
 
-	// Need to call elidedText explicitly to enable multiple length translations.
+    // Need to call elidedText explicitly to enable multiple length translations.
     tempText = fontMetrics.elidedText(tempText, Qt::ElideNone, lineWidth);
     bool textTruncated = doLayout(tempText, lineWidth, fontMetrics.lineSpacing());
 
@@ -152,6 +168,7 @@ void HbTextItemPrivate::rebuildTextLayout(const QSizeF &newSize)
     }
 
     calculateVerticalOffset();
+    mBoundingRect = layoutBoundingRect();
     calculateFadeRects();
 
     // build of text layout is completed
@@ -217,8 +234,8 @@ QString HbTextItemPrivate::elideLayoutedText(const QSizeF& size, const QFontMetr
         elidedText.append(QChar::LineSeparator);
     }
 
-    int n = lastLine.textLength();
-    if(textToElide.at(lastLine.textStart()+n-1)!=QChar::LineSeparator) {
+    int n = lastLine.textLength()-1;
+    if(textToElide.at(lastLine.textStart()+n)!=QChar::LineSeparator) {
         n = -1;
     }
     elidedText.append(metrics.elidedText(textToElide.mid(lastLine.textStart(), n),
@@ -303,16 +320,6 @@ bool HbTextItemPrivate::isAdjustHightNeeded(qreal newWidth,
                                             qreal minHeight,
                                             qreal maxHeight)
 {
-#ifdef HB_TEXT_ITEM_LOGS
-    qDebug() << "isAdjustHightNeeded for: " << q_ptr->objectName()
-            << " text=" << mText.left(KMaxLogedTextLength)
-            << " adjusted=" << mAdjustedSize
-            << " prefHeight=" << prefHeight
-            << " minHeight=" << minHeight
-            << " lastConstraint=" << mLastConstraint
-            << " " << mTextLayout.font();
-#endif // HB_TEXT_ITEM_LOGS
-
     // first check if wrapping of text is not active
     QTextOption::WrapMode wrapMode = mTextLayout.textOption().wrapMode();
     if (wrapMode==QTextOption::NoWrap
@@ -329,6 +336,12 @@ bool HbTextItemPrivate::isAdjustHightNeeded(qreal newWidth,
     if (mMaxLines == mMinLines) {
         return false;
     }
+
+    HB_TEXT_ITEM_PRIV_LOG("adjusted=" << mAdjustedSize
+            << " prefHeight=" << prefHeight
+            << " minHeight=" << minHeight
+            << " lastConstraint=" << mLastConstraint
+            << " " << mTextLayout.font())
 
     // check if adjusted size has been already calculated
     // new width is bigger then last estimated range of same height
@@ -347,10 +360,16 @@ bool HbTextItemPrivate::isAdjustHightNeeded(qreal newWidth,
     // if preconditions are met test if current hight is enough
     const QFontMetricsF metrics(mTextLayout.font());
 
+    QString txt(mText);
+    if (mHasMultiTrans) {
+        // it has to be like that since same aproach is used  in rebuildTextLayout
+        // so to be consistent is sizeHInt and what is shown this has to be done
+        txt = metrics.elidedText(mText, Qt::ElideNone, newWidth);
+    }
     // heavy calculation: check if text fits in current size and cache result
     QSizeF newAdjust = metrics.boundingRect(QRectF(0, 0, newWidth, QWIDGETSIZE_MAX),
                                             textFlagsFromTextOption(),
-                                            mText).size();
+                                            txt).size();
 
     if (qFuzzyCompare(newAdjust.height(), mAdjustedSize.height())) {
         // height is same as last time update range of same height
@@ -385,6 +404,67 @@ bool HbTextItemPrivate::isAdjustHightNeeded(qreal newWidth,
     return true;
 }
 
+bool HbTextItemPrivate::isAdjustWidthNeeded(qreal newWidth)
+{
+    if (!mHasMultiTrans) {
+        return false;
+    }
+
+    if (mLastConstraint.width()>0) {
+        return false;
+    }    // check if adjusted size has been already calculated
+    // new width is bigger then last estimated range of same height
+
+    if (!mAdjustedSize.isValid()) {
+        // this means that preferred size is set outside of class by setPreferredSize
+        // so sizeHint(Qt::Preferredsize) was not called and size adjustment is useless
+        return false;
+    }
+
+    HB_TEXT_ITEM_PRIV_LOG("oldadjusted=" << mAdjustedSize
+            << " newWidth=" << newWidth
+            << " lastConstraint=" << mLastConstraint)
+
+    if ((mMaxWidthForAdjust>=newWidth
+         // new width is smaller then last estimated range of same height
+         && newWidth>=mMinWidthForAdjust)) {
+        return false;
+    }
+
+    QFontMetricsF metrics(q_ptr->font());
+
+    // heavy calculation: check if text fits in current size and cache result
+    // note that no wrapping is used here since full width of text is needed to return
+    // proper preferred sizeHint
+    QSizeF newAdjust = metrics.boundingRect(QRectF(0, 0, newWidth, QWIDGETSIZE_MAX),
+                                            0,
+                                            mText).size();
+
+    if (qFuzzyCompare(newAdjust.width(), mAdjustedSize.width())) {
+        return false;
+    }
+
+    if (mAdjustedSize.width()<newAdjust.width()
+        && newAdjust.width()>newWidth) {
+        qWarning("Provided multiple translation: \"%s\", "
+                 "has wrong order of possible translations. "
+                 "This could lead to infinitive loop of LayoutRequest events.",
+                 mText.toLatin1().data());
+
+        return false;
+    }
+    mAdjustedSize = newAdjust;
+
+    mMaxWidthForAdjust = mMinWidthForAdjust = newAdjust.width();
+    // it must be like this since it is unknown if there will be next resize or not
+    // size hint width is changed so change of width can occur and wrapping can be active
+
+    HB_TEXT_ITEM_PRIV_LOG("newAdjusted=" << mAdjustedSize
+            << " newWidth=" << newWidth)
+
+    return true;
+}
+
 void HbTextItemPrivate::clearAdjustedSizeCache()
 {
     // clear cache of size
@@ -402,11 +482,9 @@ QSizeF HbTextItemPrivate::calculatePrefferedSize(const QSizeF& constraint) const
         //      - HbTextItemPrivate::isAdjustHightNeeded
         //      - HbTextItem::resizeEvent
 
-#ifdef HB_TEXT_ITEM_LOGS
-        qDebug() << "HbTextItemPrivate::calculatePrefferedSize: returning cached value: " << mAdjustedSize
-                << " font:" << mTextLayout.font()
-                << " text:" << mText.left(KMaxLogedTextLength);
-#endif
+        HB_TEXT_ITEM_PRIV_LOG("mAdjustedSize: " << mAdjustedSize
+                << " font:" << mTextLayout.font())
+
         return mAdjustedSize;
     }
     mLastConstraint = constraint;
@@ -419,33 +497,37 @@ QSizeF HbTextItemPrivate::calculatePrefferedSize(const QSizeF& constraint) const
         maxSize.setHeight(constraint.height());
     }
 
+    QString txt(mText);
+    if (constraint.width()>0 && mHasMultiTrans) {
+        // it has to be like that since same aproach is used  in rebuildTextLayout
+        // so to be consistent is sizeHInt and what is shown this has to be done
+        txt = metrics.elidedText(mText, Qt::ElideNone, constraint.width());
+    }
     QSizeF size = metrics.boundingRect(QRectF(QPointF(),maxSize),
                                        textFlagsFromTextOption(),
-                                       mText).size();
+                                       txt).size();
 
     mAdjustedSize = size;
     mDefaultHeight = size.height();
     mMinWidthForAdjust = size.width();
     mMaxWidthForAdjust = maxSize.width();
 
-#ifdef HB_TEXT_ITEM_LOGS
-        qDebug() << "HbTextItemPrivate::calculatePrefferedSize:"
-                << " text: " << mText.left(KMaxLogedTextLength)
-                << " returnSize: " << mAdjustedSize
+    HB_TEXT_ITEM_PRIV_LOG("returnSize: " << mAdjustedSize
                 << " constraint: "  << constraint
-                << " font: " << mTextLayout.font();
-#endif
+                << " font: " << mTextLayout.font());
+
     return size;
 }
 
 bool HbTextItemPrivate::fadeNeeded(const QRectF& contentRect) const
 {
+    QRectF textRect = mBoundingRect.translated(mOffsetPos);
+    textRect.adjust(KFadeTolerance,
+                    KFadeTolerance,
+                    -KFadeTolerance,
+                    -KFadeTolerance);
     return (mFadeLengthX!=0 || mFadeLengthY!=0)
-            && !contentRect.contains(
-                    layoutBoundingRect().adjusted(KFadeTolerance,
-                                                  KFadeTolerance,
-                                                  -KFadeTolerance,
-                                                  -KFadeTolerance));
+            && !contentRect.contains(textRect);
 }
 
 void HbTextItemPrivate::setupGradient(QLinearGradient *gradient, QColor color)
@@ -513,8 +595,8 @@ void HbTextItemPrivate::calculateFadeRects()
     On platforms: Linux, Windows and S60 emulator there is no such problem.
     Below flag detects platform which have this problem to activate work-around.
  */
-#if defined(Q_WS_S60) && defined(Q_BIG_ENDIAN)
-#   warning Work-around is active in fade effect of HbTextItem (see comment)
+#if defined(Q_OS_SYMBIAN) && defined(Q_BIG_ENDIAN)
+//#   warning Work-around is active in fade effect of HbTextItem (see comment)
 #   define HB_FADE_EFFECT_WORKAROUND_ON_PHONE
 #endif
 inline void HbTextItemPrivate::setPainterPen(QPainter *painter,
@@ -834,20 +916,19 @@ void HbTextItemPrivate::setFadeLengths(qreal xLength, qreal yLength)
 
 QRectF HbTextItemPrivate::layoutBoundingRect () const
 {
-    QRectF result;
+    QRectF result; // (mTextLayout.boundingRect());
     for (int i=0, n=mTextLayout.lineCount(); i<n; ++i) {
         result = result.unite(
                 mTextLayout.lineAt(i).naturalTextRect());
     }
-
-    result.translate(mOffsetPos);
 
     return result;
 }
 
 QRectF HbTextItemPrivate::boundingRect (const QRectF& contentsRect) const
 {
-    QRectF result(layoutBoundingRect());
+    QRectF result(mBoundingRect);
+    result.translate(mOffsetPos);
 
     if (mPaintFaded) {
         result = result.intersected(mFadeToRect);
@@ -899,7 +980,9 @@ HbTextItem::HbTextItem (const QString &text, QGraphicsItem *parent) :
 {
     Q_D(HbTextItem);
     d->init(parent);
+    d->inConstructor = 1;
     setText(text);
+    d->inConstructor = 0;
 }
 
 /*
@@ -984,7 +1067,7 @@ void HbTextItem::setText (const QString &text)
 
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
 
-    if ( HbFeatureManager::instance()->featureStatus( HbFeatureManager::TextMeasurement ) ) {
+    if (HbTextMeasurementUtility::instance()->locTestMode()) {
         if (text.endsWith(QChar(LOC_TEST_END))) {
             int index = text.indexOf(QChar(LOC_TEST_START));
             setProperty( HbTextMeasurementUtilityNameSpace::textIdPropertyName,  text.mid(index + 1, text.indexOf(QChar(LOC_TEST_END)) - index - 1) );
@@ -1001,6 +1084,7 @@ void HbTextItem::setText (const QString &text)
         prepareGeometryChange();
         d->mText = txt;
         d->mTextLayout.setCacheEnabled(KLayoutCacheLimit >= d->mText.length());
+        d->mHasMultiTrans = (txt.indexOf('\x9c')>=0);
         d->clearAdjustedSizeCache();
         update();
 
@@ -1016,10 +1100,9 @@ void HbTextItem::setText (const QString &text)
             if (sizePolicy().horizontalPolicy()&QSizePolicy::IgnoreFlag
                 // or was preferred width set from outside of this class?
                 || d->mLastConstraint.width()>0) {
-#ifdef HB_TEXT_ITEM_LOGS
-                qDebug() << "HbTextItem::setText: skiping updateGeometry for: "
-                        << objectName() << " text:" << d->mText.left(KMaxLogedTextLength);
-#endif
+
+                HB_TEXT_ITEM_LOG("skiping updateGeometry!")
+
                 // in those cases skip updateGeometry
                 return;
             }
@@ -1067,13 +1150,14 @@ void HbTextItem::setTextColor (const QColor &color)
 void HbTextItem::setAlignment (Qt::Alignment alignment)
 {
     Q_D(HbTextItem);
-	d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextAlign, true);
-    alignment &= Qt::AlignVertical_Mask | Qt::AlignHorizontal_Mask;
+    d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextAlign, true);
+    alignment = d->combineAlignment(alignment, d->mAlignment);
     if (d->mAlignment != alignment) {
         prepareGeometryChange();
         d->mAlignment = alignment;
         d->updateTextOption();
         d->calculateVerticalOffset();
+        d->mBoundingRect = d->layoutBoundingRect();
 
         update();
     }
@@ -1089,6 +1173,7 @@ void HbTextItem::setAlignment (Qt::Alignment alignment)
 void HbTextItem::setElideMode (Qt::TextElideMode elideMode)
 {
     Q_D(HbTextItem);
+    d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextElideMode, true);
     if (elideMode != d->mElideMode) {
         d->mElideMode = elideMode;
         d->scheduleTextBuild();
@@ -1163,14 +1248,19 @@ void HbTextItem::setGeometry(const QRectF & rect)
         // called method HbWidgetBase::setGeometry(rect) so size is used which
         // holds current size
         Q_D(HbTextItem);
+        if (d->isAdjustWidthNeeded(size().width())) {
+            updateGeometry();
+            HB_TEXT_ITEM_LOG("isAdjustWidthNeeded - updateGeometry was called");
+            return;
+        }
+
         if (d->isAdjustHightNeeded(size().width(),
                                    preferredHeight(),
                                    minimumHeight(),
                                    maximumHeight())) {
-            updateGeometry();            
-#ifdef HB_TEXT_ITEM_LOGS
-            qDebug() << "isAdjustHightNeeded returned true - updateGeometry was called";
-#endif // HB_TEXT_ITEM_LOGS
+            updateGeometry();
+            HB_TEXT_ITEM_LOG("isAdjustHightNeeded - updateGeometry was called");
+            return;
         }
     }
 }
@@ -1202,13 +1292,9 @@ QSizeF HbTextItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
     // TODO: Temporary work-around - font change event are not always received
     // so updating font here (this is needed because of sizeHint adjustments).
     if (d->mTextLayout.font()!=font()) {
-#ifdef HB_TEXT_ITEM_LOGS
-        qWarning() << "Font change was not recieved on time: work-around is active"
-                << objectName()
-                << " test: " << d->mText.left(KMaxLogedTextLength)
+        HB_TEXT_ITEM_LOG("Font change was not recieved on time: work-around is active"
                 << " oldFont:" << d->mTextLayout.font()
-                << " newFont:" << font();
-#endif // HB_TEXT_ITEM_LOGS
+                << " newFont:" << font())
 
         const_cast<HbTextItemPrivate *>(d)->mTextLayout.setFont(font());
         const_cast<HbTextItemPrivate *>(d)->clearAdjustedSizeCache();
@@ -1266,12 +1352,11 @@ QSizeF HbTextItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
  */
 void HbTextItem::changeEvent(QEvent *event)
 {
-    // Listens theme changed event so that item size hint is
-
     switch(event->type()) {
     case QEvent::LayoutDirectionChange: {
             Q_D(HbTextItem);
             d->scheduleTextBuild();
+            prepareGeometryChange();
         }
         break;
 
@@ -1279,12 +1364,7 @@ void HbTextItem::changeEvent(QEvent *event)
             Q_D(HbTextItem);
 
             if (!d->mTextLayout.font().isCopyOf(font())) {
-
-#ifdef HB_TEXT_ITEM_LOGS
-                qDebug() << "fontChangeEvent: " << objectName()
-                        << " text: " << text().left(KMaxLogedTextLength)
-                        << " font: " << font();
-#endif // HB_TEXT_ITEM_LOGS
+                HB_TEXT_ITEM_LOG(" font: " << font());
 
                 d->mTextLayout.setFont(font());
                 d->clearAdjustedSizeCache();
@@ -1335,7 +1415,7 @@ void HbTextItem::resizeEvent (QGraphicsSceneResizeEvent *event)
 void HbTextItem::setTextWrapping(Hb::TextWrapping mode)
 {
     Q_D(HbTextItem);
-	d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextWrapMode, true);
+    d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextWrapMode, true);
     QTextOption::WrapMode textWrapMode = static_cast<QTextOption::WrapMode>(mode);
 
     QTextOption textOption = d->mTextLayout.textOption();
@@ -1442,7 +1522,7 @@ void HbTextItem::setMinimumLines( int minLines )
     Q_D( HbTextItem );
     minLines = qMax(minLines, 1); // zero or nagative values are meanless and are restoring 1
 
-	d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin, true);
+    d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMin, true);
 
     if( minLines != d->mMinLines ) {
         if( ( d->mMaxLines > 0 ) && ( minLines > d->mMaxLines ) ) {
@@ -1471,7 +1551,7 @@ void HbTextItem::setMinimumLines( int minLines )
 void HbTextItem::setMaximumLines( int maxLines )
 {
     Q_D( HbTextItem );
-	d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMax, true);
+    d->setApiProtectionFlag(HbWidgetBasePrivate::AC_TextLinesMax, true);
 
     maxLines = qMax(maxLines, 0);
 
@@ -1487,7 +1567,7 @@ void HbTextItem::setMaximumLines( int maxLines )
 
         updateGeometry();
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
-        if ( HbFeatureManager::instance()->featureStatus( HbFeatureManager::TextMeasurement ) ) {
+        if (HbTextMeasurementUtility::instance()->locTestMode()) {
             setProperty( HbTextMeasurementUtilityNameSpace::textMaxLines, d->mMaxLines );
         }
 #endif
@@ -1582,6 +1662,18 @@ void HbTextItem::setFadeLengths(const QPointF& lengths)
 {
     Q_D( HbTextItem );
     d->setFadeLengths(lengths.x(), lengths.y());
+}
+
+/*!
+    \reimp
+ */
+void HbTextItem::updateGeometry()
+{
+    Q_D( HbTextItem );
+    if (d->inConstructor) {
+        return;
+    }
+    HbWidgetBase::updateGeometry();
 }
 
 // end of file

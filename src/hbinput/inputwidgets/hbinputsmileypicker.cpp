@@ -35,7 +35,7 @@
 #include <HbMainWindow>
 #include <HbFrameItem>
 #include <HbFrameDrawer>
-#include <hbdialog_p.h>
+#include <hbinputpopupbase_p.h>
 #include <hbinputregioncollector_p.h>
 
 const int HbLandscapeRows = 3;
@@ -45,7 +45,7 @@ const int HbPortraitColumns = 5;
 
 /// @cond
 
-class HbInputSmileyPickerPrivate: public HbDialogPrivate
+class HbInputSmileyPickerPrivate: public HbInputPopupBasePrivate
 {
     Q_DECLARE_PUBLIC(HbInputSmileyPicker)
 
@@ -66,15 +66,12 @@ HbInputSmileyPickerPrivate::HbInputSmileyPickerPrivate(int rows, int columns)
 {
     Q_UNUSED(rows);
     Q_UNUSED(columns);
-    Q_Q(HbInputSmileyPicker);
-    // we should make sure that it comes above vkb
-    setPriority(HbPopupPrivate::VirtualKeyboard + 1);
 
     // create a view and set the rows and columns.
-    mView = new HbGridView(q);
+    mView = new HbGridView();
     mView->setScrollDirections(Qt::Horizontal);
     mView->setHorizontalScrollBarPolicy(HbScrollArea::ScrollBarAsNeeded);
-    mModel = new QStandardItemModel(q);
+    mModel = new QStandardItemModel(mView);
     mView->setModel(mModel);
 }
 
@@ -106,7 +103,7 @@ void HbInputSmileyPickerPrivate::_q_activated(const QModelIndex &index)
 /// @endcond
 
 /*!
-@proto
+@stable
 @hbinput
 \class HbInputSmileyPicker
 \brief Smiley picker widget
@@ -118,14 +115,10 @@ It emits selected signal with corresponding emoticon text once a smiley is click
 \sa HbGridView
 */
 HbInputSmileyPicker::HbInputSmileyPicker(int rows, int columns, QGraphicsItem *parent, QStringList smileys)
-    : HbDialog(*new HbInputSmileyPickerPrivate(rows, columns), parent)
+    : HbInputPopupBase(*new HbInputSmileyPickerPrivate(rows, columns), parent)
 {
     Q_D(HbInputSmileyPicker);
     HbInputRegionCollector::instance()->attach(this);
-
-    // Make sure the smiley picker never steals focus.
-    setFlag(QGraphicsItem::ItemIsPanel, true);
-    setActive(false);
 
     if (!rows || !columns) {
         if (mainWindow()->orientation() == Qt::Horizontal) {
@@ -145,7 +138,6 @@ HbInputSmileyPicker::HbInputSmileyPicker(int rows, int columns, QGraphicsItem *p
     setBackgroundFaded(false);
     setTimeout(NoTimeout);
     setContentWidget(d->mView);
-    d->mView->setLongPressEnabled(false);
 
     // extract smilies.
     d->getSmilies(smileys);
@@ -176,7 +168,7 @@ void HbInputSmileyPicker::showEvent(QShowEvent *event)
     if (item) {
         d->mView->scrollTo(item->index());
     }
-    HbDialog::showEvent(event);
+    HbInputPopupBase::showEvent(event);
 }
 
 #include "moc_hbinputsmileypicker.cpp"

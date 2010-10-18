@@ -68,5 +68,7 @@ struct HbRecallFlag {
 // Turns off the deprecation msg
 #define HB_DEPRECATED_MSG_OFF HbRecallFlag recallFlag; HbRecallFlag::flag = false;
 
+// Enable the following to make Device Dialog Server's window surface permanently allocated.
+//#define HB_DDS_KEEPS_SURFACE
 
 #endif // HBGLOBAL_P_H

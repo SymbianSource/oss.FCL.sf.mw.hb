@@ -36,35 +36,119 @@
     @stable
     @hbutils
     \class HbDocumentLoader
-    \brief HbDocumentLoader allows applications to construct widget hierarchies from DocML files.
+    \brief The HbDocumentLoader class loads UI definitions from DocML files and constructs a hierarchy of widgets in memory.
     
-    You can load a document using \c HbDocumentLoader::load method. Afther that you can access to
-    loaded objects by processing returned objects roots tree, or by using \c findObject / \c findWidget
-    methods (\c HbDocumentLoader always keeps references to loaded objects)
-     
-    \c HbDocumentLoader uses \c HbDocumentLoader::createObject method to retrieve objects. By default, 
-    this method creates always new instances based on class name. In addition to basic \c QObject 
-    classes provided by Qt, only public widgets of Hb library are supported. Thus, in order to be 
-    able to create your own custom widgets, you have to derive from this class and override 
-    \c createObject method.
-
-    See \c HbDocumentLoader::createBinary for information about DocML binary conversion
-    in build time.
-
-    Use the \c HbDocumentLoaderPlugin to add tool support for custom widgets.
+    HbDocumentLoader loads and parses UI definitions from DocML files.
+    A DocML file usually contains a UI definition of a view or a dialog, and defines layouts, widgets and actions.
+    Using HbDocumentLoader you can load an entire UI screen by calling the load() method, which returns an object list to the caller.
+    The object list contains the root objects defined at the top level of the DocML file (child elements of <hbdocument>). Each root object
+    may have child objects, so a hierarchy of objects is returned to the caller. Object ownership is passed to the caller.
     
-    Example code:
-    \snippet{documentloadersample.cpp,1}
+    An HbDocumentLoader object keeps references to the loaded objects until the reset() method is called, but it is up to your code
+    to manage the lifecycle of the returned objects. For widgets this is often easy, since they have either a containing view or a
+    layout as a parent: Qt's object cleanup policy means that child objects are automatically deleted. 
+    You must be careful to manage the lifecycle of any root objects returned by load() that are not owned by another object,
+    such as HbAction objects that do not have a menu or toolbar role.  
+            
+    A DocML file contains only a UI definition. To connect your UI objects in code you must get pointers to them.
+    Use the findObject() and findWidget() methods to get pointers to your UI objects, which you can then connect using their signals and slots. 
+         
+    HbDocumentLoader uses the createObject() method to create objects. By default, this method always creates new object instances
+    based on the class name in the DocML. This method can create the public widgets of the Hb library and some basic objects that derive
+    from QObject, such as HbAction. 
+    In order to be able to load your own classes of objects from DocML, for example to load your own custom widgets, you can either:
+    - create your own custom loader by subclassing from HbDocumentLoader and overriding the createObject() method.
+    - create an  HbDocumentLoaderPlugin object in a separate library.
+      
+    HbDocumentLoader can load DocML in either text-based or binary format. Using a binary format reduces the time to load and parse a DocML file.
+    You can create binary DocML files by specifying your DocML files in your project file. To declare a DocML file for conversion to binary format, add the following to the project file:
+    \code
+    DOCML += hello_docml_world.docml
+    \endcode
+    When the build process runs, files with the suffix docml.bin are created. You create entries in the resource file to load the binary DocML.
+    The following shows a binary DocML file declared in the resource file. The binary file is given an alias ending in .docml which is used to reference it in code.
+    \code
+    <RCC>
+    <qresource prefix="/docml">
+        <file alias="hello_docml_world.docml">hello_docml_world.docml.bin</file>
+    </qresource>
+    </RCC>
+    \endcode
+    
+    \section _usecases_hbdocumentloader Using the HbDocumentLoader class.
+    
+    \subsection _uc_001_hbdocumentloader Loading a simple DocML file containing a view definition.
+        
+    \code
+    int main(int argc, char *argv[])
+    {
+        HbApplication app(argc, argv);
+        HbMainWindow window;
 
-    For more information about DocML syntax, please refer to S60QtProgrammersGuide.
+        // Create a document loader object.
+        HbDocumentLoader loader;
+        bool ok = false;
+
+        // Load the DocML file.
+        loader.load(":/docml/hello_docml_world.docml", &ok);
+
+        if (ok) {
+            // Get the view and add it to the main window.
+            HbView* view = qobject_cast<HbView*>(loader.findWidget("view"));
+            window.addView(view);
+        } 
+        else {
+            qFatal("Unable to read :/docml/hello_docml_world.docml");
+        }
+
+        window.show();
+        return app.exec();
+    }
+    \endcode
+    
+    \subsection _uc_002_hbdocumentloader Getting pointers to loaded objects and taking ownership.
+    Call findObject() and findWidget() to get pointers to and take ownership of loaded objects
+
+    \code
+    const QString LIST_VIEW = ":/resources/ui/listview.docml";
+    
+    HbDocumentLoader* loader;
+    loader = new HbDocumentLoader();
+
+    HbView* listView; 
+    HbListView* notesList;
+    HbAction* newNoteAction;
+    HbAction* deleteNoteAction;
+    
+    // Load the DocML which defines the notes list view
+    bool loaded = false;
+    loader->reset();
+    loader->load(LIST_VIEW, &loaded);
+    Q_ASSERT_X(loaded, "Notes::load", "Unable to load view from DocML");
+    if ( loaded ) {
+
+        QGraphicsWidget *widget = loader->findWidget(QString("view"));
+        if (widget) {
+
+            // Widgets
+            listView = qobject_cast<HbView*>(widget);
+            notesList = qobject_cast<HbListView*>(loader->findWidget("notesList"));
+
+            // Actions
+            newNoteAction = qobject_cast<HbAction*>(loader->findObject("newNoteAction"));
+            deleteNoteAction = qobject_cast<HbAction*>(loader->findObject("deleteNoteAction"));
+          }
+    \endcode
+    
+    
 */
 
 /*!
-    Constructor. 
+    Default Constructor. 
     
     Use HbDocumentLoader(const HbMainWindow *window) constructor if an application 
-    have HbMainWindow. If the main window parameter is omitted 
-    HbDeviceProfile::current() is used to access device profile.
+    has an HbMainWindow. If the main window parameter is omitted 
+    HbDeviceProfile::current() is used to access the device profile.
  */
 HbDocumentLoader::HbDocumentLoader()
 : d_ptr(new HbDocumentLoaderPrivate(0))
@@ -76,8 +160,8 @@ HbDocumentLoader::HbDocumentLoader()
 /*!
     Constructor. 
     
-    HbMainWindow is needed to access device profile of the application's main window.
-    HbDeviceProfile::current() is used in case of the window parameter is omitted.
+    HbMainWindow is needed to access the device profile of the application's main window.
+    HbDeviceProfile::current() is used in case where the window parameter is omitted.
     \param window main window of the loaded layout.
  */
 
@@ -97,13 +181,32 @@ HbDocumentLoader::~HbDocumentLoader()
 }
 
 /*!
-    Loads and processes DocML file. If After processing of file was successful,
-    it returnes root objects list as a return parameter. Otherwise returnes empty list. 
-    Qwnership to loaded objects is passed to the caller.
-    \param fileName file to be processed.
-    \param section space separated route to section, that you want to load.
-    \param ok indicates if loading was successful.
-    \return root objects list.
+    Loads and processes a DocML file. 
+
+    On successful execution, returns a list of root objects. This list contains 
+    only the objects which do not have an owner already. For example the child of a parent 
+    widget is never returned, and the parent is returned only if it does not 
+    have its own parent or a specific role like a menu-role. The document 
+    loader instance does not own any of the objects: the ones which do not 
+    have any other owner are returned within the root object list. The caller 
+    is resposible of handling the lifecycle of the returned objects.
+
+    Usually this returns the view or the dialog which the loaded DocML files defines. 
+
+    There are also situations when this function returns an empty list. These cases 
+    usually include sections, which change the existing properties of loaded objects and do not 
+    create any new root objects. Also, any objects passed to the document loader using the setObjectTree() 
+    function are not returned. The success of calling load() cannot therefore be
+    determined directly by the number of the returned objects. 
+    Check the parameter \a ok to see if the document was loaded successfully.
+
+    
+
+    \param fileName The %file to be loaded.
+    \param section Space separated path to the section to load.
+    \param ok Indicates whether loading was successful.
+    \return Root objects list. On failed execution, returns an empty list and deletes the created object hierarchy, which 
+    may be incomplete.
 */
 QObjectList HbDocumentLoader::load( const QString &fileName, const QString &section , bool *ok )
 {
@@ -122,10 +225,10 @@ QObjectList HbDocumentLoader::load( const QString &fileName, const QString &sect
 
 /*!
     This is an overloaded member function, provided for convenience.
-    \param device IO device to be processed.
-    \param section space separated route to section, that you want to load.
-    \param ok indicates if loading was successful.
-    \return root objects list.
+    \param device The IO device to be processed.
+    \param section Space separated route to the section that you want to load.
+    \param ok Indicates whether loading was successful.
+    \return Root objects list.
 */
 QObjectList HbDocumentLoader::load( QIODevice *device, const QString &section, bool *ok )
 {
@@ -140,11 +243,11 @@ QObjectList HbDocumentLoader::load( QIODevice *device, const QString &section, b
 }
 
 /*!
-    This is an overloaded member function, provided for convenience. Loads part of DocML that is
+    This is an overloaded member function, provided for convenience. It loads the part of the DocML that is
     outside of any section.
-    \param fileName file to be processed.
-    \param ok indicates if loading was successful.
-    \return root objects list.
+    \param fileName The %file to be processed.
+    \param ok Indicates whether loading was successful.
+    \return Root objects list.
 */
 QObjectList HbDocumentLoader::load( const QString &fileName, bool *ok )
 {
@@ -152,11 +255,11 @@ QObjectList HbDocumentLoader::load( const QString &fileName, bool *ok )
 }
 
 /*!
-    This is an overloaded member function, provided for convenience. Loads part of DocML that is
+    This is an overloaded member function, provided for convenience. It loads the part of the DocML that is
     outside of any section.
     \param device IO device to be processed.
-    \param ok indicates if loading was successful.
-    \return root objects list.
+    \param ok Indicates if loading was successful.
+    \return Root objects list.
 */
 QObjectList HbDocumentLoader::load( QIODevice *device, bool *ok ) 
 {
@@ -164,20 +267,18 @@ QObjectList HbDocumentLoader::load( QIODevice *device, bool *ok )
 }
 
 /*!
-    Converts DocML document to binary document. 
+    Converts a text-based DocML document to a binary document at runtime. 
 
-    You can also convert DocML files to binary format in build time by listing the files in "DOCML"
+    You can also convert DocML files to binary format at build time by listing the files in the "DOCML"
     variable in the .pro file. This will create a binary docml file called <file_name>.bin that
-    can be included to the resources (.qrc). 
+    can be included with the application resources (.qrc file). 
     
     Known issues: Currently the resource compiler gives warnings about missing binary files during
-    qmake. It's ok to ignore these warnings. 
+    qmake. You can safely ignore these warnings.
 
-    For more information about DocML binary format, please refer to S60QtProgrammersGuide.
-
-    \param srcDevice source IO device to be processed.
-    \param dstDevice destination IO device where to write to.
-    \return true if conversion was ok.
+    \param srcDevice Source IO device to be processed.
+    \param dstDevice Destination IO device to which to write the binary DocML.
+    \return True if the conversion to binary was successful.
 */
 bool HbDocumentLoader::createBinary( QIODevice *srcDevice, QIODevice *dstDevice )
 {
@@ -186,9 +287,9 @@ bool HbDocumentLoader::createBinary( QIODevice *srcDevice, QIODevice *dstDevice 
 }
 
 /*!
-    Retrieves widget of which object name equals to \a name.
-    \param name object name of desired widget.
-    \return widget or 0 if not found.
+    Retrieves widget whose object name is \a name. 
+    \param name The name of the widget in DocML. 
+    \return The found widget or 0 if not found.
 */
 QGraphicsWidget *HbDocumentLoader::findWidget(const QString &name) const
 {
@@ -198,9 +299,9 @@ QGraphicsWidget *HbDocumentLoader::findWidget(const QString &name) const
 
 
 /*!
-    Retrieves object of which object name equals to \a name.
-    \param name object name of desired widget.
-    \return object or 0 if not found.
+    Retrieves object whose object name is \a name.
+    \param name The name of the widget in DocML. 
+    \return The found object or 0 if not found.
 */
 QObject *HbDocumentLoader::findObject(const QString &name) const
 {
@@ -210,13 +311,13 @@ QObject *HbDocumentLoader::findObject(const QString &name) const
 
 
 /*!
-    Inserts object tree to document loader. You can pass as an input parameter 
-    output of "load" mothod. 
+    Inserts an object tree into the document loader object. 
+    You can use the output of the load() method as the \a roots parameter. 
 
-    Document loader does not take ownership of the objects.
+    The document loader does not take ownership of the passed objects.
 
-    \param roots root objects list.
-    \return true if success, false otherwise.
+    \param roots The list of root objects to add to the loader.
+    \return True if the objects were successfully added to the document loader, false otherwise.
 */
 bool HbDocumentLoader::setObjectTree( QObjectList roots )
 {
@@ -225,13 +326,13 @@ bool HbDocumentLoader::setObjectTree( QObjectList roots )
 }
 
 /*!
-    Looks up an object which inherits class \a type and of which
-    object name equals to \a name. If you decide override this method,
-    you should call this base class method in case you are
-    not able to handle the case.
-    \param type type of the desired object.
-    \param name object name of the desired object.
-    \return object or 0 if not found.
+    Looks up an object which inherits class \a type and for which the 
+    object name is \a name. If you decide to override this method in your own document loader class,
+    call this base class method in case you are
+    not able to create an instance of the specified object type.
+    \param type The type of the object to create.
+    \param name The object name of the object to create.
+    \return The created object or 0 if it could not be created.
 */
 QObject *HbDocumentLoader::createObject(const QString& type, const QString &name)
 {
@@ -247,7 +348,7 @@ QObject *HbDocumentLoader::createObject(const QString& type, const QString &name
 
 
 /*!
-    Sets loader to initial state. 
+    Sets loader to an initial state without references to any loaded objects.
 */
 void HbDocumentLoader::reset()
 {
@@ -257,7 +358,7 @@ void HbDocumentLoader::reset()
 
 
 /*!
-    Prints current version of document loader and minimum version of supported DocML in brackets
+    Prints the current version of the document loader and the minimum version of supported DocML in brackets
     For example "3.2 (1.4)" means that current version is 3.2 and DocML versions from 1.4 to 3.2 are supported   
 */
 QString HbDocumentLoader::version()

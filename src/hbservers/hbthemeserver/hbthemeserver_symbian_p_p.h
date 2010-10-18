@@ -37,7 +37,6 @@
 #include "hbthemecommon_p.h"
 #include "hbthemecommon_symbian_p.h"
 #include "hbicondatacache_p.h"
-#include "hbcache_p.h"
 #include "hbthemewatcher_symbian_p.h"
 #include <e32property.h>
 #include <e32base.h>
@@ -91,19 +90,19 @@ public :
     void CleanupSessionIconItem(HbIconKey key);
     void clearIconCache();
 
-    bool insertCssCacheItem(const QString &key,  HbCacheItem *item);
-    HbCacheItem * cssCacheItem(const QString &key);
-    void CleanupSessionCssItem(QString key);
-    void clearCssCache();
     void MemoryGood();
     void FreeGpuRam(int bytes, bool useSwRendering);
+    void freeGpuRam();
     void freeUnusedGpuResources();
     
-    void doCleanup();
     static bool gpuMemoryState();
+    bool isItemCacheableinGpu(int itemCost, HbIconFormatType type);
+    bool isItemCacheableinCpu(int itemCost, HbIconFormatType type);
+   
 
     bool openCurrentIndexFile();
     HbRenderingMode currentRenderingMode() const;
+    HbRenderingMode expectedRenderingMode(HbRenderingMode requsetedRenderingMode) const;
     void setCurrentRenderingMode(HbRenderingMode currentMode);
     void HandleThemeSelection( const QString& themeName);
 
@@ -111,6 +110,11 @@ public :
     int allocatedSharedMemory();
     int allocatedHeapMemory();
     int gpuLRUSize() const;
+    unsigned long freeGPUMemory();
+    unsigned long totalGPUMemory();
+    int cachedSgImagesCount() const;
+    int totalSgImagesCost() const;
+    int cachedPixmapCount() const;
 //Debug Code for Test Purpose
 #ifdef HB_ICON_CACHE_DEBUG
     int cacheIconCount() const;
@@ -129,8 +133,6 @@ public :
     void cleanVectorLRUList();
     int rasterLruCount();
     int vectorLruCount();
-    unsigned long freeGPUMemory();
-    unsigned long totalGPUMemory();
 #if defined(Q_OS_SYMBIAN)
     int iconRefCount(const RMessage2& aMessage);
 #endif
@@ -146,12 +148,11 @@ private:
     void ConstructL();
     void UpdateThemeIndexes(bool updateBase = true);
     HbIconDataCache * cache;
-    HbCache* cssCache;
 
     static bool gpuGoodMemoryState;
     HbRenderingMode renderMode;
     CHbThemeChangeNotificationListener * iListener;
-    CHbThemeWatcher *iWatcher;
+    HbThemeWatcher *iWatcher;
 };
 
 //**********************************
@@ -170,16 +171,20 @@ public:
     void DispatchMessageL(const RMessage2 & aMessage);
     void GetSharedIconInfoL(const RMessage2 & aMessage);
     void HandleStyleSheetLookupL(const RMessage2 & aMessage);
+    void HandleMissedHbCssLookupL(const RMessage2 &aMessage);
     void HandleWidgetMLLookupL(const RMessage2& aMessage);
     void HandleDeviceProfilesReqL(const RMessage2& aMessage);
     void HandleEffectAddAndFileLookupL(const RMessage2 &aMessage);
     QColor GetColorFromRgba(TUint32 aRgba, bool aColorFlag);
+    HbIconCacheItem* getCachedIcon(HbIconKey & key, const QString & format,
+                                    bool isConsolidatedIcon);
     void GetSharedMultiIconInfoL(const RMessage2& aMessage);
     void GetMultiIconInfoL(const RMessage2& aMessage);
     TMultiIconSymbParams ReadMessageAndRetrieveMultiIconParams(const RMessage2& aMessage);
     void GetDataFromCacheItem(HbIconCacheItem* cacheItem, HbSharedIconInfo &data) const;
     void FreeDataFromCacheItem(HbIconCacheItem* cacheItem);
-    bool IconInfoFromSingleIcon(HbIconKey key, HbSharedIconInfo &stitchedData);
+    bool IconInfoFromSingleIcon(HbIconKey key, HbSharedIconInfo &stitchedData, 
+                                const QString & format, bool isMultiPiece);
     bool CreateCacheItemData(HbIconKey key, int options, HbSharedIconInfo &data,
                              bool isMultiPiece = false);
     bool CreateStichedIconInfoOfParts(QVector<HbSharedIconInfo> dataForParts,
@@ -196,19 +201,23 @@ public:
                    HbSharedIconInfoList &iconInfoList);
     void HandleTypefaceReqL(const RMessage2& aMessage);
     void unLoadIcon(const RMessage2& aMessage);
+    void batchUnLoadIcon(const RMessage2& aMessage);
     void unloadMultiIcon(const RMessage2& aMessage);
     void freeClientGpuResources();
+    void freeIconResources();
     void ClearSessionData();
     void freeGpuResources();
     void SwitchRenderingMode(HbRenderingMode aRenderMode);
+    HbIconFormatType getIconFormatType(const QString & format);
+
 protected:
     TIconParams ReadMessageAndRetrieveParams(const RMessage2 & aMessage);
     void PanicClient(const RMessage2 & aMessage, TInt aPanic) const;
+    void performUnload(const TIconParams &params);
 
 private:
     HbThemeServerPrivate *iServer;
     QList<HbIconKey> sessionData;
-    QList<QString> sessionCssData;
 };
 
 #endif // HBTHEMESERVER_SYMBIAN_P_H

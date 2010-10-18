@@ -30,18 +30,18 @@
 
 class HbHardwareInputPlugin : public QInputContextPlugin
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	HbHardwareInputPlugin(QObject *parent = 0);
-	~HbHardwareInputPlugin();
+    HbHardwareInputPlugin(QObject *parent = 0);
+    ~HbHardwareInputPlugin();
 
 public: // From QInputContextPlugin
-	QInputContext* create(const QString& key);
-	QString description(const QString& key);
-	QString displayName(const QString& key);
-	QStringList keys() const;
-	QStringList languages(const QString& key);
+    QInputContext* create(const QString& key);
+    QString description(const QString& key);
+    QString displayName(const QString& key);
+    QStringList keys() const;
+    QStringList languages(const QString& key);
 };
 
 #endif // hardwareinputplugin_IMPL_H

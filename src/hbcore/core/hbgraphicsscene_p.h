@@ -32,6 +32,14 @@
 #include <QGraphicsItem>
 #include "hbgraphicsscene.h"
 
+QT_BEGIN_NAMESPACE
+#if QT_VERSION >= 0x040700
+class QElapsedTimer;
+#else
+class QTime;
+#endif
+QT_END_NAMESPACE
+
 class HbPopupManager;
 class HbToolTipLabel;
 class HbInputMethod;
@@ -51,8 +59,9 @@ public:
 
     void showPopup(HbPopup *popup);
     void hidePopup(HbPopup *popup);
-
+    void polishItems();
     HbPopupManager *popupManager();
+    HbToolTipLabel *toolTip();
 
 public:
     HbGraphicsScene *q_ptr;
@@ -61,12 +70,16 @@ public:
     bool mInputFocusSet;
     bool mPolishWidgets;
     bool mRepolishWidgets;
-    int mPolishItemsIndex;
+    int mPolishItemsSlotIndex;
     // fps counter
     static bool fpsCounterEnabled;
     int mDrawCount;
     qreal mFPS;
+#if QT_VERSION >= 0x040700
+    QElapsedTimer *mFPSTime;
+#else
     QTime *mFPSTime;
+#endif
     qreal mMaxFPS;
 
 private:
@@ -82,7 +95,10 @@ private:
         Q_ASSERT(scene);
         return scene->d_func();
     }
-    friend class HbWidget;
+    friend class HbWidgetPrivate;
+#ifdef HB_CSS_INSPECTOR
+    friend class CssInspectorModelItem;
+#endif
 };
 
 #endif // HBGRAPHICSSCENE_P_H

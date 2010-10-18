@@ -47,6 +47,8 @@ public:
     void setDefaultZoomLevel(int value);
 
     virtual void setToolTipVisible(bool);
+    virtual void gestureEvent(QGestureEvent *event);
+
 protected:
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event);
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);

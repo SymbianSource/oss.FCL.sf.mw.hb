@@ -28,7 +28,8 @@
 #include <QPointer>
 
 /*!
-\proto
+@stable
+@hbcore
 \class HbVkbHostBridge
 \brief Provides one connection point to receive signals from all the virtual keyboard hosts.
 
@@ -86,34 +87,12 @@ void HbVkbHostBridge::openKeypad(HbVirtualKeyboard *vkb, HbInputMethod *owner, b
 /*!
 \reimp
 */
-void HbVkbHostBridge::openMinimizedKeypad(HbVirtualKeyboard *vkb, HbInputMethod *owner)
-{
-    Q_D(HbVkbHostBridge);
-    if (d->mActiveHost) {
-        d->mActiveHost->openMinimizedKeypad(vkb, owner);
-    }
-}
-
-/*!
-\reimp
-*/
 void HbVkbHostBridge::closeKeypad(bool animationAllowed)
 {
     Q_D(HbVkbHostBridge);
 
     if (d->mActiveHost) {
         d->mActiveHost->closeKeypad(animationAllowed);
-    }
-}
-
-/*!
-\reimp
-*/
-void HbVkbHostBridge::minimizeKeypad(bool animationAllowed)
-{
-    Q_D(HbVkbHostBridge);
-    if (d->mActiveHost) {
-        d->mActiveHost->minimizeKeypad(animationAllowed);
     }
 }
 
@@ -170,7 +149,7 @@ QRectF HbVkbHostBridge::applicationArea() const
 }
 
 /*!
-\reimp
+\deprecated
 */
 HbVkbHost::HbVkbStatus HbVkbHostBridge::keypadStatusBeforeOrientationChange() const
 {

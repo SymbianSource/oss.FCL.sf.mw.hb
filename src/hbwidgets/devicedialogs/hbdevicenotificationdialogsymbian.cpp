@@ -37,10 +37,17 @@ _LIT(KKeyActivatedValue, "activated");
 _LIT(KPluginIdentifier, "com.nokia.hb.devicenotificationdialog/1.0");
 _LIT(KKeyTitleTextWrapping, "titleTextWrapping");
 _LIT(KKeyAnimationDefinition, "animationDefinition");
+_LIT(KKeyShowLevel, "showLevel");
 
 NONSHARABLE_CLASS(CHbDeviceNotificationDialogSymbianPrivate) : public CBase,
                                                   public MHbDeviceDialogObserver
 {
+public:
+    struct TIntProperty{
+        TInt iValue;
+        TBool iChanged;
+    };
+
 public:
     CHbDeviceNotificationDialogSymbianPrivate();
     virtual ~CHbDeviceNotificationDialogSymbianPrivate();
@@ -66,21 +73,25 @@ public:
     CHbSymbianVariantMap* iVariantMap;
     CHbDeviceNotificationDialogSymbian* q; 
     
-    TBool iEnable;
-    TInt iTimeout;
-    CHbDeviceNotificationDialogSymbian::TextWrapping iWrap;
+    TIntProperty iEnable;
+    TIntProperty iTimeout;
+    TIntProperty iShowLevel;
+    TIntProperty iWrap;
 };
 
 CHbDeviceNotificationDialogSymbianPrivate::CHbDeviceNotificationDialogSymbianPrivate()
-    { 
+    {
+    iTimeout.iValue = 3000; // HbPopup::StandardTimeout
     }
 
 CHbDeviceNotificationDialogSymbianPrivate::~CHbDeviceNotificationDialogSymbianPrivate()
     {
     if (!iObserver && q->Timeout() != 0) {
-        iDeviceDialog->SetObserver(NULL);
+        if (iDeviceDialog) {
+            iDeviceDialog->SetObserver(NULL);
         }
-    
+    }
+
     delete iDeviceDialog;
     delete iVariantMap;
     }
@@ -94,9 +105,19 @@ void CHbDeviceNotificationDialogSymbianPrivate::ConstructL(CHbDeviceNotification
 
 void CHbDeviceNotificationDialogSymbianPrivate::ShowL()
     {
-    AddVariantL(KKeyTouchActivation, &iEnable, CHbSymbianVariant::EBool);
-    AddVariantL(KKeyTimeOut, &iTimeout, CHbSymbianVariant::EInt);
-    AddVariantL(KKeyTitleTextWrapping, &iWrap, CHbSymbianVariant::EInt);
+    if (iEnable.iChanged) {
+        AddVariantL(KKeyTouchActivation, &iEnable.iValue, CHbSymbianVariant::EBool);
+    }
+    if (iTimeout.iChanged) {
+        AddVariantL(KKeyTimeOut, &iTimeout.iValue, CHbSymbianVariant::EInt);
+    }
+    if (iWrap.iChanged) {
+        AddVariantL(KKeyTitleTextWrapping, &iWrap.iValue, CHbSymbianVariant::EInt);
+    }
+    if (iShowLevel.iChanged) {
+        AddVariantL(KKeyShowLevel, &iShowLevel.iValue, CHbSymbianVariant::EInt);
+    }
+
     TInt error = iDeviceDialog->Show(KPluginIdentifier, *iVariantMap, this);
     if (error != KErrNone) {
         User::Leave(error); // error can be positive or negative
@@ -105,9 +126,15 @@ void CHbDeviceNotificationDialogSymbianPrivate::ShowL()
 
 void CHbDeviceNotificationDialogSymbianPrivate::UpdateL()
     {
-    AddVariantL(KKeyTouchActivation, &iEnable, CHbSymbianVariant::EBool);
-    AddVariantL(KKeyTimeOut, &iTimeout, CHbSymbianVariant::EInt);
-    AddVariantL(KKeyTitleTextWrapping, &iWrap, CHbSymbianVariant::EInt);
+    if (iEnable.iChanged) {
+        AddVariantL(KKeyTouchActivation, &iEnable, CHbSymbianVariant::EBool);
+    }
+    if (iTimeout.iChanged) {
+        AddVariantL(KKeyTimeOut, &iTimeout, CHbSymbianVariant::EInt);
+    }
+    if (iWrap.iChanged) {
+        AddVariantL(KKeyTitleTextWrapping, &iWrap, CHbSymbianVariant::EInt);
+    }
     TInt error = iDeviceDialog->Update(*iVariantMap);
     if (error != KErrNone) {
         User::Leave(error); // error can be positive or negative
@@ -160,65 +187,82 @@ void CHbDeviceNotificationDialogSymbianPrivate::DeviceDialogClosed(TInt aComplet
         }
     }
 
+// Set dialog show level
+void SetShowLevel(CHbDeviceNotificationDialogSymbianPrivate *aDialog, TInt aLevel)
+{
+    aDialog->iShowLevel.iValue = aLevel;
+    aDialog->iShowLevel.iChanged = ETrue;
+}
+
 /*!
     \class MHbDeviceNotificationDialogObserver
     \brief MHbDeviceNotificationDialogObserver is an observer interface for observing CHbDeviceNotificationDialogSymbian.
 */
-
 /*!
     \fn void MHbDeviceNotificationDialogObserver::NotificationDialogActivated(const CHbDeviceNotificationDialogSymbian* aDialog) = 0;
 
     This callback is called when notification dialog is activated.
-    \a aDialog - Pointer to dialog instance which received activation event.
-*/
+    \a aDialog is a pointer to a dialog instance which received activation event.
 
+    \sa CHbDeviceNotificationDialogSymbian::EnableTouchActivation()
+*/
 /*!
    \fn void MHbDeviceNotificationDialogObserver::NotificationDialogClosed(const CHbDeviceNotificationDialogSymbian* aDialog, TInt aCompletionCode) = 0;
 
-    This callback is called when notification dialog is closed.
-    \a aDialog - Pointer to dialog instance which received closed event.
-    \a aCompletionCode - Result of the dialog completion.
+    This callback is called when notification dialog has closed.
+    \a aDialog is a pointer to a dialog instance which received closed event.
+    \a aCompletionCode can be either Symbian error code or device dialog error code.
 */
 
 /*!
-   \fn void MHbDeviceNotificationDialogObserver::NotificationDialogError(const CHbDeviceNotificationDialogSymbian* aDialog, TInt aError) = 0;
+    \stable
+    \hbwidgets
 
-    This callback is called when an error has occured.
-    \a aDialog - Pointer to dialog instance which received closed event.
-    \a aError - Error code.
-*/
-
-/*!
     \class CHbDeviceNotificationDialogSymbian
     \brief CHbDeviceNotificationDialogSymbian is a Symbian implementation of HbDeviceNotificationDialog.
 
-    It is a client interface for s60 native application to show a non-modal dialog on top of applications when
-    HbDeviceNotificationDialog can not be used.
+    <b>This class is Symbian only. Not available on other platforms.</b>
 
-    CHbDeviceNotificationDialogSymbian provides similar interface and functionality as HbDeviceNotificationDialog.
-    Main difference is that signals are replaced by an observer interface CHbDeviceNotificationDialogSymbianObserver.
+    CHbDeviceNotificationDialogSymbian is intended for use by servers that don't run Qt event loop
+    and cannot use HbDeviceNotificationDialog.
 
-    For the content CHbDeviceNotificationDialogSymbian provides two rows of text, an image or an animation and for the usage
-    same rules as for the HbDeviceNotificationDialog apply. Dialog is shown when show() is called. It is recommended that 
-    the dialog data is initialized before calling ShowL() or UpdateL() methods, because those methods use interprocess communication.
+    See HbDeviceNotificationDialog documentation to find out more about device notification
+    dialogs.
 
-    Two timeout constants are provided for setting the dialog timeout: KHbShortNotificationDialogTimeout and 
-    KHbLongNotificationDialogTimeout. The first is equivalent to HbPopup::ConfirmationNoteTimeout and the latter 
-    is equivalent to HbPopup::StandardTimeout.
-    
+    CHbDeviceNotificationDialogSymbian provides similar interface and functionality as
+    HbDeviceNotificationDialog. Main difference is that signals are replaced by an observer
+    interface CHbDeviceNotificationDialogSymbianObserver.
+
+    An asynchronous ShowL() method launches a dialog. Device dialog framework decides when the
+    dialog is actually shown. There may be a delay untill dialog appears on display. Close()
+    closes a dialog.
+
+    After dialog has been lauched, properties may be updated by setters and calling UpdateL().
+    It is recommended that dialog properties are set before calling ShowL() as updating them after
+    causes interprocess communication.
+
+    If there is no need to update or receive activation from a launched dialog,
+    CHbDeviceNotificationDialogSymbian object can be deleted after ShowL() returns. Device
+    dialog framework takes care of displaying the dialog.
+
+    For maintaining consistent look and feel, two timeout constants are provided for setting
+    dialog timeout: KHbShortNotificationDialogTimeout and KHbLongNotificationDialogTimeout.
+    The first one is equivalent to HbPopup::ConfirmationNoteTimeout and the latter 
+    to HbPopup::StandardTimeout.
+
     \code
     Following code snippet creates a device notification dialog containing title, text and icon.
 
     _LIT(KDialogText, "Dialog text");
     _LIT(KDialogTitle, "Dialog title");
-    _LIT(KDialogIcon, "note_info.svg");
+    _LIT(KDialogIcon, "qtg_large_info");
 
     CHbDeviceNotificationDialogSymbian* dialog = CHbDeviceNotificationDialogSymbian::NewL();
     CleanupStack::PushL(dialog);
     dialog->SetTextL(KDialogText);
     dialog->SetTitleL(KDialogTitle);
     dialog->SetIconNameL(KDialogIcon);
-    dialog->Show();
+    dialog->ShowL();
     CleanupStack::PopAndDestroy(dialog);
     \endcode
 
@@ -227,22 +271,23 @@ void CHbDeviceNotificationDialogSymbianPrivate::DeviceDialogClosed(TInt aComplet
     \code
     _LIT(KDialogText, "Dialog text");
     _LIT(KDialogTitle, "Dialog title");
-    _LIT(KDialogIcon, "note_info.svg");
+    _LIT(KDialogIcon, "qtg_large_info");
     
     CHbDeviceNotificationDialogSymbian::Notification(KDialogIcon, KDialogText, KDialogTitle);
     \endcode
 
-    When using convenience methods, it is not possible to receive user interaction events, because the 
-    HbDeviceNotificationDialog instance is destroyed when the call returns. Ownership and handling of the
-    dialog is transferred to HbDeviceDialog framework. Also dialog can not be closed nor updated.
+    When using convenience methods, it is not possible to receive user interaction events,
+    because the HbDeviceNotificationDialog instance is destroyed when the call returns.
 
-    Below is an example of receiving user interaction events from device notification dialog. With following example 
-    user is able to receive activated and close events. Note that dialog is cancelled, if it goes out of scope.
+    Below is an example of receiving user interaction events from device notification dialog.
+    With following example user is able to receive activated and close events.
+    Note that in this case the dialog is closed by device dialog framework if
+    CHbDeviceNotificationDialogSymbian object is deleted.
 
     \code
     _LIT(KDialogText, "Dialog text");
     _LIT(KDialogTitle, "Dialog title");
-    _LIT(KDialogIcon, "note_info.svg");
+    _LIT(KDialogIcon, "qtg_large_info");
 
     class DialogObserver : public MHbDeviceNotificationDialogObserver
     {
@@ -281,50 +326,56 @@ void CHbDeviceNotificationDialogSymbianPrivate::DeviceDialogClosed(TInt aComplet
         iDialog->ShowL();
     }
     \endcode
-    
-    CHbDeviceNotificationDialogSymbian supports. 
-    Supported formats are the following.
 
-    - GIF (.gif)
-    - MNG (.mng)
-	- Frame animations
-	
-	There is a built-in support for GIF and MNG animations. 
-	
-	Frame animations can be created by following way:
-		
-	\code
-	Create an animation definition file.	
-	
-	<animations>
-		<icon name="frame_anim_looping" playmode="loop">
-			<frame duration="100">c:\icon1.svg</frame>
-			<frame duration="200">c:\icon2.svg</frame>
-			<frame duration="300">c:\icon3.svg</frame>
-		</icon>
-	</animations>	
-	
-	Create CHbDeviceNotificationDialogSymbian in a way described before and
-	set definition file and animation's logical name.
-	
-	_LIT(KAnimationDefinitionXML, "C:\animation.axml");	
-	_LIT(KLogicalIconName, "frame_anim_looping");
-		
-	iDialog->SetAnimationDefinitionL(KAnimationDefinitionXML);
-	iDialog->SetIconNameL(KLogicalIconName);
-	iDialog->ShowL();		
-	\endcode
-	\sa HbIconAnimationManager::addDefinitionFile
-	\note Animation definition files must be stored to a place where they
-	can be accessed.    
+    Following example sets an icon animation into a notification dialog.
+        
+    \code
+    Create an animation definition file.    
     
-    \stable
-    \hbwidgets
+    <animations>
+        <icon name="frame_anim_looping" playmode="loop">
+            <frame duration="100">c:\icon1.svg</frame>
+            <frame duration="200">c:\icon2.svg</frame>
+            <frame duration="300">c:\icon3.svg</frame>
+        </icon>
+    </animations>   
+    
+    Create CHbDeviceNotificationDialogSymbian in a way described before and
+    set definition file and animation's logical name.
+    
+    _LIT(KAnimationDefinitionXML, "C:\animation.axml"); 
+    _LIT(KLogicalIconName, "frame_anim_looping");
+        
+    iDialog->SetAnimationDefinitionL(KAnimationDefinitionXML);
+    iDialog->SetIconNameL(KLogicalIconName);
+    iDialog->ShowL();       
+    \endcode
+
+    \sa HbDeviceNotificationDialog, MHbDeviceNotificationDialogObserver 
 */
 
 /*!
-    Symbian two phase constructor. Returns a pointer to CHbDeviceNotificationDialogSymbian instance.
-    \a aObserver Pointer to the observer.
+    \enum CHbDeviceNotificationDialogSymbian::TextWrapping
+    Title text wrapping.
+
+    \sa Hb::TextWrapping
+*/
+/*!
+    \var CHbDeviceNotificationDialogSymbian::TextWrapping CHbDeviceNotificationDialogSymbian::TextNoWrap
+    No wrapping.
+*/
+/*!
+    \var CHbDeviceNotificationDialogSymbian::TextWrapping CHbDeviceNotificationDialogSymbian::TextWordWrap
+    Word wrapping.
+*/
+/*!
+    \var CHbDeviceNotificationDialogSymbian::TextWrapping CHbDeviceNotificationDialogSymbian::TextWrapAnywhere
+    Wrap anywhere.
+*/
+
+/*!
+    Constructs a new CHbDeviceNotificationDialog and returns a pointer it.
+    \a aObserver is a pointer to event observer or 0 if no observer.
 */
 EXPORT_C CHbDeviceNotificationDialogSymbian* CHbDeviceNotificationDialogSymbian::NewL(
     MHbDeviceNotificationDialogObserver* aObserver)
@@ -337,7 +388,9 @@ EXPORT_C CHbDeviceNotificationDialogSymbian* CHbDeviceNotificationDialogSymbian:
     }
 
 /*!
-    Destructor.
+    Destructs CHbDeviceNotificationDialogSymbian. The notification launched by ShowL()
+    is closed if observer is set. If there is no observer, it is
+    left executing and closes itself by timeout.
 */
 EXPORT_C CHbDeviceNotificationDialogSymbian::~CHbDeviceNotificationDialogSymbian()
     {
@@ -346,8 +399,9 @@ EXPORT_C CHbDeviceNotificationDialogSymbian::~CHbDeviceNotificationDialogSymbian
 
 /*!
     Convenience method for showing notification dialog with icon and title.
-    \param aIconName - path and name of the icon shown on dialog.
-    \param aTitle - title shown on dialog.
+
+    \param aIconName Path and name of the icon to show on dialog.
+    \param aTitle Title text.
 */
 EXPORT_C void CHbDeviceNotificationDialogSymbian::NotificationL(const TDesC& aIconName, const TDesC& aTitle)
     {
@@ -361,9 +415,10 @@ EXPORT_C void CHbDeviceNotificationDialogSymbian::NotificationL(const TDesC& aIc
 
 /*!
     Convenience method for showing notification dialog with icon, text and title.
-    \param aIconName - path and name of the icon shown on dialog.
-    \param aText - text shown on dialog.
-    \param aTitle - title shown on dialog.
+
+    \param aIconName Path and name of icon to show on dialog.
+    \param aText Dialog text.
+    \param aTitle Title text.
 */
 EXPORT_C void CHbDeviceNotificationDialogSymbian::NotificationL(const TDesC &aIconName, const TDesC& aText, const TDesC& aTitle)
     {
@@ -377,12 +432,12 @@ EXPORT_C void CHbDeviceNotificationDialogSymbian::NotificationL(const TDesC &aIc
     }
 
 /*!
-    Sets message box icon name or animation logical name. The dialog gets updated when method is called.
+    Sets dialog icon name or animation logical name.
 
     \param aIconName Icon name. Icon can be from Hb resources or themes. Or can be a file in
     a file system.
 
-    \sa IconName()
+    \sa IconName(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceNotificationDialogSymbian::SetIconNameL(const TDesC& aIconName)
     {
@@ -391,8 +446,7 @@ EXPORT_C void CHbDeviceNotificationDialogSymbian::SetIconNameL(const TDesC& aIco
 
 
 /*!
-    Get name and path of the icon shown on dialog or animation's logical name. 
-    If not set, returns empty iconName.
+    Returns icon or animation name. Default is empty.
 
     \sa SetIconNameL
 */
@@ -407,21 +461,26 @@ EXPORT_C const TPtrC CHbDeviceNotificationDialogSymbian::IconName() const
     }
 
 /*!
-    Sets notification dialog's animation definition name.  The dialogs get updated next when time ShowL() or UpdateL()
-    is called.
+    Sets dialog animation definition file name.
 
-    \param aAnimationDefinition Animation definition file name. Definition can be from Hb resources or themes. 
-    Or can be a file in a file system.
+    Supported icon animation formats are following:
+    - GIF (.gif)
+    - MNG (.mng)
+    - Frame animations
 
-    \sa AnimationDefinition()
+    \param aAnimationDefinition Animation definition file name. Definition can be from Hb resources or themes.
+    Or can be a file in a file system. The definition must be stored to a place where it can be accessed by
+    device dialog service.
+
+    \sa AnimationDefinition() SetIconNameL() HbIconAnimationManager::addDefinitionFile(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceNotificationDialogSymbian::SetAnimationDefinitionL(const TDesC& aAnimationDefinition)
 {
-	d->AddVariantL(KKeyAnimationDefinition, &aAnimationDefinition, CHbSymbianVariant::EDes);
+    d->AddVariantL(KKeyAnimationDefinition, &aAnimationDefinition, CHbSymbianVariant::EDes);
 }
 
 /*!
-    Returns an animation definition set for a dialog. If not set, return string.
+    Returns dialog animation definition file name.
 
     \sa SetAnimationDefinitionL()
 */
@@ -437,10 +496,11 @@ EXPORT_C TPtrC CHbDeviceNotificationDialogSymbian::AnimationDefinition() const
 
 
 /*!
-    Set and update text on dialog. Text is not set, if Show() or Update()
-    is not called.
-    \param aText - text shown on dialog.
-    \sa ShowL(), UpdateL()
+    Sets dialog text.
+
+    \param aText Dialog text.
+
+    \sa Text(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceNotificationDialogSymbian::SetTextL(const TDesC& aText)
     {
@@ -448,7 +508,7 @@ EXPORT_C void CHbDeviceNotificationDialogSymbian::SetTextL(const TDesC& aText)
     }
 
 /*!
-    Get text shown on dialog. If not set, returns empty string.
+    Returns dialog text.
 
     \sa SetTextL()
 */
@@ -463,10 +523,11 @@ EXPORT_C const TPtrC CHbDeviceNotificationDialogSymbian::Text() const
     }    
 
 /*!
-    Set and update title on dialog. Title is not set, if Show() or Update()
-    is not called.
-    \param title - aTitle shown on dialog.
-    \sa ShowL(), UpdateL()
+    Sets title text.
+
+    \param aTitle Title text.
+
+    \sa Title(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceNotificationDialogSymbian::SetTitleL(const TDesC& aTitle)
     {
@@ -474,7 +535,7 @@ EXPORT_C void CHbDeviceNotificationDialogSymbian::SetTitleL(const TDesC& aTitle)
     }
 
 /*!
-    Get title shown on dialog. If not set, returns empty string.
+    Returns title text.
 
     \sa SetTitleL()
 */
@@ -490,82 +551,91 @@ EXPORT_C const TPtrC CHbDeviceNotificationDialogSymbian::Title() const
     }
     
 /*!
-    Enable user interaction on dialog. Setting is not set, if Show() or Update()
-    is not called.
-    \param aEnable - When enabled, activation event is notified via observer interface.
+    Enables user interaction on dialog.
 
-    Default value is false.
-    \sa ShowL(), UpdateL(), MCHbDeviceNotificationDialogSymbianObserver.
+    \param aEnable True enables activation event notification via observer interface.
+
+    \sa IsTouchActivating(), ShowL(), UpdateL(), MCHbDeviceNotificationDialogSymbianObserver
 */
 EXPORT_C void CHbDeviceNotificationDialogSymbian::EnableTouchActivation(TBool aEnable)
     {
-    d->iEnable = aEnable;    
+    d->iEnable.iValue = aEnable;
+    d->iEnable.iChanged = ETrue;
     }
 
 /*!
-    Get touch activation setting.
+    Returns touch activation setting.  Default value is false.
 
     \sa EnableTouchActivation()
 */
 EXPORT_C TBool CHbDeviceNotificationDialogSymbian::IsTouchActivating() const
     {        
-    return d->iEnable; 
+    return d->iEnable.iValue; 
     }
 
 /*!
-    Set dialog timeout. Timeout is not set, if Show() or Update()
-    is not called.
-    \param aTimeout - Set timeout for dialog.
+    Set dialog timeout. 
 
-    Default value is KHbLongNotificationDialogTimeout (3000 ms).
-    \sa ShowL(), UpdateL()
+    \param aTimeout Dialog timeout in milliseconds.
+
+    \sa Timeout(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceNotificationDialogSymbian::SetTimeout(TInt aTimeout)
     {
-    d->iTimeout = aTimeout;
+    d->iTimeout.iValue = aTimeout;
+    d->iTimeout.iChanged = ETrue;
     }
 
 /*!
-    Get timeout setting.
+    Returns timeout. Default value is KHbLongNotificationDialogTimeout (3000 ms).
 
     \sa SetTimeout()
 */
 EXPORT_C TInt CHbDeviceNotificationDialogSymbian::Timeout() const
     {    
-    return d->iTimeout;
+    return d->iTimeout.iValue;
     }
 
 /*!
-    Set dialog title text wrapping. Text wrapping is not set, if Show() or Update()
-    is not called.
-    \param aWrapping - Defines title text wrapping.
+    Sets title text wrapping. The title can wrap only if there is no text for the dialog.
+    The title can wrap to a maximum of two lines. SetTextL() also changes title text wrapping.
 
-    Default value is CHbDeviceNotificationDialogSymbian::TextNoWrap.
-    \sa ShowL(), UpdateL()
+
+    \param aWrapping Title text wrapping.
+
+    \sa TitleTextWrapping(), SetTextL(), ShowL(), UpdateL()
 */
 EXPORT_C void CHbDeviceNotificationDialogSymbian::SetTitleTextWrapping(
     TextWrapping aWrapping)
     {
-    d->iWrap = aWrapping;    
+    d->iWrap.iValue = aWrapping;
+    d->iWrap.iChanged = ETrue;
     }
 
 /*!
-    Get title text wrapping setting.
+    Returns title text wrapping.
+
+    The title can wrap only if dialog text is empty. The title can wrap to a maximum of two lines.
+    The default is CHbDeviceNotificationDialogSymbian::TextWordWrap.
 
     \sa SetTitleTextWrapping()
 */
 EXPORT_C CHbDeviceNotificationDialogSymbian::TextWrapping CHbDeviceNotificationDialogSymbian::TitleTextWrapping() const
-    {    
-    return d->iWrap;
+    {
+    if (d->iWrap.iChanged) {
+        return static_cast<TextWrapping>(d->iWrap.iValue);
+    } else {
+        return Text().Length() == 0 ? TextWordWrap : TextNoWrap;
+    }
     }
     
 /*!
-    Show the dialog.
-    \code
-    // example to show dialog.
-    iNotificationDialog->SetTitleL("Dialog title text");
-    iNotificationDialog->ShowL();
-    \endcode
+    Shows a notification dialog and returns immediately without waiting for it to close.
+    Closing of the dialog and tapping of dialog is indicated by MHbDeviceNotificationDialogObserver
+    callback interface. Dialog can be updated while showing by property setters and then calling
+    UpdateL().
+
+    \sa UpdateL(), Close(), MHbDeviceNotificationDialogObserver
 */
 EXPORT_C void CHbDeviceNotificationDialogSymbian::ShowL()
     {
@@ -573,12 +643,11 @@ EXPORT_C void CHbDeviceNotificationDialogSymbian::ShowL()
     }
 
 /*!
-    Update the dialog. Show must be called before update can be used.
-    \code
-    // example to update already showing dialog.
-    iNotificationDialog->SetTitleL("Update title");
-    iNotificationDialog->UpdateL();
-    \endcode
+    Updates changed properties to a showing notification dialog via interprocess
+    communication. Has no effect if ShowL() has not been called or the dialog has
+    closed already.
+
+    \sa ShowL()
 */
 
 EXPORT_C void CHbDeviceNotificationDialogSymbian::UpdateL()
@@ -587,8 +656,7 @@ EXPORT_C void CHbDeviceNotificationDialogSymbian::UpdateL()
     }
 
 /*!
-    Close the dialog. Method has no effect if convenience methods
-    are used to show device notification dialog.
+    Closes a device notification dialog.
 */
 EXPORT_C void CHbDeviceNotificationDialogSymbian::Close()
     {
@@ -596,7 +664,7 @@ EXPORT_C void CHbDeviceNotificationDialogSymbian::Close()
     }
 
 /*!
-    Constructor. 
+    Constructs CHbDeviceNotificationDialogSymbian.
 */
 CHbDeviceNotificationDialogSymbian::CHbDeviceNotificationDialogSymbian()
     {
@@ -611,7 +679,4 @@ void CHbDeviceNotificationDialogSymbian::ConstructL(
     d = new (ELeave) CHbDeviceNotificationDialogSymbianPrivate;
     d->ConstructL(this);
     d->iObserver = aObserver;
-    EnableTouchActivation(EFalse);
-    SetTimeout(KHbLongNotificationDialogTimeout);
-    SetTitleTextWrapping(CHbDeviceNotificationDialogSymbian::TextWordWrap);
     }

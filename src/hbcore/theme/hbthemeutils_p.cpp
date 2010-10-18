@@ -25,7 +25,6 @@
 
 #include "hbthemeutils_p.h"
 #include "hbtheme.h"
-#include "hbiniparser_p.h"
 #include "hbthemecommon_p.h"
 #include "hbthemeclient_p.h"
 #include "hbtheme_p.h"
@@ -237,14 +236,15 @@ void HbThemeSettings::initSettings()
  */
 QString HbThemeSettings::getThemeFromFile(const QString &variable, const QString &rootDir)
 {
-    QFile themeSetting(rootDir + '/' + HbThemeUtils::platformHierarchy + '/' + themeSettingFile);
+    QString themeSetting(rootDir + '/' + HbThemeUtils::platformHierarchy + '/' + themeSettingFile);
     QString theme;
-    HbIniParser iniParser;
-
-    if (themeSetting.open(QIODevice::ReadOnly) && iniParser.read(&themeSetting)){
+    if (QFile::exists(themeSetting)) {
+        QSettings iniParser(themeSetting, QSettings::IniFormat);
+        iniParser.beginGroup("Default");
         theme = rootDir + '/' + HbThemeUtils::platformHierarchy + '/' +
                 HbThemeUtils::iconsResourceFolder + '/' +
-                iniParser.value("Default", variable).trimmed();
+                iniParser.value(variable).toString().trimmed();
+        iniParser.endGroup();
     }
     return theme;
 }
@@ -321,10 +321,11 @@ void HbThemeUtils::updateThemeSetting(Setting setting, const QString &value)
  */
 bool HbThemeUtils::isThemeValid(const QString &themePath)
 {
+    const QString themePathFixed = QDir::fromNativeSeparators(themePath);
     // If the theme contains .themeindex and index.theme files
     // it will be assumed valid
-    QString indexFile = QString(themePath).replace("/icons/", QString('/')) + ".themeindex";
-    return (QFile::exists(themePath + "/index.theme") && QFile::exists(indexFile));
+    QString indexFile = QString(themePathFixed).replace("/icons/", QString('/')) + ".themeindex";
+    return (QFile::exists(themePathFixed + "/index.theme") && QFile::exists(indexFile));
 }
 
 HbThemeIndexInfo HbThemeUtils::getThemeIndexInfo(const HbThemeType &type)
@@ -429,7 +430,7 @@ char *HbThemeUtils::createHeapThemeIndex(const HbThemeInfo &theme)
     if (indexFile.open(QIODevice::ReadOnly)) {
         GET_MEMORY_MANAGER(HbMemoryManager::HeapMemory);
         qint64 byteSize = indexFile.size();
-        int indexOffset = manager->alloc(byteSize);
+        qptrdiff indexOffset = manager->alloc(byteSize);
         if (indexOffset != -1) {
             address = HbMemoryUtils::getAddress<char>(HbMemoryManager::HeapMemory, indexOffset);
             indexFile.read(address, byteSize);

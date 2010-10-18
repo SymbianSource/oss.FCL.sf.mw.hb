@@ -38,10 +38,10 @@ public:
     ~HbDirectoryNameLocalizer();
     QString translate( QString& sourceText ) const;
     
-private:	
+private:    
     Q_DISABLE_COPY( HbDirectoryNameLocalizer ) 
     
-	HbDirectoryNameLocalizerPrivate* d;
+    HbDirectoryNameLocalizerPrivate* d;
 };
 
 #endif /* DIRECTORYNAMELOCALIZER_H */

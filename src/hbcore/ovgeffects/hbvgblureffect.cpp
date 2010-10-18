@@ -74,7 +74,7 @@ void HbVgBlurEffect::setRadius(const QPointF &radius)
 QRectF HbVgBlurEffect::boundingRectFor(const QRectF &rect) const
 {
     Q_D(const HbVgBlurEffect);
-    QSizeF mappedRadius = d->mapSize(QSizeF(d->radius.x(), d->radius.y()));
+    QSizeF mappedRadius = d->mapSize(QSizeF(d->radius.x() + 2, d->radius.y() + 2));
     qreal deltaX = mappedRadius.width();
     qreal deltaY = mappedRadius.height();
     return rect.adjusted(-deltaX, -deltaY, deltaX, deltaY);

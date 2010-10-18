@@ -25,6 +25,8 @@
 
 #include <hbgridviewitem.h>
 #include <hbgridviewitem_p.h>
+#include <hbiconitem.h>
+#include <hbtextitem.h>
 
 #include <hbeffect.h>
 
@@ -106,10 +108,13 @@ void HbGridViewItemPrivate::updateTextItem(const HbGridViewPrivate &viewPrivate)
     if (    mTextValid
         &&  !mTextItem) {
         mItemsChanged = true;
-        mTextItem = q->style()->createPrimitive(HbStyle::P_GridViewItem_text, q);
-       }
-    else if (   !mTextValid
-             && mTextItem) {
+        mTextItem = q->style()->createPrimitive(HbStyle::PT_TextItem, QLatin1String("text"), q);
+        HbTextItem *textItem = qobject_cast<HbTextItem*>(mTextItem);
+        if (textItem) {
+            textItem->setAlignment(Qt::AlignCenter);
+        }
+    } else if (   !mTextValid
+               && mTextItem) {
         mItemsChanged = true;
         delete mTextItem;
         mTextItem = 0;
@@ -140,7 +145,12 @@ void HbGridViewItemPrivate::updateIconItem(const HbGridViewPrivate &viewPrivate)
     if (    mIconValid
         &&  !mIconItem) {
         mItemsChanged = true;
-        mIconItem = q->style()->createPrimitive(HbStyle::P_GridViewItem_icon, q);
+        mIconItem = q->style()->createPrimitive(HbStyle::PT_IconItem, QLatin1String("icon"), 0);
+        mIconItem->setParentItem(q); // To enable asynchronous icon loading.
+        HbIconItem *iconItem = qobject_cast<HbIconItem*>(mIconItem);
+        if (iconItem) {
+            iconItem->setAlignment(Qt::AlignCenter);
+        }
     }
     else if (   !mIconValid
             &&  mIconItem) {

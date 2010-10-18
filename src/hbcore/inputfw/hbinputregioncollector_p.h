@@ -27,9 +27,11 @@
 #define HB_INPUT_REGION_COLLECTOR_H
 
 #include "hbinputdef.h"
+#include "hbwidget.h"
 
 #include <QObject>
 #include <QRegion>
+#include <QPointer>
 
 class HbWidget;
 class HbInputRegionCollectorPrivate;
@@ -59,6 +61,32 @@ private:
 private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbInputRegionCollector)
     Q_DISABLE_COPY(HbInputRegionCollector)
+    friend class HbInputMainWindowPrivate;
+};
+
+class HbWidgetFilterList
+{
+public:
+    HbWidgetFilterList(HbWidget *w)
+        : mWidget(w), mIsVisible(false) {
+    }
+    bool operator ==(const HbWidgetFilterList &other) const {
+        return mWidget == other.mWidget;
+    }
+    QPointer <HbWidget> mWidget;
+    // visibility is needed as the time when we get show event inside eventFilter
+    // widget is not visible.
+    bool mIsVisible;
+};
+
+class HbInputRegionCollectorPrivate
+{
+public:
+    HbInputRegionCollectorPrivate()
+        : mEnabled(false), mModalDialogs(0) {}
+    QList < HbWidgetFilterList > mInputWidgets;
+    bool mEnabled;
+    int mModalDialogs;
 };
 
 #endif // HB_INPUT_REGION_COLLECTOR_H

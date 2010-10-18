@@ -8,26 +8,29 @@ HbMessageBoxContentWidget[hasIcon="false"]{
 }
 
 
-HbMessageBoxContentWidget::text {
+HbMessageBoxContentWidget::scrollArea {
 	
       top: -var(hb-param-margin-gene-popup);
       bottom: var(hb-param-margin-gene-popup);
       left: -var(hb-param-margin-gene-popup);
-      right: 0 un;/*var(hb-param-margin-gene-popup);*/
-      font-variant:primary;
-      text-height:var(hb-param-text-height-primary);
-      text-line-count-max: 5;
-      text-line-count-min: 3;
-      text-align: left;	
+      right: 0;
+
+      min-height : expr(var(hb-param-text-height-primary) *3);
+      max-height : expr(var(hb-param-text-height-primary) *5);
+
 }
 
-HbMessageBoxContentWidget::text[hasIcon="true"]
+HbMessageBoxContentWidget::scrollArea[hasIcon="true"]
 {
       min-width: expr(var(hb-param-screen-short-edge)-2*var(hb-param-margin-gene-screen)-2*var(hb-param-margin-gene-popup)-var(hb-param-graphic-size-primary-large));
+
 }
-HbMessageBoxContentWidget::text[hasIcon="false"]
+
+HbMessageBoxContentWidget::scrollArea[hasIcon="false"]
 {
       min-width: expr(var(hb-param-screen-short-edge)-*2var(hb-param-margin-gene-screen)-var(hb-param-margin-gene-popup));
+
+
 }
 HbMessageBoxContentWidget::icon
 {

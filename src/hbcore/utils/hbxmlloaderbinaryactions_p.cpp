@@ -30,7 +30,7 @@
 #include <QCoreApplication>
 
 #define VERSION_MAJOR 0
-#define VERSION_MINOR 1
+#define VERSION_MINOR 2
 
 /*
     \class HbXmlLoaderBinaryActions
@@ -191,6 +191,13 @@ bool HbXmlLoaderBinaryActions::setToolTip( const HbXmlVariable &tooltip )
     mOut << (quint8)HbXml::ActionSetToolTip << tooltip;
     return true;
 }
+
+bool HbXmlLoaderBinaryActions::setBackground( const QString &name, HbFrameDrawer::FrameType type )
+{
+    mOut << (quint8)HbXml::ActionSetBackground << name << (quint8)type;
+    return true;
+}
+
 
 bool HbXmlLoaderBinaryActions::createAnchorLayout( const QString &widget, bool modify )
 {

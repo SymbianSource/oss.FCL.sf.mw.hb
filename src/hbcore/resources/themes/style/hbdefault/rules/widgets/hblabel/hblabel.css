@@ -3,6 +3,15 @@ HbLabel{
 }
 
 HbLabel::text{
+    text-elide-mode: right;
+    alignment: left center;
+}
+
+HbLabel::icon{
+    alignment: left top
+}
+
+HbLabel::text{
     left:-var(hb-param-margin-label);
     right:var(hb-param-margin-label);
     top:-var(hb-param-margin-label);

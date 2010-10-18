@@ -4,7 +4,7 @@
     <meshitem src="list" srcEdge="TOP" dst="" dstEdge="TOP" />
     <meshitem src="list" srcEdge="LEFT" dst="" dstEdge="LEFT" />
     <meshitem src="list" srcEdge="RIGHT" dst="" dstEdge="RIGHT" />
-    <meshitem src="list" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" spacing="var(hb-param-margin-gene-screen)" />
+    <meshitem src="list" srcEdge="BOTTOM" dst="" dstEdge="BOTTOM" />
 </layout>
 
 </hbwidget>

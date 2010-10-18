@@ -38,14 +38,14 @@
 QT_BEGIN_NAMESPACE
 class QSvgRenderer;
 class QPicture;
-class QPixmap;
+class QImage;
 class QImageReader;
 class QByteArray;
 QT_END_NAMESPACE
 
-// Pixmaps larger than this amount of bytes are deleted after use from previously used icon sources list
+// Images larger than this amount of bytes are deleted after use from previously used icon sources list
 // for not wasting system's memory too much.
-static const int PIXMAP_SIZE_LIMIT = 150000;
+static const int IMAGE_SIZE_LIMIT = 150000;
 
 class HB_CORE_PRIVATE_EXPORT HbIconSource
 {
@@ -66,10 +66,10 @@ public:
     QImageReader *imageReader();
     void releaseImageReader();
     void takeImageReader();
-    QPixmap *pixmap();
+    QImage *image();
     QByteArray *byteArray();
 
-    void deletePixmapIfLargerThan(int limitInBytes);
+    void deleteImageIfLargerThan(int limitInBytes);
 
 private:
     bool canKeepOpen() const;
@@ -78,9 +78,9 @@ private:
     QString mFullFilename;
     QString mType;
 
-    // These are used to generate the raster pixmap of the icon and for fetching icon's default size
+    // These are used to generate the raster image of the icon and for fetching icon's default size
     QPicture   *mPicture;
-    QPixmap    *mPixmap;
+    QImage    *mImage;
     QByteArray *mByteArray;
 
     // Stored default size

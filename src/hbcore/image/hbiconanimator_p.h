@@ -41,7 +41,7 @@ class HbIconAnimatorPrivate
 {
 public:
     HbIconAnimatorPrivate() :
-        icon(), item(0), view(0), animation(0), started(false) {}
+    icon(), item(0), view(0), animation(0), started(false), mLoopCountSet(false) {}
     ~HbIconAnimatorPrivate();
 
 public:
@@ -51,6 +51,8 @@ public:
     HbIconAnimation *animation;
 
     bool started;
+    bool mLoopCountSet;
+    int mLoopCount;
 };
 
 #endif

@@ -39,7 +39,6 @@ public:
 
     QPointF offset;
     qreal fade;
-    QColor color;
     bool fadeInited;
 #ifdef HB_EFFECTS_OPENVG
     VGubyte alphaLUT[256];

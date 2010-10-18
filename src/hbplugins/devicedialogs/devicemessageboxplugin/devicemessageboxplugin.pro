@@ -47,9 +47,10 @@ symbian: {
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL
     TARGET.UID3 = 0x20022FCB
+    MMP_RULES += SMPSAFE
 
     hblib.sources = Hb.dll
-    hblib.path = \sys\bin
+    hblib.path = /sys/bin
     hblib.depends = "(0xEEF9EA38), 1, 0, 0, {\"Hb\"}"
 
     pluginstub.sources = HbDeviceMessageBoxPlugin.dll

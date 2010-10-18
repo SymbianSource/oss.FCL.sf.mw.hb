@@ -79,7 +79,8 @@ protected:
     HbVgMaskEffect(HbVgMaskEffectPrivate &dd, QObject *parent = 0);
     void performEffect(QPainter *painter, const QPointF &offset,
                        const QVariant &vgImage, const QSize &vgImageSize);
-    void performEffectSw(QPainter *painter);
+    void performEffectSw(QPainter *devicePainter, QPixmap *result, QPointF *resultPos);
+    ChainBehavior chainBehavior() const;
 
 private:
     Q_DECLARE_PRIVATE(HbVgMaskEffect)

@@ -1,0 +1,7 @@
+HbMessageBoxWidget::text {
+
+     font-variant:primary;
+     text-height:var(hb-param-text-height-primary);      
+     text-align: left;	 
+     right : var(hb-param-margin-gene-popup);
+}

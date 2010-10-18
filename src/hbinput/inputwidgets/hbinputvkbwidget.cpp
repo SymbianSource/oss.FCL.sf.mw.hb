@@ -45,7 +45,6 @@
 #include <hbeffect.h>
 #include <hbframedrawer.h>
 #include <hbevent.h>
-#include <hbdataform.h>
 #include <hbinputregioncollector_p.h>
 #include <hbfeedbackmanager.h>
 
@@ -55,7 +54,6 @@
 #include <hbinputdef.h>
 #include <hbinputvkbhost.h>
 #include <hbinputvkbhostbridge.h>
-#include <hbinputsettingwidget.h>
 #include <hbinputcommondialogs.h>
 #include <hbinputkeymap.h>
 #include <hbinputkeymapfactory.h>
@@ -72,6 +70,7 @@
 #include "hbinputmodeindicator.h"
 #include "hbinputsmileypicker.h"
 #include "hbinputscreenshotwidget.h"
+#include "hbinputsettingpopup.h"
 
 const int HB_DIGIT_LATIN_START_VALUE          = 0x0030;
 const int HB_DIGIT_ARABIC_INDIC_START_VALUE   = 0x0660;
@@ -86,16 +85,16 @@ const qreal HbSmileyPickerMarginInUnits = 0.9;
 
 
 /*!
-@proto
+@stable
 @hbinput
 \class HbInputVkbWidget
-\brief A base class for touch keypads.
+\brief The HbInputVkbWidget class is a base class for touch keypads.
 
 This class implements default mechanisms for opening and closing touch keypads.
-It know how to operate in landscape and in portait modes and it know how
-implement split view -mechasnism for S60 QT UI's Hb library. It also implements
-closing mechansim, where used is able to close the touch keypad by sliding it downwards
-with a finger. This class also implements background drawing for touch keypads.
+It supports landscape and portrait modes, and splitting the view into
+the application and touch keypad sections. It also implements a closing mechanism
+where the user can close the touch keypad by swiping it downwards with a finger.
+This class also implements background drawing for touch keypads.
 */
 
 /// @cond
@@ -132,15 +131,13 @@ HbInputVkbWidgetPrivate::HbInputVkbWidgetPrivate()
       mFocusedObject(0),
       mCurrentFocusedObject(0),
       mFlickAnimation(false),
-      mSettingsListOpen(false),
+      mSettingsDialogsOpen(0),
       mAnimateWhenDialogCloses(false),
       mKeyboardSize(HbQwerty4x10),
       mCloseHandleHeight(0),
       mCloseHandle(0),
-      mSettingView(0),
-      mCurrentView(0),
       mKeyboardDimmed(false),
-	  mSettingWidget(0)
+      mSettingPopup(0)
 {
     mScreenshotTimeLine.setUpdateInterval(16);
 }
@@ -274,7 +271,7 @@ void HbInputVkbWidgetPrivate::redirectMouseReleaseEvent(QGraphicsSceneMouseEvent
 
 void HbInputVkbWidgetPrivate::applyEditorConstraints()
 {
-    // no default implementaiton as of now.
+    // no default implementation for now.
 }
 
 void HbInputVkbWidgetPrivate::updateKeyCodes()
@@ -370,8 +367,9 @@ void HbInputVkbWidgetPrivate::captureScreenshot()
     rotateTrans = q->mainWindow()->viewportTransform();
     QRectF transRect = rotateTrans.mapRect(rect);
     QPixmap pixmap;
-    pixmap = QPixmap::grabWidget(q->mainWindow(), (int)transRect.x(), (int)transRect.y(), (int)transRect.width(), (int)transRect.height());
+    pixmap = QPixmap::grabWidget(q->mainWindow(), (int)transRect.x(), (int)transRect.y()+2, (int)transRect.width(), (int)transRect.height());
     pixmap = pixmap.transformed(rotateTrans.inverted());
+    mScreenshotWidget->hide();
     mScreenshotWidget->setScreenshot(pixmap);
 }
 
@@ -421,8 +419,18 @@ void HbInputVkbWidgetPrivate::_q_activateInputMethod(const HbInputMethodDescript
     if (!descriptor.isEmpty() && mOwner) {
         // Set as active input method.
         HbInputSettingProxy::instance()->setPreferredInputMethod(q->mainWindow()->orientation(), descriptor, customData);
-        // Activate immediately.
-        mOwner->activateInputMethod(descriptor);
+        if (HbInputSettingProxy::instance()->globalInputLanguage().language() == QLocale::Chinese &&
+            q->mainWindow()->orientation() ==  Qt::Vertical) {
+            HbInputLanguage primaryInputLanguage = HbInputSettingProxy::instance()->globalInputLanguage();
+            mOwner->activateState(HbInputState(HbInputModeDefault,
+                                   HbTextCaseAutomatic,
+                                   HbKeyboardTouchPortrait,
+                                   primaryInputLanguage));
+            HbInputMethod::activeInputMethod()->activateInputMethod(descriptor);
+        } else {
+            // Activate immediately.
+            mOwner->activateInputMethod(descriptor);
+        }
     }
 }
 
@@ -444,6 +452,7 @@ QChar HbInputVkbWidgetPrivate::numberCharacterBoundToKey(int key)
     if (!focusObject) {
         return numChr;
     }
+
     HbInputLanguage language = mKeymap->language();
     if (language.language()  != (QLocale::Language)0) {
         HbInputDigitType digitType = HbInputUtils::inputDigitType(language);
@@ -496,7 +505,77 @@ void HbInputVkbWidgetPrivate::_q_settingsClosed(HbAction* action)
 /// @endcond
 
 /*!
-Costructs the object.
+\enum HbInputVkbWidget::HbFlickDirection
+Describes the direction of the flick (swipe) gesture. 
+*/
+
+/*!
+\var HbInputVkbWidget::HbFlickDirectionNone
+No direction for a flick gesture. 
+*/
+
+/*!
+\var HbInputVkbWidget::HbFlickDirectionLeft
+Flick gesture to the left. 
+*/
+
+/*!
+\var HbInputVkbWidget::HbFlickDirectionRight
+Flick gesture to the right. 
+*/
+
+/*!
+\var HbInputVkbWidget::HbFlickDirectionUp
+Flick gesture upwards.
+*/
+
+/*!
+\var HbInputVkbWidget::HbFlickDirectionDown
+Flick gesture downwards. 
+*/
+
+/*!
+\enum HbInputVkbWidget::HbVkbCloseMethod
+Describes the different closing methods for the virtual keyboard.
+*/
+
+/*!
+\var HbInputVkbWidget::HbVkbCloseMethodButtonDrag
+Keypad closed by dragging a button.
+*/
+
+/*!
+\var HbInputVkbWidget::HbVkbCloseMethodCloseButton
+Keypad closed with the close button.
+*/
+
+/*!
+\var HbInputVkbWidget::HbVkbCloseMethodCloseButtonDrag
+Keypad closed with a button.
+*/
+
+/*!
+\var HbInputVkbWidget::HbVkbCloseMethodCloseGesture
+Keypad closed with a downward flick (swipe) gesture.
+*/
+
+/*!
+\enum HbInputVkbWidget::HbSctView
+Defines the view mode for the special character view.
+*/
+
+/*!
+\var HbInputVkbWidget::HbSctViewSpecialCharacter
+View mode with the table of special characters.
+*/
+
+/*!
+\var HbInputVkbWidget::HbSctViewSmiley
+View mode with the table of smileys.
+*/
+
+/*!
+Constructor.
 */
 HbInputVkbWidget::HbInputVkbWidget(QGraphicsItem *parent)
     : HbWidget(*new HbInputVkbWidgetPrivate, parent)
@@ -521,7 +600,7 @@ HbInputVkbWidget::HbInputVkbWidget(QGraphicsItem *parent)
 }
 
 /*!
-Constructs the object.
+Constructor.
 */
 HbInputVkbWidget::HbInputVkbWidget(HbInputVkbWidgetPrivate &dd, QGraphicsItem *parent)
     : HbWidget(dd, parent)
@@ -539,17 +618,22 @@ HbInputVkbWidget::HbInputVkbWidget(HbInputVkbWidgetPrivate &dd, QGraphicsItem *p
 #endif // HB_EFFECTS
 
     setActive(false);
+    if (!d->mOwner) {
+        d->mOwner = HbInputMethod::activeInputMethod();
+    }
 }
 
 /*!
-Destructs the object.
+Destructor.
 */
 HbInputVkbWidget::~HbInputVkbWidget()
 {
 }
 
 /*!
-Vkb host calls this handler when the keypad open animation finishes.
+The virtual keyboard host calls this handler when the keypad open animation has finished.
+
+\sa HbVkbHost
 */
 void HbInputVkbWidget::keyboardOpened(HbVkbHost *host)
 {
@@ -560,7 +644,7 @@ void HbInputVkbWidget::keyboardOpened(HbVkbHost *host)
 }
 
 /*!
-Vkb host calls this handler when the keyboard close animation has finished.
+The virtual keyboard host calls this handler when the keyboard close animation has finished.
 
 \sa HbVkbHost
 */
@@ -573,19 +657,7 @@ void HbInputVkbWidget::keyboardClosed(HbVkbHost *host)
 }
 
 /*!
-Vkb host calls this handler when the keyboard minimize animation has finished.
-
-\sa HbVkbHost
-*/
-void HbInputVkbWidget::keyboardMinimized(HbVkbHost *host)
-{
-    Q_UNUSED(host);
-    Q_D(HbInputVkbWidget);
-    d->mFlickDirection = HbFlickDirectionNone;
-}
-
-/*!
-The paint method. Draws the widget.
+Draws the widget. Parameters \a option and \a widget are not used. 
 */
 void HbInputVkbWidget::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
@@ -608,13 +680,11 @@ void HbInputVkbWidget::paint(QPainter *painter, const QStyleOptionGraphicsItem *
 }
 
 /*!
-Sets the content item which will fill the content area of this widget. Content item is
-a single input button group by default.
-If null is given then the old content item is deleted and content area is cleared.
+Sets the content item that will fill the content area of this widget.
+The content item is a single input button group by default.
+If \c null is given the old content item is deleted and the content area is cleared.
 Takes ownership of the given item.
 
-\sa updateKeyCodes
-\sa updateButtons
 \sa setKeyboardDimmed
 \sa probableKeypresses
 */
@@ -632,7 +702,7 @@ void HbInputVkbWidget::setContentItem(QGraphicsLayoutItem *item)
 }
 
 /*!
-Returns current content item or null if not set.
+Returns the current content item or \c null if not set.
 Ownership is not transferred.
 */
 QGraphicsLayoutItem *HbInputVkbWidget::contentItem() const
@@ -647,29 +717,7 @@ QGraphicsLayoutItem *HbInputVkbWidget::contentItem() const
 }
 
 /*!
-\deprecated HbInputVkbWidget::setRockerVisible(bool)
-    is deprecated.
-
-Sets virtual rocker visibility.
-*/
-void HbInputVkbWidget::setRockerVisible(bool visible)
-{
-    Q_UNUSED(visible);
-}
-
-/*!
-\deprecated HbInputVkbWidget::isRockerVisible() const
-    is deprecated.
-
-Returns true if virtual rocker is allowed to be visible.
-*/
-bool HbInputVkbWidget::isRockerVisible() const
-{
-    return false;
-}
-
-/*!
-Returns active keypad mode. Possible values are EModeAbc, EModeNumeric and EModeSct.
+Returns the active keypad mode. Possible values are EModeAbc and EModeNumeric.
 */
 HbKeypadMode HbInputVkbWidget::mode() const
 {
@@ -678,7 +726,8 @@ HbKeypadMode HbInputVkbWidget::mode() const
 }
 
 /*!
-Returns active keypad modifiers.
+Returns the active keypad modifiers as a set of flags for shift, chr, and fn keys
+(see details in file <tt>inputdef.h</tt>).
 */
 HbModifiers HbInputVkbWidget::modifiers() const
 {
@@ -687,7 +736,9 @@ HbModifiers HbInputVkbWidget::modifiers() const
 }
 
 /*!
-Sets the keypad to given mode. Possible values are EModeAbc, EModeNumeric and EModeSct.
+Sets the keypad to given \a mode. Possible values are EModeAbc and EModeNumeric.
+\a modifiers is a set of flags for shift, chr, and fn keys (see details in file
+<tt>inputdef.h</tt>).
 */
 void HbInputVkbWidget::setMode(HbKeypadMode mode, HbModifiers modifiers)
 {
@@ -710,8 +761,8 @@ void HbInputVkbWidget::setMode(HbKeypadMode mode, HbModifiers modifiers)
 }
 
 /*!
-Sets key map data object. Given key map data will be used as a source for button titles.
-Usually the key map data for active input language is used.
+Sets the keymap data object. The given keymap data will be used as a source for button titles.
+Usually the keymap data for the active input language is used.
 */
 void HbInputVkbWidget::setKeymap(const HbKeymap *keymap)
 {
@@ -756,7 +807,7 @@ void HbInputVkbWidget::aboutToClose(HbVkbHost *host)
     d->mCurrentHost = host;
 
     if (d->mSmileyPicker && d->mSmileyPicker->isVisible()) {
-        d->mSmileyPicker->hide();
+        d->mSmileyPicker->close();
     }
     if (d->mSettingList) {
         d->mSettingList->close();
@@ -775,14 +826,14 @@ void HbInputVkbWidget::setKeyboardDimmed(bool dimmed)
 }
 
 /*!
-Shows settings list
+Shows the setting list.
 */
 void HbInputVkbWidget::showSettingList()
 {
     Q_D(HbInputVkbWidget);
     HbPredictionFactory *predFactory = HbPredictionFactory::instance();
 
-    d->mSettingsListOpen = true;
+    d->mSettingsDialogsOpen++;
     d->captureScreenshot();
 
     if (!d->mSettingList) {
@@ -801,7 +852,7 @@ void HbInputVkbWidget::showSettingList()
         }
 
         if (focusObject->editorInterface().isPredictionAllowed() &&
-            predFactory->predictionEngineForLanguage(HbInputSettingProxy::instance()->globalInputLanguage())) {
+            predFactory->predictionEngineForLanguage(d->mOwner->inputState().language())) {
             d->mSettingList->setPredictionSelectionEnabled(true);
         } else {
             d->mSettingList->setPredictionSelectionEnabled(false);
@@ -826,12 +877,11 @@ void HbInputVkbWidget::showSettingList()
 }
 
 /*!
-Slot which is called when settings list is closed.
+This slot is called when the setting list is closed.
 */
 void HbInputVkbWidget::settingsClosed()
 {
     Q_D(HbInputVkbWidget);
-
     HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(contentItem());
     if (buttonGroup) {
         HbInputButton *item = buttonGroup->button(HbInputButton::ButtonKeyCodeSettings);
@@ -840,18 +890,20 @@ void HbInputVkbWidget::settingsClosed()
             buttonGroup->setButton(item, HbInputButton::ButtonKeyCodeSettings);
         }
     }
-
-    d->mSettingsListOpen = false;
-    if (d->mAnimateWhenDialogCloses) {
-        animKeyboardChange();
-        d->mAnimateWhenDialogCloses = false;
-    } else if (d->mScreenshotTimeLine.state() != QTimeLine::Running) {
-        keypadLanguageChangeFinished();
+    emit settingsListClosed();
+    d->mSettingsDialogsOpen--;
+    if (!d->mSettingsDialogsOpen){
+        if (d->mAnimateWhenDialogCloses) {
+            animKeyboardChange();
+            d->mAnimateWhenDialogCloses = false;
+        } else if (d->mScreenshotTimeLine.state() != QTimeLine::Running) {
+            keypadLanguageChangeFinished();
+        }
     }
 }
 
 /*!
-Closes settings list
+Closes the setting list.
 */
 void HbInputVkbWidget::closeSettingList()
 {
@@ -860,64 +912,37 @@ void HbInputVkbWidget::closeSettingList()
 }
 
 /*!
-Shows settings view
+Shows the Control Panel input settings content in a popup widget.
 */
 void HbInputVkbWidget::showSettingsView()
 {
     Q_D(HbInputVkbWidget);
 
-    /*
-    Added for vanilla input
-    When settings dialog is launched, keypad is not closed.
-    */
-    HbInputFocusObject *focusObject = 0;
-    if (!d->mOwner || !(focusObject = d->mOwner->focusObject())) {
-        return;
-    }
-    HbVkbHost *vkbHost = focusObject->editorInterface().vkbHost();
-    if (vkbHost && vkbHost->keypadStatus() != HbVkbHost::HbVkbStatusClosed) {
-        vkbHost->closeKeypad();
-    }
-    d->mCurrentFocusedObject = focusObject->object();
-
+    d->mSettingsDialogsOpen++;
     closeSettingList();
-    if(!d->mSettingView) {
-        d->mSettingView = new HbView(this);
-        HbAction *backAction = new HbAction(Hb::BackNaviAction, d->mSettingView);
-        backAction->setText(tr("Back"));
-        connect(backAction, SIGNAL(triggered(bool)), this, SLOT(closeSettingsView()));
-        d->mSettingView->setNavigationAction(backAction);
-        HbDataForm *dataForm = new HbDataForm();
-        d->mSettingView->setWidget(dataForm);
-        d->mSettingWidget = new HbInputSettingWidget(dataForm, d->mSettingView);        
-    }    
-    d->mSettingWidget->initializeWidget();
-    HbInputRegionCollector::instance()->attach(d->mSettingView);
-    d->mSettingView->setTitle(tr("Input Settings"));
-    mainWindow()->addView(d->mSettingView);
-    d->mCurrentView = mainWindow()->currentView();
-    mainWindow()->setCurrentView(d->mSettingView);
+
+    d->mSettingPopup = new HbInputSettingPopup();
+
+    connect(d->mSettingPopup, SIGNAL(dialogClosed()), this, SLOT(closeSettingsView()));
+    d->mSettingPopup->show();
 }
 
 /*!
-Closes settings view and returns to previous view
+Closes the input settings popup and returns to the previous view.
 */
 void HbInputVkbWidget::closeSettingsView()
 {
     Q_D(HbInputVkbWidget);
-
-    mainWindow()->setCurrentView(d->mCurrentView);
-    mainWindow()->removeView(d->mSettingView);
-    if (d->mSettingView->scene()) {
-        d->mSettingView->scene()->removeItem(d->mSettingView);
-    }
-    HbInputRegionCollector::instance()->detach(d->mSettingView);
-    d->mSettingWidget->resetWidget();
-
-    if (d->mCurrentFocusedObject) {
-        HbInputFocusObject *focusObject = new HbInputFocusObject(d->mCurrentFocusedObject);
-        d->mOwner->setFocusObject(focusObject);
-        d->mCurrentFocusedObject = 0;
+    d->mSettingPopup->deleteLater();
+    d->mSettingPopup = 0;
+    d->mSettingsDialogsOpen--;
+    if (!d->mSettingsDialogsOpen){
+        if (d->mAnimateWhenDialogCloses) {
+            animKeyboardChange();
+            d->mAnimateWhenDialogCloses = false;
+        } else if (d->mScreenshotTimeLine.state() != QTimeLine::Running) {
+            keypadLanguageChangeFinished();
+        }
     }
 }
 
@@ -986,22 +1011,11 @@ QSizeF HbInputVkbWidget::keypadButtonAreaSize()
 }
 
 /*!
-\deprecated HbInputVkbWidget::rockerPosition()
-    is deprecated.
-
-Returns the virtual rocker position. The default position is in the middle
-of keypad button area.
-*/
-QPointF HbInputVkbWidget::rockerPosition()
-{
-    return QPointF();
-}
-
-/*!
-Sets the status of the background drawing. This method can be used to
-optimize vkb widget drawing. If it is known that the widget will cover whole
-vkb area and there are no places where the background shows through, then the background
-drawing can be turned off to speed up paint method.
+Sets the status of the background drawing. This method can be used to optimize
+virtual keyboard widget drawing. If it is known that the widget will cover
+the whole virtual keyboard area and there are no places where the background
+shows through, then the background drawing can be turned off to speed up
+the paint() function.
 */
 void HbInputVkbWidget::setBackgroundDrawing(bool backgroundEnabled)
 {
@@ -1009,10 +1023,9 @@ void HbInputVkbWidget::setBackgroundDrawing(bool backgroundEnabled)
     d->mDrawbackground = backgroundEnabled;
 }
 
-
 /*!
-Returns all possible keys that the user could have intended to press
-for the last registered touch along with their corresponding probability.
+Returns all the possible keys that the user could have intended to press
+for the last registered touch along with their corresponding probabilities.
 */
 QList<HbKeyPressProbability> HbInputVkbWidget::probableKeypresses()
 {
@@ -1025,8 +1038,8 @@ QList<HbKeyPressProbability> HbInputVkbWidget::probableKeypresses()
 }
 
 /*!
-Refines the bounding rect. This function is used for collision detection
-and hit test.
+Returns the bounding area of the widget as a graphical shape,
+which can be used for collision detection and hit test.
 */
 QPainterPath HbInputVkbWidget::shape() const
 {
@@ -1037,16 +1050,7 @@ QPainterPath HbInputVkbWidget::shape() const
 }
 
 /*!
-\reimp
-*/
-QSizeF HbInputVkbWidget::minimizedKeyboardSize()
-{
-    Q_D(HbInputVkbWidget);
-    return QSizeF(0.0, d->mCloseHandleHeight);
-}
-
-/*!
-Shows smiley picker widget.
+Shows the smiley picker widget.
 */
 void HbInputVkbWidget::showSmileyPicker(int rows, int columns)
 {
@@ -1070,6 +1074,10 @@ void HbInputVkbWidget::showSmileyPicker(int rows, int columns)
 
         if (!smileys.isEmpty()) {
             d->mSmileyPicker = new HbInputSmileyPicker(rows, columns, 0, smileys);
+            // workaround start
+            QEvent event(QEvent::Polish);
+            QApplication::sendEvent(d->mSmileyPicker, &event);
+            // workaround end
             d->mSmileyPicker->setObjectName("vkbwidget_smiley_picker");
             connect(d->mSmileyPicker, SIGNAL(selected(QString)), this, SIGNAL(smileySelected(QString)));
         }
@@ -1099,6 +1107,9 @@ void HbInputVkbWidget::showSmileyPicker(int rows, int columns)
     }
 }
 
+/*!
+Returns the direction of the flick (swipe) gesture.
+*/
 HbInputVkbWidget::HbFlickDirection HbInputVkbWidget::flickDirection()
 {
     Q_D(HbInputVkbWidget);
@@ -1106,7 +1117,7 @@ HbInputVkbWidget::HbFlickDirection HbInputVkbWidget::flickDirection()
 }
 
 /*!
-Sends key event to owning input method.
+Sends the key press event to the owning input method.
 */
 void HbInputVkbWidget::sendKeyPressEvent(const QKeyEvent &event)
 {
@@ -1118,7 +1129,7 @@ void HbInputVkbWidget::sendKeyPressEvent(const QKeyEvent &event)
 }
 
 /*!
-Sends key event to owning input method.
+Sends the key double-press event to the owning input method.
 */
 void HbInputVkbWidget::sendKeyDoublePressEvent(const QKeyEvent &event)
 {
@@ -1130,7 +1141,7 @@ void HbInputVkbWidget::sendKeyDoublePressEvent(const QKeyEvent &event)
 }
 
 /*!
-Sends key event to owning input method.
+Sends the key release event to the owning input method.
 */
 void HbInputVkbWidget::sendKeyReleaseEvent(const QKeyEvent &event)
 {
@@ -1146,7 +1157,7 @@ void HbInputVkbWidget::sendKeyReleaseEvent(const QKeyEvent &event)
 }
 
 /*!
-Sends key event to owning input method.
+Sends the key long-press event to the owning input method.
 */
 void HbInputVkbWidget::sendLongPressEvent(const QKeyEvent &event)
 {
@@ -1158,8 +1169,8 @@ void HbInputVkbWidget::sendLongPressEvent(const QKeyEvent &event)
 }
 
 /*!
-Sends key event to owning input method.
-Releae event is ignored.
+Sends the key change event to the owning input method.
+The release event is ignored, and the press event is handled.
 */
 void HbInputVkbWidget::sendKeyChangeEvent(const QKeyEvent &releaseEvent, const QKeyEvent &pressEvent)
 {
@@ -1171,6 +1182,9 @@ void HbInputVkbWidget::sendKeyChangeEvent(const QKeyEvent &releaseEvent, const Q
     }
 }
 
+/*!
+Updates the animation shown when the keypad language is changed.
+*/
 void HbInputVkbWidget::keypadLanguageChangeAnimationUpdate(qreal value)
 {
     Q_D(HbInputVkbWidget);
@@ -1189,6 +1203,9 @@ void HbInputVkbWidget::keypadLanguageChangeAnimationUpdate(qreal value)
     }
 }
 
+/*!
+Cleans up at the end of an animation when the keypad language is changed. 
+*/
 void HbInputVkbWidget::keypadLanguageChangeFinished()
 {
     Q_D(HbInputVkbWidget);
@@ -1197,11 +1214,14 @@ void HbInputVkbWidget::keypadLanguageChangeFinished()
     d->mFlickDirection = HbFlickDirectionNone;
 }
 
+/*!
+Controls the start of an animation when the keyboard is changed.
+*/
 void HbInputVkbWidget::animKeyboardChange()
 {
     Q_D(HbInputVkbWidget);
     if (mainWindow()) {
-        if (d->mSettingsListOpen) {
+        if (d->mSettingsDialogsOpen) {
             d->mAnimateWhenDialogCloses = true;
         } else {
             if (!d->mAnimateWhenDialogCloses) {
@@ -1209,6 +1229,7 @@ void HbInputVkbWidget::animKeyboardChange()
             }
             connect(&d->mScreenshotTimeLine, SIGNAL(valueChanged(qreal)), this, SLOT(keypadLanguageChangeAnimationUpdate(qreal)));
             connect(&d->mScreenshotTimeLine, SIGNAL(finished()), this, SLOT(keypadLanguageChangeFinished()));
+            d->mScreenshotWidget->show();
             d->mScreenshotTimeLine.start();
         }
     }
@@ -1243,7 +1264,7 @@ QSizeF HbInputVkbWidget::sizeHint(Qt::SizeHint which, const QSizeF &constraint) 
 }
 
 /*!
-\reimp
+Handles a change event.
  */
 void HbInputVkbWidget::changeEvent(QEvent *event)
 {
@@ -1256,43 +1277,80 @@ void HbInputVkbWidget::changeEvent(QEvent *event)
 }
 
 /*!
-\reimp
+Handles gesture events.
 */
 void HbInputVkbWidget::gestureEvent(QGestureEvent *event)
 {
     Q_D(HbInputVkbWidget);
 
+    // Ignore gesture events if previous flick event is being handled
+    if (d->mFlickDirection != HbFlickDirectionNone) {
+        return;
+    }
+
     if (HbSwipeGesture *gesture = qobject_cast<HbSwipeGesture *>(event->gesture(Qt::SwipeGesture))) {
         if (gesture->state() == Qt::GestureFinished) {
-            HbWidgetFeedback::triggered(this, Hb::InstantFlicked);
             // vertical swipes
             if (gesture->sceneVerticalDirection() == QSwipeGesture::Down) {
                 d->mFlickDirection = HbFlickDirectionDown;
+                HbWidgetFeedback::triggered(this, Hb::InstantFlicked);
                 emit flickEvent(d->mFlickDirection);
                 emit keypadCloseEventDetected(HbVkbCloseMethodCloseGesture);
-            } else if (gesture->sceneVerticalDirection() == QSwipeGesture::Up) {
-                d->mFlickDirection = HbFlickDirectionUp;
-                emit flickEvent(d->mFlickDirection);
-                d->mCurrentHost->openKeypad(d->mCurrentHost->activeKeypad(), d->mOwner);
-            } else {
+            } else if (gesture->sceneVerticalDirection() != QSwipeGesture::Up) {
                 d->mFlickDirection = (HbInputVkbWidget::HbFlickDirection)gesture->sceneHorizontalDirection();
                 // horizontal swipes
                 if (d->mFlickAnimation) {
                     animKeyboardChange();
                 }
                 emit flickEvent(d->mFlickDirection);
-            }
-        }
-    } else if (HbTapGesture *gesture = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
-        if (gesture->state() == Qt::GestureFinished) {
-            // if keypad is minimized, open it
-            if (d->mCurrentHost && d->mCurrentHost->keypadStatus() == HbVkbHost::HbVkbStatusMinimized) {
-                d->mCurrentHost->openKeypad(this, d->mOwner);
+                // If keyboard change is not animated, flick direction should
+                // be set to none immediately since otherwise it won't be changed
+                if (!d->mFlickAnimation) {
+                    d->mFlickDirection = HbFlickDirectionNone;
+                }
             }
         }
     }
 }
 
+/*!
+Returns the icon drawer of the object.
+ */
+HbFrameDrawer* HbInputVkbWidget::iconDrawer()
+{
+    Q_D(HbInputVkbWidget);
+    return d->mIconDrawer;
+}
+
+/*!
+\fn void HbInputVkbWidget::keypadCloseEventDetected(HbInputVkbWidget::HbVkbCloseMethod closeMethod)
+This signal informs that a closing event for the touch keypad was detected.
+*/
+
+/*!
+\fn void HbInputVkbWidget::flickEvent(HbInputVkbWidget::HbFlickDirection direction)
+This signal is emitted when a flick (swipe) gesture is detected.
+*/
+
+/*!
+\fn void HbInputVkbWidget::smileySelected(QString text)
+This signal informs that a smiley was selected.
+*/
+
+/*!
+\fn void HbInputVkbWidget::mouseMovedOutOfButton()
+This signal informs that the mouse was moved out of the pressed button.
+*/
+
+/*!
+\fn void HbInputVkbWidget::aboutToActivateCustomAction(HbAction *custAction)
+This signal is emitted when the user presses the editor-specific custom button.
+*/
+
+/*!
+\fn void HbInputVkbWidget::settingsListClosed()
+This signal is emitted when the setting list is closed.
+*/
 #include "moc_hbinputvkbwidget.cpp"
 
 // End of file

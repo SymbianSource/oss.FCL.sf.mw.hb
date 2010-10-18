@@ -192,6 +192,8 @@ class OptionParser(optparse.OptionParser):
                              help="Install qmake feature files to <dir>. The default value is 'QTDIR/mkspecs/features'.")
             group.add_option("--resources-dir", dest="resourcesdir", metavar="dir",
                              help="Install resources to <dir>. The default value is 'PREFIX/resources'.")
+            group.add_option("--translations-dir", dest="translationsdir", metavar="dir",
+                             help="Install translation files to <dir>. The default value is 'PREFIX/translations'.")
             self.add_option_group(group)
         self.set_defaults(prefix=None)
         self.set_defaults(bindir=None)
@@ -201,6 +203,7 @@ class OptionParser(optparse.OptionParser):
         self.set_defaults(pluginsdir=None)
         self.set_defaults(featuresdir=None)
         self.set_defaults(resourcesdir=None)
+        self.set_defaults(translationsdir=None)
 
         group = optparse.OptionGroup(self, "Configure options")
         group.add_option("--platform", dest="platform", metavar="platform",
@@ -213,16 +216,18 @@ class OptionParser(optparse.OptionParser):
         if QMAKE.platform() == "win32" and MAKE.bin() == "nmake":
             group.add_option("--msvc", action="store_true", dest="msvc",
                              help="Generate a MSVC solution.")
-        group.add_option("--release", action="store_const", dest="config", const="release",
+        group.add_option("--release", action="store_const", dest="release", const="release",
                          help="Build in release mode.")
-        group.add_option("--debug", action="store_const", dest="config", const="debug",
+        group.add_option("--debug", action="store_const", dest="debug", const="debug",
                          help="Build in debug mode.")
-        group.add_option("--debug_and_release", action="store_const", dest="config", const="debug_and_release",
+        group.add_option("--debug_and_release", action="store_const", dest="debug_and_release", const="debug_and_release",
                          help="Build in both debug and release modes.")
-        group.add_option("--debug-output", action="store_false", dest="debug_output",
-                         help="Do not suppress debug and warning output (suppressed by default in release mode).")
+        group.add_option("--config", action="append", dest="config", metavar="config",
+                         help="Add qmake configurations.")
+        group.add_option("--debug-output", action="store_true", dest="debug_output",
+                            help="Do not suppress debug and warning output (suppressed by default in release-armv5 builds on Symbian).")
         group.add_option("--no-debug-output", action="store_true", dest="no_debug_output",
-                         help="Suppress debug and warning output (not supporessed by default in debug mode).")
+                            help="Suppress debug and warning output (suppressed by default in release-armv5 builds on Symbian).")
         if QMAKE.platform() != "symbian":
             group.add_option("--silent", action="store_true", dest="silent",
                              help="Suppress verbose compiler output.")
@@ -233,9 +238,10 @@ class OptionParser(optparse.OptionParser):
                                   "The build tree should be clean ie. no existing "
                                   "makefiles in subdirs, because those won't be "
                                   "regenerated if this option is enabled.")
+        group.add_option("--define", action="append", dest="define", metavar="define",
+                         help="Add compiler macros eg. --define HB_FOO_DEBUG --define HB_BAR_ENABLED.")
         group.add_option("--defines", dest="defines", metavar="defines",
-                         help="Define compiler macros for selecting features "
-                              "and debugging purposes eg. --defines HB_FOO_DEBUG,HB_BAR_ENABLED")
+                         help=optparse.SUPPRESS_HELP)
         if QMAKE.platform() == "unix":
             group.add_option("--rpath", action="store_true", dest="rpath",
                              help="Link Hb libraries and executables using the library install "
@@ -246,9 +252,13 @@ class OptionParser(optparse.OptionParser):
         self.set_defaults(platform=None)
         self.set_defaults(makebin=None)
         self.set_defaults(msvc=None)
+        self.set_defaults(release=None)
+        self.set_defaults(debug=None)
+        self.set_defaults(debug_and_release=None)
         self.set_defaults(config=None)
         self.set_defaults(silent=False)
         self.set_defaults(fast=False)
+        self.set_defaults(define=None)
         self.set_defaults(defines=None)
         self.set_defaults(rpath=None)
 
@@ -269,7 +279,7 @@ class OptionParser(optparse.OptionParser):
                          help="The operating system and compiler you are building on.")
         group.add_option("--qmake-options", dest="qmakeopt", metavar="options",
                          help="Additional qmake options "
-                              "eg. --qmake-options \"CONFIG+=foo DEFINES+=BAR\".")
+                              "eg. --qmake-options \"QMAKE_CC=gcc-4.1 QMAKE_CXX=g++-4.1\".")
         self.add_option_group(group)
         self.set_defaults(qmakeopt=None)
 
@@ -279,16 +289,16 @@ class OptionParser(optparse.OptionParser):
         group.add_option("--nomake", action="append", dest="nomake", metavar="part",
                          help="Do not build <part>. Valid parts: <collection> tutorials tests fute unit localization performance")
         group.add_option("--no-effects", action="store_false", dest="effects",
-                         help="Do not build effects.")
+                         help=optparse.SUPPRESS_HELP)
         group.add_option("--no-gestures", action="store_false", dest="gestures",
-                         help="Do not build gestures.")
+                         help=optparse.SUPPRESS_HELP)
         group.add_option("--no-text-measurement", action="store_false", dest="textMeasurement",
                          help="Do not build text measurement support (needed for localization).")
         self.add_option_group(group)
         self.set_defaults(make=None)
         self.set_defaults(nomake=None)
-        self.set_defaults(effects=True)
-        self.set_defaults(gestures=True)
+        self.set_defaults(effects=None)
+        self.set_defaults(gestures=None)
         self.set_defaults(textMeasurement=True)
 
         group = optparse.OptionGroup(self, "Qt options")
@@ -296,10 +306,6 @@ class OptionParser(optparse.OptionParser):
                          help="Assumes that Qt Mobility is available without performing a compilation test.")
         group.add_option("--no-qt-mobility", action="store_false", dest="qtmobility",
                          help="Assumes that Qt Mobility is not available without performing a compilation test.")
-        group.add_option("--meegotouch", action="store_true", dest="meegotouch",
-                         help="Assumes that MeeGoTouch UI is available without performing a compilation test.")
-        group.add_option("--no-meegotouch", action="store_false", dest="meegotouch",
-                         help="Assumes that MeeGoTouch UI is not available without performing a compilation test.")
         group.add_option("--qt-openvg", action="store_true", dest="qtopenvg",
                          help="Assumes that OpenVG is available without performing a compilation test.")
         group.add_option("--no-qt-openvg", action="store_false", dest="qtopenvg",
@@ -484,6 +490,7 @@ class BuildEnvironment:
         self._pluginsdir = None
         self._featuresdir = None
         self._resourcesdir = None
+        self._translationsdir = None
 
     def init(self, options):
         # prefix
@@ -506,9 +513,12 @@ class BuildEnvironment:
         self._pluginsdir = self._dir_option(options.pluginsdir, self._prefix + "/plugins")
         self._featuresdir = self._dir_option(options.featuresdir, QMAKE.features())
         self._resourcesdir = self._dir_option(options.resourcesdir, self._prefix + "/resources")
+        self._translationsdir = self._dir_option(options.translationsdir, self._prefix + "/translations")
 
         # symbian specific adjustments
         if QMAKE.platform() == "symbian":
+            self._bindir = self._dir_option(options.bindir, "$${EPOCROOT}epoc32/tools")
+
             # TODO: fix to "$${EPOCROOT}resource/hb/plugins"
             self._pluginsdir = "$${EPOCROOT}resource/qt/plugins/hb"
 
@@ -547,6 +557,9 @@ class BuildEnvironment:
 
     def resourcesdir(self):
         return self._resourcesdir
+
+    def translationsdir(self):
+        return self._translationsdir
 
     def exportdir(self, category=None):
         if os.path.isdir("/s60"):
@@ -715,6 +728,8 @@ def main():
     config = ConfigFile()
     test = ConfigTest(BUILDENV.sourcedir(), BUILDENV.builddir())
     print("\nDetecting available features...")
+    working_qmake_and_make = test.compile("config.tests/all/simpleapp")
+    print("INFO: Working qmake and make:\t\t%s" % working_qmake_and_make)
     if options.qtmobility == None:
         options.qtmobility = test.compile("config.tests/all/mobility")
     if options.qtmobility:
@@ -738,12 +753,14 @@ def main():
         if touchfeedback_result:
             config.add_value("DEFINES", "HB_TOUCHFEEDBACK_TYPE_IS_LONGPRESS")
         print("INFO: ETouchFeedbackLongPress:\t\t%s" % touchfeedback_result)
-    if options.meegotouch == None:
-        options.meegotouch = test.compile("config.tests/meego/meegotouch")
-    if options.meegotouch:
-        config.add_value("CONFIG", "hb_meegotouch")
-        config.add_value("DEFINES", "HB_MEEGOTOUCH")
-    print("INFO: MeeGo Touch:\t\t\t%s" % options.meegotouch)
+        wsrenderorientation_result = test.compile("config.tests/symbian/wsrenderorientation")
+        if wsrenderorientation_result:
+            config.add_value("DEFINES", "HB_WSERV_HAS_RENDER_ORIENTATION")
+        print("INFO: WServ render orientation support:\t%s" % wsrenderorientation_result)
+        pointerregion_result = test.compile("config.tests/symbian/pointerregion")
+        if pointerregion_result:
+            config.add_value("DEFINES", "HB_RWND_HAS_POINTER_REGION")
+        print("INFO: RWindowBase pointer region:\t%s" % pointerregion_result)
 
     config.set_value("HB_INSTALL_DIR", ConfigFile.format_dir(BUILDENV.prefix()))
     config.set_value("HB_BIN_DIR", ConfigFile.format_dir(BUILDENV.bindir()))
@@ -753,19 +770,27 @@ def main():
     config.set_value("HB_PLUGINS_DIR", ConfigFile.format_dir(BUILDENV.pluginsdir()))
     config.set_value("HB_FEATURES_DIR", ConfigFile.format_dir(BUILDENV.featuresdir()))
     config.set_value("HB_RESOURCES_DIR", ConfigFile.format_dir(BUILDENV.resourcesdir()))
+    config.set_value("HB_TRANSLATIONS_DIR", ConfigFile.format_dir(BUILDENV.translationsdir()))
 
     # TODO: get rid of this!
     if QMAKE.platform() == "symbian":
         config.set_value("HB_PLUGINS_EXPORT_DIR", ConfigFile.format_dir("$${EPOCROOT}epoc32/winscw/c/resource/qt/plugins/hb"))
 
-    if options.gestures:
-        config.add_value("DEFINES", "HB_GESTURE_FW")
-    if options.effects:
-        config.add_value("DEFINES", "HB_EFFECTS")
+    # DEPRECATED options:
+    if options.gestures != None:
+        print("WARNING: --no-gestures is DEPRECATED. Gestures are mandatory part of the Hb framework.")
+    if options.effects != None:
+        print("WARNING: --no-effects is DEPRECATED. Effects are mandatory part of the Hb framework.")
+    config.add_value("DEFINES", "HB_GESTURE_FW")
+    config.add_value("DEFINES", "HB_EFFECTS")
+
     if options.textMeasurement:
         config.add_value("DEFINES", "HB_TEXT_MEASUREMENT_UTILITY")
     if QMAKE.platform() != "symbian" and options.developer:
         config.add_value("DEFINES", "HB_CSS_INSPECTOR")
+    if options.define:
+        for optdef in options.define:
+            config.add_value("DEFINES", optdef)
     if options.defines:
         config.add_value("DEFINES", " ".join(options.defines.split(",")))
     if options.developerexport:
@@ -806,69 +831,42 @@ def main():
         config.add_value("CONFIG", "local")
     if options.silent:
         config.add_value("CONFIG", "silent")
-    if options.effects:
-        config.add_value("CONFIG", "effects")
-    if options.gestures:
-        config.add_value("CONFIG", "gestures")
     if options.developer:
         config.add_value("CONFIG", "developer")
     if options.coverage:
         config.add_value("CONFIG", "coverage")
+    if options.release:
+        config.add_value("CONFIG", "release")
+    if options.debug:
+        config.add_value("CONFIG", "debug")
+    if options.debug_and_release:
+        config.add_value("CONFIG", "debug_and_release")
     if options.config:
-        config.add_value("CONFIG", options.config)
-    if options.debug_output != None:
-        config.add_value("CONFIG", "debug_output")
-    if options.no_debug_output != None:
-        config.add_value("CONFIG", "no_debug_output")
+        for optconf in options.config:
+            config.add_value("CONFIG", optconf)
 
-    # debug & warning outputs:
-    #   - release
-    #       - disabled by default
-    #       - can be enabled by passing --debug_output option
-    #   - debug
-    #       - enabled by default
-    #       - can be disabled by passing --no_debug_output option
-    config._lines.append("CONFIG(release, debug|release) {\n")
-    config._lines.append("    debug_output|developer {\n")
-    config._lines.append("        # debug/warning output enabled\n")
-    config._lines.append("    } else {\n")
-    config._lines.append("        DEFINES += QT_NO_DEBUG_OUTPUT\n")
-    config._lines.append("        DEFINES += QT_NO_WARNING_OUTPUT\n")
-    config._lines.append("    }\n")
-    config._lines.append("} else {\n")
-    config._lines.append("    no_debug_output {\n")
-    config._lines.append("        DEFINES += QT_NO_DEBUG_OUTPUT\n")
-    config._lines.append("        DEFINES += QT_NO_WARNING_OUTPUT\n")
-    config._lines.append("    }\n")
-    config._lines.append("}\n")
+    if options.debug_output:
+        config.add_value("DEFINES", "HB_DEBUG_OUTPUT")
+        config.add_value("DEFINES", "HB_WARNING_OUTPUT")
+    if options.no_debug_output:
+        config.add_value("DEFINES", "HB_NO_DEBUG_OUTPUT")
+        config.add_value("DEFINES", "HB_NO_WARNING_OUTPUT")
 
     # ensure that no QString(0) -like constructs slip in
     config.add_value("DEFINES", "QT_QCHAR_CONSTRUCTOR")
 
+    # expose a flag indicating that tools were built with a host toolchain
+    if options.hostqmakebin != None and options.hostmakebin != None:
+        config.add_value("CONFIG", "host_tools")
+
     # TODO: is there any better way to expose functions to the whole source tree?
-    config._lines.append("include(%s)\n" % (os.path.splitdrive(BUILDENV.sourcedir())[1] + "/mkspecs/hb_functions.prf"))
+    config._lines.append("include(%s)\n" % ConfigFile.format_dir((os.path.splitdrive(BUILDENV.sourcedir())[1]) + "/mkspecs/hb_functions.prf"))
 
     if options.verbose:
         print("INFO: Writing .qmake.cache")
     if not config.write(".qmake.cache"):
         print("ERROR: Unable to write .qmake.cache.")
         return
-
-    if os.name == "posix" or os.name == "mac":
-        sharedmem = test.compile("config.tests/unix/sharedmemory")
-        if sharedmem:
-            (code, output) = run_process(["./hbconftest_sharedmemory"], "config.tests/unix/sharedmemory")
-            sharedmem = (code == 0)
-            if not sharedmem:
-                print("DEBUG:%s" % output)
-        print("INFO: Shared Memory:\t\t\t%s" % sharedmem)
-        if not sharedmem:
-            print("WARNING:The amount of available shared memory is too low!")
-            print "\tTry adjusting the shared memory configuration",
-            if os.path.exists("/proc/sys/kernel/shmmax"):
-                print "(/proc/sys/kernel/shmmax)"
-            elif os.path.exists("/etc/sysctl.conf"):
-                print "(/etc/sysctl.conf)"
 
     # generate local build wrapper headers
     print("\nGenerating files...")
@@ -992,6 +990,11 @@ def main():
                 if len(line) > init:
                     print line
             print "###############################################################################"
+
+    if not working_qmake_and_make:
+        print("")
+        print("WARNING: There does not seem to be a working qmake and/or make in the environment.")
+        print("         Please check the environment and/or configuration parameters.")
 
     # print summary
     print("")

@@ -55,11 +55,10 @@ public:
     void setLoopingEnabled(bool enabled);
     bool isLoopingEnabled() const;
 
+    QGraphicsItem *primitive(const QString &itemName) const;
+
     enum { Type = Hb::ItemType_TumbleView };
     int type() const { return Type; }
-
-    QGraphicsItem *primitive(HbStyle::Primitive) const;
-    QGraphicsItem *primitive(const QString &itemName) const;
 
 public slots:
     void updatePrimitives();
@@ -85,6 +84,7 @@ protected:
     void gestureEvent(QGestureEvent *event);
 
     bool event(QEvent *e);
+    void initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive);
 
 private:
     Q_DECLARE_PRIVATE_D(d_ptr,HbTumbleView)

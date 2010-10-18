@@ -53,6 +53,8 @@ public:
     bool isBadged() const;
     void setThemedColor(const QColor &color);
     QColor themedColor() const;
+    void setAsync(bool async, HbIconEngine::AsyncCallback callback, void *param);
+    bool async() const;
 
 private:
     // disabled
@@ -72,6 +74,11 @@ public:
     QIcon qicon;
 
     HbBadgeIcon *badgeInfo;
+
+    HbIcon::Flags mQIconFlags;
+    QPixmap mQIconPixmap;
+    QIcon::Mode mQIconPixmapMode;
+    QIcon::State mQIconPixmapState;
 };
 
 QDataStream &operator<<(QDataStream &stream, const HbIconPrivate &icon);

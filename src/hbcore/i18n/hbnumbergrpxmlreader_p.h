@@ -40,7 +40,7 @@ namespace HbNumberGrpXmlReaderHelp{
 class HbNumberGrpXmlReader : public QXmlDefaultHandler
 {
 public:
-	HbNumberGrpXmlReader( int localeId ); 	
+    HbNumberGrpXmlReader( int localeId );   
     ~HbNumberGrpXmlReader();
     
     bool startDocument();
@@ -57,16 +57,16 @@ public:
     QString getPattern();
     QString getGroup();
     QString getDecimal();
-	
+    
 private:
-	QString locale;
-	QString pattern;
-	QString group;
-	QString decimal;
-	bool found;
-	bool done;
-	int phase;
-	
+    QString locale;
+    QString pattern;
+    QString group;
+    QString decimal;
+    bool found;
+    bool done;
+    int phase;
+    
 };
 
 #endif // NUMBERGRPXMLREADER_P_H

@@ -23,6 +23,12 @@
 **
 ****************************************************************************/
 
+#include "hbsharedcache_p.h"
+#include "hbsharedmemorymanager_p.h"
+#include "hbhash_p.h"
+#ifdef HB_BIN_CSS
+#include "hbcssconverterutils_p.h"
+#endif
 #include <QSystemSemaphore>
 
 static QSystemSemaphore *Semaphore = 0;
@@ -33,13 +39,6 @@ static const QString ColorCSSEnding = "_color.css";
 static const QString CSSFileExtension = ".css";
 static const QString WidgetMLFileExtension = ".widgetml";
 static const QChar KeySeparator('\0');
-
-#include "hbsharedcache_p.h"
-#include "hbsharedmemorymanager_p.h"
-
-#ifdef HB_BIN_CSS
-#include "hbcssconverterutils_p.h"
-#endif
 
 /*!
     Helper class for locking the cache.
@@ -72,28 +71,13 @@ HbSharedCache *HbSharedCache::instance()
 }
 
 /*!
-    return hash value for \a string.
-*/
-quint32 HbSharedCache::hash(const QStringRef &string)
-{
-    quint32 hashValue = 0;
-    const QChar *data = string.unicode();
-    int size = string.size();
-    while (size--) {
-        hashValue = data->unicode() + (hashValue << 6) + (hashValue << 16) - hashValue;
-        ++data;
-    }
-    return hashValue;
-}
-
-/*!
     adds \a offset using key \a key. \a itemType is the type of the structure,
     where offset points to.
     Only acceptable separator for key is '/'.
 
     doesn't check, if the item is already in the cache.
 */
-bool HbSharedCache::add(ItemType itemType, const QString &key, int offset)
+bool HbSharedCache::add(ItemType itemType, const QString &key, qptrdiff offset)
 {
     bool added = false;
     if (offset >= 0) {
@@ -127,7 +111,7 @@ bool HbSharedCache::add(ItemType itemType, const QString &key, int offset)
 bool HbSharedCache::addLayoutDefinition(const QString &filePath,
                                         const QString &layout,
                                         const QString &section,
-                                        int offset)
+                                        qptrdiff offset)
 {
     return add(LayoutDefinition, layoutDefinitionKey(filePath, layout, section), offset);
 }
@@ -137,11 +121,11 @@ bool HbSharedCache::addLayoutDefinition(const QString &filePath,
 
     Only acceptable separator for filePath is '/'.
 */
-int HbSharedCache::layoutDefinitionOffset(const QString &filePath,
+qptrdiff HbSharedCache::layoutDefinitionOffset(const QString &filePath,
                                           const QString &layout,
                                           const QString &section) const
 {
-    int offset = -1;
+    qptrdiff offset = -1;
     int position = 0;
     int length = filePath.length();
     if (filePath.at(0) == ':') {
@@ -156,24 +140,20 @@ int HbSharedCache::layoutDefinitionOffset(const QString &filePath,
         //try first in prebuilt offset map.
         length -= WidgetMLFileExtension.length();
         QStringRef widgetname(&filePath, position, length);
-        HbOffsetItem find(hash(widgetname));
+        HbOffsetItem find(hbHash(widgetname));
         const HbOffsetItem *end = mOffsetItems + mOffsetItemCount;
         const HbOffsetItem *offsetItem = qBinaryFind(mOffsetItems, end, find);
         if (offsetItem != end) {
-#ifdef CSSBIN_TRACES
-            qDebug() << "Offset item found from static cache map for widget: " << widgetname;
-#endif
-            int tableSize = 0;
+            THEME_CSSBIN_DEBUG() << "Offset item found from static cache map for widget: " << widgetname;
+            qint32 tableSize = 0;
             const HbLayoutIndexItem *begin = layoutIndexItemBegin(
                     offsetItem->offsetLayoutIndexTable, &tableSize);
             if (begin) {
                 const HbLayoutIndexItem *end = begin + tableSize;
-                HbLayoutIndexItem find(hash(QStringRef(&layout)), hash(QStringRef(&section)));
+                HbLayoutIndexItem find(hbHash(QStringRef(&layout)), hbHash(QStringRef(&section)));
                 const HbLayoutIndexItem *item = qBinaryFind(begin, end, find);
                 if (item != end) {
-#ifdef CSSBIN_TRACES
-                    qDebug() << "Layout definition offset found for layout: " << layout;
-#endif
+                    THEME_CSSBIN_DEBUG() << "Layout definition offset found for layout: " << layout;
                     offset = item->offset;
                 }
             }
@@ -200,9 +180,9 @@ int HbSharedCache::layoutDefinitionOffset(const QString &filePath,
 
     Only acceptable separator for key is '/'.
 */
-int HbSharedCache::offset(ItemType itemType, const QString &key) const
+qptrdiff HbSharedCache::offset(ItemType itemType, const QString &key) const
 {
-    int offset = -1;
+    qptrdiff offset = -1;
     int position = 0;
     int length = key.length();
     if (key.at(0) == ':') {
@@ -223,13 +203,11 @@ int HbSharedCache::offset(ItemType itemType, const QString &key) const
             length -= CSSFileExtension.length();
         }
         QStringRef widgetname(&key, position, length);
-        HbOffsetItem find(hash(widgetname));
+        HbOffsetItem find(hbHash(widgetname));
         const HbOffsetItem *end = mOffsetItems + mOffsetItemCount;
         const HbOffsetItem *offsetItem = qBinaryFind(mOffsetItems, end, find);
         if (offsetItem != end) {
-#ifdef CSSBIN_TRACES
-            qDebug() << "Offset item found from static cache map for widget: " << widgetname;
-#endif
+            THEME_CSSBIN_DEBUG() << "Offset item found from static cache map for widget: " << widgetname;
             offset = (isColorCSS) ? offsetItem->offsetColorCSS : offsetItem->offsetCSS;
         }
     }
@@ -271,41 +249,64 @@ bool HbSharedCache::removeLayoutDefinition(const QString &filePath,
     return remove(LayoutDefinition, layoutDefinitionKey(filePath, layout, section));
 }
 
+HbLayoutParametersPrivate *HbSharedCache::layoutParameters() const
+{
+    HbLayoutParametersPrivate *parameters = 0;
+    qint32 size = 0;
+    const HbParameterItem *begin = parameterItemBegin(&size);
+    if (size > 0) {
+        GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
+        parameters = new HbLayoutParametersPrivate(begin, size, 
+                static_cast<const char*>(manager->base()), reinterpret_cast<const char*>(begin));
+    }
+    return parameters;
+}
+
 /*!
     add static offset map.
 */
-void HbSharedCache::addOffsetMap(const char *offsetMapData, int size, int offsetItemCount)
+void HbSharedCache::setContent(const char *dataArray, int size,
+                                 int offsetItemCount, int globalParametersOffset)
 {
-    if (offsetMapData) {
-        memcpy(mOffsetItems, offsetMapData, size);
+    if (dataArray) {
+        memcpy(mOffsetItems, dataArray, size);
         mOffsetItemCount = offsetItemCount;
+        mGlobalParameterOffset = globalParametersOffset;
 #ifdef HB_BIN_CSS
         for (int i = 0; i < offsetItemCount; ++i) {
             HbCssConverterUtils::registerOffsetHolder(&(mOffsetItems[i].offsetCSS));
             HbCssConverterUtils::registerOffsetHolder(&(mOffsetItems[i].offsetColorCSS));
-            int size = 0;
+            qint32 size = 0;
             HbLayoutIndexItem *layoutItem = layoutIndexItemBegin(
                     mOffsetItems[i].offsetLayoutIndexTable, &size);
             for(;size > 0; --size, ++layoutItem) {
                 HbCssConverterUtils::registerOffsetHolder(&(layoutItem->offset));
             }
         }
+        int size = 0;
+        HbParameterItem *parameterItem = parameterItemBegin(&size);
+        for (;size > 0; --size, ++parameterItem) {
+            HbCssConverterUtils::registerOffsetHolder(&(parameterItem->valueOffset));
+        }
 #endif
     } else {
         mOffsetItemCount = 0;
+        mGlobalParameterOffset = -1;
     }
 }
 
 HbSharedCache::HbSharedCache()
     : mLayoutDefCache(HbMemoryManager::SharedMemory),
       mStylesheetCache(HbMemoryManager::SharedMemory),
-      mEffectCache(HbMemoryManager::SharedMemory)
+      mEffectCache(HbMemoryManager::SharedMemory),
+      mGlobalParameterOffset(-1),
+      mOffsetItemCount(0)
 {
 }
 
-int HbSharedCache::findOffsetFromDynamicMap(ItemType itemType, const QStringRef &key) const
+qptrdiff HbSharedCache::findOffsetFromDynamicMap(ItemType itemType, const QStringRef &key) const
 {
-    int offset = -1;
+    qptrdiff offset = -1;
     const HbVector<CacheItem> &cacheVector = itemCache(itemType);
     HbCacheLocker locker(*Semaphore);
     Q_FOREACH(const CacheItem &item, cacheVector) {
@@ -321,14 +322,14 @@ int HbSharedCache::findOffsetFromDynamicMap(ItemType itemType, const QStringRef 
     return the first layoutindextitem and size in offset \a offset.
     \a offset is a value in HbOffsetItem::offsetLayoutIndexTable.
 */
-HbLayoutIndexItem *HbSharedCache::layoutIndexItemBegin(int offset, int *size)
+HbLayoutIndexItem *HbSharedCache::layoutIndexItemBegin(qptrdiff offset, qint32 *size)
 {
     HbLayoutIndexItem *begin = 0;
     *size = 0;
     if (offset >= 0) {
         void *layoutIndexBase = mOffsetItems;
-        int *sizePtr = reinterpret_cast<int *>(
-                       static_cast<char *>(layoutIndexBase) + offset);
+        qint32 *sizePtr = reinterpret_cast<qint32 *>(
+                        static_cast<char *>(layoutIndexBase) + offset);
         *size = *sizePtr;
         begin = reinterpret_cast<HbLayoutIndexItem *>(sizePtr + 1);
     }
@@ -355,6 +356,20 @@ QString HbSharedCache::layoutDefinitionKey(const QString &filePath,
     return key;
 }
 
+HbParameterItem *HbSharedCache::parameterItemBegin(qint32 *size)
+{
+    HbParameterItem *item = 0;
+    *size = 0;
+    if (mGlobalParameterOffset >= 0) {
+        void *parameterIndexBase = mOffsetItems;
+        qint32 *sizePtr = reinterpret_cast<qint32 *>(
+                        static_cast<char *>(parameterIndexBase) + mGlobalParameterOffset) - 1;
+        *size = *sizePtr;
+        item = reinterpret_cast<HbParameterItem*>(sizePtr + 1);
+    }
+    return item;
+}
+
 void HbSharedCache::freeResources()
 {
     delete Semaphore;
@@ -370,9 +385,7 @@ void HbSharedCache::initServer()
 
     //server creates the semaphore.
     Semaphore = new QSystemSemaphore(SemaphoreName, 1, QSystemSemaphore::Create);
-#ifdef CSSBIN_TRACES
-    qDebug() << "css offset items total: " << mOffsetItemCount;
-#endif
+    THEME_CSSBIN_DEBUG() << "css offset items total: " << mOffsetItemCount;
 }
 
 /*!

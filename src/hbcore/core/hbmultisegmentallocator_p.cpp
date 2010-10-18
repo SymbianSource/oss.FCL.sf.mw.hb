@@ -31,7 +31,7 @@
 
 // this identifier is used to check, if the multisegment allocator is already
 // initialized in given shared chunk
-static const unsigned int INITIALIZED_MULTISEGMENTALLOCATOR_IDENTIFIER = 0x4D554C54; //'MULT'
+static const quint32 INITIALIZED_MULTISEGMENTALLOCATOR_IDENTIFIER = 0x4D554C54; //'MULT'
 
 // chunk sizes
 // every size is aligned to 8
@@ -69,7 +69,7 @@ static const int CHUNKS_IN_ONE_LIST = 512;
  * OOM exception.
   */
 void HbMultiSegmentAllocator::initialize(HbSharedMemoryWrapper *sharedChunk,
-                                         const unsigned int offset,
+                                         const quintptr offset,
                                          HbSharedMemoryAllocator *mainAllocator)
 {
     chunk = sharedChunk;
@@ -94,7 +94,7 @@ void HbMultiSegmentAllocator::initialize(HbSharedMemoryWrapper *sharedChunk,
     ChunkListHeader *listHeader;
     for (int i = 0; i < AMOUNT_OF_DIFFERENT_CHUNK_SIZES; i++) {
         header->offsetsToChunkLists[i] = mainAllocator->alloc(sizeof(ChunkListHeader)
-                                                              + (sizeof(int) + ChunkSizes[i])
+                                                              + (sizeof(qptrdiff) + ChunkSizes[i])
                                                               * CHUNKS_IN_ONE_LIST);
         header->offsetsToFreeChunkLists[i] = header->offsetsToChunkLists[i];
         listHeader = address<ChunkListHeader>(header->offsetsToChunkLists[i]);
@@ -131,38 +131,37 @@ HbMultiSegmentAllocator::~HbMultiSegmentAllocator()
 * alloc function
 * Will throw OOM (from main allocator) in case we run out of memory.
 */
-int HbMultiSegmentAllocator::alloc(int size)
+qptrdiff HbMultiSegmentAllocator::alloc(int size)
 {
     // size should already be between 1...max. chunk size - no need to check
 
     // first find out correct list of chunks
     int i = indexTable[size];
-    int dataOffset = -1;
-    int *metaData = 0;
+    qptrdiff dataOffset = -1;
+    qptrdiff *metaData = 0;
     // this should always point to list with free chunks
     ChunkListHeader *listHeader = address<ChunkListHeader>(header->offsetsToFreeChunkLists[i]);
 
     if (listHeader->freedChunkCursor >= 0) { // freedChunkCursor points to freed chunk
-        dataOffset = listHeader->freedChunkCursor + sizeof(int);
-        metaData = address<int>(listHeader->freedChunkCursor);
-        listHeader->freedChunkCursor = *metaData; // point to next freed chunk
+        dataOffset = listHeader->freedChunkCursor + sizeof(qptrdiff);
+        metaData = address<qptrdiff>(listHeader->freedChunkCursor);
+        listHeader->freedChunkCursor = *metaData; // points to next freed chunk
     } else { // no chunks freed -> allocate in order
-        dataOffset = listHeader->allocCursor + sizeof(int);
-        metaData = address<int>(listHeader->allocCursor);
+        dataOffset = listHeader->allocCursor + sizeof(qptrdiff);
+        metaData = address<qptrdiff>(listHeader->allocCursor);
         // we will never allocate from full list, so allocCursor is always valid
-        listHeader->allocCursor += ChunkSizes[listHeader->chunkListIndex] + sizeof(int);
+        listHeader->allocCursor += ChunkSizes[listHeader->chunkListIndex] + sizeof(qptrdiff);
     }
 
-    // for allocated chunks metadata is:
-    // 00xxxxxx xxxxxxxx xxxxxxxx xxxxxxxx,
-    // where xx... = offset to this list's header (max. 1 GB)
-    *metaData = header->offsetsToFreeChunkLists[i] /* & 0x3FFFFFFF */;
+    // for allocated chunks metadata is the offset to this list's header
+    // for freed chunks, metadata points to next free chunk (or -1 if no more freed chunks)
+    *metaData = header->offsetsToFreeChunkLists[i];
     listHeader->allocatedChunks++;
     if (listHeader->allocatedChunks == CHUNKS_IN_ONE_LIST) { // list full
         if (!setFreeList(listHeader->chunkListIndex)) {
             // there is no list(s) with free chunks, so add new list
             addList(listHeader->chunkListIndex,
-                mainAllocator->alloc((sizeof(ChunkListHeader) + sizeof(int)
+                mainAllocator->alloc(sizeof(ChunkListHeader) + (sizeof(qptrdiff)
                                       + ChunkSizes[listHeader->chunkListIndex])
                                         * CHUNKS_IN_ONE_LIST));
         }
@@ -174,11 +173,11 @@ int HbMultiSegmentAllocator::alloc(int size)
 /*
 * free the offset
 */
-void HbMultiSegmentAllocator::free(int offset)
+void HbMultiSegmentAllocator::free(qptrdiff offset)
 {
     // metadata has offset to list's header
-    int *metaData = address<int>(offset - sizeof(int));
-    int listHeaderOffset = *metaData;
+    qptrdiff *metaData = address<qptrdiff>(offset - sizeof(qptrdiff));
+    qptrdiff listHeaderOffset = *metaData;
     ChunkListHeader *listHeader = address<ChunkListHeader>(listHeaderOffset);
     listHeader->allocatedChunks--;
     if (listHeader->allocatedChunks == 0) {
@@ -213,12 +212,12 @@ void HbMultiSegmentAllocator::free(int offset)
         } else {
             // only list can't be freed
             *metaData = listHeader->freedChunkCursor;
-            listHeader->freedChunkCursor = offset - sizeof(int);
+            listHeader->freedChunkCursor = offset - sizeof(qptrdiff);
         }
     } else {
         // this list is not yet empty
         *metaData = listHeader->freedChunkCursor;
-        listHeader->freedChunkCursor = offset - sizeof(int);
+        listHeader->freedChunkCursor = offset - sizeof(qptrdiff);
     }
 }
 
@@ -228,9 +227,9 @@ void HbMultiSegmentAllocator::free(int offset)
  * Used for reallocation.
  * Returns actual allocated size for given offset.
  */
-int HbMultiSegmentAllocator::allocatedSize(int offset)
+int HbMultiSegmentAllocator::allocatedSize(qptrdiff offset)
 {
-    int *metaData = address<int>(offset - sizeof(int));
+    qptrdiff *metaData = address<qptrdiff>(offset - sizeof(qptrdiff));
     ChunkListHeader *listHeader = address<ChunkListHeader>(*metaData);
     // not actual size in alloc(), but the size of chunk, where this data is stored
     return ChunkSizes[listHeader->chunkListIndex];
@@ -240,7 +239,7 @@ int HbMultiSegmentAllocator::allocatedSize(int offset)
 * Helper method for adding new list of chunks.
 * Won't fail, because memory for the list is already allocated (offset).
 */
-void HbMultiSegmentAllocator::addList(int index, int offset)
+void HbMultiSegmentAllocator::addList(int index, qptrdiff offset)
 {
     ChunkListHeader *newListHeader = address<ChunkListHeader>(offset);
     ChunkListHeader *oldListHeader = address<ChunkListHeader>(header->offsetsToChunkLists[index]);
@@ -264,12 +263,11 @@ void HbMultiSegmentAllocator::addList(int index, int offset)
 bool HbMultiSegmentAllocator::setFreeList(int index)
 {
     ChunkListHeader *listHeader;
-    listHeader = address<ChunkListHeader>(header->offsetsToChunkLists[index]);
+    qptrdiff offset = header->offsetsToChunkLists[index];
+    listHeader = address<ChunkListHeader>(offset);
     bool retVal = false;
     for (;;) {
         if (listHeader->allocatedChunks < CHUNKS_IN_ONE_LIST) {
-            int offset = static_cast<int>(reinterpret_cast<char*>(listHeader)
-                                          - reinterpret_cast<char*>(chunk->data()));
             header->offsetsToFreeChunkLists[index] = offset;
             retVal = true;
             break;
@@ -277,7 +275,8 @@ bool HbMultiSegmentAllocator::setFreeList(int index)
         if (listHeader->nextListOffset == -1) {
             break;
         }
-        listHeader = address<ChunkListHeader>(listHeader->nextListOffset);
+        offset = listHeader->nextListOffset;
+        listHeader = address<ChunkListHeader>(offset);
     }
     return retVal;
 }

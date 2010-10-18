@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="20px" version="1.1" viewBox="0 0 20 20" width="20px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
-<rect fill="none" height="20" width="20"/>
-<rect fill="none" fill-rule="evenodd" height="20" width="20"/>
-<path d="M2,20V8c0-4.411,3.589-8,8-8s8,3.589,8,8v12H2z" fill-opacity="0.1" fill-rule="evenodd" stroke-opacity="0.1"/>
-<path d="M10,1c3.867,0,7,3.133,7,7v12H3V8C3,4.133,6.133,1,10,1z" fill="url(#SVGID_1_)" fill-rule="evenodd"/>
-<path d="M10,2C6.691,2,4,4.691,4,8v12h1V8  c0-2.757,2.243-5,5-5s5,2.243,5,5v12h1V8C16,4.691,13.309,2,10,2z" fill="#FFFFFF" fill-opacity="0.4" fill-rule="evenodd" stroke-opacity="0.4"/>
-<path d="M10,1C6.133,1,3,4.133,3,8v12h1V8c0-3.309,2.691-5.998,6-5.998  c3.31,0,5.998,2.689,5.998,5.998v12H17V8C17,4.133,13.867,1,10,1z" fill-opacity="0.2" fill-rule="evenodd" stroke-opacity="0.2"/>
-<rect fill="#FFFFFF" fill-opacity="0.5" fill-rule="evenodd" height="1" stroke-opacity="0.5" width="8" x="6" y="12"/>
-<rect fill-opacity="0.1" fill-rule="evenodd" height="1" stroke-opacity="0.1" width="8" x="6" y="11"/>
+<svg baseProfile="tiny" height="15px" version="1.1" viewBox="2.5 2.5 15 15" width="15px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<g>
+<path d="M16,8.5c0-3.309-2.693-6-6-6c-3.308,0-6.001,2.691-6.001,6v9H16   V8.5z" fill-opacity="0.1" fill-rule="evenodd" stroke-opacity="0.1"/>
+<path d="M15.248,8.5c0-2.9-2.348-5.25-5.248-5.25   C7.1,3.251,4.75,5.6,4.75,8.5v9h10.498V8.5z" fill="url(#SVGID_1_)" fill-rule="evenodd"/>
+<path d="M5.499,8.5C5.499,6.02,7.518,4,10,4c2.48,0,4.5,2.02,4.5,4.501v9h0.748v-9c0-2.9-2.348-5.25-5.248-5.25   C7.1,3.251,4.75,5.6,4.75,8.5v9h0.749V8.5z" fill-opacity="0.2" stroke-opacity="0.2"/>
+<rect fill="#FFFFFF" fill-opacity="0.2" fill-rule="evenodd" height="0.752" stroke-opacity="0.2" width="4.501" x="7.749" y="11.499"/>
+<rect fill-opacity="0.1" fill-rule="evenodd" height="0.748" stroke-opacity="0.1" width="4.501" x="7.749" y="10.751"/>
+<rect fill="none" fill-rule="evenodd" height="15" width="15" x="2.5" y="2.5"/>
+<path d="M6.25,8.5c0-2.068,1.682-3.75,3.75-3.75   s3.75,1.682,3.75,3.75v9h0.75v-9C14.5,6.02,12.48,4,10,4C7.518,4,5.499,6.02,5.499,8.5v9H6.25V8.5z" fill="#FFFFFF" fill-opacity="0.2" fill-rule="evenodd" stroke-opacity="0.2"/>
 <defs>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="10.0005" x2="10.0005" y1="20" y2="1">
-<stop offset="0" style="stop-color:#DCDCE6"/>
-<stop offset="0.2" style="stop-color:#DCDCE6"/>
-<stop offset="1" style="stop-color:#BEBEC8"/>
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="4.7498" x2="15.2478" y1="10.3755" y2="10.3755">
+<stop offset="0" style="stop-color:#306D8C"/>
+<stop offset="1" style="stop-color:#65B8CC"/>
 </linearGradient>
 </defs>
+</g>
 </svg>

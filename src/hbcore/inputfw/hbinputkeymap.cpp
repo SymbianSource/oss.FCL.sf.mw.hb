@@ -138,7 +138,7 @@ HbKeymapPrivate::~HbKeymapPrivate()
 /// @endcond
 
 /*!
-@alpha
+@stable
 @hbcore
 \class HbMappedKey
 
@@ -197,7 +197,7 @@ const QString HbMappedKey::characters(const HbModifiers modifiers) const
     }
 }
 /*!
-@alpha
+@stable
 @hbcore
 \class HbKeymap
 \brief Contains information on characters mapped to keyboard keys.

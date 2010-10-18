@@ -39,9 +39,8 @@ public:
     explicit HbShrinkingVkbHost(HbWidget *target);
     ~HbShrinkingVkbHost();
 
-    int priority() const;
-
 public slots:
+    void animValueChanged(qreal value);
     void animationFinished();
 
 private:

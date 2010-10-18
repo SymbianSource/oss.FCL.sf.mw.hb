@@ -140,10 +140,8 @@ ThemeSelectionList::ThemeSelectionList(HbMainWindow *mainWindow):
     // Automatic updation of the themelist when some theme is installed or uninstalled
     // when the hbthemechanger app is open
     watcher=new QFileSystemWatcher();
-    foreach(const QString &KThemeRootPath, rootPaths()) {
-        if(!KThemeRootPath.contains("/romthemes")){
-        watcher->addPath(KThemeRootPath+"/themes/icons/");
-        }
+    foreach(const QString &themePath, themePaths()) {
+        watcher->addPath(themePath);
     }
     connect(watcher,SIGNAL(directoryChanged(const QString &)),this,SLOT(updateThemeList(const QString &)));
     QObject::connect(this,SIGNAL(newThemeSelected(QString)),this,SLOT(sendThemeName(QString)));
@@ -191,127 +189,45 @@ ThemeSelectionList::~ThemeSelectionList()
  */
 void ThemeSelectionList::displayThemes()
 {
-    rootThemes.clear();
-    bool entryAdded = false;
-    bool themePresent = false;
-    foreach(const QString &KThemeRootPath, rootPaths()){
-        dir.setPath(KThemeRootPath) ;
-        QStringList list = dir.entryList(QDir::AllDirs|QDir::NoDotAndDotDot,QDir::Name);
-        if(list.contains("themes",Qt::CaseInsensitive )) {
-            themePresent = true;
-            QDir root = KThemeRootPath;
-            dir.setPath(root.path()+"/themes/icons/") ;
-            QStringList iconthemeslist=dir.entryList(QDir::AllDirs|QDir::NoDotAndDotDot,QDir::Name);
-            foreach(QString themefolder, iconthemeslist) {
-                QDir iconThemePath(root.path()+"/themes/icons/"+themefolder);
-                QFile themeIndexFile(root.path()+"/themes/"+themefolder+".themeindex");
-                if(themeIndexFile.exists() && iconThemePath.exists("index.theme")) {
-                    QSettings iniSetting(iconThemePath.path()+"/index.theme",QSettings::IniFormat);
-                    iniSetting.beginGroup("Icon Theme");
-                    QString hidden = iniSetting.value("Hidden").toString();
-                    iniSetting.endGroup();
-                    if((hidden == "true") ||( hidden == "")) {
-                        iconthemeslist.removeOne(themefolder);
-                    }
-#ifdef Q_OS_SYMBIAN
-                    if (KThemeRootPath[0] == 'z') {
-#endif
-                    rootThemes.append(iconThemePath.absolutePath());
-#ifdef Q_OS_SYMBIAN
-                }
-#endif
+    QList<QPair<QString, QString> > themes;
 
-                }
-                else {
-                     iconthemeslist.removeOne(themefolder);
-                }
-            
-            }
-            if(!entryAdded){
-                rootThemes.append(":/themes/icons/hbdefault");
-                //adding one default entry
-                HbListWidgetItem *item = new HbListWidgetItem();
-                item->setText("hbdefault");
-                item->setSecondaryText(":/themes/icons/hbdefault");
-                QString thumbPath(":/themes/icons/hbdefault/scalable/qtg_graf_theme_preview_thumbnail.svg");                    
-                if (!QFile::exists(thumbPath)) {
-                    thumbPath = "qtg_large_corrupted";
-                }
-                HbIcon *icon = new HbIcon(thumbPath);
-                thumbnails.append(icon);
-                item->setIcon(*icon);                                
-                if (HbInstance::instance()->theme()->name() == "hbdefault") {
-                    item->setSecondaryIcon(*rightMark);
-                    themelist->addItem(item);                
-                    themelist->setCurrentRow(themelist->count()-1);
-                } else {
-                    item->setSecondaryIcon(*noMark);
-                    themelist->addItem(item);                
-                }
-                entryAdded = true;
-            }
-            list=iconthemeslist;
-            for (int i=0; i <list.count();i++) {
-                // populate theme list with existing themes
-                HbListWidgetItem *item = new HbListWidgetItem();
+    // First add default entry
+    themes.append(QPair<QString,QString>("hbdefault", ":/themes/icons/hbdefault"));
+    // And then rest of the themes
+    themes.append(HbThemeServices::availableThemes());
 
-                QSettings iniSetting(root.path()+"/themes/icons/"+list.at(i)+"/index.theme",QSettings::IniFormat);
-                iniSetting.beginGroup("Icon Theme");
-                QString name = iniSetting.value("Name").toString();
-                iniSetting.endGroup();
-                item->setText(name);
+    for (int i=0; i <themes.count();i++) {
+        // populate theme list with existing themes
+        HbListWidgetItem *item = new HbListWidgetItem();
+        item->setText(themes.at(i).first);
+        item->setSecondaryText(themes.at(i).second);
 
-                item->setSecondaryText(root.path()+"/themes/icons/"+list.at(i));
-                QString thumbPath(root.path()+"/themes/icons/"+list.at(i)+"/scalable/qtg_graf_theme_preview_thumbnail.");
-                QString nvgPath(thumbPath + "nvg");
-                QString svgPath(thumbPath + "svg");
-                if (QFile::exists(nvgPath)) {
-                    thumbPath = nvgPath;
-                } else if (QFile::exists(svgPath)) {
-                    thumbPath = svgPath;
-                }
-                else {
-                    thumbPath = "qtg_large_corrupted";
-                }
-                HbIcon *icon = new HbIcon(thumbPath);
-                thumbnails.append(icon);
-                item->setIcon(*icon);
-                
-                
-                if (QFileInfo(HbThemeServices::themePath()) == QFileInfo(item->secondaryText())) {
-                    item->setSecondaryIcon(*rightMark);
-                    themelist->addItem(item);
-                    themelist->setCurrentRow(themelist->count()-1);
-                }
-                else {
-                    item->setSecondaryIcon(*noMark);
-                    themelist->addItem(item);
-                }
-            }
+        QString thumbPath(themes.at(i).second+"/scalable/qtg_graf_theme_preview_thumbnail.");
+        QString nvgPath(thumbPath + "nvg");
+        QString svgPath(thumbPath + "svg");
+        if (QFile::exists(nvgPath)) {
+            thumbPath = nvgPath;
+        } else if (QFile::exists(svgPath)) {
+            thumbPath = svgPath;
         }
-    }
-    //    else{//add a case for no theme ,make hbdefault entry
-    if(!themePresent) {
-            rootThemes.append(":/themes/icons/hbdefault");
-            //adding one default entry
-            HbListWidgetItem *item = new HbListWidgetItem();
-            item->setText("hbdefault");
-            item->setSecondaryText(":/themes/icons/hbdefault");
-            QString thumbPath(":/themes/icons/hbdefault/scalable/qtg_graf_theme_preview_thumbnail.svg");                    
-            if (!QFile::exists(thumbPath)) {
-                thumbPath = "qtg_large_corrupted";
-            }
-            HbIcon *icon = new HbIcon(thumbPath);
-            thumbnails.append(icon);
-            item->setIcon(*icon);            
+        else {
+            thumbPath = "qtg_large_corrupted";
+        }
+        HbIcon *icon = new HbIcon(thumbPath);
+        thumbnails.append(icon);
+        item->setIcon(*icon);
+
+
+        if (QFileInfo(HbThemeServices::themePath()) == QFileInfo(item->secondaryText())) {
             item->setSecondaryIcon(*rightMark);
             themelist->addItem(item);
-            QString themeName=HbInstance::instance()->theme()->name();
-            if (themeName != "hbdefault")
-            {
-                emit newThemeSelected(":/themes/icons/hbdefault");
-            }
+            themelist->setCurrentRow(themelist->count()-1);
         }
+        else {
+            item->setSecondaryIcon(*noMark);
+            themelist->addItem(item);
+        }
+    }
 }
 
 /**
@@ -359,21 +275,48 @@ QStringList ThemeSelectionList::rootPaths()
 {
     QStringList rootDirs;
 #if defined(Q_OS_SYMBIAN)
-    rootDirs << "z:/resource/hb"
-             << "c:/resource/hb"
-             << "e:/resource/hb"
-             << "f:/resource/hb";
+    rootDirs << "z:/resource/hb/themes";
 #else
-    QString envDir = qgetenv("HB_THEMES_DIR");
+    QString envDir =  QDir::fromNativeSeparators(qgetenv("HB_THEMES_DIR"));
     if (!envDir.isEmpty())
-        rootDirs << envDir;
+        rootDirs << envDir + "/themes";
 #endif
-#if defined(Q_OS_MAC)
-    rootDirs << QDir::homePath() + "/Library/UI Extensions for Mobile";
-#elif !defined(Q_OS_SYMBIAN)
-    rootDirs << HB_RESOURCES_DIR;
-#endif
+    rootDirs << ":/themes";
     return rootDirs;
+}
+
+void ThemeSelectionList::updateRootThemes()
+{
+    QDir dir;
+    mRootThemes.clear();
+    foreach(const QString &rootPath, rootPaths()){
+        dir.setPath(rootPath+"/icons");
+        QStringList iconthemeslist = dir.entryList(QDir::AllDirs|QDir::NoDotAndDotDot,QDir::Name);
+        foreach(const QString &themefolder, iconthemeslist) {
+            QDir iconThemePath(dir.path()+'/'+themefolder);
+            QFile themeIndexFile(rootPath+'/'+themefolder+".themeindex");
+            if(themeIndexFile.exists() && iconThemePath.exists("index.theme")) {
+                mRootThemes.append(iconThemePath.absolutePath());
+            }
+        }
+    }
+}
+
+QStringList ThemeSelectionList::themePaths()
+{
+    QStringList themeDirs;
+#if defined(Q_OS_SYMBIAN)
+    themeDirs << "z:/resource/hb/themes"
+             << "c:/resource/hb/themes"
+             << "e:/resource/hb/themes"
+             << "f:/resource/hb/themes";
+#else
+    QString envDir = QDir::fromNativeSeparators(qgetenv("HB_THEMES_DIR"));
+    if (!envDir.isEmpty()) {
+        themeDirs << envDir + "/themes";
+    }
+#endif
+    return themeDirs;
 }
 
 void ThemeSelectionList::onLongPressed(HbListWidgetItem* listViewItem, const QPointF& coords)
@@ -419,7 +362,9 @@ void ThemeSelectionList::applyTheme()
 void ThemeSelectionList::showSettingsView()
 {
     if (!settingsView) {
-        settingsView = new SettingsView(rootThemes, mMainWindow, this);
+        // update root themes list
+        updateRootThemes();
+        settingsView = new SettingsView(mRootThemes, mMainWindow, this);
     }
     mMainWindow->setCurrentView(settingsView);
 }

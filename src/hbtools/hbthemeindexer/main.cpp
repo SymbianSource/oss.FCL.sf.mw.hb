@@ -25,6 +25,8 @@
 
 #include <hbiconsource_p.h>
 #include <hbthemeindex_p.h>
+#include <hbhash_p.h>
+
 #include <assert.h>
 #include <iostream>
 #include <QApplication>
@@ -36,6 +38,11 @@
 #include <QFile>
 #include <QMap>
 #include <QDir>
+
+#if !defined(QT_DLL) && !defined(QT_SHARED)
+#include <QtPlugin>
+Q_IMPORT_PLUGIN(qsvg)
+#endif
 
 #define RESOURCE_LIB_NAME "HbCore"
 #define WIN32_DEBUG_SUFFIX "d"
@@ -103,12 +110,6 @@ void createLockedList(const QString &fullThemePath)
             LockedList.append(line);
         }
     }
-}
-
-QSize getDefaultSize(const QString &filename)
-{
-    HbIconSource source(filename);
-    return source.defaultSize().toSize();
 }
 
 void appendItem(HbThemeIndexItemData &itemData, const QString &itemName)
@@ -231,10 +232,17 @@ void processFile(const QFileInfo &info) //, const QString &themename)
             // If we come here, the filename must end with .* (e.g. .svg)
             iconname = filename.left(filename.lastIndexOf('.'));
 
-            itemData.itemNameHash = HbThemeIndex::hash(iconname);
+            itemData.itemNameHash = hbHash(iconname);
 
             // Define default size
-            QSize defaultSize = getDefaultSize(fullFilename);
+            HbIconSource source(fullFilename);
+            if (itemData.itemType != HbThemeIndexItemData::NvgItem) {
+                if (!source.imageReader()) {
+                    std::cout << "ERROR: could not read file " << fullFilename.toStdString() << "\n";
+                    return; // Don't add invalid file to the index
+                }
+            }
+            QSize defaultSize = source.defaultSize().toSize();
             itemData.defaultWidth = static_cast<quint32>(defaultSize.width());
             itemData.defaultHeight = static_cast<quint32>(defaultSize.height());
 
@@ -259,9 +267,14 @@ void processFile(const QFileInfo &info) //, const QString &themename)
                     QString mirroredFilenameCandidate = mirroredFilepath + iconname + ext;
 
                     if (QFile::exists(mirroredFilenameCandidate)) {
+                        HbIconSource mirroredSource(fullFilename);
+                        if ((ext != ".nvg") && !mirroredSource.imageReader()) {
+                            std::cout << "ERROR: could not read file " << fullFilename.toStdString() << "\n";
+                            continue; // Don't register invalid mirrored icon
+                        }
                         itemData.mirroredItemType = getItemType(mirroredFilenameCandidate);
                         // Define mirrored icon size
-                        QSize mirroredSize = getDefaultSize(mirroredFilenameCandidate);
+                        QSize mirroredSize = mirroredSource.defaultSize().toSize();
                         itemData.mirroredWidth = static_cast<quint32>(mirroredSize.width());
                         itemData.mirroredHeight = static_cast<quint32>(mirroredSize.height());
                         break;
@@ -288,7 +301,7 @@ void processFile(const QFileInfo &info) //, const QString &themename)
         case HbThemeIndexItemData::FxmlItem:
             {
             // Define fileName (file extension not removed)
-            itemData.itemNameHash = HbThemeIndex::hash(filename);
+            itemData.itemNameHash = hbHash(filename);
 
             if (LockedList.contains(filename)) {
                 itemData.flags |= HbThemeIndexItemData::Locked;
@@ -342,7 +355,7 @@ void indexColorVariables(const QString &filename)
                     value = line.mid(startIndex, endIndex - startIndex).trimmed();
                 }
 
-                itemData.itemNameHash = HbThemeIndex::hash(name);
+                itemData.itemNameHash = hbHash(name);
                 itemData.itemType = HbThemeIndexItemData::ColorItem;
                 bool ok = false;
                 itemData.colorValue = (quint32)value.toUInt(&ok, 16);   // Might cause compiler warning in 64 bit systems
@@ -356,97 +369,120 @@ void indexColorVariables(const QString &filename)
     return;
 }
 
-void processDir(const QDir &dir, const QString &themename, const QString targetName, bool subDir = false)
+void processDir(const QDir &dir, const QString &themename, const QString targetName)
 {
-    if (!subDir) {
-        IndexItems.clear();
-        AddedItems.clear();
-        MirroredList.clear();
-        LockedList.clear();
-        createMirroredList(dir.absolutePath()+"/icons/"+themename);
-        createLockedList(dir.absolutePath()+"/icons/"+themename);
-    }
+    QString iconPath(dir.absolutePath()+"/icons/"+themename);
+    QString animationPath(dir.absolutePath()+"/animations/"+themename);
+    QString effectPath(dir.absolutePath()+"/effects/"+themename);
 
-    QFileInfoList entries = dir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot);
-    for (int i=0; i<entries.count(); i++) {
-        QFileInfo info = entries.at(i);
-        QString file = info.absoluteFilePath();
-        if (info.isDir()) {
-            // Process subdirs recursively
-            QDir subDir(file);
-            processDir(subDir, themename, targetName, true);
+    // Do the initialization
+    IndexItems.clear();
+    AddedItems.clear();
+    MirroredList.clear();
+    LockedList.clear();
+    createMirroredList(iconPath);
+    createLockedList(iconPath);
+
+    // Only check icons under scalable and pixmap folders
+    QDir scalableDir(iconPath+"/scalable");
+    if (scalableDir.exists()) {
+        QFileInfoList entries = scalableDir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot);
+        for (int i=0; i<entries.count(); i++) {
+            QFileInfo info = entries.at(i);
+            processFile(info);
         }
-        // Process file
-        if (file.contains("/" + themename + "/", Qt::CaseInsensitive)) {
+    }
+ 
+    QDir pixmapDir(iconPath+"/pixmap");
+    if (pixmapDir.exists()) {
+        QFileInfoList entries = pixmapDir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot);
+        for (int i=0; i<entries.count(); i++) {
+            QFileInfo info = entries.at(i);
             processFile(info);
         }
     }
 
-    if (!subDir) {
-        // There might still be items in mirrored list (e.g. frames are not actual items, but they are still mirrored)
-        // So just create empty items for the rest of mirrored items in list
-        foreach (QString mirrored, MirroredList) {
-            HbThemeIndexItemData itemData;
-            itemData.itemNameHash = HbThemeIndex::hash(mirrored);
-            itemData.flags |= HbThemeIndexItemData::Mirrorable;
-            appendItem(itemData, mirrored);
+    QDir animationDir(animationPath);
+    if (animationDir.exists()) {
+        QFileInfoList entries = animationDir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot);
+        for (int i=0; i<entries.count(); i++) {
+            QFileInfo info = entries.at(i);
+            processFile(info);
         }
-
-        // Read application and widget color group CSS files and index their content
-        // Temporary check
-        if (QFile::exists(dir.absolutePath() + "/style/" + themename + "/variables/color/hbapplicationcolorgroup.css") &&
-            QFile::exists(dir.absolutePath() + "/style/" + themename + "/variables/color/hbwidgetcolorgroup.css")) {
-            if (verboseOn) {
-                std::cout << "Processing hbapplicationcolorgroup.css and hbwidgetcolorgroup.css";
-            }
-            indexColorVariables(dir.absolutePath() + "/style/" + themename + "/variables/color/hbapplicationcolorgroup.css");
-            indexColorVariables(dir.absolutePath() + "/style/" + themename + "/variables/color/hbwidgetcolorgroup.css");
-        } else {
-            if (verboseOn) {
-                std::cout << "Processing hbcolorgroup.css";
-            }
-            indexColorVariables(dir.absolutePath() + "/style/" + themename + "/variables/color/hbcolorgroup.css");
-        }
-
-        QDir targetDir;
-        if (!targetDir.exists(targetName)) {
-            targetDir.mkpath(targetName);
-        }
-        QString filename = targetName + themename + ".themeindex";
-
-        QFile::remove(filename);
-        QFile indexFile(filename);
-        if (!indexFile.open(QIODevice::ReadWrite)) {
-            std::cout << "ERROR: could not open index file!\n";
-            return;
-        }
-        
-        // Write the header in the beginning of the file
-        HbThemeIndexHeaderV1 header;
-        header.version = version;
-        header.itemCount = IndexItems.count();
-
-        if (verboseOn) {
-            std::cout << "============================TOTALS==============================\n";
-            std::cout << "Added " << header.itemCount << " items.\n";
-            std::cout << "================================================================\n";
-        }
- 
-        // Sort the list
-        qStableSort(IndexItems.begin(), IndexItems.end(), themeIndexItemDataLessThan);
-         
-        // Write header info into the file stream
-        qint64 ret = indexFile.write(reinterpret_cast<const char *>(&header), sizeof(HbThemeIndexHeaderV1));
-        assert(ret == sizeof(HbThemeIndexHeaderV1));
-        
-        // Write items into the file stream
-        foreach(const HbThemeIndexItemData &itemData, IndexItems) {
-            ret = indexFile.write(reinterpret_cast<const char *>(&itemData), sizeof(HbThemeIndexItemData));
-            assert(ret == sizeof(HbThemeIndexItemData));
-        }
-        
-        indexFile.close();
     }
+
+    QDir effectDir(effectPath);
+    if (effectDir.exists()) {
+        QFileInfoList entries = effectDir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot);
+        for (int i=0; i<entries.count(); i++) {
+            QFileInfo info = entries.at(i);
+            processFile(info);
+        }
+    }
+
+    // There might still be items in mirrored list (e.g. frames are not actual items, but they are still mirrored)
+    // So just create empty items for the rest of mirrored items in list
+    foreach (QString mirrored, MirroredList) {
+        HbThemeIndexItemData itemData;
+        itemData.itemNameHash = hbHash(mirrored);
+        itemData.flags |= HbThemeIndexItemData::Mirrorable;
+        appendItem(itemData, mirrored);
+    }
+
+    // Read application and widget color group CSS files and index their content
+    // Temporary check
+    if (QFile::exists(dir.absolutePath() + "/style/" + themename + "/variables/color/hbapplicationcolorgroup.css") &&
+        QFile::exists(dir.absolutePath() + "/style/" + themename + "/variables/color/hbwidgetcolorgroup.css")) {
+        if (verboseOn) {
+            std::cout << "Processing hbapplicationcolorgroup.css and hbwidgetcolorgroup.css";
+        }
+        indexColorVariables(dir.absolutePath() + "/style/" + themename + "/variables/color/hbapplicationcolorgroup.css");
+        indexColorVariables(dir.absolutePath() + "/style/" + themename + "/variables/color/hbwidgetcolorgroup.css");
+    } else {
+        if (verboseOn) {
+            std::cout << "Processing hbcolorgroup.css";
+        }
+        indexColorVariables(dir.absolutePath() + "/style/" + themename + "/variables/color/hbcolorgroup.css");
+    }
+
+    QDir targetDir;
+    if (!targetDir.exists(targetName)) {
+        targetDir.mkpath(targetName);
+    }
+    QString filename = targetName + themename + ".themeindex";
+
+    QFile::remove(filename);
+    QFile indexFile(filename);
+    if (!indexFile.open(QIODevice::ReadWrite)) {
+        std::cout << "ERROR: could not open index file!\n";
+        return;
+    }
+    
+    // Write the header in the beginning of the file
+    HbThemeIndexHeaderV1 header;
+    header.version = version;
+    header.itemCount = IndexItems.count();
+
+    if (verboseOn) {
+        std::cout << "============================TOTALS==============================\n";
+        std::cout << "Added " << header.itemCount << " items.\n";
+        std::cout << "================================================================\n";
+    }
+
+    // Sort the list
+    qStableSort(IndexItems.begin(), IndexItems.end(), themeIndexItemDataLessThan);
+     
+    // Write header info into the file stream
+    qint64 ret = indexFile.write(reinterpret_cast<const char *>(&header), sizeof(HbThemeIndexHeaderV1));
+    assert(ret == sizeof(HbThemeIndexHeaderV1));
+    
+    // Write items into the file stream
+    foreach(const HbThemeIndexItemData &itemData, IndexItems) {
+        ret = indexFile.write(reinterpret_cast<const char *>(&itemData), sizeof(HbThemeIndexItemData));
+        assert(ret == sizeof(HbThemeIndexItemData));
+    }
+    
+    indexFile.close();
 }
 
 void showHelp() {

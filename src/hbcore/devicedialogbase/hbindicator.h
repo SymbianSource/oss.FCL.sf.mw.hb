@@ -51,7 +51,7 @@ public:
     bool deactivate(const QString &indicatorType, const QVariant &parameter = QVariant());
 
     int error() const;
-	
+    
 signals:
     void userActivated(const QString &type, const QVariantMap &data);
 

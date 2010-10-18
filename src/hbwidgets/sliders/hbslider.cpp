@@ -29,7 +29,7 @@
 #include "hbslidercontrol_p_p.h"
 #include "hbnamespace_p.h"
 #include "hbsliderhandle_p.h"
-
+#include "hbstyle_p.h"
 #include "hbstyleoptionslider_p.h"
 #include "hbslidertickmarks_p.h"
 #include "hbslidertickmarkslabel_p.h"
@@ -321,14 +321,14 @@ void HbSliderPrivate::elementWidget( HbSlider::SliderElement element )
             // create element only if icon is set on that
             if ( icons.contains( element) && !elementItemMap.contains(element)){
                 ItemPrimitive itemPrimStrct;
-                itemPrimStrct.type = HbStyle::P_SliderElement_increase;
-                itemPrimStrct.item = q->style( )->createPrimitive(HbStyle::P_SliderElement_increase,q );
+                itemPrimStrct.type = HbStylePrivate::P_SliderElement_increase;
+                itemPrimStrct.item = HbStylePrivate::createPrimitive(HbStylePrivate::P_SliderElement_increase,q );
                 HbStyle::setItemName( itemPrimStrct.item, "increment-icon" );                    
-                itemPrimStrct.touchItem = q->style( )->createPrimitive( HbStyle::P_SliderElement_touchincrease,q );
+                itemPrimStrct.touchItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_SliderElement_touchincrease,q );
                 HbStyle::setItemName( itemPrimStrct.touchItem, "increment-icon-toucharea" );
                 HbStyleOptionSlider option;
                 q->initStyleOption( &option );
-                q->style( )->updatePrimitive (itemPrimStrct.touchItem,HbStyle::P_SliderElement_touchincrease,&option);
+                HbStylePrivate::updatePrimitive (itemPrimStrct.touchItem,HbStylePrivate::P_SliderElement_touchincrease,&option);
                 elementItemMap[HbSlider::IncreaseElement]=itemPrimStrct;
                 q->repolish( );
        
@@ -338,15 +338,15 @@ void HbSliderPrivate::elementWidget( HbSlider::SliderElement element )
             // element will not be created if icon is not set on that element
             if ( icons.contains( element) && !elementItemMap.contains(element)) {
                 ItemPrimitive itemPrimStrct;
-                itemPrimStrct.item= q->style( )->createPrimitive(HbStyle::P_SliderElement_decrease,q );
-                itemPrimStrct.type = HbStyle::P_SliderElement_decrease;
+                itemPrimStrct.item= HbStylePrivate::createPrimitive(HbStylePrivate::P_SliderElement_decrease,q );
+                itemPrimStrct.type = HbStylePrivate::P_SliderElement_decrease;
                 HbStyle::setItemName( itemPrimStrct.item,"decrement-icon" );
-                itemPrimStrct.touchItem = q->style( )->createPrimitive( HbStyle::P_SliderElement_touchdecrease,q );
+                itemPrimStrct.touchItem = HbStylePrivate::createPrimitive( HbStylePrivate::P_SliderElement_touchdecrease,q );
                 HbStyle::setItemName( itemPrimStrct.touchItem, "decrement-icon-toucharea" );
                 elementItemMap[HbSlider::DecreaseElement]=itemPrimStrct;
                 HbStyleOptionSlider option;
                 q->initStyleOption( &option );
-                q->style( )->updatePrimitive (itemPrimStrct.touchItem,HbStyle::P_SliderElement_touchdecrease,&option);
+                HbStylePrivate::updatePrimitive (itemPrimStrct.touchItem,HbStylePrivate::P_SliderElement_touchdecrease,&option);
                 q->repolish( );
                            
             }
@@ -354,8 +354,8 @@ void HbSliderPrivate::elementWidget( HbSlider::SliderElement element )
         case HbSlider::IconElement:
             if ( icons.contains( element) && !elementItemMap.contains(element) ) {
                     ItemPrimitive itemPrimStrct;
-                    itemPrimStrct.item = q->style( )->createPrimitive(HbStyle::P_SliderElement_icon,q );
-                    itemPrimStrct.type = HbStyle::P_SliderElement_icon;
+                    itemPrimStrct.item = HbStylePrivate::createPrimitive(HbStylePrivate::P_SliderElement_icon,q );
+                    itemPrimStrct.type = HbStylePrivate::P_SliderElement_icon;
                     HbStyle::setItemName( itemPrimStrct.item, "icon-icon" );
                     HbAbstractButton *sliderIcon = new HbAbstractButton( q );
                     HbStyle::setItemName( sliderIcon, "icon" );
@@ -377,8 +377,8 @@ void HbSliderPrivate::elementWidget( HbSlider::SliderElement element )
         case HbSlider::TextElement:
             if( !sliderTextString.isEmpty( ) && !elementItemMap.contains(element)){
                 ItemPrimitive itemPrimStrct;
-                itemPrimStrct.type = HbStyle::P_SliderElement_text;
-                itemPrimStrct.item = q->style( )->createPrimitive( HbStyle::P_SliderElement_text,q );
+                itemPrimStrct.type = HbStylePrivate::P_SliderElement_text;
+                itemPrimStrct.item = HbStylePrivate::createPrimitive( HbStylePrivate::P_SliderElement_text,q );
                 HbStyle::setItemName( itemPrimStrct.item,"text_item_element" );
                 HbAbstractButton *sliderTextButton = new HbAbstractButton( q ); 
                 HbStyle::setItemName( sliderTextButton, "text_element" );
@@ -401,7 +401,7 @@ void HbSliderPrivate::elementWidget( HbSlider::SliderElement element )
      option.sliderElementIcon =icons.value(element ); 
      option.text = sliderTextString; 
      if (elementItemMap.contains(element)) {
-         q->style( )->updatePrimitive( elementItemMap[element].item,elementItemMap[element].type,&option );
+         HbStylePrivate::updatePrimitive( elementItemMap[element].item,elementItemMap[element].type,&option );
 
      }  //return created;
 }
@@ -637,11 +637,11 @@ void HbSliderPrivate::setTickOrientation()
 void HbSliderPrivate::updateTickMarks( )
 {
     if (tickmarksLeft) {
-		tickmarksLeft->createTicks();
+        tickmarksLeft->createTicks();
         tickmarksLeft->updateTicks();
     }
     if (tickmarksRight) {
-		tickmarksRight->createTicks();
+        tickmarksRight->createTicks();
         tickmarksRight->updateTicks();
     }
 }
@@ -965,9 +965,6 @@ void HbSlider::setText( const QString &text )
         if ( d->elements.contains( HbSlider::TextElement ))  {
             d->elementWidget( HbSlider::TextElement );  
         }
-        // sets text for tooltip also
-        d->sliderControl->setToolTip( text );
-        repolish();
     }
 }
 
@@ -1726,7 +1723,7 @@ QStringList HbSlider::majorTickLabels( ) const
     case 5: If you want to remove the whole tickLabel then set the empty string as the argument.
 
     Note:: if the major tickinterval of the slider is very small, the tick labels may overlap,
-	application needs to take care of this.
+    application needs to take care of this.
 
     \sa majorTickLabels( )
 */
@@ -1758,8 +1755,8 @@ QStringList HbSlider::minorTickLabels( ) const
     @beta
     Sets the minor ticklabels of the slider.
     see setMajorTickLabels for detailed description.
-	Note:: if the minor tickinterval of the slider is very small, the tick labels may overlap,
-	application needs to take care of this.
+    Note:: if the minor tickinterval of the slider is very small, the tick labels may overlap,
+    application needs to take care of this.
 
 
     \sa minorTickLabels( ),setMajorTickLabels( )
@@ -1783,37 +1780,37 @@ QGraphicsItem *HbSlider::primitive( HbStyle::Primitive primitive ) const
 {
     Q_D( const HbSlider );
     switch ( primitive ) {
-        case HbStyle::P_Slider_thumb:
+        case HbStylePrivate::P_Slider_thumb:
             return HbSliderControlPrivate::d_ptr( d->sliderControl )->handle->primitive( 
-                HbStyle::P_Slider_thumb );
-        case HbStyle::P_SliderElement_text:
+                (HbStyle::Primitive)HbStylePrivate::P_Slider_thumb );
+        case HbStylePrivate::P_SliderElement_text:
             if (d->elementItemMap.contains (HbSlider::TextElement) ){
                 return d->elementItemMap[HbSlider::TextElement].item;
             }
             break;
-        case HbStyle::P_SliderElement_icon:
+        case HbStylePrivate::P_SliderElement_icon:
             if (d->elementItemMap.contains (HbSlider::IconElement)) {
                 return d->elementItemMap[HbSlider::IconElement].item;
             }
             break;
-        case HbStyle::P_SliderElement_increase:
+        case HbStylePrivate::P_SliderElement_increase:
             if (d->elementItemMap.contains (HbSlider::IncreaseElement)) {
                 return d->elementItemMap[HbSlider::IncreaseElement].item;
             }
             break;
-        case HbStyle::P_SliderElement_decrease:
+        case HbStylePrivate::P_SliderElement_decrease:
             if (d->elementItemMap.contains (HbSlider::DecreaseElement)) {
                 return d->elementItemMap[HbSlider::DecreaseElement].item;
             }
             break;
-        case HbStyle::P_Slider_groove:
+        case HbStylePrivate::P_Slider_groove:
             return HbSliderControlPrivate::d_ptr( d->sliderControl )->groove;
-        case  HbStyle::P_SliderElement_touchgroove:
+        case  HbStylePrivate::P_SliderElement_touchgroove:
             return  HbSliderControlPrivate::d_ptr( d->sliderControl )->grooveTouchArea;
         
-        case HbStyle::P_SliderElement_touchhandle:
+        case HbStylePrivate::P_SliderElement_touchhandle:
             return HbSliderControlPrivate::d_ptr( d->sliderControl )->handle->primitive( 
-                HbStyle::P_SliderElement_touchhandle );
+                (HbStyle::Primitive)HbStylePrivate::P_SliderElement_touchhandle );
             
         default:
             break;
@@ -1833,22 +1830,22 @@ void HbSlider::updatePrimitives( )
 
     if ( d->elementItemMap.contains(HbSlider::TextElement)) {
         option.text = d->sliderTextString; 
-        style( )->updatePrimitive( d->elementItemMap[HbSlider::TextElement].item,d->elementItemMap[HbSlider::TextElement].type,&option );
+        HbStylePrivate::updatePrimitive( d->elementItemMap[HbSlider::TextElement].item,d->elementItemMap[HbSlider::TextElement].type,&option );
     }
     if ( d->elementItemMap.contains(HbSlider::IconElement)) {
         option.sliderElementIcon =d->icons.value( HbSlider::IconElement ); 
-        style( )->updatePrimitive( d->elementItemMap[HbSlider::IconElement].item,HbStyle::P_SliderElement_icon,&option );
+        HbStylePrivate::updatePrimitive( d->elementItemMap[HbSlider::IconElement].item,HbStylePrivate::P_SliderElement_icon,&option );
     }
     if ( d->elementItemMap.contains(HbSlider::IncreaseElement) ) {
         option.sliderElementIcon =d->icons.value( HbSlider::IncreaseElement ); 
-        style( )->updatePrimitive( d->elementItemMap[HbSlider::IncreaseElement].item,HbStyle::P_SliderElement_increase,&option );
-        style( )->updatePrimitive(  d->elementItemMap[HbSlider::IncreaseElement].touchItem ,HbStyle::P_SliderElement_touchincrease,&option );
+        HbStylePrivate::updatePrimitive( d->elementItemMap[HbSlider::IncreaseElement].item,HbStylePrivate::P_SliderElement_increase,&option );
+        HbStylePrivate::updatePrimitive(  d->elementItemMap[HbSlider::IncreaseElement].touchItem ,HbStylePrivate::P_SliderElement_touchincrease,&option );
 
     }
     if ( d->elementItemMap.contains (HbSlider::DecreaseElement) ) {
         option.sliderElementIcon =d->icons.value( HbSlider::DecreaseElement ); 
-        style( )->updatePrimitive( d->elementItemMap[HbSlider::DecreaseElement].item,HbStyle::P_SliderElement_decrease,&option );
-        style( )->updatePrimitive( d->elementItemMap[HbSlider::DecreaseElement].touchItem ,HbStyle::P_SliderElement_touchdecrease,&option );
+        HbStylePrivate::updatePrimitive( d->elementItemMap[HbSlider::DecreaseElement].item,HbStylePrivate::P_SliderElement_decrease,&option );
+        HbStylePrivate::updatePrimitive( d->elementItemMap[HbSlider::DecreaseElement].touchItem ,HbStylePrivate::P_SliderElement_touchdecrease,&option );
     }
     if ( d->sliderControl ) {
         d->sliderControl->updatePrimitives( );
@@ -1860,6 +1857,7 @@ void HbSlider::updatePrimitives( )
  */
 void HbSlider::mousePressEvent( QGraphicsSceneMouseEvent *event )
 {
+#ifndef HB_GESTURE_FW 
     Q_D( HbSlider );
     HbWidget::mousePressEvent( event );
     if( d->elementItemMap.contains (HbSlider::IncreaseElement) ) {
@@ -1883,6 +1881,9 @@ void HbSlider::mousePressEvent( QGraphicsSceneMouseEvent *event )
             return;
         }
     }
+#else 
+    Q_UNUSED(event);
+#endif 
 }
 
 
@@ -1893,6 +1894,7 @@ void HbSlider::mousePressEvent( QGraphicsSceneMouseEvent *event )
  */
 void HbSlider::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
 {
+#ifndef HB_GESTURE_FW 
     Q_D( HbSlider );
     HbWidget::mouseReleaseEvent( event );
     if( d->elementItemMap.contains(HbSlider::IncreaseElement) ) {
@@ -1918,6 +1920,9 @@ void HbSlider::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
         }
     }
     d->stopRepeatAction( );
+#else
+    Q_UNUSED( event )
+#endif 
 }
 
 /*!
@@ -1933,22 +1938,70 @@ void HbSlider::gestureEvent(QGestureEvent *event)
     if (HbTapGesture *tap = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
         QPointF pos = event->mapToGraphicsScene(tap->position());
         bool consumeEvent = false;
-        if ( d->elementItemMap.contains (HbSlider::IncreaseElement ) ) {
-            if (d->elementItemMap[HbSlider::IncreaseElement].touchItem ) {
-                if (d->elementItemMap[HbSlider::IncreaseElement].touchItem->sceneBoundingRect().contains(pos)) {
-                    consumeEvent = true;
+        switch( tap->state( ) ) {
+        case Qt::GestureStarted: {
+            if ( d->elementItemMap.contains (HbSlider::IncreaseElement ) ) {
+                if (d->elementItemMap[HbSlider::IncreaseElement].touchItem ) {
+                    if (d->elementItemMap[HbSlider::IncreaseElement].touchItem->sceneBoundingRect().contains(pos)) {
+                        consumeEvent = true;
+                        d->pressOnIncrement  = true;
+                        HbWidgetFeedback::triggered( d->sliderControl, Hb::InstantPressed, Hb::ModifierSliderElement );
+                        event->accept( );
+                        // increment and start reapeat timer 
+                        d->startIncrementing( );
+                    }
                 }
             }
-        }
-        if ( d->elementItemMap.contains (HbSlider::DecreaseElement ) ) {
-            if (d->elementItemMap[HbSlider::DecreaseElement].touchItem ) {
-                if (d->elementItemMap[HbSlider::DecreaseElement].touchItem->sceneBoundingRect().contains(pos))  {
-                    consumeEvent = true;
-                }
-            }
-        }
+            if ( d->elementItemMap.contains (HbSlider::DecreaseElement ) ) {
+                if (d->elementItemMap[HbSlider::DecreaseElement].touchItem ) {
+                    if (d->elementItemMap[HbSlider::DecreaseElement].touchItem->sceneBoundingRect().contains(pos))  {
+                        consumeEvent = true;
+                        d->pressOnIncrement  = false;
+                        HbWidgetFeedback::triggered( d->sliderControl, Hb::InstantPressed, Hb::ModifierSliderElement );
+                        event->accept( );
+                        //decrement and start decrement timer
+                        d->startDecrementing( );
 
-       if(!consumeEvent) {
+                    }
+                }
+            }
+        }
+        break;
+        case Qt::GestureCanceled:
+        case Qt::GestureFinished:            
+            if ( d->elementItemMap.contains (HbSlider::IncreaseElement ) ) {
+                if (d->elementItemMap[HbSlider::IncreaseElement].touchItem ) {
+                    if ( d->pressOnIncrement ) {
+                        if( d->elementItemMap[HbSlider::IncreaseElement].touchItem->sceneBoundingRect().contains(pos)) {
+                            HbWidgetFeedback::triggered( d->sliderControl, Hb::InstantReleased, Hb::ModifierSliderElement );
+                            #ifdef HB_EFFECTS
+                            HbEffectInternal::add( HB_SLIDER_TYPE,"slidericon_release", "increaserelease" );
+                            HbEffect::start( d->elementItemMap[HbSlider::IncreaseElement].item, HB_SLIDER_TYPE, "increaserelease" );  
+                            #endif
+                        }
+                    }
+                }
+            }
+            if ( d->elementItemMap.contains (HbSlider::DecreaseElement ) ) {
+                if (d->elementItemMap[HbSlider::DecreaseElement].touchItem ) {
+                    if( d->elementItemMap.contains(HbSlider::DecreaseElement) ) {
+                        if ( !d->pressOnIncrement ) {
+                            if( d->elementItemMap[HbSlider::DecreaseElement].touchItem->sceneBoundingRect().contains(pos) ) {
+                                HbWidgetFeedback::triggered( d->sliderControl, Hb::InstantReleased, Hb::ModifierSliderElement );
+                                #ifdef HB_EFFECTS
+                                HbEffectInternal::add( HB_SLIDER_TYPE,"slidericon_release", "decreaserelease" );
+                                HbEffect::start( d->elementItemMap[HbSlider::DecreaseElement].item, HB_SLIDER_TYPE, "decreaserelease" );  
+                                #endif
+                            }
+                        }
+                    }
+                }
+            }
+            d->stopRepeatAction( );
+            break;
+        default: break;
+        }    
+        if(!consumeEvent) {
            event->ignore();
            HbWidget::gestureEvent(event);
        }

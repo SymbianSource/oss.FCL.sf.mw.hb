@@ -25,6 +25,8 @@
 #include "hbinputmethoddescriptor.h"
 
 /*!
+@stable
+@hbcore
 \class HbInputMethodDescriptor
 \brief Describes an input method
 
@@ -192,6 +194,54 @@ Returns true if this descriptor points to system default input.
 bool HbInputMethodDescriptor::isDefault() const
 {
     return (mPluginNameAndPath == HbInputDefaultMethodString);
+}
+
+/*!
+Serializes the input method \a descriptor to stream \a out.
+*/
+QDataStream &operator<<(QDataStream &out, const HbInputMethodDescriptor &descriptor)
+{
+    out << descriptor.pluginNameAndPath();
+    out << descriptor.key();
+    out << descriptor.displayName();
+    out << descriptor.displayNames();
+    out << descriptor.icon().iconName();
+    out << descriptor.icons().count();
+    for (int i = 0; i < descriptor.icons().count(); ++i) {
+        out << descriptor.icons().at(i).iconName();
+    }
+    return out;
+}
+
+/*!
+Deserializes input method \a descriptor from stream \a in.
+*/
+QDataStream &operator>>(QDataStream &in, HbInputMethodDescriptor &descriptor)
+{
+    QString pluginNameAndPath;
+    in >> pluginNameAndPath;
+    descriptor.setPluginNameAndPath(pluginNameAndPath);
+    QString key;
+    in >> key;
+    descriptor.setKey(key);
+    QString displayName;
+    in >> displayName;
+    descriptor.setDisplayName(displayName);
+    QStringList displayNames;
+    in >> displayNames;
+    descriptor.setDisplayNames(displayNames);
+    QString iconName;
+    in >> iconName;
+    descriptor.setIcon(HbIcon(iconName));
+    int iconCount;
+    in >> iconCount;
+    QList<HbIcon> icons;
+    for (int i = 0; i < iconCount; ++i) {
+        in >> iconName;
+        icons.append(HbIcon(iconName));
+    }
+    descriptor.setIcons(icons);
+    return in;
 }
 
 // End of file

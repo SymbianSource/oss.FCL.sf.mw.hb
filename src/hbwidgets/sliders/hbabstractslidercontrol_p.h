@@ -58,7 +58,7 @@ public:
         Q_Q(HbAbstractSliderControl);
         // NOTE: the widget parameter is not used by
         // QStyle::styleHint(QStyle::SH_Slider_StopMouseOverSlider)
-		if (qApp->style()->styleHint(QStyle::SH_Slider_StopMouseOverSlider, 0, 0)) {
+        if (qApp->style()->styleHint(QStyle::SH_Slider_StopMouseOverSlider, 0, 0)) {
             if (qAbs(position - pressValue) < step) {
                 repeatAction = HbAbstractSliderControl::SliderNoAction;
                 q->setSliderPosition(pressValue);

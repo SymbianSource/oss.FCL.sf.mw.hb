@@ -42,7 +42,7 @@ inline QList<quint32> hbsplash_blacklist()
            // uses hbapplication but not hbmainwindow
            << 0x1028339d // app/devicecontrol/deviceupdateui/deviceupdateqtsp
            << 0x2001fe74 // app/messaging/messagingapp/msgnotifications/msgerrornotifier
-           << 0xe0022e73 // mw/securitysrv/securitydialogs/autolocksrv (this uid cannot be the final one, can it...)
+           << 0x2002ff8a // mw/phonesrv/telutils/keysequencerecognitionservice
 
            // started to background and may not need splash anyway
            << 0x2002e669 // mw/webruntime/app/widget/wrtwidgetui

@@ -44,6 +44,13 @@ public: // From QInputContext
     void reset();
     bool filterEvent(const QEvent *event);
     void mouseHandler(int x, QMouseEvent *event);
+
+public:
+    void setDelayedPanelRequest(bool value);
+    bool delayedPanelRequest() const;
+
+private:
+    bool mDelayedPanelRequest;
 };
 
 #endif // HB_INPUT_METHOD_NULL_H

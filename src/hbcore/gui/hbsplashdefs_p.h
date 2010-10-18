@@ -26,6 +26,9 @@
 #ifndef HBSPLASHDEFS_P_H
 #define HBSPLASHDEFS_P_H
 
+#include <qglobal.h>
+#include <QDebug>
+
 #ifdef Q_OS_SYMBIAN
 
 #include <e32base.h>
@@ -48,10 +51,35 @@ enum HbSplashServerPanics {
     HbSplashSrvBadParam
 };
 
+// Keys for P&S properties containing the statusbar bitmap handles.
+enum HbSplashStatusBarKeys {
+    HbSplashSbBitmapPrtKey = 1,
+    HbSplashSbBitmapLscKey
+};
+
 #endif // Q_OS_SYMBIAN
 
 enum HbSplashStoredExtraFlags {
     HbSplashNonStandardStatusBar = 1
 };
+
+/*
+  Enable the following to get more extensive debug prints from HbSplash and HbSplashScreen.
+  Applies also to the server (hbsplashgenerator).
+*/
+//#define HB_SPLASH_VERBOSE_LOGGING
+
+/*
+  Enable the following to have splash screen data compressed before writing to file.
+ */
+#define HB_SPLASH_COMPRESSION
+
+#ifdef HB_SPLASH_VERBOSE_LOGGING
+inline QDebug splDeb() { return qDebug(); }
+#define splDebug qDebug
+#else
+inline QNoDebug splDeb() { return QNoDebug(); }
+#define splDebug QT_NO_QDEBUG_MACRO
+#endif
 
 #endif // HBSPLASHDEFS_P_H

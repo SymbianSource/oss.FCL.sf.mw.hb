@@ -35,6 +35,7 @@
 #include <QtGlobal>
 #include <QVariantAnimation>
 #include <QGraphicsEffect>
+#include <QPointer>
 
 QT_BEGIN_NAMESPACE
 class QtAnimation;
@@ -77,7 +78,7 @@ protected:
     HbEffectFilterAnimation *mAnimationOffsetY;     // offset_y
     HbEffectColorAnimation *mAnimationC;            // color
 
-    HbVgOutlineEffect *mVgOutline;
+    QPointer<HbVgOutlineEffect> mVgOutline;
     int mType;
 };
 

@@ -28,6 +28,7 @@
 #include "hbicontheme_p.h"
 #include "hblayoutdirectionnotifier_p.h"
 #include "hbinstance.h"
+#include "hbinstance_p.h"
 #include "hbiconanimation_p.h"
 #include "hbiconanimator.h"
 #include "hbiconanimator_p.h"
@@ -40,10 +41,10 @@
 #include "hbimagetraces_p.h"
 #include "hbmemoryutils_p.h"
 #include "hbpixmapiconimpl_p.h"
+#include "hbiconimplcreator_p.h"
 #include "hbiconsource_p.h"
 #include "hbthemeindex_p.h"
 #include "hbthemecommon_p.h"
-#include "hbiconimplcreator_p.h"
 #include <QDir>
 #include <QCoreApplication>
 #include <QDebug>
@@ -56,46 +57,58 @@
 #include <QSvgRenderer>
 #include <QImageReader>
 #include <QHash>
+#include <QThread>
+#include <QMutex>
+#include <QMutexLocker>
 
 #ifdef HB_NVG_CS_ICON
 #include "hbeglstate_p.h"
+#include "hbnvgrasterizer_p.h"
 #endif
-
-#define HB_ICONIMPL_CACHE
-/*
- * Client side caching of sgimage icon required,
- * as  sgimage lite cannot be opened multiple times
- */
-#ifdef HB_SGIMAGE_ICON
-#ifndef HB_ICONIMPL_CACHE
-#define HB_ICONIMPL_CACHE
-#endif
-#endif
-
-// Just an experimental implementation.. Disable if necessary.
-#define ENABLE_EXPERIMENTAL_RESIZE_BOOST__
 
 // SVG animation is currently disabled because of bugs in QT's svg engine
 #undef HB_SVG_ANIMATION
 
-static const char *s_unknown = "unknown";
+//#define HB_ICON_CACHE_DEBUG
+
 // Icon name without extension
+static const char *s_unknown = "unknown";
 
 /*!
     \class HbIconLoader
 
-    \brief HbIconLoader loads icons according to the Freedesktop Icon Theme Specification
+    \brief HbIconLoader loads and caches vector and raster icons
+    either via the Theme Server or directly from files/resources.
 
     \internal
 */
 
 // Allocated dynamically so it can be deleted before the application object is destroyed.
-// Deleting it later causes segmentation fault.
+// Deleting it later causes segmentation fault so Q_GLOBAL_STATIC cannot be used.
 static HbIconLoader *theLoader = 0;
+static bool loaderDestroyed = false;
 
-#ifdef HB_ICONIMPL_CACHE
-static QHash<QByteArray, HbIconImpl *> iconImplCache;
-#endif
+// The max consumption for the icons held by the cachekeeper, assuming that each
+// icon is 32bpp. Note that the cachekeeper's content is cleared also when
+// losing visibility and when switching rendering mode.
+const int MAX_KEEPALIVE_CACHE_SIZE_BYTES = 1024 * 1024; // 1 MB
+
+// Icons with size above a certain limit are always ignored by the cachekeeper.
+const int MAX_KEEPALIVE_ITEM_SIZE_BYTES = MAX_KEEPALIVE_CACHE_SIZE_BYTES / 2;
+
+static void cleanupLoader()
+{
+    if (theLoader) {
+        delete theLoader;
+        theLoader = 0;
+    }
+}
+    
+class HbLocalLoaderThread : public QThread
+{
+public:
+    void run();
+};
 
 class HbIconLoaderPrivate
 {
@@ -122,17 +135,15 @@ public:
     bool isLayoutMirrored();
     void setLayoutMirrored(bool mirrored);
 
-#ifdef HB_ICONIMPL_CACHE
     QByteArray createCacheKeyFrom(const QString &iconName,
                                   const QSizeF &size,
                                   Qt::AspectRatioMode aspectRatioMode,
                                   QIcon::Mode mode,
                                   bool mirrored,
-                                  const QColor &color,
-                                  HbRenderingMode renderMode);
-#endif
+                                  const QColor &color);
 
-public:
+    void addItemToCache(const QByteArray &cacheKey, HbIconImpl *iconImpl);
+
     QString storedTheme;
 
     int sourceResolution;
@@ -147,7 +158,6 @@ public:
 
     HbIconSource *lastIconSource;
 
-private:
     enum {
         Unknown = 0,
         NotMirrored = 1,
@@ -158,7 +168,75 @@ private:
     * Flipped icons are used in the mirrored layout.
     */
     int layoutMirrored;
+
+    struct AsyncParams {
+        HbIconLoader::HbAsyncIconLoaderCallback mCallback;
+        HbIconLoadingParams mLdParams;
+        void *mParam;
+    };
+
+    QList<AsyncParams *> mActiveAsyncRequests;
+
+    HbLocalLoaderThread mLocalLoaderThread;
+    HbLocalIconLoader *mLocalLoader;
+    QMutex mLocalLoadMutex;
+    QMutex mIconSourceMutex;
+    friend class HbLocalLoaderThread;
+
+    /*
+     * Client side caching of sgimage icon required, as sgimage lite cannot be
+     * opened multiple times
+     *
+     * It is also beneficial for performance, because it reduces IPC in certain
+     * cases.
+     *
+     * Note that by default this is not a permanent cache, i.e. when an iconimpl's
+     * refcount reaches zero it is removed from the cache.  This means that the
+     * cache is beneficial for having the same icon rendered by two or more HbIcons
+     * at the same time (very typical in some itemview (e.g. list widget) cases),
+     * but it would not benefit a load-unload-load scenario because the icon is
+     * removed from the cache during the unload when there are no references
+     * anymore.
+     *
+     * However the cachekeeper below will change this behavior, preventing refcounts
+     * reaching zero in unLoadIcon(), so this cache may contain also icons that are
+     * not really in use and are only referenced by the cachekeeper. This is
+     * required for further reduction of IPC calls.
+     */
+    QHash<QByteArray, HbIconImpl *> iconImplCache;
+
+    // The global cachekeeper instance will hold references to icons that would
+    // normally be unloaded (i.e. mIcons will contain icons with refcount 1).
+    //
+    // Icons get added from unLoadIcon(), meaning that if the cachekeeper decides to
+    // hold a reference then the icon is not really unloaded (and thus stays in
+    // iconImplCache).
+    //
+    // When the icon gets referenced due to a cache hit, in loadIcon() and other
+    // places, the icon is removed from the cachekeeper.
+    class CacheKeeper {
+    public:
+        CacheKeeper(HbIconLoaderPrivate *p) : mConsumption(0), mIconLoaderPrivate(p) { }
+        void ref(HbIconImpl *icon);
+        void unref(HbIconImpl *icon);
+        void clear();
+    private:
+        void del(HbIconImpl *icon, bool sendUnloadReq);
+        QList<HbIconImpl *> mIcons;
+        int mConsumption;
+        HbIconLoaderPrivate *mIconLoaderPrivate;
+        friend class HbIconLoaderPrivate;
+    };
+
+    CacheKeeper cacheKeeper;
 };
+
+void HbLocalLoaderThread::run()
+{
+    setPriority(QThread::LowPriority);
+    exec();
+    delete HbIconLoaderPrivate::global()->mLocalLoader;
+}
 
 HbIconLoaderPrivate::HbIconLoaderPrivate() :
     storedTheme(HbTheme::instance()->name()),
@@ -168,13 +246,34 @@ HbIconLoaderPrivate::HbIconLoaderPrivate() :
     animationManager(HbIconAnimationManager::global()),
     animationLoading(false),
     lastIconSource(0),
-    layoutMirrored(Unknown)
+    layoutMirrored(Unknown),
+    mLocalLoadMutex(QMutex::Recursive),
+    mIconSourceMutex(QMutex::Recursive),
+    cacheKeeper(this)
 {
+    qRegisterMetaType<HbIconImpl *>();
+    qRegisterMetaType<HbIconLoadingParams>();
+    qRegisterMetaType<void *>();
+    mLocalLoader = new HbLocalIconLoader;
+    mLocalLoader->moveToThread(&mLocalLoaderThread);
+    mLocalLoaderThread.start();
 }
 
 HbIconLoaderPrivate::~HbIconLoaderPrivate()
 {
+    // quit() cannot be called directly on mLocalLoaderThread because
+    // there is a chance that start() has not yet executed.
+    QMetaObject::invokeMethod(mLocalLoader, "doQuit", Qt::QueuedConnection);
+    mLocalLoaderThread.wait();
     delete lastIconSource;
+    qDeleteAll(mActiveAsyncRequests);
+    cacheKeeper.clear();
+    // There may be icons in iconImplCache at this point and they are not
+    // necessarily leftovers so they must not be destroyed. Depending on how the
+    // app is implemented there is a (small) chance that the HbIconLoader is
+    // destroyed before the destructors of icon engines or framedrawers are run
+    // so it must be left up to them to correctly unref all icons.
+    iconImplCache.clear();
 }
 
 HbIconLoaderPrivate *HbIconLoaderPrivate::global()
@@ -221,7 +320,9 @@ QString HbIconLoader::formatFromPath(const QString &iconPath)
     return suffix;
 }
 
-QString HbIconLoaderPrivate::findSharedResourceHelper(const QString &resourceName, bool mirrored, bool &mirroredIconFound, Hb::ResourceType itemType, bool useThemeIndex)
+QString HbIconLoaderPrivate::findSharedResourceHelper(const QString &resourceName, bool mirrored,
+                                                      bool &mirroredIconFound, Hb::ResourceType itemType,
+                                                      bool useThemeIndex)
 {
     Q_UNUSED(useThemeIndex)
     Q_UNUSED(itemType)
@@ -234,7 +335,7 @@ QString HbIconLoaderPrivate::findSharedResourceHelper(const QString &resourceNam
         HbThemeIndexResource resource(resourceName);
         if (resource.isValid()) {
             if (mirrored) {
-                return resource.fullMirroredFileName();
+                return resource.fullMirroredFileName(mirroredIconFound);
             } else {
                 return resource.fullFileName();
             }
@@ -443,16 +544,14 @@ void HbIconLoaderPrivate::setLayoutMirrored(bool mirrored)
     layoutMirrored = mirrored ? Mirrored : NotMirrored;
 }
 
-#ifdef HB_ICONIMPL_CACHE
 QByteArray HbIconLoaderPrivate::createCacheKeyFrom(const QString &iconName,
-        const QSizeF &size,
-        Qt::AspectRatioMode aspectRatioMode,
-        QIcon::Mode mode,
-        bool mirrored,
-        const QColor &color,
-        HbRenderingMode renderMode)
+                                                   const QSizeF &size,
+                                                   Qt::AspectRatioMode aspectRatioMode,
+                                                   QIcon::Mode mode,
+                                                   bool mirrored,
+                                                   const QColor &color)
 {
-    static const int paramArraySize = 8;
+    static const int paramArraySize = 7;
 
     // This uses QByteArray to improve performance compared to QString.
     // It allows appending stuff with less heap allocations and conversions compared to using QString.
@@ -478,8 +577,11 @@ QByteArray HbIconLoaderPrivate::createCacheKeyFrom(const QString &iconName,
         temp[6] = 0;
     }
 
-    // Append render mode when creating cache key
-    temp[7] = renderMode;
+    // The rendering mode should not be included in the cache key to prevent
+    // confusion when the requested and the received rendering modes are
+    // different (i.e. to make life simple). Having a cache hit is always
+    // preferable to anything else.
+
     cacheKey.append((char *)&(temp[0]), sizeof(int)*paramArraySize);
 
     const QChar *iconNamePtr = iconName.constData();
@@ -491,48 +593,88 @@ QByteArray HbIconLoaderPrivate::createCacheKeyFrom(const QString &iconName,
 
     return cacheKey;
 }
-#endif
+
+inline HbThemeClient::IconReqInfo paramsToReqInfo(const HbIconLoadingParams &params)
+{
+    HbThemeClient::IconReqInfo reqInfo;
+    reqInfo.iconPath = params.iconFileName;
+    reqInfo.size = params.size;
+    reqInfo.aspectRatioMode = params.aspectRatioMode;
+    reqInfo.mode = params.mode;
+    reqInfo.mirrored = (params.mirrored && !params.mirroredIconFound);
+    reqInfo.options = params.options;
+    reqInfo.color = params.color;
+    reqInfo.renderMode = params.renderMode;
+    return reqInfo;
+}
+
+inline HbThemeClient::IconReqInfo iconImplToReqInfo(HbIconImpl *icon)
+{
+    HbThemeClient::IconReqInfo reqInfo;
+    reqInfo.iconPath = icon->iconFileName();
+    reqInfo.size = icon->keySize();
+    reqInfo.aspectRatioMode = icon->iconAspectRatioMode();
+    reqInfo.mode = icon->iconMode();
+    reqInfo.mirrored = icon->isMirrored();
+    reqInfo.color = icon->color();
+    reqInfo.renderMode = icon->iconRenderingMode();
+    return reqInfo;
+}
 
 HbIconLoader::HbIconLoader(const QString &appName, QObject *parent)
     : QObject(parent)
 {
     setObjectName(appName);
-    d = new HbIconLoaderPrivate();
+    d = new HbIconLoaderPrivate;
+    connect(d->mLocalLoader, SIGNAL(ready(HbIconLoadingParams, void*)), SLOT(localLoadReady(HbIconLoadingParams, void*)));
 
     // Set default rendering mode to EHWRendering
     renderMode = EHWRendering;
 
-    // Delete the icon loader when the application is destroyed.
-    connect(QCoreApplication::instance(), SIGNAL(aboutToQuit()), this, SLOT(destroy()));
+    // Delete the icon loader during QCoreApplication destruction. Relying on
+    // aboutToQuit() would cause destruction to happen too early, with Q_GLOBAL_STATIC it
+    // would be too late.  Recreation is forbidden so HbIconLoader::global() will return 0
+    // after destroying the application instance but at least in a typical application the
+    // loader will still be available e.g. in widget (and thus graphics widget, hb view,
+    // etc.) destructors.
+    qAddPostRoutine(cleanupLoader);
 
     connect(HbLayoutDirectionNotifier::instance(), SIGNAL(layoutDirectionChangeStarted()),
             this, SLOT(updateLayoutDirection()));
 
-#ifdef HB_TOOL_INTERFACE
-    // This enables partial theme updates.
-    connect(&hbInstance->theme()->d_ptr->iconTheme, SIGNAL(iconsUpdated(QStringList)), this, SLOT(themeChange(QStringList)));
-#endif
+    HbTheme *theme = hbInstance->theme();
+    connect(&theme->d_ptr->iconTheme, SIGNAL(iconsUpdated(QStringList)), SLOT(themeChange(QStringList)));
+    connect(theme, SIGNAL(changeFinished()), SLOT(themeChangeFinished()));
 }
 
 HbIconLoader::~HbIconLoader()
 {
     delete d;
+    loaderDestroyed = true;
 }
 
 HbIconLoader *HbIconLoader::global()
 {
     // Allocated dynamically so it can be deleted before the application object is destroyed.
     // Deleting it later causes segmentation fault.
-    if (!theLoader) {
+    // Once destroyed, creating the loader again must not be allowed (e.g. because there
+    // may not be a QApplication instance anymore at this stage). It is normal to
+    // return null pointer in this case, it can happen only during app shutdown. If anybody
+    // is using HbIconLoader::global() from destructors, they have to be prepared for the
+    // null ptr result too.
+    if (!theLoader && !loaderDestroyed) {
         theLoader = new HbIconLoader;
     }
-
+    if (!theLoader) {
+        qWarning("HbIconLoader instance not present, returning null.");
+    }
     return theLoader;
 }
 
 QSizeF HbIconLoader::defaultSize(const QString &iconName, const QString &appName, IconLoaderOptions options)
 {
     Q_UNUSED(appName)
+    QMutexLocker locker(&d->mIconSourceMutex);
     QSizeF size;
 
     // Populate parameters needed for getting the default size
@@ -624,7 +766,7 @@ bool HbIconLoader::iconsExist(const QString &iconName, const QStringList &suffix
         }
     }
 
-    foreach (const QString &suffix, suffixList) {
+    foreach(const QString & suffix, suffixList) {
         bool dummy = false;
 
         QString nameWithSuffix = iconName;
@@ -678,15 +820,34 @@ void HbIconLoader::applyResolutionCorrection(QSizeF &size)
 
 void HbIconLoader::themeChange(const QStringList &updatedFiles)
 {
-    foreach(HbFrameDrawerPrivate * frameDrawer, this->frameDrawerInstanceList) frameDrawer->themeChange(updatedFiles);
+    // For icons, the content is dropped in HbIconEngine.
+    // For framedrawers, HbFrameItem notifies the framedrawer when the theme changes.
+    // This below is only needed to support partial theme updates for framedrawers in external tools.
+    // (standalone framedrawers do not update automatically, except in tools)
+#ifdef HB_TOOL_INTERFACE
+    foreach(HbFrameDrawerPrivate * frameDrawer, frameDrawerInstanceList) {
+        frameDrawer->themeChange(updatedFiles);
+    }
+#else
+    Q_UNUSED(updatedFiles);
+#endif
+}
+
+void HbIconLoader::themeChangeFinished()
+{
+#ifdef HB_ICON_CACHE_DEBUG
+    qDebug("HbIconLoader::themeChangeFinished: dropping unused icons");
+#endif
+    // We need to drop unused icons to prevent reusing them now that the theme is different.
+    // Doing it in themeChange() would not be right, it would be too early,
+    // because unloading would make the dropped icons unused (but referenced) so
+    // we would end up with reusing the old graphics. This here is safe.
+    d->cacheKeeper.clear();
 }
 
 void HbIconLoader::destroy()
 {
-    if (theLoader) {
-        delete theLoader;
-        theLoader = 0;
-    }
+    cleanupLoader();
 }
 
 void HbIconLoader::updateLayoutDirection()
@@ -698,16 +859,16 @@ void HbIconLoader::updateLayoutDirection()
     // directionality must be updated in the icon loader before that.
     // Thus, there are these separate signals.
     QList<HbMainWindow *> allWindows = hbInstance->allMainWindows();
-    HbMainWindow *primaryWindow = allWindows.value(0);
-
-    d->setLayoutMirrored(primaryWindow->layoutDirection() == Qt::RightToLeft);
+    if (allWindows.count()) {
+        HbMainWindow *primaryWindow = allWindows.value(0);
+        d->setLayoutMirrored(primaryWindow->layoutDirection() == Qt::RightToLeft);
+    }
 }
 
 void HbIconLoader::handleForegroundLost()
 {
 #if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
-    // Remove SGImage /NVG type of icons
-    freeGpuIconData();
+    freeIconData();
     // delete the VGImage
     HbEglStates *eglStateInstance = HbEglStates::global();
     eglStateInstance->handleForegroundLost();
@@ -716,18 +877,36 @@ void HbIconLoader::handleForegroundLost()
 #endif
 }
 
+void HbIconLoaderPrivate::addItemToCache(const QByteArray &cacheKey, HbIconImpl *iconImpl)
+{
+#ifdef HB_ICON_CACHE_DEBUG
+    if (iconImplCache.contains(cacheKey)) {
+        qWarning() << "HbIconLoader::addItemToCache: Possible leak: Icon with same key for"
+                   << iconImpl->iconFileName() << "is already in cache";
+    }
+#endif
+
+    iconImplCache.insert(cacheKey, iconImpl);
+
+#ifdef HB_ICON_CACHE_DEBUG
+    qDebug() << "HbIconLoader::addItemToCache: added" << iconImpl->iconFileName()
+             << "cache item count now" << iconImplCache.count();
+#endif
+}
+
 /*!
- * Removes the  IconImpl entry from the client side cache
+ * Removes the iconimpl entry from the client side cache
  */
 void HbIconLoader::removeItemInCache(HbIconImpl *iconImpl)
 {
-#ifdef HB_ICONIMPL_CACHE
     if (iconImpl) {
-        iconImplCache.remove(iconImplCache.key(iconImpl));
-    }
-#else
-    Q_UNUSED(iconImpl);
+        if (d->iconImplCache.remove(d->iconImplCache.key(iconImpl)) > 0) {
+#ifdef HB_ICON_CACHE_DEBUG
+            qDebug() << "HbIconLoader::removeItemInCache: Removed"
+                     << iconImpl->iconFileName() << iconImpl->keySize();
 #endif
+        }
+    }
 }
 
 /*!
@@ -737,18 +916,40 @@ void HbIconLoader::removeItemInCache(HbIconImpl *iconImpl)
 void HbIconLoader::freeGpuIconData()
 {
 #if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
+    d->cacheKeeper.clear(); // unref all unused icons
+    for (int i = 0; i < iconEngineList.count(); i++) {
+        HbIconEngine *engine = iconEngineList.at(i);
+        if (engine->iconFormatType() == SGIMAGE || engine->iconFormatType() == NVG) {
+            engine->resetIconImpl();
+        }
+    }
+    for (int i = 0; i < frameDrawerInstanceList.count(); i++) {
+        HbFrameDrawerPrivate *fd = frameDrawerInstanceList.at(i);
+        if (fd->iconFormatType() == SGIMAGE || fd->iconFormatType() == NVG) {
+            fd->resetMaskableIcon();
+        }
+    }
+#endif
+}
+
+/*!
+ *  Cleans up (deletes) the HbIconImpl instances at the client side
+ *  It also resets the engine's iconImpl and MaskableIcon's iconImpl
+ */
+void HbIconLoader::freeIconData()
+{
+    d->cacheKeeper.clear(); // unref all unused icons
     for (int i = 0; i < iconEngineList.count(); i++) {
         HbIconEngine *engine = iconEngineList.at(i);
         engine->resetIconImpl();
     }
     for (int i = 0; i < frameDrawerInstanceList.count(); i++) {
         HbFrameDrawerPrivate *fd = frameDrawerInstanceList.at(i);
-        if ((fd->iconFormatType() == SGIMAGE) || (fd->iconFormatType() == NVG)) {
-            fd->resetMaskableIcon();
-        }
+        fd->resetMaskableIcon();
+
     }
-#endif
 }
+
 
 /*!
   \internal
@@ -864,7 +1065,7 @@ void HbIconLoader::loadAnimation(HbIconAnimationDefinition &def, HbIconLoadingPa
                                   params.size,
                                   params.aspectRatioMode,
                                   QIcon::Normal,
-                                  params.options,
+                                  params.options | DoNotCache,
                                   0,
                                   params.color);
 
@@ -877,9 +1078,9 @@ void HbIconLoader::loadAnimation(HbIconAnimationDefinition &def, HbIconLoadingPa
 
     // Return the first frame in the canvas pixmap
     if (frameList.count()) {
-        params.canvasPixmap = frameList.at(0).pixmap;
+        params.image = frameList.at(0).pixmap.toImage();
         // Mirroring is already done when loading the frame.
-        // Mode is handled for canvasPixmap in the end of this function.
+        // Mode is handled for the image at the end of this function.
         params.mirroringHandled = true;
     }
 
@@ -895,7 +1096,7 @@ void HbIconLoader::loadAnimation(HbIconAnimationDefinition &def, HbIconLoadingPa
         }
 
         // Take default size from the first frame
-        QSizeF renderSize = QSizeF(params.canvasPixmap.size());
+        QSizeF renderSize = QSizeF(params.image.size());
 
         if (!params.isDefaultSize) {
             renderSize.scale(params.size, params.aspectRatioMode);
@@ -942,35 +1143,103 @@ QString HbIconLoader::resolveIconFileName(HbIconLoadingParams &params)
  */
 HbIconImpl *HbIconLoader::getIconFromServer(HbIconLoadingParams &params)
 {
-    HbIconImpl *icon = 0;
-
 #ifdef HB_ICON_TRACES
     qDebug() << "HbIconLoader::getIconFromServer: req to server for" << params.iconFileName;
 #endif
+
     HbSharedIconInfo iconInfo;
     iconInfo.type = INVALID_FORMAT;
-    //Initiate an IPC to themeserver to get the icon-data from the server via themeclient.
-    iconInfo = HbThemeClient::global()->getSharedIconInfo(
-                   params.iconFileName,
-                   params.size,
-                   params.aspectRatioMode,
-                   params.mode,
-                   (params.mirrored && !params.mirroredIconFound),
-                   params.options,
-                   params.color,
-                   params.renderMode);
+    HbThemeClient *themeClient = HbThemeClient::global();
+    // Initiate an IPC to themeserver to get the icon-data from the server via themeclient.
+    iconInfo = themeClient->getSharedIconInfo(paramsToReqInfo(params));
+    HbIconImpl *icon = finishGetIconFromServer(iconInfo, params);
 
+#ifdef HB_ICON_TRACES
+    qDebug() << "Image from server: " << params.iconFileName << " offset = " << iconInfo.pixmapData.offset << "icon ptr" << (int) icon;
+#endif
+
+    return icon;
+}
+
+HbIconImpl *HbIconLoader::finishGetIconFromServer(HbSharedIconInfo &iconInfo, HbIconLoadingParams &params)
+{
     //Creates HbIconImpl instance based on the type of data returned by themeserver.
     //HbIconImpl thus created could be any one of the following impl-types:
     //1. HbSgImageIconImpl
     //2. HbNvgIconImpl
     //3. HbPixmapIconImpl
-    icon = HbIconImplCreator::createIconImpl(iconInfo, params);
+    HbIconImpl *icon = HbIconImplCreator::createIconImpl(iconInfo, params);
 
-#ifdef HB_ICON_TRACES
-    qDebug() << "Image from server: " << params.iconFileName << " offset = " << iconInfo.pixmapData.offset << "icon ptr" << (int) icon;
-#endif
+    if (icon && icon->initialize() == HbIconImpl::ErrorLowGraphicsMemory) {
+        // initialisation failed due to low graphics memory, in sgimage icon case
+        // try creating pixmap based icon
+
+        // unload the created GPU icon
+        unLoadIcon(icon, false, true);
+        icon = 0;
+
+        // create a pixmap based icon
+        HbThemeClient *themeClient = HbThemeClient::global();
+        HbThemeClient::IconReqInfo reqInfo = paramsToReqInfo(params);
+        reqInfo.renderMode = ESWRendering;
+        iconInfo = themeClient->getSharedIconInfo(reqInfo);
+        icon = HbIconImplCreator::createIconImpl(iconInfo, params);
+        // no need call initialize of this icon
+    }
+
     return icon;
+}
+
+bool HbIconLoader::asyncCallback(const HbSharedIconInfo &info, void *param)
+{
+    HbIconLoader *self = theLoader;
+    HbIconLoaderPrivate::AsyncParams *p = static_cast<HbIconLoaderPrivate::AsyncParams *>(param);
+    HbSharedIconInfo iconInfo = info;
+    if (!self->d->mActiveAsyncRequests.contains(p)) {
+        // 'p' is destroyed already, this happens when canceling the loadIcon
+        // request. Stop here and return false so the themeclient will issue an
+        // unload request.
+        return false;
+    }
+    bool result = true;
+    // The icon may have been loaded via another request meanwhile so check the cache again.
+    HbIconImpl *icon = self->lookupInCache(p->mLdParams, 0);
+    if (icon) {
+        // Found in the local iconimpl cache so use that and roll back, i.e. do
+        // an unload for the data we just got (this is necessary to maintain
+        // proper remote refcounts).
+        result = false;
+    } else {
+        icon = self->finishGetIconFromServer(iconInfo, p->mLdParams);
+        if (!icon) {
+            self->loadLocal(p->mLdParams, self->formatFromPath(p->mLdParams.iconFileName));
+            icon = self->finishLocal(p->mLdParams);
+        }
+        if (icon) {
+            self->cacheIcon(p->mLdParams, icon, 0);
+        }
+    }
+    if (p->mCallback) {
+        p->mCallback(icon, p->mParam, false);
+    }
+    self->d->mActiveAsyncRequests.removeOne(p);
+    delete p;
+    return result;
+}
+
+void HbIconLoader::getIconFromServerAsync(HbIconLoadingParams &params,
+                                          HbAsyncIconLoaderCallback callback,
+                                          void *callbackParam)
+{
+    HbThemeClient *themeClient = HbThemeClient::global();
+    HbIconLoaderPrivate::AsyncParams *p = new HbIconLoaderPrivate::AsyncParams;
+    p->mCallback = callback;
+    p->mLdParams = params;
+    p->mParam = callbackParam;
+    d->mActiveAsyncRequests.append(p);
+    themeClient->getSharedIconInfo(paramsToReqInfo(params),
+                                   asyncCallback,
+                                   p);
 }
 
 void HbIconLoader::loadSvgIcon(HbIconLoadingParams &params)
@@ -1028,12 +1297,10 @@ void HbIconLoader::loadSvgIcon(HbIconLoadingParams &params)
 
 #endif // HB_SVG_ANIMATION
 
-        QPixmap &pm = params.canvasPixmap;
-
-        pm = QPixmap(renderSize.toSize());
-        pm.fill(Qt::transparent);
+        params.image = QImage(renderSize.toSize(), QImage::Format_ARGB32_Premultiplied);
+        params.image.fill(QColor(Qt::transparent).rgba());
         QPainter painter;
-        painter.begin(&pm);
+        painter.begin(&params.image);
         svgRenderer->render(&painter, QRectF(QPointF(), renderSize.toSize()));
         painter.end();
     }
@@ -1071,13 +1338,10 @@ void HbIconLoader::loadPictureIcon(HbIconLoadingParams &params)
             sy = renderSize.height() / picSize.height();
         }
 
-        QPixmap &pm = params.canvasPixmap;
-
-        pm = QPixmap(renderSize.toSize());
-        pm.fill(Qt::transparent);
-
+        params.image = QImage(renderSize.toSize(), QImage::Format_ARGB32_Premultiplied);
+        params.image.fill(QColor(Qt::transparent).rgba());
         QPainter painter;
-        painter.begin(&pm);
+        painter.begin(&params.image);
         if (scale) {
             painter.scale(sx, sy);
         }
@@ -1140,7 +1404,7 @@ void HbIconLoader::loadAnimatedIcon(HbIconLoadingParams &params, const QString &
 
     // Get the first frame
     if (animationCreated) {
-        params.canvasPixmap = params.animator->d->animation->currentFrame();
+        params.image = params.animator->d->animation->currentFrame().toImage();
         // Mirroring and mode are handled in HbIconAnimationImage::currentFrame()
         params.mirroringHandled = true;
         params.modeHandled = true;
@@ -1149,9 +1413,7 @@ void HbIconLoader::loadAnimatedIcon(HbIconLoadingParams &params, const QString &
         if (imgRenderer->size() != scaledSize) {
             imgRenderer->setScaledSize(scaledSize);
         }
-
-        QImage img = imgRenderer->read();
-        params.canvasPixmap = QPixmap::fromImage(img);
+        params.image = imgRenderer->read();
     }
 
     source->releaseImageReader();
@@ -1161,39 +1423,75 @@ void HbIconLoader::loadPixmapIcon(HbIconLoadingParams &params, const QString &fo
 {
     HbIconSource *source = getIconSource(params.iconFileName, format);
 
-    QPixmap &pm = params.canvasPixmap;
-    // Render bitmap graphics onto pixmap
-    pm = *source->pixmap();
+    // Render bitmap graphics into an image. We have to use QImage because this
+    // code may run outside the gui (main) thread.
+    params.image = *source->image();
 
-    if (!pm.isNull()) {
-#ifdef ENABLE_EXPERIMENTAL_RESIZE_BOOST__
-        // This test implementation improves resize speed up to 5 times..
+    if (!params.image.isNull()) {
+        // This implementation improves resize speed up to 5 times.
         if (!params.isDefaultSize && !params.size.isEmpty()) {
             // Smooth scaling is very expensive (size^2). Therefore we reduce the size
             // to 1.5 of the destination size and using fast transformation.
             // Therefore we speed up but don't loose quality..
-            if (pm.size().width() > (4 * params.size.toSize().width())) {
+            if (params.image.size().width() > (4 * params.size.toSize().width())) {
                 // Improve scaling speed by add an intermediate fast transformation..
                 QSize intermediate_size = QSize(params.size.toSize().width() * 2, params.size.toSize().height() * 2);
-                pm = pm.scaled(
-                         intermediate_size,
-                         params.aspectRatioMode,
-                         Qt::FastTransformation);  // Cheap operation!
+                params.image = params.image.scaled(
+                    intermediate_size,
+                    params.aspectRatioMode,
+                    Qt::FastTransformation);  // Cheap operation
             }
-#endif // ENABLE_EXPERIMENTAL_RESIZE_BOOST__
 
-            pm = pm.scaled(
-                     params.size.toSize(),
-                     params.aspectRatioMode,
-                     Qt::SmoothTransformation); // Expensive operation!
-
-#ifdef ENABLE_EXPERIMENTAL_RESIZE_BOOST__
+            params.image = params.image.scaled(
+                params.size.toSize(),
+                params.aspectRatioMode,
+                Qt::SmoothTransformation); // Expensive operation
         }
-#endif
     }
 
     // Delete original pixmap if its size is large
-    source->deletePixmapIfLargerThan(PIXMAP_SIZE_LIMIT);
+    source->deleteImageIfLargerThan(IMAGE_SIZE_LIMIT);
+}
+
+void HbIconLoader::loadNvgIcon(HbIconLoadingParams &params )
+{
+#ifdef HB_NVG_CS_ICON
+    HbIconSource *source = getIconSource(params.iconFileName, "NVG");
+    if (!source) {
+        return;
+    }
+
+    HbNvgRasterizer * nvgRasterizer = HbNvgRasterizer::global();
+    QByteArray *sourceByteArray = source->byteArray();
+    if( !sourceByteArray ) {
+       return;
+    }
+
+    QByteArray nvgArray = *sourceByteArray;
+    QSizeF renderSize = source->defaultSize();
+    if (!params.isDefaultSize) {
+        renderSize.scale(params.size, params.aspectRatioMode);
+    } else if (params.options.testFlag(ResolutionCorrected)) {
+        applyResolutionCorrection(renderSize);
+    }
+
+    QSize iconSize = renderSize.toSize();
+    QImage image(iconSize, QImage::Format_ARGB32_Premultiplied);
+    QImage::Format imageFormat = image.format();
+    int stride = image.bytesPerLine();
+    void * rasterizedData = image.bits();
+
+    bool success = nvgRasterizer->rasterize(nvgArray, iconSize,
+                                            params.aspectRatioMode,
+                                            rasterizedData, stride,imageFormat);
+    if (success) {
+        params.image = image;
+    }
+
+#else
+    Q_UNUSED(params)
+#endif
+
 }
 
 /*!
@@ -1215,6 +1513,7 @@ void HbIconLoader::switchRenderingMode(HbRenderingMode newRenderMode)
 
 #if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
     if (newRenderMode != renderMode) {
+        d->cacheKeeper.clear(); // unref all unused icons
         if (newRenderMode == ESWRendering) {
             // switching from HW to SW mode
             freeGpuIconData();
@@ -1233,6 +1532,38 @@ void HbIconLoader::updateRenderingMode(QPaintEngine::Type type)
     } else {
         renderMode = ESWRendering;
     }
+}
+
+// Note that this is not the same as HbThemeUtils::isLogicalName.
+// A non-logical name can still indicate content that must go through themeserver.
+inline bool isLocalContent(const QString &iconName)
+{
+    // Check if we have a simple file or embedded resource, given with full
+    // or relative path. A filename like "x.png" is also local content
+    // because logical icon names must never contain an extension.
+    bool localContent = iconName.startsWith(':')
+        || iconName.contains('/') || iconName.contains('\\')
+        || (iconName.length() > 1 && iconName.at(1) == ':')
+        || (iconName.contains('.') && !iconName.startsWith("qtg_", Qt::CaseInsensitive));
+
+    return localContent;
+}
+
+inline bool serverUseAllowed(const QString &iconName, HbIconLoader::IconLoaderOptions options)
+{
+    bool allowServer = !options.testFlag(HbIconLoader::DoNotCache);
+
+    // No local loading for NVG... The server must still be used.
+    if (iconName.endsWith(".nvg", Qt::CaseInsensitive)) {
+        allowServer = true;
+    }
+    // We have no choice but to assume that theme graphics (logical names) are
+    // NVG in order to keep it working with DoNotCache.
+    if (!iconName.contains('.') && !iconName.contains('/') && !iconName.contains('\\')) {
+        allowServer = true;
+    }
+
+    return allowServer;
 }
 
 /*!
@@ -1255,26 +1586,21 @@ HbIconImpl *HbIconLoader::loadIcon(
     QIcon::Mode mode,
     IconLoaderOptions options,
     HbIconAnimator *animator,
-    const QColor &color)
+    const QColor &color,
+    HbAsyncIconLoaderCallback callback,
+    void *callbackParam)
 {
 #ifdef HB_ICON_TRACES
-    QString debugString = "HbIconLoader::loadIcon START - ";
-    debugString.append(iconName);
-    debugString.append(" @ ");
-    if (size.isNull()) {
-        debugString.append("DEFAULT SIZE");
-    } else {
-        debugString.append(QString::number(size.width()));
-        debugString.append('x');
-        debugString.append(QString::number(size.height()));
-    }
-    qDebug() << debugString;
+    qDebug() << "loadIcon" << iconName << size;
 #endif
     Q_UNUSED(type)
 
     HbIconImpl *icon = 0;
 
     if (!size.isValid()) {
+        if (callback) {
+            callback(0, callbackParam, true);
+        }
         return 0;
     }
 
@@ -1323,28 +1649,16 @@ HbIconImpl *HbIconLoader::loadIcon(
     }
 
     // Step 2: There was no animation definition, try get icon from server
+    QByteArray cacheKey;
     if (!params.animationCreated) {
-
-#ifdef HB_ICONIMPL_CACHE
-        QByteArray cacheKey = d->createCacheKeyFrom(params.iconName,
-                              params.size,
-                              params.aspectRatioMode,
-                              params.mode,
-                              params.mirrored,
-                              params.color,
-                              params.renderMode);
-        //look up in the local iconImplCache.
-        //If found return the ptr directly
-        if (iconImplCache.contains(cacheKey)) {
-            HbIconImpl *ptr = iconImplCache.value(cacheKey);
-            ptr->incrementRefCount();
-#ifdef HB_ICON_CACHE_DEBUG
-            qDebug() << "HbIconLoader::loadIcon(): " << "Cache hit in iconImplCache for" << params.iconName << params.size.height() << "X" << params.size.width() ;
-            qDebug() << "HbIconLoader::loadIcon(): Client RefCount now = " << ptr->refCount();
-#endif
-            return ptr;
+        // First check in the local iconimpl cache.
+        HbIconImpl *cachedIcon = lookupInCache(params, &cacheKey);
+        if (cachedIcon) {
+            if (callback) {
+                callback(cachedIcon, callbackParam, true);
+            }
+            return cachedIcon;
         }
-#endif
 
         // Resolve used icon filename. It uses themeindex for themed icons.
         params.iconFileName = resolveIconFileName(params);
@@ -1358,40 +1672,40 @@ HbIconImpl *HbIconLoader::loadIcon(
 #ifdef HB_ICON_TRACES
             qDebug() << "HbIconLoader::loadIcon (empty icon) END";
 #endif
-            icon = new HbPixmapIconImpl(params.canvasPixmap);
+            icon = new HbPixmapIconImpl(QPixmap());
+            if (callback) {
+                callback(icon, callbackParam, true);
+            }
             return icon;
         }
 
-#ifdef Q_OS_SYMBIAN
-        // Check whether icon is in a private directory which cannot be accessed by the theme server
-        bool privateDirectory = isInPrivateDirectory(iconName);
-#endif // Q_OS_SYMBIAN
-
         QString format = formatFromPath(params.iconFileName);
 
-// Theme server on desktop was found very slow (probably due to IPC with QLocalServer/QLocalSocket).
-// disabling icon sharing via theme server until theme server performance on desktop is improved
 #ifdef Q_OS_SYMBIAN
         GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory)
         // Try to take data from server if parameters don't prevent it
-        if (!options.testFlag(DoNotCache)
-                && format != "MNG"
-                && format != "GIF"
-                && !iconName.startsWith(':') // not using server for app's own resources (iconName is a logical name for theme elements)
-                && !privateDirectory // server cannot load from protected private dir
-                && manager) {
+            if (serverUseAllowed(iconName, options)
+            // Use the server only for theme graphics.
+            // For local files, i.e. anything that is not a single logical name, use local loading.
+            && !isLocalContent(iconName)
+            && format != "MNG"
+            && format != "GIF"
+            && manager) {
 
-            //Initiate an IPC to themeserver to get the icon-data from the server.
+            // Initiate an IPC to themeserver to get the icon-data from the server.
+
+            if (callback) {
+                getIconFromServerAsync(params, callback, callbackParam);
+                return 0;
+            }
+
             icon = getIconFromServer(params);
 
+            // No check for DoNotCache here. If we decided to use the server regardless of
+            // the flag then there's a chance that we have to cache (in case of SgImage
+            // for example) for proper operation, no matter what.
             if (icon) {
-#ifdef HB_ICONIMPL_CACHE
-                iconImplCache.insert(cacheKey, icon);
-#ifdef HB_ICON_CACHE_DEBUG
-                qDebug() << "HbIconLoader::loadIcon(): " << params.iconName << " inserted into impl-cache, ref-count now = " << icon->refCount();
-#endif
-
-#endif
+                cacheIcon(params, icon, &cacheKey);
                 return icon;
             }
 
@@ -1399,52 +1713,177 @@ HbIconImpl *HbIconLoader::loadIcon(
 #endif // Q_OS_SYMBIAN
 
         // Step 3: Finally fall back to loading icon locally in the client side
-        if (!icon) {
-            if (format == "SVG") {
-                loadSvgIcon(params);
-            } else if (format == "PIC") {
-                loadPictureIcon(params);
-            } else if (format == "MNG" || format == "GIF") {
-                loadAnimatedIcon(params, format);
-            } else {
-                loadPixmapIcon(params, format);
-            }
+        if (callback) {
+            loadLocalAsync(params, format, callback, callbackParam);
+            return 0;
         }
+        loadLocal(params, format);
     }
 
-    if (!params.mirroringHandled) {
-        // Apply mirroring if required
-        if (params.mirrored && !params.mirroredIconFound) {
-            QTransform t;
-            t.scale(-1, 1);
-            params.canvasPixmap = params.canvasPixmap.transformed(t);
-        }
+    icon = finishLocal(params);
+    if (!params.animationCreated && icon && !options.testFlag(DoNotCache)) {
+        cacheIcon(params, icon, &cacheKey);
     }
 
-    if (!params.modeHandled) {
-        // Apply mode
-        if (mode != QIcon::Normal) {
-            QStyleOption opt(0);
-            opt.palette = QApplication::palette();
-            params.canvasPixmap = QApplication::style()->generatedIconPixmap(mode, params.canvasPixmap, &opt);
-        }
-    }
-
-    if ((params.color.isValid()) && (params.mode != QIcon::Disabled)) {
-        QPixmap &pm = params.canvasPixmap;
-        if (!pm.isNull()) {
-            QPixmap mask = pm.alphaChannel();
-            pm.fill(color);
-            pm.setAlphaChannel(mask);
-        }
+    if (callback) {
+        callback(icon, callbackParam, true);
     }
 
 #ifdef HB_ICON_TRACES
     qDebug() << "HbIconLoader::loadIcon END";
 #endif
 
-    icon = new HbPixmapIconImpl(params.canvasPixmap, params.iconFileName);
     return icon;
+}
+
+HbIconImpl *HbIconLoader::lookupInCache(const HbIconLoadingParams &params, QByteArray *outCacheKey)
+{
+    // Stop right away for resolution corrected icons, these may get false cache
+    // hits. The use of such icons should be very rare anyway.
+    if (params.options.testFlag(ResolutionCorrected)) {
+        return 0;
+    }
+
+    QByteArray cacheKey = d->createCacheKeyFrom(params.iconName,
+                                                params.size,
+                                                params.aspectRatioMode,
+                                                params.mode,
+                                                params.mirrored,
+                                                params.color);
+    if (outCacheKey) {
+        *outCacheKey = cacheKey;
+    }
+    if (d->iconImplCache.contains(cacheKey)) {
+        HbIconImpl *icon = d->iconImplCache.value(cacheKey);
+        icon->incrementRefCount();
+        d->cacheKeeper.unref(icon);
+#ifdef HB_ICON_CACHE_DEBUG
+        qDebug() << "HbIconLoader::lookupInCache: Cache hit for" << params.iconName << params.size
+                 << "Client refcount now" << icon->refCount();
+#endif
+        return icon;
+    }
+    return 0;
+}
+
+void HbIconLoader::loadLocal(HbIconLoadingParams &params, const QString &format)
+{
+    QMutexLocker loadLocker(&d->mLocalLoadMutex);
+    QMutexLocker iconSourceLocker(&d->mIconSourceMutex);
+    if (format == "SVG") {
+        loadSvgIcon(params);
+    } else if(format == "NVG") {
+        //support for client side rendering of nvg icons
+        loadNvgIcon(params);
+    } else if (format == "PIC") {
+        loadPictureIcon(params);
+    } else if (format == "MNG" || format == "GIF") {
+        loadAnimatedIcon(params, format);
+    } else {
+        loadPixmapIcon(params, format);
+    }
+}
+
+void HbIconLoader::loadLocalAsync(const HbIconLoadingParams &params, const QString &format,
+                                  HbAsyncIconLoaderCallback callback, void *callbackParam)
+{
+    HbIconLoaderPrivate::AsyncParams *p = new HbIconLoaderPrivate::AsyncParams;
+    p->mCallback = callback;
+    p->mLdParams = params;
+    p->mParam = callbackParam;
+    d->mActiveAsyncRequests.append(p);
+    QMetaObject::invokeMethod(d->mLocalLoader, "load",
+                              Qt::QueuedConnection,
+                              Q_ARG(HbIconLoadingParams, params),
+                              Q_ARG(QString, format),
+                              Q_ARG(void *, p));
+}
+
+HbIconImpl *HbIconLoader::finishLocal(HbIconLoadingParams &params)
+{
+    // This is called on the main thread so QPixmap can be used.
+    QPixmap pm = QPixmap::fromImage(params.image);
+
+    if (!params.mirroringHandled) {
+        // Apply mirroring if required
+        if (params.mirrored && !params.mirroredIconFound) {
+            QTransform t;
+            t.scale(-1, 1);
+            pm = pm.transformed(t);
+        }
+    }
+
+    if (params.color.isValid()) {
+        if (!pm.isNull()) {
+            QPixmap mask = pm.alphaChannel();
+            pm.fill(params.color);
+            pm.setAlphaChannel(mask);
+        }
+    }
+
+    if (!params.modeHandled) {
+        // Apply mode
+        if (params.mode != QIcon::Normal) {
+            QStyleOption opt(0);
+            opt.palette = QApplication::palette();
+            pm = QApplication::style()->generatedIconPixmap(params.mode, pm, &opt);
+        }
+    }
+
+    return HbIconImplCreator::createIconImpl(pm, params);
+}
+
+void HbIconLoader::cacheIcon(const HbIconLoadingParams &params, HbIconImpl *icon, QByteArray *existingCacheKey)
+{
+    QByteArray cacheKey;
+    if (existingCacheKey) {
+        cacheKey = *existingCacheKey;
+    } else {
+        cacheKey = d->createCacheKeyFrom(params.iconName,
+                                         params.size,
+                                         params.aspectRatioMode,
+                                         params.mode,
+                                         params.mirrored,
+                                         params.color);
+    }
+    d->addItemToCache(cacheKey, icon);
+
+#ifdef HB_ICON_CACHE_DEBUG
+    qDebug() << "HbIconLoader:cacheIcon: " << params.iconName
+             << "inserted into local cache, client refcount now" << icon->refCount();
+#endif
+}
+
+/*!
+  Cancels an outstanding loadIcon request.
+
+  \a callback must match the callback parameter of a previous loadIcon call.
+  All loadIcon requests using the same callback will be canceled and the
+  callback will not be invoked.
+
+  Has no effect if no matching loadIcon request is active.
+
+  If \a callbackParam is not 0 then it is used in the matching too so only
+  loadIcon requests where both \a callback and \a callbackParam match will be
+  canceled. If \a callbackParam is 0 then only \a callback is used in the
+  matching.
+ */
+void HbIconLoader::cancelLoadIcon(HbAsyncIconLoaderCallback callback, void *callbackParam)
+{
+    // The callback used with the themeclient api is always the same, but the
+    // AsyncParams pointer in the custom parameter is different for each request
+    // so it can be used for identification.
+    foreach (HbIconLoaderPrivate::AsyncParams *p, d->mActiveAsyncRequests) {
+        if (p->mCallback == callback && (!callbackParam || callbackParam == p->mParam)) {
+            // Cancel the remote request. It will have no effect in case of
+            // local content. This is fine because for the local threaded loader
+            // the removal from mActiveAsyncRequests is enough.
+            HbThemeClient::global()->cancelGetSharedIconInfo(asyncCallback, p);
+            d->mActiveAsyncRequests.removeOne(p);
+            delete p;
+            return;
+        }
+    }
 }
 
 /*!
@@ -1468,6 +1907,8 @@ HbIconImpl *HbIconLoader::loadMultiPieceIcon(const QStringList &listOfIcons,
         const QColor &color)
 {
     Q_UNUSED(color);
+    Q_UNUSED(multiPieceImpls);
+
     HbIconImpl *icon = 0;
     if (listOfIcons.count() == 0) {
         return icon;
@@ -1482,26 +1923,24 @@ HbIconImpl *HbIconLoader::loadMultiPieceIcon(const QStringList &listOfIcons,
     // We don't want to get the consolidated icon for only NVG build, ie. without SGImage lite support.
     // Consolidated icon will be created for NVG with SGImage lite support.
     // and when NVG is not available.
-#if defined(HB_ICONIMPL_CACHE)
-
-    QByteArray cacheKey = d->createCacheKeyFrom(multiPartIconData.multiPartIconId,
-                          size,
-                          aspectRatioMode,
-                          mode,
-                          mirrored,
-                          color,
-                          renderMode);
+    QByteArray cacheKey = d->createCacheKeyFrom(
+        multiPartIconData.multiPartIconId,
+        size,
+        aspectRatioMode,
+        mode,
+        mirrored,
+        color);
     //If consolidated icon found in the client's cache, increment ref-count and return
-    if (iconImplCache.contains(cacheKey)) {
-        HbIconImpl *ptr = iconImplCache.value(cacheKey);
+    if (d->iconImplCache.contains(cacheKey)) {
+        HbIconImpl *ptr = d->iconImplCache.value(cacheKey);
         ptr->incrementRefCount();
+        d->cacheKeeper.unref(ptr);
 #ifdef HB_ICON_CACHE_DEBUG
-        qDebug() << "HbIconLoader::loadMultiPieceIcon()" << "Cache hit in iconImplCache " << multiPartIconData.multiPartIconId << size.height() << "X" << size.width() ;
-        qDebug() << "HbIconLoader::loadMultiPieceIcon : Client RefCount now = " << ptr->refCount();
+        qDebug() << "HbIconLoader::loadMultiPieceIcon: Cache hit" << multiPartIconData.multiPartIconId
+                 << size << "Client refcount now" << ptr->refCount();
 #endif
         return ptr;
     }
-#endif
 
     QStringList iconPathList;
 
@@ -1544,65 +1983,178 @@ HbIconImpl *HbIconLoader::loadMultiPieceIcon(const QStringList &listOfIcons,
         params.mirrored = mirrored;
         params.mirroredIconFound = mirroredIconFound;
 
-        //Creating HbIconImpl for the consolidated icon-data returned from themeserver
+        // Creating HbIconImpl for the consolidated icon-data returned from themeserver.
         icon = HbIconImplCreator::createIconImpl(iconInfo, params);
         if (icon) {
-#ifdef HB_ICONIMPL_CACHE
-            iconImplCache.insert(cacheKey, icon);
-#ifdef HB_ICON_CACHE_DEBUG
-            qDebug() << "HbIconLoader::loadMultiPieceIcon(): " << params.iconName << " inserted into impl-cache, ref-count now = " << icon->refCount();
-#endif
-
-#endif
             icon->setMultiPieceIcon();
         }
-        return icon;
     } else {
-        //themeserver wasn't successful in stitching of consolidated icon
-        multiPieceImpls.clear();
-        int count = iconPathList.count();
-        QVector<QSizeF> sizeList;
-        for (int i = 0; i < count; i++) {
-            sizeList << multiPartIconData.pixmapSizes[i];
-        }
-
-#ifdef Q_OS_SYMBIAN
-        //Since the consolidated icon-creation failed on themeserver, request loading of individual
-        //frame-items in a single IPC request to themeserver
-        getMultiIconImplFromServer(iconPathList, sizeList,
+        //Consolidated (stitched) icon could not be loaded on themeserver side, taking
+        //fallback path for creating the consolidated icon on the client side.
+        icon = createLocalConsolidatedIcon(multiPartIconData,
+                                   iconPathList,
+                                   size,
                                    aspectRatioMode,
                                    mode,
-                                   mirrored,
-                                   mirroredIconFound,
                                    options,
-                                   color,
-                                   HbIconLoader::AnyType,
-                                   HbIconLoader::AnyPurpose,
-                                   multiPieceImpls,
-                                   renderMode);
-#else
-        //For OS other than Symbian, call HbIconLoader::loadIcon to individually load icons
-        for (int i = 0; i < count; i++) {
-            HbIconImpl *impl = loadIcon(iconPathList[i], HbIconLoader::AnyType,
-                                        HbIconLoader::AnyPurpose,
-                                        sizeList.at(i),
-                                        Qt::IgnoreAspectRatio,
-                                        QIcon::Normal,
-                                        (options | DoNotCache));
-            impl->setMultiPieceIcon();
-            if (impl) {
-                multiPieceImpls.append(impl);
-            }
+                                   color);
+    }
+    
+    if (icon) {
+        // Not yet in local cache (was checked before the server request) so insert.
+        d->addItemToCache(cacheKey, icon);
+#ifdef HB_ICON_CACHE_DEBUG
+        qDebug() << "HbIconLoader::loadMultiPieceIcon: " << multiPartIconData.multiPartIconId
+                 << " inserted into local cache, client refcount now" << icon->refCount();
+#endif
+    }
+    return icon;
+}
+
+HbIconImpl * HbIconLoader::createLocalConsolidatedIcon(const HbMultiPartSizeData &multiPartIconData,
+                           const QStringList & iconPathList,
+                           const QSizeF &consolidatedSize,
+                           Qt::AspectRatioMode aspectRatioMode,
+                           QIcon::Mode mode,
+                           const IconLoaderOptions & options,
+                           const QColor &color)
+{
+    // load the icons in to QImage
+    HbIconLoadingParams params;
+    params.purpose = HbIconLoader::AnyPurpose;
+    params.aspectRatioMode = aspectRatioMode;
+    params.mode = mode;
+    params.color = color;
+    params.animator = 0;
+    params.mirrored = options.testFlag(HorizontallyMirrored);
+    params.mirroredIconFound = false;
+    params.mirroringHandled = false;
+    params.modeHandled = false;
+    params.renderMode = renderMode;
+    params.canCache = false;
+    params.animationCreated = false;
+
+    QStringList::const_iterator iterFiles = iconPathList.begin();
+    QStringList::const_iterator iterFilesEnd = iconPathList.end();
+
+    QImage finalImage(consolidatedSize.toSize(), QImage::Format_ARGB32_Premultiplied);
+    finalImage.fill(QColor(Qt::transparent).rgba());
+    QPainter painter(&finalImage);
+
+    for (int i=0; iterFiles != iterFilesEnd; ++iterFiles, ++i) {
+
+        // Do not paint if image target rect is null
+        if (!multiPartIconData.targets[i].isNull()) {
+
+            // Populate icon loading parameters
+            params.iconFileName = *iterFiles;
+            params.size = multiPartIconData.pixmapSizes[i];
+            params.options = options;
+            params.isDefaultSize = params.size.isNull();
+
+            QString format = formatFromPath(params.iconFileName);
+            loadLocal(params, format);
+            painter.drawImage(multiPartIconData.targets[i].topLeft(),
+                                   params.image);
+            params.image = QImage();
+
         }
 
-#endif
+    }
+    painter.end();
 
-        return icon;
+    params.image = finalImage;
+
+    return finishLocal(params);
+}
+
+inline int iconImplConsumption(HbIconImpl *icon)
+{
+    QSize sz = icon->keySize().toSize();
+    return sz.width() * sz.height() * 4;
+}
+
+void HbIconLoaderPrivate::CacheKeeper::ref(HbIconImpl *icon)
+{
+    int consumption = iconImplConsumption(icon);
+    // Never hold something more than once and do not ref anything when icons
+    // are unloaded immediately when becoming hidden. Ignore also icons that are
+    // too large and those which had not been inserted into iconImplCache
+    // (e.g. icons that were created with the DoNotCache option).
+    if (!mIcons.contains(icon)
+        && !HbInstancePrivate::d_ptr()->mDropHiddenIconData
+        && consumption < MAX_KEEPALIVE_ITEM_SIZE_BYTES
+        && !mIconLoaderPrivate->iconImplCache.key(icon).isEmpty())
+    {
+        icon->incrementRefCount();
+        mIcons.append(icon);
+        mConsumption += consumption;
+#ifdef HB_ICON_CACHE_DEBUG
+        qDebug() << "CacheKeeper::ref: Accepted" << icon->iconFileName()
+                 << icon->keySize() << consumption
+                 << "Total consumption now" << mConsumption;
+#endif
+        // Now do some housekeeping.
+        while (mConsumption > MAX_KEEPALIVE_CACHE_SIZE_BYTES) {
+            HbIconImpl *oldest = mIcons.first();
+            unref(oldest);
+            if (oldest->refCount() == 0 && oldest != icon) {
+                del(oldest, true);
+            }
+        }
     }
 }
 
-// Initiates an IPC call to the ThemeServer to unload ( decrement ref count ) the icon
-void HbIconLoader::unLoadIcon(HbIconImpl *icon, bool unloadedByServer)
+void HbIconLoaderPrivate::CacheKeeper::unref(HbIconImpl *icon)
+{
+    if (mIcons.contains(icon)) {
+#ifdef HB_ICON_CACHE_DEBUG
+        qDebug() << "CacheKeeper::unref: Releasing" << icon->iconFileName() << icon->keySize();
+#endif
+        mIcons.removeOne(icon);
+        mConsumption -= iconImplConsumption(icon);
+        icon->decrementRefCount();
+    }
+}
+
+void HbIconLoaderPrivate::CacheKeeper::clear()
+{
+    // Get rid of all unused icons in the iconimplcache, regardless of
+    // the icons' rendering mode. Note that the list may contain non-sgimage
+    // iconimpls too that are created on the server, and unlike sgimage the
+    // unload request for these can never be skipped.
+    QVector<HbThemeClient::IconReqInfo> unloadList;
+    foreach (HbIconImpl *icon, mIcons) {
+        icon->decrementRefCount();
+        if (icon->refCount() == 0) {
+            if (icon->isCreatedOnServer()) {
+                unloadList.append(iconImplToReqInfo(icon));
+            }
+            del(icon, false); // no unload request, do it at once at the end
+        }
+    }
+    mConsumption = 0;
+    mIcons.clear();
+    // Now do batch unloading, to reduce IPC.
+    if (!unloadList.isEmpty()) {
+        HbThemeClient::global()->batchUnloadIcon(unloadList);
+    }
+}
+
+void HbIconLoaderPrivate::CacheKeeper::del(HbIconImpl *icon, bool sendUnloadReq)
+{
+    HbIconLoader::global()->removeItemInCache(icon);
+    if (sendUnloadReq && icon->isCreatedOnServer()) {
+        HbThemeClient::global()->unloadIcon(iconImplToReqInfo(icon));
+    }
+    icon->dispose();
+}
+
+// Initiates an IPC call to the ThemeServer to unload (or at least decrement the
+// server-side refcount of) the icon, unless the icon unload was initiated by
+// the server itself. Also, if the local refcount reaches zero, the icon is
+// removed from the local cache.
+void HbIconLoader::unLoadIcon(HbIconImpl *icon, bool unloadedByServer, bool noKeep)
 {
     if (!icon) {
         return;
@@ -1610,26 +2162,22 @@ void HbIconLoader::unLoadIcon(HbIconImpl *icon, bool unloadedByServer)
 
     icon->decrementRefCount();
 
-    if (icon->refCount() == 0 && icon->isCreatedOnServer()) {
+    if (icon->refCount() == 0) {
         if (!unloadedByServer) {
-            HbThemeClient::global()->unloadIcon(icon->iconFileName(),
-                                                icon->keySize(),
-                                                icon->iconAspectRatioMode(),
-                                                icon->iconMode(),
-                                                icon->isMirrored(),
-                                                icon->color(),
-                                                icon->iconRenderingMode()
-                                               );
+            // Offer the icon to the cacheKeeper first.
+            if (!noKeep) {
+                d->cacheKeeper.ref(icon);
+            }
+            // If it was accepted then the refcount was increased so stop here.
+            if (icon->refCount() > 0) {
+                return;
+            }
+            // Otherwise continue with unloading.
+            if (icon->isCreatedOnServer()) {
+                HbThemeClient::global()->unloadIcon(iconImplToReqInfo(icon));
+            }
         }
-#ifdef HB_ICONIMPL_CACHE
-        int rem = iconImplCache.remove(iconImplCache.key(icon));
-        if (rem > 0) {
-#ifdef HB_ICON_TRACES
-            qDebug() << "Removed from HbIconImpl Cache " << rem << icon->iconFileName() << icon->keySize().height() << "X" << icon->keySize().width() ;
-#endif
-        }
-#endif
-
+        removeItemInCache(icon);
     }
 }
 
@@ -1652,131 +2200,6 @@ QPixmap HbIconLoader::loadIcon(const QString &iconName, HbIconLoader::Purpose pu
 }
 
 /*!
- * \fn void HbIconLoader::getMultiIconImplFromServer()
- *
- * This function is responsible for loading individual pieces of a multi-piece icon.
- * This gets called if the consolidated icon-creation process on themeserver has failed.
- * This function initiates a single IPC to themeserver in which it sends out icon-parameters
- * for each of the frame-items and gets back a list of HbSharedIconInfo corresponding to
- * individual pieces.
- *
- */
-void HbIconLoader::getMultiIconImplFromServer(QStringList &multiPartIconList,
-        QVector<QSizeF> &sizeList,
-        Qt::AspectRatioMode aspectRatioMode,
-        QIcon::Mode mode,
-        bool mirrored,
-        bool mirroredIconFound,
-        HbIconLoader::IconLoaderOptions options,
-        const QColor &color,
-        HbIconLoader::IconDataType type,
-        HbIconLoader::Purpose,
-        QVector<HbIconImpl *> & iconImplList,
-        HbRenderingMode currRenderMode)
-{
-    Q_UNUSED(type);
-    QVector<int> posList;
-#ifdef HB_ICONIMPL_CACHE
-    // search the client cache first before asking the server
-    for (int i = 0; i < multiPartIconList.count(); i++) {
-        QByteArray cacheKey = d->createCacheKeyFrom(multiPartIconList[i],
-                              sizeList[i],
-                              aspectRatioMode,
-                              mode,
-                              mirrored,
-                              color,
-                              currRenderMode);
-        //look up in the local iconImplCache.
-        //If found return the ptr directly
-        HbIconImpl *ptr = 0;
-        if (iconImplCache.contains(cacheKey)) {
-            ptr = iconImplCache.value(cacheKey);
-            // if a specific frame-item is found in local impl-cache,
-            // increment the ref count and remove the entry from the list that needs to be sent to server.
-            ptr->incrementRefCount();
-#ifdef HB_ICON_CACHE_DEBUG
-            qDebug() << "HbIconLoader::getMultiIconImplFromServer()" << "Cache hit in iconImplCache ";
-            qDebug() << "HbIconLoader::getMultiIconImplFromServer : Client RefCount now = " << ptr->refCount();
-#endif
-            iconImplList.append(ptr);
-            multiPartIconList.replace(i, QString(""));
-        } else {
-            posList << i;
-        }
-    }
-    for (int i = 0; i < multiPartIconList.count(); i++) {
-
-        if (multiPartIconList[i].isEmpty()) {
-            multiPartIconList.removeAt(i);
-            sizeList.remove(i);
-            i--;
-        }
-    }
-#endif
-    // If client-side cache is not enabled, ask server for all the pieces' information
-    int count = multiPartIconList.count();
-    if (count > 0) {
-        HbSharedIconInfoList iconInfoList = HbThemeClient::global()->getMultiIconInfo(multiPartIconList, sizeList,
-                                            aspectRatioMode, mode, mirrored, options, color, currRenderMode);
-
-        HbIconImpl *impl = 0;
-
-        HbIconLoadingParams params;
-
-        params.aspectRatioMode = aspectRatioMode;
-        params.mode = mode;
-        params.mirrored = mirrored;
-        params.mirroredIconFound = mirroredIconFound;
-
-
-        for (int i = 0; i < count;  i++) {
-            if (iconInfoList.icon[i].type != INVALID_FORMAT) {
-                params.iconFileName = multiPartIconList[i];
-                params.size = sizeList.at(i);
-
-                impl = HbIconImplCreator::createIconImpl(iconInfoList.icon[i], params);
-
-#ifdef HB_ICONIMPL_CACHE
-                QByteArray cacheKey = d->createCacheKeyFrom(multiPartIconList[i],
-                                      sizeList.at(i) ,
-                                      aspectRatioMode,
-                                      mode,
-                                      mirrored,
-                                      color,
-                                      currRenderMode);
-                iconImplCache.insert(cacheKey, impl);
-#ifdef HB_ICON_CACHE_DEBUG
-                qDebug() << "HbIconLoader::getMultiIconImplFromServer(): " << params.iconName << " inserted into impl-cache, ref-count now = " << impl->refCount();
-#endif
-
-#endif
-            } else {
-                //If for some reason individual frame-item's loading in themeserver fails, use HbIconLoader::loadIcon()
-                // as a fallback option to load it.
-                impl = loadIcon(multiPartIconList[i], HbIconLoader::AnyType,
-                                HbIconLoader::AnyPurpose,
-                                sizeList.at(i),
-                                Qt::IgnoreAspectRatio,
-                                QIcon::Normal,
-                                (options | DoNotCache));
-            }
-
-            if (impl) {
-                impl->setMultiPieceIcon();
-#ifdef HB_ICONIMPL_CACHE
-                if (posList.count() > 0) {
-                    iconImplList.insert(posList.front(), impl);
-                    posList.pop_front();
-                }
-#else
-                iconImplList.append(impl);
-#endif
-            }
-        }
-    }
-}
-
-/*!
  * HbIconLoader::unLoadMultiIcon
  *
  * This function initiates a single IPC to unload each of the frame-items in a multi-piece icon.
@@ -1790,18 +2213,18 @@ void HbIconLoader::unLoadMultiIcon(QVector<HbIconImpl *> &multiPieceImpls)
     // then send to server for unload.
     foreach(HbIconImpl * impl, multiPieceImpls) {
         impl->decrementRefCount();
-        if (impl->refCount() == 0 && impl->isCreatedOnServer()) {
-#ifdef HB_ICONIMPL_CACHE
-            int rem = iconImplCache.remove(iconImplCache.key(impl));
-            if (rem > 0) {
-#ifdef HB_ICON_TRACES
-                qDebug() << "HbIconLoader::unLoadMultiIcon :Removed from HbIconImpl Cache " << rem << impl->iconFileName() << impl->keySize().height() << "X" << impl->keySize().width() ;
+        if (impl->refCount() == 0) {
+            if (d->iconImplCache.remove(d->iconImplCache.key(impl)) > 0) {
+#ifdef HB_ICON_CACHE_DEBUG
+                qDebug() << "HbIconLoader::unLoadMultiIcon: Removed from cache"
+                         << impl->iconFileName() << impl->keySize();
 #endif
             }
-#endif
-            // List of icons to be unloaded.
-            iconNameList << impl->iconFileName();
-            sizeList << impl->keySize();
+            if (impl->isCreatedOnServer()) {
+                // List of icons to be unloaded.
+                iconNameList << impl->iconFileName();
+                sizeList << impl->keySize();
+            }
         }
     }
 
@@ -1819,20 +2242,64 @@ void HbIconLoader::unLoadMultiIcon(QVector<HbIconImpl *> &multiPieceImpls)
 
 bool HbIconLoader::isInPrivateDirectory(const QString &filename)
 {
-    Q_UNUSED(filename);
     bool isPrivate = false;
-    
+
 #ifdef Q_OS_SYMBIAN
     if (filename.length() > 11) {
         // Private dir starts with e.g. "z:/private/"
         if (filename[1] == ':' && (filename[2] == '/' || filename[2] == '\\') &&
-           (filename[10] == '/' || filename[10] == '\\') && filename.mid(3, 7).compare("private"), Qt::CaseInsensitive) {
+                (filename[10] == '/' || filename[10] == '\\') && filename.mid(3, 7).compare("private"), Qt::CaseInsensitive) {
             isPrivate = true;
         }
     }
+#else
+    Q_UNUSED(filename);
 #endif
 
     return isPrivate;
 }
+
+void HbIconLoader::localLoadReady(const HbIconLoadingParams &loadParams, void *reqParams)
+{
+    // This code is running on the main thread.
+    HbIconLoaderPrivate::AsyncParams *p = static_cast<HbIconLoaderPrivate::AsyncParams *>(reqParams);
+    // Stop right away if canceled.
+    if (!d->mActiveAsyncRequests.contains(p)) {
+        return;
+    }
+    // Do not use d->mLdParams, it is not up-to-date.
+    HbIconLoadingParams params = loadParams;
+    HbIconImpl *icon = finishLocal(params);
+    if (icon && !params.options.testFlag(DoNotCache)) {
+        cacheIcon(params, icon, 0);
+    }
+    if (p->mCallback) {
+        p->mCallback(icon, p->mParam, false);
+    }
+    d->mActiveAsyncRequests.removeOne(p);
+    delete p;
+}
+
+void HbLocalIconLoader::load(const HbIconLoadingParams &params, const QString &format, void *reqParams)
+{
+    // This is running on a separate thread (d->mLocalLoaderThread) and since
+    // the HbLocalIconLoader instance is moved to that thread, the requests from
+    // the main thread are delivered using queued connection so slots/signals
+    // provide easy inter-thread communication in this case.
+    HbIconLoaderPrivate::AsyncParams *p = static_cast<HbIconLoaderPrivate::AsyncParams *>(reqParams);
+    // Stop right away if canceled.
+    if (!HbIconLoaderPrivate::global()->mActiveAsyncRequests.contains(p)) {
+        return;
+    }
+    HbIconLoadingParams loadParams = params;
+    HbIconLoader::global()->loadLocal(loadParams, format);
+    emit ready(loadParams, reqParams);
+}
+
+void HbLocalIconLoader::doQuit()
+{
+    QThread::currentThread()->quit();
+}
+
 
 // End of File

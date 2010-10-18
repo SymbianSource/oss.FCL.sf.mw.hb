@@ -38,11 +38,12 @@ HbDeviceMessageBoxWidget::HbDeviceMessageBoxWidget(
 {
     TRACE_ENTRY
     mLastError = NoError;
-    mShowEventReceived = false;
+    mCloseEventReceived = false;
     initActions();
     connectToActions();
     resetProperties();
     constructDialog(parameters);
+    setDismissOnAction(false);
     TRACE_EXIT
 }
 
@@ -67,6 +68,7 @@ bool HbDeviceMessageBoxWidget::setDeviceDialogParameters(
         mLastError = ParameterError;
         ret = false;
     }
+
     TRACE_EXIT
     return ret;
 }
@@ -87,11 +89,6 @@ void HbDeviceMessageBoxWidget::closeDeviceDialog(bool byClient)
     // Closed by client or internally by server -> no action to be transmitted.
     mSendAction = false;
     close();
-    // If show event has been received, close is signalled from hide event. If not,
-    // hide event does not come and close is signalled from here.
-    if (!mShowEventReceived) {
-        emit deviceDialogClosed();
-    }
     TRACE_EXIT
 }
 
@@ -268,14 +265,21 @@ void HbDeviceMessageBoxWidget::setRejectAction(QString &actionData)
 void HbDeviceMessageBoxWidget::hideEvent(QHideEvent *event)
 {
     HbMessageBox::hideEvent(event);
-    emit deviceDialogClosed();
+    if (mCloseEventReceived) {
+        emit deviceDialogClosed();
+    }
 }
 
-// Widget is about to show
-void HbDeviceMessageBoxWidget::showEvent(QShowEvent *event)
+// Widget is about to close, close() has been called
+void HbDeviceMessageBoxWidget::closeEvent(QCloseEvent *event)
 {
-    HbMessageBox::showEvent(event);
-    mShowEventReceived = true;
+    HbMessageBox::closeEvent(event);
+    mCloseEventReceived = true;
+    // If widget is visible, close is signalled from hide event. If not,
+    // hide event does not come and close is signalled from here.
+    if (!isVisible()) {
+        emit deviceDialogClosed();
+    }
 }
 
 void HbDeviceMessageBoxWidget::setAnimationDefinition(QString &animationDefinition)
@@ -306,6 +310,18 @@ HbMessageBox::StandardButtons HbDeviceMessageBoxWidget::standardButtons() const
     return HbMessageBox::standardButtons();
 }
 
+
+void HbDeviceMessageBoxWidget::setShowLevel(int level)
+{
+    // Show level can only be set on construction
+    Q_UNUSED(level)
+}
+
+int HbDeviceMessageBoxWidget::showLevel() const
+{
+    return 0;
+}
+
 // Action (accept or reject) was triggered
 void HbDeviceMessageBoxWidget::actionTriggered()
 {
@@ -315,6 +331,7 @@ void HbDeviceMessageBoxWidget::actionTriggered()
     data.insert("act", accepted ? "p" : "s");
     emit deviceDialogData(data);
     mSendAction = false;
+    close();
     TRACE_EXIT
 }
 
@@ -354,7 +371,6 @@ void HbDeviceMessageBoxWidget::setAction(ActionIndex index, QString &actionData)
             // Create action
             mActions[index].mAction = new HbAction(actionData, 0);
             mActions[index].mOwned = true;
-            //connect(mActions[index].mAction, SIGNAL(triggered()), this, SLOT(actionTriggered()));
         }
         // Add action to dialog if it's not there
         if (!mActions[index].mInDialog) {

@@ -34,10 +34,23 @@
 #include <QPluginLoader>
 #include <QDir>
 #include <QtAlgorithms>
+#include <hbinputcontextplugin.h>
+#include <hbinputmodeproperties.h>
 
 #include "hbinputcheckboxlist_p.h"
 #include "hbinputsettingproxy_p.h"
 #include <hbinputmethoddescriptor.h>
+#include <hbinputmethod.h>
+#include <hbmainwindow.h>
+
+/*!
+@stable
+@hbinput
+\class HbInputSettingWidget
+\brief Displays settings for Hb inputs.
+
+This is a input settings widget to be embedded in e.g. control panel view or input settings popup.
+*/
 
 const QString statusOff = QObject::tr("Off");
 const QString statusOn = QObject::tr("On");
@@ -53,11 +66,18 @@ const QString KCangjieNormalName("CangjieNormal");
 const QString KCangjieEasyName("CangjieEasy");
 const QString KCangjieAdvancedName("CangjieAdvanced");
 const QString KHwrName("Handwriting");
-const QString KHwrVerySlowName("VerySlow");
+const QString KHwrVerySlowName("Very Slow");
 const QString KHwrSlowName("Slow");
 const QString KHwrNormalName("Normal");
 const QString KHwrFastName("Fast");
-const QString KHwrVeryFastName("VeryFast");
+const QString KHwrVeryFastName("Very Fast");
+
+// strings used for default language
+const QString KDefaultChineseName("Chinese");
+const QString KDefaultEnglishName("English");
+
+// hwr speed index are exactly saming as enum HbHwrWritingSpeed
+const int KHwrSpeedCount = 5;
 
 // strings used for represent cangjie
 const QString KCangjieGeneralName("Cangjie");
@@ -75,36 +95,22 @@ const int KCangjieEasyMode = 4;
 const int KCangjieAdvancedMode = 5;
 const int KHwrMode = 6;
 
-// define chinese input plugin name
-#ifdef Q_OS_WIN
-const QString KCnHwrPluginName("HbChineseHwrd.dll");
-#else
-#ifdef Q_OS_SYMBIAN
-const QString KCnHwrPluginName("HbChineseHwr.qtplugin");
-#else
-const QString KCnHwrPluginName("HbChineseHwr.dll");
-#endif
-#endif
+class HbCnInputModeMap
+{
+public:
+    int mMode;
+    QString mModeName;
+};
 
-#ifdef Q_OS_WIN
-const QString KCnVItutPluginName("HbChineseVItutd.dll");
-#else
-#ifdef Q_OS_SYMBIAN
-const QString KCnVItutPluginName("HbChineseVItut.qtplugin");
-#else
-const QString KCnVItutPluginName("HbChineseVItut.dll");
-#endif
-#endif
-
-#ifdef Q_OS_WIN
-const QString KCnVkbPluginName("HbChineseVkbd.dll");
-#else
-#ifdef Q_OS_SYMBIAN
-const QString KCnVkbPluginName("HbChineseVkb.qtplugin");
-#else
-const QString KCnVkbPluginName("HbChineseVkb.dll");
-#endif
-#endif
+const HbCnInputModeMap modesMap[] = {
+    {KPinyinMode, KPinyinName},
+    {KStrokeMode, KStrokeName},
+    {KZhuyinMode, KZhuyinName},
+    {KCangjieNormalMode, KCangjieNormalName},
+    {KCangjieEasyMode, KCangjieEasyName},
+    {KCangjieAdvancedMode, KCangjieAdvancedName},
+    {KHwrMode, KHwrName}
+};
 
 class HbInputSettingWidgetPrivate
 {
@@ -120,15 +126,16 @@ public:
     HbInputLanguage indexToLanguage(int index, const QList<HbInputLanguage> &languageList);
     void createSecondaryLanguageList();
     void updateContentWidgetData();
+    // following API used by chinese
     int inputModeToIndex(const int &inputMode, const QList<int> &inputModeList);
     int indexToInputmode(int index, const QList<int> &inputModeList);
     void createChineseSettingGroup(HbDataFormModel *model);
+    void createValidModesList(QStringList &imModeNames, QList<int> &imModeList);
+    QString inputModeName(int mode) const;
+    int inputModeByGivenName(const QString& imName) const;
+    int defaultModeByGivenLang(const HbInputLanguage &lang) const;
 
-    QInputContextPlugin *pluginInstance(const QString &pluginFileName) const;
-    HbInputMethodDescriptor findInputMethodDescriptor(const QString &inputMethodString);
-    void setInputMethodVar(Qt::Orientation orientation, QString &inputMethodString, QByteArray &num);
-    QByteArray createHwrSpeedData(QByteArray preferredCustomData, int index);
-public:
+public:  
     HbDataForm *mForm;
     HbDataFormModelItem *mPrimaryLanguageItem;
     HbDataFormModelItem *mSecondaryLanguageItem;
@@ -164,7 +171,7 @@ public:
     int mCnLandscapeInputMode;
     int mCnCangjieInputMode;
 
-    int mHwrSpeed;
+    HbHwrWritingSpeed  mHwrSpeed;
     QList<int> mCnPortraitInputModeList;
     QList<int> mCnLandscapeInputModeList;
     QList<int> mCangjieInputModeList;
@@ -172,6 +179,8 @@ public:
     QStringList mCnLandscapeInputModeNames;
     QStringList mCnCangjieInputModeNames;
     QStringList mHwrSpeedNames;
+    QStringList mCnDefaultLanguageNames;
+    HbDataFormModelItem *mCnDefaultLanguageItem;
 };
 
 /*!
@@ -190,11 +199,14 @@ HbInputSettingWidgetPrivate::HbInputSettingWidgetPrivate(HbDataForm *dataForm)
       q_ptr(0),
       mModel(0),
       mLanguageGroup(0),
-      mChineseInputGroup(0),
+      mChineseInputGroup(0),      
       mPortraitInputMethodItem(0),
       mLandscapeInputMethodItem(0),
       mHwrSpeedItem(0),
-      mCangjieItem(0)
+      mCangjieItem(0),      
+      mCnCangjieInputMode(KCangjieNormalMode),
+      mCnDefaultLanguageItem(0)
+
 {
 }
 
@@ -224,7 +236,7 @@ void HbInputSettingWidgetPrivate::initialize()
         // simply update the settings dependant content widget data of all the items
         updateContentWidgetData();
         //make sure that the items are not expanded
-        QModelIndex index = mModel->indexFromItem(mSecondaryLanguageItem->parent());
+        QModelIndex index = mModel->indexFromItem(mSecondaryLanguageItem ? mSecondaryLanguageItem->parent(): mPrimaryLanguageItem->parent());
         mForm->setExpanded(index, false);
         index = mModel->indexFromItem(mKeypressTimeoutItem->parent());
         mForm->setExpanded(index, false);
@@ -233,88 +245,111 @@ void HbInputSettingWidgetPrivate::initialize()
     }
 }
 
+void HbInputSettingWidgetPrivate::createValidModesList(QStringList &imModeNames, QList<int> &imModeList)
+{    
+    Qt::Orientation orientation = Qt::Horizontal;
+    if (mForm) {
+       orientation = mForm->mainWindow()->orientation();
+    }
+
+    QList<HbInputMethodDescriptor> methodList = HbInputMethod::listCustomInputMethods(orientation,
+        HbInputSettingProxy::instance()->globalInputLanguage());
+    methodList.insert(0, HbInputMethod::defaultInputMethod(orientation));
+
+    foreach(const HbInputMethodDescriptor &des, methodList) {
+        QStringList displayNames = des.displayNames();
+        if (!displayNames.isEmpty()) {
+            imModeNames += displayNames;
+        } else {
+            QString displayName = des.displayName();
+            imModeNames.append(displayName);
+        }
+    }
+
+    imModeNames.removeDuplicates();
+    // filter out the input mode that not valid to current screen orientation
+    if (imModeNames.contains(KCangjieGeneralName)) {
+        imModeNames.removeOne(KCangjieGeneralName);
+    }
+
+    for (int i = 0; i < imModeNames.count(); ++i) {
+        imModeList.append(inputModeByGivenName(imModeNames.at(i)));
+    }
+}
+
+QString HbInputSettingWidgetPrivate::inputModeName(int mode) const
+{
+    int cnImCnts = sizeof(modesMap) / sizeof(modesMap[0]);
+    if (mode >= 0 && mode < cnImCnts) {
+        return modesMap[mode].mModeName;
+    }
+
+    return QString();
+}
+
+int HbInputSettingWidgetPrivate::inputModeByGivenName(const QString& imName) const
+{
+    int cnMode = KChineseInputModeNone;
+
+    if (imName == KCangjieGeneralName) {
+        HbCangjieDetailMode cjDetail = HbInputSettingProxy::instance()->detailedCangjieMode();
+        switch (cjDetail) {
+        case HbCangjieEasy: {
+            cnMode = KCangjieEasyMode;
+        }
+            break;
+        case HbCangjieAdvanced: {
+            cnMode = KCangjieAdvancedMode;
+        }
+            break;
+        case HbCangjieNormal: 
+        default: {
+            cnMode = KCangjieNormalMode;
+        }
+            break;
+        }
+    } else {
+        int cnImCnts = sizeof(modesMap) / sizeof(modesMap[0]);
+        for (int i = 0; i < cnImCnts; ++i) {
+            if (modesMap[i].mModeName == imName) {
+                cnMode = modesMap[i].mMode;
+            }
+        }
+    }
+
+    if (KChineseInputModeNone == cnMode) {
+        HbInputLanguage lang = HbInputSettingProxy::instance()->globalInputLanguage();
+        cnMode = defaultModeByGivenLang(lang);
+    }
+    
+    return cnMode;
+}
+
+int HbInputSettingWidgetPrivate::defaultModeByGivenLang(const HbInputLanguage &lang) const
+{
+    int imMode = KChineseInputModeNone;
+    if (lang.variant() == QLocale::China) {
+        imMode = KPinyinMode;
+    } else if (lang.variant() == QLocale::HongKong) {
+        imMode = KStrokeMode;
+    } else if (lang.variant() == QLocale::Taiwan) {
+        imMode = KZhuyinMode;
+    }
+
+    return imMode;
+}
+
 void HbInputSettingWidgetPrivate::createChineseSettingGroup(HbDataFormModel *model)
 {
     Q_Q(HbInputSettingWidget);
-    int imMode = KChineseInputModeNone;
     QByteArray ba = HbInputSettingProxy::instance()->preferredInputMethodCustomData(Qt::Vertical);
-    QString portraitCustomData(ba);
-    QString imName = portraitCustomData.split(" ").at(0);
+    QString imName(ba);
     HbInputLanguage lang = HbInputSettingProxy::instance()->globalInputLanguage();
-
-    if (imName == KPinyinName) {
-        imMode = KPinyinMode;
-    } else if (imName == KStrokeName) {
-        imMode = KStrokeMode;
-    } else if (imName == KZhuyinName) {
-        imMode = KZhuyinMode;
-    } else if (imName == KHwrName) {
-        imMode = KHwrMode;
-    } else {
-        if (lang.variant() == QLocale::China) {
-            imMode = KPinyinMode;
-        } else if (lang.variant() == QLocale::HongKong) {
-            imMode = KStrokeMode;
-        } else if (lang.variant() == QLocale::Taiwan) {
-            imMode = KZhuyinMode;
-        }
-    }
-
-    mCnPortraitInputMode = imMode;
+    mCnPortraitInputMode = inputModeByGivenName(imName);
 
     ba = HbInputSettingProxy::instance()->preferredInputMethodCustomData(Qt::Horizontal);
-    QString landscapeCustomData(ba);
-    imName = landscapeCustomData.split(" ").at(0);
-
-    mCnCangjieInputMode = KCangjieNormalMode;
-    if (imName == KPinyinName) {
-        mCnLandscapeInputMode = KPinyinMode;
-    } else if (imName == KStrokeName) {
-        mCnLandscapeInputMode = KStrokeMode;
-    } else if (imName == KZhuyinName) {
-        mCnLandscapeInputMode = KZhuyinMode;
-    } else if (imName == KCangjieNormalName) {
-        mCnLandscapeInputMode = KCangjieNormalMode;
-        mCnCangjieInputMode = KCangjieNormalMode;
-    } else if (imName == KCangjieEasyName) {
-        mCnLandscapeInputMode = KCangjieNormalMode;
-        mCnCangjieInputMode = KCangjieEasyMode;
-    } else if (imName == KCangjieAdvancedName) {
-        mCnLandscapeInputMode = KCangjieNormalMode;
-        mCnCangjieInputMode = KCangjieAdvancedMode;
-    } else if (imName == KHwrName) {
-        mCnLandscapeInputMode = KHwrMode;
-    } else {
-        if (lang.variant() == QLocale::China) {
-            mCnLandscapeInputMode = KPinyinMode;
-        } else if (lang.variant() == QLocale::HongKong) {
-            mCnLandscapeInputMode = KStrokeMode;
-        } else if (lang.variant() == QLocale::Taiwan) {
-            mCnLandscapeInputMode = KZhuyinMode;
-        }
-    }
-
-    Qt::Orientation orientation = HbInputSettingProxy::instance()->screenOrientation();
-    ba = HbInputSettingProxy::instance()->preferredInputMethodCustomData(orientation);
-    QString customData(ba);
-    if (customData.split(" ").count() > 1) {
-        imName = customData.split(" ").at(1);
-        if (imName == KHwrVerySlowName) {
-            mHwrSpeed = 0;
-        } else if (imName == KHwrSlowName) {
-            mHwrSpeed = 1;
-        } else if (imName == KHwrNormalName) {
-            mHwrSpeed = 2;
-        } else if (imName == KHwrFastName) {
-            mHwrSpeed = 3;
-        } else if (imName == KHwrVeryFastName) {
-            mHwrSpeed = 4;
-        } else {
-            mHwrSpeed = 2;
-        }
-    } else {
-        mHwrSpeed = 2;
-    }
+    imName = QString(ba);
+    mCnLandscapeInputMode = inputModeByGivenName(imName);
 
     mHwrSpeedNames.clear();
     mCnPortraitInputModeList.clear();
@@ -322,26 +357,46 @@ void HbInputSettingWidgetPrivate::createChineseSettingGroup(HbDataFormModel *mod
     mCnPortraitInputModeNames.clear();
     mCnLandscapeInputModeNames.clear();
     mCnCangjieInputModeNames.clear();
+    mCnDefaultLanguageNames.clear();
 
-    mHwrSpeedNames << "Very slow" << "Slow" << "Normal" << "Fast" << "Very Fast";
-    if (mPrimaryInputLanguage == HbInputLanguage(QLocale::Chinese, QLocale::China)) {
-        mCnPortraitInputModeList << KPinyinMode << KStrokeMode << KHwrMode;
-        mCnLandscapeInputModeList << KPinyinMode << KStrokeMode << KHwrMode;
-        mCnPortraitInputModeNames << KPinyinName << KStrokeName << KHwrName;
-        mCnLandscapeInputModeNames << KPinyinName << KStrokeName << KHwrName;
-    } else if (mPrimaryInputLanguage == HbInputLanguage(QLocale::Chinese, QLocale::HongKong)) {
-        mCnPortraitInputModeList << KStrokeMode << KHwrMode;
-        mCnLandscapeInputModeList << KStrokeMode << KCangjieNormalMode << KHwrMode;
+    createValidModesList(mCnPortraitInputModeNames, mCnPortraitInputModeList);
+    mCnLandscapeInputModeNames = mCnPortraitInputModeNames;
+    mCnLandscapeInputModeList = mCnPortraitInputModeList;
+
+    // append cangjie to landscape related list if need
+    if (mPrimaryInputLanguage == HbInputLanguage(QLocale::Chinese, QLocale::HongKong) && 
+        !mCnLandscapeInputModeNames.contains(KCangjieGeneralName)) {
+
+        int index = HbInputSettingProxy::instance()->detailedCangjieMode();
+        switch(index) {
+        case 0:
+            mCnCangjieInputMode = KCangjieEasyMode;
+            break;
+        case 1: 
+            mCnCangjieInputMode = KCangjieNormalMode;
+            break;
+        case 2:
+            mCnCangjieInputMode = KCangjieAdvancedMode;
+            break;
+        default:
+            break;
+        }
+
+        QStringList tmpInputmodeNames;
+        QList<int> tmpInputmode;
+        tmpInputmodeNames << mCnLandscapeInputModeNames.at(0) << KCangjieGeneralName << mCnLandscapeInputModeNames.at(1);
+        tmpInputmode << mCnLandscapeInputModeList.at(0) << mCnCangjieInputMode << mCnLandscapeInputModeList.at(1);
+        mCnLandscapeInputModeList.clear();
+        mCnLandscapeInputModeNames.clear();
+        mCnLandscapeInputModeList = tmpInputmode;
+        mCnLandscapeInputModeNames = tmpInputmodeNames;
         mCangjieInputModeList << KCangjieEasyMode << KCangjieNormalMode << KCangjieAdvancedMode;
-        mCnPortraitInputModeNames << KStrokeName << KHwrName;
-        mCnLandscapeInputModeNames << KStrokeName << KCangjieGeneralName << KHwrName;
         mCnCangjieInputModeNames << KEasy << KNormal << KAdvanced;
-    } else if (mPrimaryInputLanguage == HbInputLanguage(QLocale::Chinese, QLocale::Taiwan)) {
-        mCnPortraitInputModeList << KZhuyinMode << KHwrMode;
-        mCnLandscapeInputModeList << KZhuyinMode << KHwrMode;
-        mCnPortraitInputModeNames << KZhuyinName << KHwrName;
-        mCnLandscapeInputModeNames << KZhuyinName << KHwrName;
     }
+
+    mHwrSpeed = HbInputSettingProxy::instance()->hwrWritingSpeed();
+    mHwrSpeedNames << KHwrVerySlowName << KHwrSlowName << KHwrNormalName << KHwrFastName << KHwrVeryFastName;
+    mCnDefaultLanguageNames << KDefaultChineseName << KDefaultEnglishName;
 
     if (!mChineseInputGroup) {
         mChineseInputGroup = model->appendDataFormGroup(QObject::tr("Chinese Input"));
@@ -368,17 +423,24 @@ void HbInputSettingWidgetPrivate::createChineseSettingGroup(HbDataFormModel *mod
         mHwrSpeedItem = new HbDataFormModelItem(HbDataFormModelItem::ComboBoxItem, QObject::tr("Handwriting speed"));
         mChineseInputGroup->appendChild(mHwrSpeedItem);
         mHwrSpeedItem->setContentWidgetData(QString("items"), mHwrSpeedNames);
-        int hwr = mHwrSpeed;
-        mHwrSpeedItem->setContentWidgetData(QString("currentIndex"), hwr);
+        mHwrSpeedItem->setContentWidgetData(QString("currentIndex"), mHwrSpeed);
         mHwrSpeedItem->setContentWidgetData(QString("objectName"), QString("handwriting_speed"));
         mForm->addConnection(mHwrSpeedItem, SIGNAL(currentIndexChanged(int)), q, SLOT(setHwrSpeed(int)));
+
+        mCnDefaultLanguageItem = new HbDataFormModelItem(HbDataFormModelItem::ComboBoxItem, QObject::tr("Default language for keyboard input"));
+        mChineseInputGroup->appendChild(mCnDefaultLanguageItem);
+        int defaultLanguageIndex = HbInputSettingProxy::instance()->useWesternDefaultKeypadForChinese() ? 1 : 0;
+        mCnDefaultLanguageItem->setContentWidgetData(QString("items"), mCnDefaultLanguageNames);
+        mCnDefaultLanguageItem->setContentWidgetData(QString("currentIndex"), defaultLanguageIndex);
+        mCnDefaultLanguageItem->setContentWidgetData(QString("objectName"), QString("default_language_for_keyboard_input"));
+        mForm->addConnection(mCnDefaultLanguageItem, SIGNAL(currentIndexChanged(int)), q, SLOT(setDefaultLanguageForKeyboardInput(int)));
     }
 
+    int cangjieIdx = HbInputSettingProxy::instance()->detailedCangjieMode();
     if (mPrimaryInputLanguage == HbInputLanguage(QLocale::Chinese, QLocale::HongKong)) {
         mCangjieItem = new HbDataFormModelItem(HbDataFormModelItem::ComboBoxItem, QObject::tr("Cangjie mode"));
         mChineseInputGroup->appendChild(mCangjieItem);
         mCangjieItem->setContentWidgetData(QString("items"), mCnCangjieInputModeNames);
-        int cangjieIdx = inputModeToIndex(mCnCangjieInputMode, mCangjieInputModeList);
         QVariant varCang;
         varCang.setValue(cangjieIdx);
         mCangjieItem->setContentWidgetData(QString("currentIndex"), varCang);
@@ -387,12 +449,14 @@ void HbInputSettingWidgetPrivate::createChineseSettingGroup(HbDataFormModel *mod
     }
 }
 
-void HbInputSettingWidgetPrivate::updateContentWidgetData()
+void HbInputSettingWidgetPrivate::updateContentWidgetData() 
 {
     // current primary language
     mPrimaryLanguageItem->setContentWidgetData(QString("currentIndex"), languageToIndex(mPrimaryInputLanguage, mPrimaryLanguages));
 
-    mSecondaryLanguageItem->setContentWidgetData(QString("currentIndex"), languageToIndex(mSecondaryInputLanguage, mSecondaryLanguages));
+    if (mSecondaryLanguageItem) {
+        mSecondaryLanguageItem->setContentWidgetData(QString("currentIndex"), languageToIndex(mSecondaryInputLanguage, mSecondaryLanguages));
+    }
     // key press timeout
     mKeypressTimeoutItem->setContentWidgetData(QString("sliderPosition"), mKeypressTimeout);
     if (mCharacterPreviewEnabled) {
@@ -419,13 +483,18 @@ void HbInputSettingWidgetPrivate::updateContentWidgetData()
         mPrimaryCandidateItem->setContentWidgetData(QString("text"), exactTyping);
         mPrimaryCandidateItem->setContentWidgetData(QString("additionalText"), bestPrediction);
     }
+
+    if(mChineseInputGroup && mCnDefaultLanguageItem) {
+        int defaultLanguageIndex = HbInputSettingProxy::instance()->useWesternDefaultKeypadForChinese() ? 1 : 0;
+        mCnDefaultLanguageItem->setContentWidgetData(QString("currentIndex"), defaultLanguageIndex);
+    }
 }
 
 /*!
 Creates setting items to this widget
 */
 void HbInputSettingWidgetPrivate::createSettingItems()
-{
+{   
     Q_Q(HbInputSettingWidget);
 
     mModel = new HbDataFormModel();
@@ -528,6 +597,11 @@ void HbInputSettingWidgetPrivate::createSettingItems()
         createChineseSettingGroup(mModel);
     }
     mForm->setModel(mModel);
+
+    // expand language selection
+    QModelIndex index = mModel->indexFromItem(mLanguageGroup);
+    mForm->setExpanded(index, true);
+
     QObject::connect(mModel, SIGNAL(dataChanged(QModelIndex, QModelIndex)), q, SLOT(dataChange(QModelIndex, QModelIndex)));
 }
 
@@ -612,146 +686,6 @@ int HbInputSettingWidgetPrivate::indexToInputmode(int index, const QList<int> &i
     } else {
         return KChineseInputModeNone;
     }
-}
-
-QInputContextPlugin *HbInputSettingWidgetPrivate::pluginInstance(const QString &pluginFileName) const
-{
-    if (QLibrary::isLibrary(pluginFileName)) {
-        QPluginLoader loader(pluginFileName);
-        QObject *plugin = loader.instance();
-        if (plugin) {
-            return qobject_cast<QInputContextPlugin *>(plugin);
-        }
-    }
-
-    return 0;
-}
-
-HbInputMethodDescriptor HbInputSettingWidgetPrivate::findInputMethodDescriptor(const QString &inputMethodString)
-{
-    HbInputMethodDescriptor descriptor;
-    // Query plugin paths and scan the folders.
-    QStringList folders = HbInputSettingProxy::instance()->inputMethodPluginPaths();
-    foreach(const QString &folder, folders) {
-        QDir dir(folder);
-        for (unsigned int i = 0; i < dir.count(); i++) {
-            QString path = QString(dir.absolutePath());
-            if (path.right(1) != "\\" && path.right(1) != "/") {
-                path += QDir::separator();
-            }
-            path += inputMethodString;
-            QInputContextPlugin *inputContextPlugin = pluginInstance(path);
-            if (inputContextPlugin) {
-                descriptor.setPluginNameAndPath(dir.absolutePath() + QDir::separator() + inputMethodString);
-
-                // For each found plugin, check if there is already a list item for it.
-                // If not, then add one.
-                QStringList contextKeys = inputContextPlugin->keys();
-                foreach(QString key, contextKeys) {
-                    descriptor.setKey(key);
-                    descriptor.setDisplayName(inputContextPlugin->displayName(key));
-                }
-                break;
-            }
-        }
-    }
-    return descriptor;
-}
-
-void HbInputSettingWidgetPrivate::setInputMethodVar(Qt::Orientation orientation, QString &inputMethodString, QByteArray &customData)
-{
-    int inputMode = KChineseInputModeNone;
-    if (orientation == Qt::Vertical) {
-        inputMode = mCnPortraitInputMode;
-    } else if (orientation == Qt::Horizontal) {
-        inputMode = mCnLandscapeInputMode;
-    } else {
-        return;
-    }
-
-    switch (inputMode) {
-    case KPinyinMode: {
-        orientation == Qt::Vertical ? inputMethodString = KCnVItutPluginName : inputMethodString = KCnVkbPluginName;
-        customData.append(KPinyinName.toLatin1().data());
-    }
-    break;
-    case KStrokeMode: {
-        orientation == Qt::Vertical ? inputMethodString = KCnVItutPluginName : inputMethodString = KCnVkbPluginName;
-        customData.append(KStrokeName.toLatin1().data());
-    }
-    break;
-    case KZhuyinMode: {
-        orientation == Qt::Vertical ? inputMethodString = KCnVItutPluginName : inputMethodString = KCnVkbPluginName;
-        customData.append(KZhuyinName.toLatin1().data());
-    }
-    break;
-    case KHwrMode: {
-        inputMethodString = KCnHwrPluginName;
-        customData.append(KHwrName.toLatin1().data());
-    }
-    break;
-    case KCangjieNormalMode: {
-        inputMethodString = KCnVkbPluginName;
-        customData.append(KCangjieNormalName.toLatin1().data());
-    }
-    break;
-    case KCangjieEasyMode: {
-        inputMethodString = KCnVkbPluginName;
-        customData.append(KCangjieEasyName.toLatin1().data());
-    }
-    break;
-    case KCangjieAdvancedMode: {
-        inputMethodString = KCnVkbPluginName;
-        customData.append(KCangjieAdvancedName.toLatin1().data());
-    }
-    break;
-    default:
-        break;
-    }
-
-    QByteArray preferredCustomData = HbInputSettingProxy::instance()->preferredInputMethodCustomData(orientation);
-    QString imName(preferredCustomData);
-    QStringList temp = imName.split(" ");
-    if (temp.count() > 1) {
-        customData.append(" ");
-        customData.append(temp.at(1).toLatin1().data());	
-    } else {
-        customData.append(" ");
-        customData.append(KHwrNormalName.toLatin1().data());
-    }
-    customData.append((char)0);
-    return;
-}
-
-QByteArray HbInputSettingWidgetPrivate::createHwrSpeedData(QByteArray preferredCustomData, int index)
-{
-    QString imName(preferredCustomData);
-    QStringList temp = imName.split(" ");
-
-    QByteArray customData;
-    customData.append(temp.at(0).toLatin1().data());
-    customData.append(" ");
-    switch (index) {
-    case 0:
-        customData.append(KHwrVerySlowName.toLatin1().data());
-        break;
-    case 1:
-        customData.append(KHwrSlowName.toLatin1().data());
-        break;
-    case 2:
-        customData.append(KHwrNormalName.toLatin1().data());
-        break;
-    case 3:
-        customData.append(KHwrFastName.toLatin1().data());
-        break;
-    case 4:
-        customData.append(KHwrVeryFastName.toLatin1().data());
-        break;
-    default:
-        break;
-    }
-    customData.append((char)0);
-    return customData;
 }
 
 /// @endcond
@@ -945,6 +879,10 @@ void HbInputSettingWidget::setPrimaryLanguage(int index)
     HbPredictionFactory *predFactory = HbPredictionFactory::instance();
     bool oldPLangSupportsPrediction = (predFactory->predictionEngineForLanguage(d->mPrimaryInputLanguage) != NULL);
     d->mPrimaryInputLanguage = d->indexToLanguage(index, d->mPrimaryLanguages);
+    if (d->mPrimaryInputLanguage.language() == QLocale::Chinese) {
+        HbInputSettingProxy::instance()->setPreferredInputMethod(Qt::Horizontal, HbInputMethodDescriptor());
+        HbInputSettingProxy::instance()->setPreferredInputMethod(Qt::Vertical, HbInputMethodDescriptor());        
+    }
     HbInputSettingProxy::instance()->setGlobalInputLanguage(d->mPrimaryInputLanguage);
     bool langSupportsPrediction = (predFactory->predictionEngineForLanguage(d->mPrimaryInputLanguage) != NULL);
     if (oldPLangSupportsPrediction != langSupportsPrediction) {
@@ -980,6 +918,8 @@ void HbInputSettingWidget::setPrimaryLanguage(int index)
         if (d->mChineseInputGroup) {
             model->removeItem(d->mChineseInputGroup);
             d->mChineseInputGroup = NULL;
+            HbInputSettingProxy::instance()->setPreferredInputMethod(Qt::Horizontal, HbInputMethodDescriptor());
+            HbInputSettingProxy::instance()->setPreferredInputMethod(Qt::Vertical, HbInputMethodDescriptor());
         }
     } else {
         HbDataFormModel *model = qobject_cast<HbDataFormModel *>(d->mForm->model());
@@ -993,7 +933,7 @@ void HbInputSettingWidget::setPrimaryLanguage(int index)
             d->mSecondaryLanguageItem = NULL;
         }
 
-        resetChineseInputMode();
+        resetChineseInputMode(d->mPrimaryInputLanguage);
         d->createChineseSettingGroup(model);
         d->mForm->setModel(model);
     }
@@ -1097,12 +1037,35 @@ void HbInputSettingWidget::setPortraitInputMethod(int index)
 {
     Q_D(HbInputSettingWidget);
     d->mCnPortraitInputMode = d->indexToInputmode(index, d->mCnPortraitInputModeList);
-    QString inputMethodString;
     QByteArray customData;
-    d->setInputMethodVar(Qt::Vertical, inputMethodString, customData);
+    HbInputMethodDescriptor descriptor;
 
-    const HbInputMethodDescriptor descriptor = d->findInputMethodDescriptor(inputMethodString);
-    HbInputSettingProxy::instance()->setPreferredInputMethod(Qt::Vertical, (const HbInputMethodDescriptor &)descriptor, customData);
+    if (d->mCnPortraitInputMode != KHwrMode) {
+        QString imName = d->inputModeName(d->mCnPortraitInputMode);
+        customData.append(imName.toLatin1().data());
+        customData.append((char)0);
+        descriptor = HbInputMethod::defaultInputMethod(Qt::Vertical);
+    } else {
+        customData.append(KHwrName.toLatin1().data());
+        customData.append((char)0);
+        QList<HbInputMethodDescriptor> methodList = HbInputMethod::listCustomInputMethods(Qt::Vertical, HbInputSettingProxy::instance()->globalInputLanguage());
+        foreach(const HbInputMethodDescriptor &des, methodList) {
+            if (des.displayName() == "Chinese Hand Writing Recognition") {
+                descriptor = des;
+                break;
+            }
+        }
+    }
+
+    Qt::Orientation orientation = Qt::Vertical;
+    if (d->mForm) {
+        orientation = d->mForm->mainWindow()->orientation();
+    }
+
+    HbInputSettingProxy::instance()->setPreferredInputMethod(Qt::Vertical, descriptor, customData);
+    if (orientation == Qt::Vertical) {
+        HbInputMethod::activeInputMethod()->activateInputMethod(descriptor);
+    }
 }
 
 /*!
@@ -1112,12 +1075,43 @@ void HbInputSettingWidget::setLandscapeInputMethod(int index)
 {
     Q_D(HbInputSettingWidget);
     d->mCnLandscapeInputMode = d->indexToInputmode(index, d->mCnLandscapeInputModeList);
-    QString inputMethodString;
     QByteArray customData;
-    d->setInputMethodVar(Qt::Horizontal, inputMethodString, customData);
+    HbInputMethodDescriptor descriptor;
 
-    const HbInputMethodDescriptor descriptor = d->findInputMethodDescriptor(inputMethodString);
+    if (d->mCnLandscapeInputMode != KHwrMode) {
+        QString imName;
+        if (d->mCnLandscapeInputMode == KCangjieNormalMode || 
+            d->mCnLandscapeInputMode == KCangjieEasyMode  || 
+            d->mCnLandscapeInputMode == KCangjieAdvancedMode) {
+            imName = KCangjieGeneralName;
+        } else {
+            imName = d->inputModeName(d->mCnLandscapeInputMode);
+        }
+
+        customData.append(imName.toLatin1().data());
+        customData.append((char)0);
+        descriptor = HbInputMethod::defaultInputMethod(Qt::Horizontal);
+    } else {
+        customData.append(KHwrName.toLatin1().data());
+        customData.append((char)0);
+        QList<HbInputMethodDescriptor> methodList = HbInputMethod::listCustomInputMethods(Qt::Horizontal, HbInputSettingProxy::instance()->globalInputLanguage());
+        foreach(const HbInputMethodDescriptor &des, methodList) {
+            if (des.displayName() == "Chinese Hand Writing Recognition") {
+                descriptor = des;
+                break;
+            }
+        }
+    }
+
+    Qt::Orientation orientation = Qt::Horizontal;
+    if (d->mForm) {
+        orientation = d->mForm->mainWindow()->orientation();
+    }
+
     HbInputSettingProxy::instance()->setPreferredInputMethod(Qt::Horizontal, descriptor, customData);
+    if (orientation == Qt::Horizontal) {
+        HbInputMethod::activeInputMethod()->activateInputMethod(descriptor);
+    }
 }
 
 /*!
@@ -1129,69 +1123,62 @@ void HbInputSettingWidget::setCangjieMode(int index)
     d->mCnCangjieInputMode = d->indexToInputmode(index, d->mCangjieInputModeList);
     d->mCnLandscapeInputMode = d->mCnCangjieInputMode;
 
-    QString inputMethodString;
+    QString imName = KCangjieGeneralName;
     QByteArray customData;
-    d->setInputMethodVar(Qt::Horizontal, inputMethodString, customData);
+    customData.append(imName.toLatin1().data());
+    customData.append((char)0);
 
-    const HbInputMethodDescriptor descriptor = d->findInputMethodDescriptor(inputMethodString);
+    HbInputMethodDescriptor descriptor;
+    descriptor = HbInputMethod::defaultInputMethod(Qt::Horizontal);
+     
     HbInputSettingProxy::instance()->setPreferredInputMethod(Qt::Horizontal, descriptor, customData);
+    HbInputSettingProxy::instance()->setDetailedCangjieMode(HbCangjieDetailMode(index));
 }
-
 
 /*!
 Saves the handwriting speed
 */
 void HbInputSettingWidget::setHwrSpeed(int index)
 {
-    Q_D(HbInputSettingWidget);
-    Qt::Orientation currentOrientation = HbInputSettingProxy::instance()->screenOrientation();
-    QByteArray portraitCustomData = HbInputSettingProxy::instance()->preferredInputMethodCustomData(Qt::Vertical);
-    QByteArray landscapeCustomData = HbInputSettingProxy::instance()->preferredInputMethodCustomData(Qt::Horizontal);
-    HbInputMethodDescriptor portraitDes = HbInputSettingProxy::instance()->preferredInputMethod(Qt::Vertical);
-    HbInputMethodDescriptor landscapeDes = HbInputSettingProxy::instance()->preferredInputMethod(Qt::Horizontal);
-    QByteArray portraitHwrspeed = d->createHwrSpeedData(portraitCustomData, index);
-    QByteArray landscapeHwrspeed = d->createHwrSpeedData(landscapeCustomData, index);
-
-    if (currentOrientation == Qt::Vertical) {
-        HbInputSettingProxy::instance()->setPreferredInputMethod(Qt::Horizontal, landscapeDes, landscapeHwrspeed);
-        HbInputSettingProxy::instance()->setPreferredInputMethod(Qt::Vertical, portraitDes, portraitHwrspeed);
-
-    } if (currentOrientation == Qt::Horizontal) {
-        HbInputSettingProxy::instance()->setPreferredInputMethod(Qt::Vertical, portraitDes, portraitHwrspeed);
-        HbInputSettingProxy::instance()->setPreferredInputMethod(Qt::Horizontal, landscapeDes, landscapeHwrspeed);
+    // hwr speed index in setting widget are exactly same as enum HbHwrWritingSpeed of setting proxy
+    if (index >= 0 && index < KHwrSpeedCount) {
+        HbInputSettingProxy::instance()->setHwrWritingSpeed(HbHwrWritingSpeed(index));
     }
 }
 
 /*!
 Saves the portrait input method
 */
-void HbInputSettingWidget::resetChineseInputMode()
+void HbInputSettingWidget::resetChineseInputMode(HbInputLanguage lang)
 {
     Q_D(HbInputSettingWidget);
-    HbInputLanguage lang = HbInputSettingProxy::instance()->globalInputLanguage();
+    d->mCnPortraitInputMode = d->defaultModeByGivenLang(lang);
+    d->mCnLandscapeInputMode = d->defaultModeByGivenLang(lang);
+    HbInputSettingProxy::instance()->setDetailedCangjieMode(HbCangjieNormal);
 
-    if (lang.variant() == QLocale::China) {
-        d->mCnPortraitInputMode = KPinyinMode;
-        d->mCnLandscapeInputMode = KPinyinMode;
-    } else if (lang.variant() == QLocale::HongKong) {
-        d->mCnPortraitInputMode = KStrokeMode;
-        d->mCnLandscapeInputMode = KStrokeMode;
-    } else if (lang.variant() == QLocale::Taiwan) {
-        d->mCnPortraitInputMode = KZhuyinMode;
-        d->mCnLandscapeInputMode = KZhuyinMode;
-    }
-
-    QString portraitInputMethodString;
-    QString landscapeInputMethodString;
     QByteArray portraitCustomData;
     QByteArray landscapeCustomData;
-    d->setInputMethodVar(Qt::Vertical, portraitInputMethodString, portraitCustomData);
-    d->setInputMethodVar(Qt::Horizontal, landscapeInputMethodString, landscapeCustomData);
+    QString imName = d->inputModeName(d->mCnPortraitInputMode);
+    portraitCustomData.append(imName.toLatin1().data());
+    portraitCustomData.append((char)0);
+    HbInputMethodDescriptor portraitDescriptor = HbInputMethod::defaultInputMethod(Qt::Vertical);
 
-    const HbInputMethodDescriptor portraitDescriptor = d->findInputMethodDescriptor(portraitInputMethodString);
-    const HbInputMethodDescriptor landscapeDescriptor = d->findInputMethodDescriptor(landscapeInputMethodString);
+    if (d->mCnLandscapeInputMode == KCangjieNormalMode || 
+        d->mCnLandscapeInputMode == KCangjieEasyMode || 
+        d->mCnLandscapeInputMode == KCangjieAdvancedMode) {
+        imName = KCangjieGeneralName;
+    } else {
+        imName = d->inputModeName(d->mCnLandscapeInputMode);
+    }
+
+    landscapeCustomData.append(imName.toLatin1().data());
+    landscapeCustomData.append((char)0);
+    HbInputMethodDescriptor landscapeDescriptor = HbInputMethod::defaultInputMethod(Qt::Horizontal);
+
     HbInputSettingProxy::instance()->setPreferredInputMethod(Qt::Vertical, (const HbInputMethodDescriptor &)portraitDescriptor, portraitCustomData);
     HbInputSettingProxy::instance()->setPreferredInputMethod(Qt::Horizontal, (const HbInputMethodDescriptor &)landscapeDescriptor, landscapeCustomData);
+
+    return;
 }
 
 /*
@@ -1224,6 +1211,18 @@ void HbInputSettingWidget::resetWidget()
     disconnect(settings, SIGNAL(autocompletionStateChanged(HbKeyboardSettingFlags, bool)), this, SLOT(updateAutocompletionState(HbKeyboardSettingFlags, bool)));
     disconnect(settings, SIGNAL(typingCorrectionLevelChanged(HbTypingCorrectionLevel)), this, SLOT(updateTypingCorrectionLevel(HbTypingCorrectionLevel)));
     disconnect(settings, SIGNAL(primaryCandidateModeChanged(HbPrimaryCandidateMode)), this, SLOT(updatePrimaryCandidateMode(HbPrimaryCandidateMode)));
+}
+
+/*!
+Set default language for keyboard input
+*/
+void HbInputSettingWidget::setDefaultLanguageForKeyboardInput(int index)
+{
+    if(index == 1) {
+        HbInputSettingProxy::instance()->setWesternDefaultKeypadForChinese(true);
+    } else {
+        HbInputSettingProxy::instance()->setWesternDefaultKeypadForChinese(false);
+    }
 }
 
 // End of file

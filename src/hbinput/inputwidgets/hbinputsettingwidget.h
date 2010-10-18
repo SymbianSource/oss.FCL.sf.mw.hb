@@ -47,7 +47,7 @@ public:
     void initializeWidget();
     
     void resetWidget();
-    void resetChineseInputMode();
+    void resetChineseInputMode(HbInputLanguage lang);
 
 public slots:
     void updateGlobalInputLanguage(const HbInputLanguage &newLanguage);
@@ -73,6 +73,8 @@ public slots:
     void setLandscapeInputMethod(int index);
     void setHwrSpeed(int index);
     void setCangjieMode(int index);
+
+    void setDefaultLanguageForKeyboardInput(int index);
 protected:
     HbInputSettingWidgetPrivate *const d_ptr;
 

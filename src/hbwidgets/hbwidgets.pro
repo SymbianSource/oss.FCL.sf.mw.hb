@@ -36,6 +36,7 @@ include(devicedialogs/devicedialogs.pri)
 include(editors/editors.pri)
 include(itemviews/itemviews.pri)
 include(popups/popups.pri)
+include(primitives/primitives.pri)
 include(sliders/sliders.pri)
 include(widgets/widgets.pri)
 include(dataform/dataform.pri)
@@ -74,6 +75,7 @@ symbian {
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL
     TARGET.UID3 = 0x20022FCC
+    MMP_RULES += SMPSAFE
     
     LIBS += -lsystemtoneservice
 

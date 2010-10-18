@@ -252,15 +252,29 @@ bool HbEffectController::addEffectDefinitionFile(
     if (!shared) {
         HbEffectFxmlData fxmlData;
         QFile file(filePath);
-        if (!file.open(QFile::ReadOnly | QFile::Text)) {
+        if (!file.open(QFile::ReadOnly)) {
             qWarning("HbEffect: Opening of %s failed", qPrintable(filePath));
             if (indexForSetInUseWhenFail >= 0) {
                 mEffectEntries[indexForSetInUseWhenFail].mInUse = true;
             }
             return false;
         }
-        mParser->read(&file, &fxmlData);
+        QByteArray arr(file.readAll());
         file.close();
+
+        // Read effect using QBuffer, because XML parsing does unnecessary file accesses
+        QBuffer fxmlBuffer(&arr, 0);
+        if (!fxmlBuffer.open(QFile::ReadOnly | QFile::Text)) {
+            // This really shouldn't fail, but better be sure
+            qWarning("HbEffect: Opening QBuffer for %s failed", qPrintable(filePath));
+            if (indexForSetInUseWhenFail >= 0) {
+                mEffectEntries[indexForSetInUseWhenFail].mInUse = true;
+            }
+            return false;
+        }
+
+        mParser->read(&fxmlBuffer, &fxmlData);
+        fxmlBuffer.close();
 
         if (mParser->error() != QXmlStreamReader::NoError) {
             qWarning() << "HbEffect: Parsing of file" << qPrintable(filePath) << "failed:"

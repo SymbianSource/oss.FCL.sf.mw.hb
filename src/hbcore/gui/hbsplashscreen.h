@@ -34,12 +34,14 @@ public:
     enum Flag {
         Default         = 0x00,
         FixedVertical   = 0x01,
-        FixedHorizontal = 0x02
+        FixedHorizontal = 0x02,
+        ForceQt         = 0x04,
+        ShowWhenStartingToBackground = 0x08
     };
 
     Q_DECLARE_FLAGS(Flags, Flag)
 
-    static void start(Flags flags = Default);
+    static void start(Flags flags = Default, int argc = 0, char *argv[] = 0);
     static void destroy();
     static bool exists();
     static void setFlags(Flags flags);

@@ -26,7 +26,7 @@
 #ifndef HB_INPUT_CANDIDATE_LIST_H
 #define HB_INPUT_CANDIDATE_LIST_H
 
-#include <hbdialog.h>
+#include <hbinputpopupbase.h>
 
 #include <hbinputdef.h>
 
@@ -36,7 +36,7 @@ class HbListWidgetItem;
 class HbVkbHost;
 class HbInputMethod;
 
-class HB_INPUT_EXPORT HbCandidateList : public HbDialog
+class HB_INPUT_EXPORT HbCandidateList : public HbInputPopupBase
 {
     Q_OBJECT
 
@@ -58,7 +58,6 @@ protected:
     void closeEvent(QCloseEvent *event);
     void keyPressEvent(QKeyEvent *event);
     void hideEvent(QHideEvent *event);
-    void updatePrimitives();
 
 public slots:
     void itemActivated(HbListWidgetItem *item);

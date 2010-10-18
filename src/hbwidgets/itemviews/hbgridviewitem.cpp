@@ -26,7 +26,10 @@
 #include "hbgridviewitem_p.h"
 #include <hbgridviewitem.h>
 #include "hbgridview_p.h"
-#include <hbstyleoptiongridviewitem_p.h>
+
+#include <hbstyletextprimitivedata.h>
+#include <hbstylerichtextprimitivedata.h>
+#include <hbstyleiconprimitivedata.h>
 #include <QDebug>
 
 /*!
@@ -36,10 +39,16 @@
  \brief HbGridViewItem class represents a single item in a grid.    
 
  The HbGridViewItem class provides a view item that is used by HbGridView class to visualize content within 
- a single model index. By default HbGridViewItem supports a QString that is stored into the Qt::DisplayRole role 
- and a QIcon or HbIcon that is stored into the Qt::DecoratorRole role within the index. QBrush, HbIcon or HbFrameBackground can be used
- as a background by storing them into the Qt::BackgroundRole role. If Qt::BackgroundRole is empty, the default item background
- is used.
+ a single model index. 
+ 
+ HbGridViewItem supports Hb::StandardItem in Hb::ItemTypeRole role of data model.
+
+ Following item data roles are supported by HbGridViewItem
+ \li QString in Qt::DisplayRole of the data model
+ \li QIcon or HbIcon in Qt::DecoratorRole role. QIcon is supported only for compatibility reasons. 
+ If QIcon is used the limitations described in the HbIcon::HbIcon(const QIcon &icon) apply.
+
+ Handling Qt::BackgroundRole item data role takes place in base class HbAbstractViewItem.
 
  \b Subclassing
 
@@ -51,11 +60,13 @@
  position selection areas etc.) the view item can use the grid view's internal state model to store this information.To use this feature 
  implement the state() and setState() functions in the derived class.
  
- See also HbGridView, HbAbstractItemView, HbAbstractViewItem, HbStyleOptionAbstractViewItem
+ See also HbGridView, HbAbstractItemView, HbAbstractViewItem
 
  \primitives
- \primitive{icon} HbIconItem representing the icon in the HbGridViewItem. 
- \primitive{text} HbTextItem representing the text in the HbGridViewItem. 
+ \primitive{icon} HbIconItem with item name "icon" representing the icon in the HbGridViewItem. 
+ \primitive{text} HbTextItem with item name "text" representing the text in the HbGridViewItem. 
+
+ \sa HbAbstractViewItem
 
  */
 
@@ -148,6 +159,31 @@ void HbGridViewItem::updateChildItems()
     HbAbstractViewItem::updateChildItems();
 }
 
+
+/*!
+  Initializes the HbGridViewItem primitive data. 
+  
+  This function calls HbWidgetBase::initPrimitiveData().
+  \a primitiveData is data object, which is populated with data. \a primitive is the primitive.
+*/
+void HbGridViewItem::initPrimitiveData(HbStylePrimitiveData     *primitiveData, 
+                                       const QGraphicsObject    *primitive)
+{
+    Q_ASSERT_X(primitive && primitiveData, "HbGridViewItem::initPrimitiveData" , "NULL data not permitted");
+    Q_D(HbGridViewItem);
+
+    HbWidgetBase::initPrimitiveData(primitiveData, primitive);
+    if (primitiveData->type == HbStylePrimitiveData::SPD_Text) {
+        HbStyleTextPrimitiveData *textPrimitiveData = hbstyleprimitivedata_cast<HbStyleTextPrimitiveData*>(primitiveData);
+        textPrimitiveData->text = d->mText;
+
+    } else if (primitiveData->type == HbStylePrimitiveData::SPD_Icon) {
+        HbStyleIconPrimitiveData *iconPrimitiveData = hbstyleprimitivedata_cast<HbStyleIconPrimitiveData*>(primitiveData);
+        iconPrimitiveData->icon = d->mIcon;
+    }
+}
+
+
 /*!
  \reimp
  */
@@ -155,31 +191,18 @@ void HbGridViewItem::updatePrimitives()
 {
     Q_D( HbGridViewItem );
     if (d->mTextItem || d->mIconItem) {
-        HbStyleOptionGridViewItem styleOption;
-        initStyleOption(&styleOption);
-
         if (d->mTextItem) {
-            style()->updatePrimitive(d->mTextItem, HbStyle::P_GridViewItem_text,
-                    &styleOption);
+            HbStyleTextPrimitiveData textPrimitiveData;
+            initPrimitiveData(&textPrimitiveData, d->mTextItem);
+            style()->updatePrimitive(d->mTextItem, &textPrimitiveData,this);
         }
         if (d->mIconItem) {
-            style()->updatePrimitive(d->mIconItem, HbStyle::P_GridViewItem_icon,
-                    &styleOption);
+            HbStyleIconPrimitiveData iconPrimitiveData;
+            initPrimitiveData(&iconPrimitiveData, d->mIconItem);
+            style()->updatePrimitive(d->mIconItem, &iconPrimitiveData,this);
         }
     }
     HbAbstractViewItem::updatePrimitives();
-}
-
-/*!
-    Populates a style option object for this widget based on its current state, and stores the output in \a option.
-*/
-void HbGridViewItem::initStyleOption(HbStyleOptionGridViewItem *option) const
-{
-    Q_D( const HbGridViewItem );
-
-    HbAbstractViewItem::initStyleOption(option);
-    option->icon = d->mIcon;
-    option->text = d->mText;
 }
 
 /*!

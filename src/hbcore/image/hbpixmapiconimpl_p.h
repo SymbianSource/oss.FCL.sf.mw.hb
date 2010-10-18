@@ -34,13 +34,23 @@ class HbPixmapIconRenderer;
 class HB_AUTOTEST_EXPORT HbPixmapIconImpl : public HbIconImpl
 {
 public :
-    HbPixmapIconImpl(HbSharedIconInfo iconData, QString &name,
+    HbPixmapIconImpl(HbSharedIconInfo iconData,
+                     const QString &name,
                      const QSizeF &keySize,
                      Qt::AspectRatioMode aspectRatioMode,
                      QIcon::Mode mode,
                      bool mirrored,
                      HbRenderingMode renderMode);
-    explicit HbPixmapIconImpl(const QPixmap &pixmap, const QString &name = QString());
+
+    HbPixmapIconImpl(const QPixmap &pixmap, const QString &name = QString());
+
+    HbPixmapIconImpl(const QPixmap &pixmap,
+                     const QString &name,
+                     const QSizeF &keySize,
+                     Qt::AspectRatioMode aspectRatioMode,
+                     QIcon::Mode mode,
+                     bool mirrored);
+
     ~HbPixmapIconImpl();
 
     QPixmap pixmap();

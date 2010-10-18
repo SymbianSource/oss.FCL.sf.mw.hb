@@ -1,0 +1,9 @@
+HbDatePickerViewLabel::text
+{
+    color:var(qtc_default_main_pane_normal);
+}
+
+HbDialog::heading > HbDatePickerViewLabel::text
+{
+    color:var(qtc_popup_heading_normal);
+}

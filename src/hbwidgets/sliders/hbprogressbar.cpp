@@ -27,6 +27,8 @@
 #include <hbstyleoptionprogressbar_p.h>
 #include "hbglobal_p.h"
 
+#include "hbrepeaticonitem_p.h"
+#include "hbprogresstrackitem_p.h"
 #ifdef HB_EFFECTS
 #include <hbeffect.h>
 #include "hbeffectinternal_p.h"
@@ -121,7 +123,8 @@ HbProgressBarPrivate::HbProgressBarPrivate() :
     mMaxText(QString()),
     mOrientation(Qt::Horizontal),
     mDelayHideInProgress(true),
-    mShowEffectInProgress(false)
+    mShowEffectInProgress(false),
+    mStopWaitAnimation(false)
 {
 }
 
@@ -140,13 +143,18 @@ HbProgressBarPrivate::~HbProgressBarPrivate()
 void HbProgressBarPrivate::init() 
 {
     Q_Q(HbProgressBar);
+    
+    mFrame = q->style()->createPrimitive(HbStyle::PT_FrameItem, "frame",q);
+    mFrame->setZValue(-1);
+    qgraphicsitem_cast<HbFrameItem*>(mFrame)->frameDrawer().setFillWholeRect(true);
 
-    HbStyle *style = qobject_cast<HbStyle*>(q->style());
-    Q_ASSERT(style);
+    mTrack = new HbProgressTrackItem(mFrame);
+    HbStyle::setItemName(mTrack, "track");
+    qgraphicsitem_cast<HbProgressTrackItem*>(mTrack)->frameDrawer().setFillWholeRect(true);
+    mTrack->setZValue(-2);
 
-    mFrame = style->createPrimitive(HbStyle::P_ProgressBar_frame,q);
-    mTrack = style->createPrimitive(HbStyle::P_ProgressBar_track,mFrame);
-    mWaitTrack = style->createPrimitive(HbStyle::P_ProgressBar_waittrack,mFrame);    
+    mWaitTrack = new HbRepeatIconItem(QLatin1String("qtg_graf_progbar_h_wait"), mFrame);
+    HbStyle::setItemName(mWaitTrack, "wait-track");
     mWaitTrack->setVisible(false);
 
     if(q->layoutDirection() == Qt::RightToLeft) {
@@ -167,38 +175,91 @@ void HbProgressBarPrivate::createTextPrimitives()
 {
     Q_Q(HbProgressBar);
 
-    mMinTextItem = q->style()->createPrimitive(HbStyle::P_ProgressBar_mintext,q);
-    mMaxTextItem = q->style()->createPrimitive(HbStyle::P_ProgressBar_maxtext,q);
+    mMinTextItem = q->style()->createPrimitive(HbStyle::PT_TextItem, "min-text",q);
+    mMaxTextItem = q->style()->createPrimitive(HbStyle::PT_TextItem, "max-text",q);
 }
 
 void HbProgressBarPrivate::setProgressValue(int value)
 {
    Q_Q(HbProgressBar);
-   if (mProgressValue == value) {
-        return;
-    }
-    if (value >= mMaximum) {
-        value = mMaximum;
-#ifdef HB_EFFECTS
-        HbEffect::start(mTrack, HB_PRGRESSBAR_ITEM_TYPE, "progressbar_progress_complete");
-#endif
-    }
-    else if (value < mMinimum) {
-        value = mMinimum;
-    }
-    
-    mProgressValue=value;
 
-    //redraw track
-    HbStyleOptionProgressBar progressBarOption;
-    q->initStyleOption(&progressBarOption);
-    if(mTrack) {
-        q->style()->updatePrimitive(mTrack, HbStyle::P_ProgressBar_track, &progressBarOption);
-    }
+   // set progress value only for normal progressbar type
+   if( !((mMinimum ==0) && (mMaximum==0))) {
+        if (mProgressValue == value) {
+            return;
+        }
+        if (value >= mMaximum) {
+            value = mMaximum;
+    #ifdef HB_EFFECTS
+            HbEffect::start(mTrack, HB_PRGRESSBAR_ITEM_TYPE, "progressbar_progress_complete");
+    #endif
+        }
+        else if (value < mMinimum) {
+            value = mMinimum;
+        }
+        
+        mProgressValue=value;
 
-    emit q->valueChanged(value);
-    
+        //redraw track
+        updateProgressTrack();
+
+        emit q->valueChanged(value);
+   }
 }
+
+/*
+    \internal
+    Update wait track primitive
+*/
+void HbProgressBarPrivate::updateWaitTrack()
+{
+    if (mWaitTrack && mWaitTrack->isVisible()) {
+            HbRepeatIconItem *iconItem = qgraphicsitem_cast<HbRepeatIconItem*>(mWaitTrack);
+                iconItem->setOrientation(mOrientation);
+                if( !iconItem->isVisible() ) {
+                    //break;
+                }
+                if(mOrientation == Qt::Horizontal){
+                    iconItem->setName(QLatin1String("qtg_graf_progbar_h_wait"));
+                }
+                else{
+                    iconItem->setName(QLatin1String("qtg_graf_progbar_v_wait"));
+                }
+                if(mStopWaitAnimation){
+                    iconItem->stopAnimation();
+                }
+        }   
+}
+
+/*
+    \internal
+    Update track primitive
+*/
+void HbProgressBarPrivate::updateProgressTrack()
+{
+    if (mTrack) {
+            HbProgressTrackItem* frameItem = qgraphicsitem_cast<HbProgressTrackItem*>(mTrack);
+            if(!frameItem->isVisible()) {
+                //break;
+            }
+
+            if(mOrientation == Qt::Horizontal){
+                frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesHorizontal);
+                frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progbar_h_filled"));
+             }
+             else{
+               frameItem->frameDrawer().setFrameType(HbFrameDrawer::ThreePiecesVertical);
+               frameItem->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_progbar_v_filled"));
+             }
+            frameItem->setMaximum(mMaximum);
+            frameItem->setMinimum(mMinimum);
+            frameItem->setValue(mProgressValue);
+            frameItem->setInverted(mInvertedAppearance);
+            frameItem->setOrientation(mOrientation);
+            frameItem->update();
+        }
+}
+
 
 /*
     \internal
@@ -207,9 +268,9 @@ void HbProgressBarPrivate::setProgressValue(int value)
 void HbProgressBarPrivate::setEnableFlag(bool flag)
 {
     Q_Q(HbProgressBar);
+    
     if(!flag) {
         q->setProgressValue(q->minimum());
-
     }
 }
 
@@ -219,7 +280,7 @@ void HbProgressBarPrivate::setEnableFlag(bool flag)
 */
 void HbProgressBarPrivate::setRange(int minimum, int maximum)
 {
-    Q_Q(HbProgressBar);
+
     if( minimum > maximum ){
         maximum = minimum ;
     }
@@ -236,19 +297,17 @@ void HbProgressBarPrivate::setRange(int minimum, int maximum)
 
     // update primitve optimization, update only track primitive 
     // incase of normal as well as in infinite progressbar
-    HbStyleOptionProgressBar progressBarOption;
-    q->initStyleOption(&progressBarOption);
 
     if( (mMinimum == 0) && (mMaximum == 0) ) {
         mWaitTrack->setVisible(true);
         mTrack->setVisible(false);
 
-        q->style()->updatePrimitive(mWaitTrack, HbStyle::P_ProgressBar_waittrack, &progressBarOption);
+        updateWaitTrack();
     } else {
         mWaitTrack->setVisible(false);
         mTrack->setVisible(true);
 
-        q->style()->updatePrimitive(mTrack, HbStyle::P_ProgressBar_track, &progressBarOption);
+        updateProgressTrack();
     }
     //q->updatePrimitives();
 } 
@@ -458,9 +517,12 @@ void HbProgressBar::setMinText(const QString &text)
     Q_D(HbProgressBar);
     if (d->mMinText != text) {
         d->mMinText = text;
-        HbStyleOptionProgressBar progressBarOption;
-        progressBarOption.minText = d->mMinText;
-        style()->updatePrimitive(d->mMinTextItem,HbStyle::P_ProgressBar_mintext,&progressBarOption);
+
+        if(d->mMinTextItem && d->mMinMaxTextVisible) {
+            HbStyleTextPrimitiveData data; 
+            initPrimitiveData(&data, d->mMinTextItem); 
+            style()->updatePrimitive(d->mMinTextItem, &data, this);
+        }
      }
 }
 
@@ -489,9 +551,12 @@ void HbProgressBar::setMaxText(const QString &text)
     Q_D(HbProgressBar);
     if (d->mMaxText != text) {
         d->mMaxText = text;
-        HbStyleOptionProgressBar progressBarOption;
-        progressBarOption.maxText = d->mMaxText;
-        style()->updatePrimitive(d->mMaxTextItem,HbStyle::P_ProgressBar_maxtext,&progressBarOption);
+
+        if(d->mMaxTextItem && d->mMinMaxTextVisible) {
+            HbStyleTextPrimitiveData data; 
+            initPrimitiveData(&data, d->mMaxTextItem); 
+            style()->updatePrimitive(d->mMaxTextItem, &data, this);
+        }
     }
 }
 
@@ -526,11 +591,17 @@ void HbProgressBar::setMinMaxTextVisible(bool visible)
         
     // update primitve optimization, update only text primitives 
     // incase of with and without min-max text
-    HbStyleOptionProgressBar progressBarOption;
-    initStyleOption(&progressBarOption);
+    if(d->mMinTextItem && d->mMinMaxTextVisible) {
+        HbStyleTextPrimitiveData data; 
+        initPrimitiveData(&data, d->mMinTextItem); 
+        style()->updatePrimitive(d->mMinTextItem, &data, this);
+    }
 
-    style()->updatePrimitive(d->mMinTextItem,HbStyle::P_ProgressBar_mintext,&progressBarOption);    
-    style()->updatePrimitive(d->mMaxTextItem,HbStyle::P_ProgressBar_maxtext,&progressBarOption); 
+    if(d->mMaxTextItem && d->mMinMaxTextVisible) {
+        HbStyleTextPrimitiveData data; 
+        initPrimitiveData(&data, d->mMaxTextItem); 
+        style()->updatePrimitive(d->mMaxTextItem, &data, this);
+    }
 
             d->mMinTextItem->show();
             d->mMaxTextItem->show();
@@ -584,8 +655,7 @@ void HbProgressBar::setMinMaxTextAlignment(Qt::Alignment alignment)
         if (d->mMinMaxTextVisible) {
             repolish();
         }
-        // no need for primitve updation, only layout change is required
-        //updatePrimitives();
+        prepareGeometryChange();
     }
 
 }
@@ -627,57 +697,37 @@ Qt::Orientation HbProgressBar::orientation() const
 }
 
 /*!
-    \deprecated HbProgressBar::primitive(HbStyle::Primitive)
-        is deprecated.
+   \reimp
 */
-QGraphicsItem* HbProgressBar::primitive(HbStyle::Primitive primitive) const
-{
-    Q_D(const HbProgressBar);
-
-    switch (primitive) {
-        case HbStyle::P_ProgressBar_frame:
-            return d->mFrame;
-        case HbStyle::P_ProgressBar_track:
-            return d->mTrack;  
-        case HbStyle::P_ProgressBar_waittrack:
-            return d->mWaitTrack;
-        case HbStyle::P_ProgressBar_mintext:
-            return d->mMinTextItem;
-        case HbStyle::P_ProgressBar_maxtext:
-            return d->mMaxTextItem;
-        default:
-            return 0;
-    }
-}
-
-/*!
-    \reimp
- */
 void HbProgressBar::updatePrimitives()
 {
     Q_D(HbProgressBar);
 
     if(isVisible()){
-        HbStyleOptionProgressBar progressBarOption;
-        initStyleOption(&progressBarOption);
+        
         if (d->mFrame) {
-            style()->updatePrimitive(d->mFrame, HbStyle::P_ProgressBar_frame, &progressBarOption);          
+            HbStyleFramePrimitiveData data; 
+            initPrimitiveData(&data, d->mFrame); 
+
+            style()->updatePrimitive(d->mFrame, &data, this);
         }
      
-        if (d->mTrack) {
-                style()->updatePrimitive(d->mTrack, HbStyle::P_ProgressBar_track, &progressBarOption);
-        }
+        d->updateProgressTrack();
         
-        if (d->mWaitTrack) {
-                style()->updatePrimitive(d->mWaitTrack, HbStyle::P_ProgressBar_waittrack, &progressBarOption);
-        }
+        d->updateWaitTrack();
         
         if(d->mMinTextItem && d->mMinMaxTextVisible) {
-            style()->updatePrimitive(d->mMinTextItem,HbStyle::P_ProgressBar_mintext,&progressBarOption);    
+            HbStyleTextPrimitiveData data; 
+            initPrimitiveData(&data, d->mMinTextItem); 
+
+            style()->updatePrimitive(d->mMinTextItem, &data, this);
         }
 
         if(d->mMaxTextItem && d->mMinMaxTextVisible) {
-            style()->updatePrimitive(d->mMaxTextItem,HbStyle::P_ProgressBar_maxtext,&progressBarOption);    
+            HbStyleTextPrimitiveData data; 
+            initPrimitiveData(&data, d->mMaxTextItem); 
+
+            style()->updatePrimitive(d->mMaxTextItem, &data, this);
         }
     }
     HbWidget::updatePrimitives();
@@ -707,16 +757,54 @@ void HbProgressBar::initStyleOption(HbStyleOptionProgressBar *option) const
 
 /*!
     \reimp
+*/
+void HbProgressBar::initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive)
+{
+    Q_D(HbProgressBar);
+    HbWidgetBase::initPrimitiveData(primitiveData, primitive);
+    QString itemName = HbStyle::itemName(primitive);
+    if (itemName == QLatin1String("frame")) {
+        HbStyleFramePrimitiveData *data = hbstyleprimitivedata_cast<HbStyleFramePrimitiveData*>(primitiveData);
+
+        if (d->mOrientation == Qt::Horizontal) {
+        data->frameType = HbFrameDrawer::ThreePiecesHorizontal;
+        data->frameGraphicsName = QLatin1String("qtg_fr_progbar_h_frame");
+    } else {
+        data->frameType = HbFrameDrawer::ThreePiecesVertical;
+        data->frameGraphicsName = QLatin1String("qtg_fr_progbar_v_frame");
+    }
+
+    }
+
+    if (itemName == QLatin1String("min-text")) {
+        HbStyleTextPrimitiveData *data = hbstyleprimitivedata_cast<HbStyleTextPrimitiveData*>(primitiveData);
+        if(!d->mMinTextItem) {
+            return;
+        }
+        data->text = d->mMinText;
+        data->textWrapping = Hb::TextWrapAnywhere;
+    }
+    else if(itemName == QLatin1String("max-text")) {
+        HbStyleTextPrimitiveData *data = hbstyleprimitivedata_cast<HbStyleTextPrimitiveData*>(primitiveData);
+         if(!d->mMaxTextItem) {
+            return;
+        }
+        data->text = d->mMaxText;
+        data->textWrapping = Hb::TextWrapAnywhere;
+    }
+    
+}
+
+/*!
+    \reimp
  */
 void HbProgressBar::closeEvent ( QCloseEvent * event )
 {
     Q_D(HbProgressBar);
-    HbStyleOptionProgressBar progressBarOption;
-    initStyleOption(&progressBarOption);
-    progressBarOption.stopWaitAnimation = true;
-    if (d->mWaitTrack) {
-        style()->updatePrimitive(d->mWaitTrack, HbStyle::P_ProgressBar_waittrack, &progressBarOption);
-    }
+
+    d->mStopWaitAnimation = true;
+
+    d->updateWaitTrack();
     event->accept();
 }
 
@@ -786,6 +874,29 @@ void HbProgressBar::changeEvent(QEvent *event)
     }
 
     HbWidget::changeEvent(event);
+}
+
+QGraphicsItem *HbProgressBar::primitive(const QString &itemName) const
+{
+    Q_D(const HbProgressBar);
+
+    if(!itemName.compare(QString("frame"))){
+        return d->mFrame;
+    }
+    if(!itemName.compare(QString("track"))){
+        return d->mTrack;
+    }
+    if(!itemName.compare(QString("wait-track"))){
+        return d->mWaitTrack;
+    }
+    if(!itemName.compare(QString("min-text"))){
+        return d->mMinTextItem;
+    }
+    if(!itemName.compare(QString("max-text"))){
+        return d->mMaxTextItem;
+    }
+
+    return HbWidget::primitive(itemName);
 }
 
 #include "moc_hbprogressbar.cpp"

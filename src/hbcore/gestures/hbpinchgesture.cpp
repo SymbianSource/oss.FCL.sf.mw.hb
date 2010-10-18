@@ -23,15 +23,14 @@
 **
 ****************************************************************************/
 
-#include "hbgestures_p.h"
 #include "hbpinchgesture.h"
-#include "hbpinchgesture_p.h"
+#include "hbgestures_p.h"
 
 /*!
     @hbcore
     \class HbPinchGesture
 
-    \brief The HbPinchGesture class provides multitouch support.
+    \brief The HbPinchGesture class provides support for touch gestures using more than one finger.
     
     HbPinchGesture is an extension to Qt standard QPinchGesture. It offers
     convenience functions for handling the pinch gesture properties directly

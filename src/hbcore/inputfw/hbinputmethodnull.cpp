@@ -38,7 +38,7 @@ HbInputMethodNull *HbInputMethodNull::Instance()
 /*!
 \internal
 */
-HbInputMethodNull::HbInputMethodNull()
+HbInputMethodNull::HbInputMethodNull() : mDelayedPanelRequest(false)
 {
 }
 
@@ -96,6 +96,22 @@ void HbInputMethodNull::mouseHandler(int x, QMouseEvent *event)
 {
     Q_UNUSED(x);
     Q_UNUSED(event);
+}
+
+/*!
+\internal
+*/
+void HbInputMethodNull::setDelayedPanelRequest(bool value)
+{
+    mDelayedPanelRequest = value;
+}
+
+/*!
+\internal
+*/
+bool HbInputMethodNull::delayedPanelRequest() const
+{
+    return mDelayedPanelRequest;
 }
 
 // End of file

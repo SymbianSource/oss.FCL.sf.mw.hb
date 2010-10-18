@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<container xmlns="http://www.symbianfoundation.org/xml/implml/1">
+
+<container> 
+    <phase name="pre"/> 
+    <tag name="target" value="rofs2"/> 
+
+    <ruleml xmlns="http://www.s60.com/xml/ruleml/3">
+        <rule>
+            True configures {% get_themes_from_thx( ${HbTheme.AvailableThemes} ) %}
+        </rule>
+        <eval_globals file="scripts/hbtheme.py"/>
+        
+    </ruleml>
+</container>
+
+<container> 
+    <phase name="pre"/> 
+    <tag name="target" value="rofs3"/> 
+
+    <ruleml xmlns="http://www.s60.com/xml/ruleml/3">
+        <rule>
+            ${HbTheme.UIThemeFile} configures ${HbTheme.HbDefaultTheme} = {% get_themename_from_thx( ${HbTheme.UIThemeFile}, 'themes' ) %}
+        </rule>
+        <rule>
+            ${HbTheme.PriorityThemeFile} configures ${HbTheme.HbPriorityThemeName} = {% get_themename_from_thx( ${HbTheme.PriorityThemeFile}, 'prioritytheme' ) %}
+        </rule>
+        <eval_globals file="scripts/hbtheme.py"/>        
+    </ruleml>
+</container>
+
+<container>
+    <phase name="normal"/>
+
+    <content xmlns="http://www.s60.com/xml/content/2">
+        <output dir="">
+            <input dir="content"/>
+        </output>
+    </content>
+</container>
+
+</container>

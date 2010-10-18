@@ -57,6 +57,7 @@ PUBLIC_HEADERS += $$PWD/hbinputcontextplugin.h
 
 # private framework headers
 PRIVATE_HEADERS += $$PWD/hbinputmodecache_p.h
+PRIVATE_HEADERS += $$PWD/hbinputmodecache_p_p.h
 PRIVATE_HEADERS += $$PWD/hbinputcontextproxy_p.h
 PRIVATE_HEADERS += $$PWD/hbinputmethodnull_p.h
 PRIVATE_HEADERS += $$PWD/hbinputeditorinterface_p.h
@@ -65,10 +66,12 @@ PRIVATE_HEADERS += $$PWD/hbinputmethod_p.h
 PRIVATE_HEADERS += $$PWD/hbinputsettingproxy_p.h
 PRIVATE_HEADERS += $$PWD/hbinputmainwindow_p.h
 PRIVATE_HEADERS += $$PWD/hbinputregioncollector_p.h
+PRIVATE_HEADERS += $$PWD/hbinputkeymapfactory_p.h
+PRIVATE_HEADERS += $$PWD/hbinputfocusobject_p.h
 
 # framework sources
-SOURCES += $$PWD/hbinputmethod.cpp \
-    inputfw/hbinputregioncollector.cpp
+SOURCES += $$PWD/hbinputmethod.cpp
+SOURCES += $$PWD/hbinputregioncollector.cpp
 SOURCES += $$PWD/hbinputkeymap.cpp
 SOURCES += $$PWD/hbinputpredictionengine.cpp
 SOURCES += $$PWD/hbinputkeymapfactory.cpp

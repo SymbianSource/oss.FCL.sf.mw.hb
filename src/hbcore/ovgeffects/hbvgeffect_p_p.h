@@ -78,6 +78,7 @@ public:
         return effect->d_func();
     }
 
+    void clearPixmaps();
     void ensureCacheInvalidated();
 
     // Called whenever cacheInvalidated is changed to true. Derived classes can override
@@ -136,6 +137,9 @@ public:
     mutable qreal lastRotationTransformAngle;
 
     bool forceSwMode;
+
+    // When enabled, a clearPixmap() call is performed always after drawing.
+    bool alwaysClearPixmaps;
 };
 
 #endif

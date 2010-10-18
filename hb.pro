@@ -44,12 +44,17 @@ SUBDIRS += src
     INSTALLS += feature
 }
 else {
-    tmp = $$split(HB_FEATURES_DIR, :)
-    HB_SYMBIAN_PRF_EXPORT_DIR = $$last(tmp)
+    HB_SYMBIAN_PRF_EXPORT_DIR = $$hbStripDriveLetter($$HB_FEATURES_DIR)
     BLD_INF_RULES.prj_exports += "hb.prf $$HB_SYMBIAN_PRF_EXPORT_DIR/hb.prf"
     BLD_INF_RULES.prj_exports += "hb_install.prf $$HB_SYMBIAN_PRF_EXPORT_DIR/hb_install.prf"
     BLD_INF_RULES.prj_exports += "mkspecs/hb_functions.prf $$HB_SYMBIAN_PRF_EXPORT_DIR/hb_functions.prf"
     BLD_INF_RULES.prj_exports += "mkspecs/docml2bin.prf $$HB_SYMBIAN_PRF_EXPORT_DIR/docml2bin.prf"
+
+    host_tools {
+        hbToolExport("$${HB_BUILD_DIR}/bin/docml2bin", "$${HB_BIN_DIR}/docml2bin")
+        hbToolExport("$${HB_BUILD_DIR}/bin/hbbincssmaker", "$${HB_BIN_DIR}/hbbincssmaker")
+        hbToolExport("$${HB_BUILD_DIR}/bin/hbthemeindexer", "$${HB_BIN_DIR}/hbthemeindexer")
+    }
 }
 
 QMAKE_DISTCLEAN += $$hbNativePath($$HB_BUILD_DIR/.qmake.cache)
@@ -58,7 +63,7 @@ QMAKE_DISTCLEAN += $$hbNativePath($$HB_BUILD_DIR/hb_install.prf)
 
 symbian {
     exists(rom):include(rom/rom.pri)
-    install.depends += cssbinary
+    install.depends += cssbinary stub_sis
     QMAKE_EXTRA_TARGETS += install
 }
 
@@ -76,11 +81,39 @@ cssbinary.CONFIG += no_check_exist
 INSTALLS += cssbinary
 
 symbian {
-    cssbinary.commands += $$hbCopyCommand($$cssbinary.files, $${EPOCROOT}epoc32/data/z/resource/hb/themes/)
-    cssbinary.commands += && $$hbCopyCommand($$cssbinary.files, $${EPOCROOT}epoc32/release/winscw/udeb/z/resource/hb/themes/)
-    QMAKE_DISTCLEAN += $${EPOCROOT}epoc32/data/z/resource/hb/themes/$$cssbinary.files
-    QMAKE_DISTCLEAN += $${EPOCROOT}epoc32/release/winscw/udeb/z/resource/hb/themes/$$cssbinary.files
+    # TODO: Magic ahead
+    makefile_epocroot=$${EPOCROOT}
+    hbUnixStyle():makefile_epocroot=$$${EPOCROOT}/
+    cssbinary.commands += $$hbCopyCommand($$cssbinary.files, $${makefile_epocroot}epoc32/data/z/resource/hb/themes/)
+    cssbinary.commands += && $$hbCopyCommand($$cssbinary.files, $${makefile_epocroot}epoc32/release/winscw/udeb/z/resource/hb/themes/)
+    QMAKE_DISTCLEAN += $${makefile_epocroot}epoc32/data/z/resource/hb/themes/$$cssbinary.files
+    QMAKE_DISTCLEAN += $${makefile_epocroot}epoc32/release/winscw/udeb/z/resource/hb/themes/$$cssbinary.files
     QMAKE_EXTRA_TARGETS += cssbinary
+}
+
+!symbian {
+    LRELEASE = $$hbNativePath($$[QT_INSTALL_BINS]/lrelease)
+    COMMON_EXTENSIONS = ar eu bg ca hr cs da nl en_US et fi fr fr_CA gl de el he hi zh_HK hu is id it ja ko lv lt ms nb pl pt pt_BR zh ro ru sr sk sl es es_419 sv tl zh_TW th tr uk ur vi
+    translations.input = $$HB_SOURCE_DIR/src/hbcore/i18n/translations
+    translations.path = $${HB_TRANSLATIONS_DIR}
+
+    pre_translations.commands = $$hbCreateDir($${HB_TRANSLATIONS_DIR})
+    translations.depends += pre_translations
+    translations.commands = $$LRELEASE -silent -idbased $$translations.input/commonstrings/commonstrings_en.ts -qm $$translations.path/commonstrings_en.qm
+    translations.commands += && $$LRELEASE -silent -idbased $$translations.input/directorynamelocalizer/directorynamelocalizer_en.ts -qm $$translations.path/directorynamelocalizer_en.qm
+    for(ext, COMMON_EXTENSIONS) {
+        file1 = commonstrings_$$ext
+        file2 = directorynamelocalizer_$$ext
+        commands = trans_$${ext}.commands
+        $$commands += $$LRELEASE -silent -idbased $$translations.input/commonstrings/$${file1}.ts -qm $$translations.path/$${file1}.qm
+        $$commands += && $$LRELEASE -silent -idbased $$translations.input/directorynamelocalizer/$${file2}.ts -qm $$translations.path/$${file2}.qm
+        QMAKE_EXTRA_TARGETS += trans_$${ext}
+        translations.depends += trans_$${ext}
+    }
+
+    QMAKE_EXTRA_TARGETS += pre_translations
+    QMAKE_EXTRA_TARGETS += translations
+    INSTALLS += translations
 }
 
 !contains(HB_NOMAKE_PARTS, tests):exists(tsrc) {
@@ -95,4 +128,5 @@ symbian {
 
 exists(doc):include(doc/doc.pri)
 include(src/hbcommon.pri)
-#include(src/symbian_installs/symbian_deployment.pri)
+include(src/platforms/symbian/installs/symbian_deployment.pri)
+include(src/platforms/symbian/configurations/symbian_configurations.pri)

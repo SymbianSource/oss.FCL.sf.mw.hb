@@ -34,7 +34,7 @@
 #include <QPicture>
 #include <QScopedPointer>
 #include <QImageReader>
-#include <QPixmap>
+#include <QImage>
 #include <QDir>
 #include <QFile>
 #include <QByteArray>
@@ -43,6 +43,7 @@
 #include "hbnvg_p.h"
 #endif // HB_NVG_CS_ICON
 #endif // HB_BOOTSTRAPPED
+
 
 #ifdef HB_BOOTSTRAPPED
 
@@ -119,7 +120,7 @@ QSize nvgContentDimensions(const QByteArray &buffer)
 HbIconSource::HbIconSource(const QString &filename) :
     mFilename(filename),
     mPicture(0),
-    mPixmap(0),
+    mImage(0),
     mByteArray(0),
     mSvgRenderer(0),
     mImageReader(0)
@@ -131,7 +132,7 @@ HbIconSource::HbIconSource(const QString &filename, const QString &type) :
     mFilename(filename),
     mType(type),
     mPicture(0),
-    mPixmap(0),
+    mImage(0),
     mByteArray(0),
     mSvgRenderer(0),
     mImageReader(0)
@@ -144,7 +145,7 @@ HbIconSource::~HbIconSource()
     delete mImageReader;
     delete mSvgRenderer;
     delete mPicture;
-    delete mPixmap;
+    delete mImage;
     delete mByteArray;
 }
 
@@ -228,10 +229,13 @@ QSizeF HbIconSource::defaultSize()
             }
             releaseImageReader();
         } else if (mType != "BLOB") {
-            if (!mPixmap) {
-                mPixmap = new QPixmap(mFilename);
+            if (!mImage) {
+                mImage = new QImage(mFilename);
+                if (mImage->isNull()) {
+                    qWarning("HbIconSource::defaultSize: Cannot load %s", qPrintable(mFilename));
+                }
             }
-            mDefaultSize = mPixmap->size();
+            mDefaultSize = mImage->size();
         }
     }
 
@@ -245,6 +249,9 @@ QSvgRenderer *HbIconSource::svgRenderer()
 {
     if (!mSvgRenderer) {
         mSvgRenderer = new QSvgRenderer(mFilename);
+        if (!mSvgRenderer->isValid()) {
+            qWarning("HbIconSource::svgRenderer: Invalid SVG document: %s", qPrintable(mFilename));
+        }
     }
     return mSvgRenderer && mSvgRenderer->isValid() ? mSvgRenderer : 0;
 }
@@ -305,6 +312,9 @@ QImageReader *HbIconSource::imageReader()
     if (!mImageReader) {
         type(); // make sure type is initialized
         mImageReader = new QImageReader(mFilename, mType.toLatin1());
+        if (!mImageReader->canRead()) {
+            qWarning("HbIconSource::imageReader: Cannot read image %s", qPrintable(mFilename));
+        }
     }
     return mImageReader && mImageReader->canRead() ? mImageReader : 0;
 }
@@ -328,25 +338,38 @@ void HbIconSource::takeImageReader()
     mImageReader = 0;
 }
 
-QPixmap *HbIconSource::pixmap()
-{
-    if (!mPixmap) {
-        mPixmap = new QPixmap(mFilename);
-    }
+/*!
+  Returns the QImage, reading from the file, if needed.
 
-    return mPixmap;
+  If image() has been called before and the data is still available
+  then no file access is done.
+
+  HbIconSource works with QImage everywhere so it can be used outside
+  the gui thread too.
+ */
+QImage *HbIconSource::image()
+{
+    if (!mImage) {
+        // Must use QImage so this function can be called outside the
+        // main thread.
+        mImage = new QImage(mFilename);
+        if (mImage->isNull()) {
+            qWarning("HbIconSource::image: Cannot load %s", qPrintable(mFilename));
+        }
+    }
+    return mImage;
 }
 
-void HbIconSource::deletePixmapIfLargerThan(int limitInBytes)
+void HbIconSource::deleteImageIfLargerThan(int limitInBytes)
 {
-    if (mPixmap) {
-        QSize size = mPixmap->size();
-        int sizeInBytes = size.width() * size.height() * mPixmap->depth();
+    if (mImage) {
+        QSize size = mImage->size();
+        int sizeInBytes = size.width() * size.height() * mImage->depth();
         sizeInBytes /= 8; // depth is in bits, we want bytes
 
         if (sizeInBytes > limitInBytes) {
-            delete mPixmap;
-            mPixmap = 0;
+            delete mImage;
+            mImage = 0;
         }
     }
 }

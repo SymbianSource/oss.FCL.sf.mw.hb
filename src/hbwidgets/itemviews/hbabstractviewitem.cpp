@@ -28,14 +28,21 @@
 #include <hbabstractviewitem.h>
 #include <hbabstractitemview.h>
 #include <hbnamespace.h>
-#include <hbstyleoptionabstractviewitem_p.h>
 #include <hbstyle.h>
 #include <hbiconitem.h>
+#include <hbiconitem_p.h>
 #include <hbframebackground.h>
 #include <hbabstractitemview_p.h>
 #include <hbwidgetfeedback.h>
 #include <hbtapgesture.h>
 #include <hbnamespace_p.h>
+#include <hbevent.h>
+#include <hbtextitem.h>
+#include <hbiconitem.h>
+#include <hbstyletextprimitivedata.h>
+#include <hbstyleframeprimitivedata.h>
+#include <hbstyleiconprimitivedata.h>
+#include <hbstyletouchareaprimitivedata.h>
 
 #include <QPersistentModelIndex>
 #include <QGraphicsLayout>
@@ -44,14 +51,19 @@
 #include <QEvent>
 #include <QTimer>
 #include <QGraphicsScene>
-#include <QDebug>
+
+#include <QPixmap>
+#include <QChildEvent>
 
 #include <QGesture>
 #include <QGestureEvent>
+#include <QGraphicsSceneEvent>
+
+#include <QDebug>
 
 const QString KDefaultLayoutOption = "default";
 const int HbAbstractViewItemShared::ViewItemDeferredDeleteEvent = QEvent::registerEventType();
-const int HbViewItemPressDelay = 50;
+const int HbViewItemPressDelay = 100;
 
 /*!
     @alpha
@@ -60,9 +72,17 @@ const int HbViewItemPressDelay = 50;
     \brief The HbAbstractViewItem class represents a single item in a AbstractItemView.  
 
     The HbAbstractViewItem class provides an item that is used by HbAbstractItemView class to
-    visualize content within single model index. By default HbAbstractViewItem supports QString and QStringList 
-    stored into Qt::DisplayRole role and QIcon, HbIcon or list of them in QVariantList stored into
-    Qt::DecoratorRole role. 
+    visualize content within single model index. 
+    
+    By default HbAbstractViewItem supports following model item types in Hb::ItemTypeRole role of data model
+    \li Hb::StandardItem. This is normal item. Item is considered as Hb::StandardItem, if Hb::ItemTypeRole is not set.
+    \li Hb::ParentItem. Item has children. This class provides default frame item for parent item, if Qt::BackgroundRole data is not specifically set.
+    \li Hb::SeparatorItem. Separator is used as boundary between separate items. Item does not interact with user. This requires support from the model, too. Qt::ItemIsEnabled flag must be Off for the model item. This class provides default frame for separator item, if Qt::BackgroundRole data is not specifically set.
+
+    Every subclass view item do not support every model item type. For more information see subclass documentation.
+
+    Item data roles HbIcon, QBrush or HbFrameBackground are supported in Qt::BackgroundRole data role.
+    Other supported item data roles can be found in subclass documentation.
 
     This class is provided mainly for customization purposes but it also acts as a default
     item prototype inside HbAbstractItemView. See HbAbstractItemView how to set customized class as a item prototype.
@@ -77,12 +97,19 @@ const int HbViewItemPressDelay = 50;
     position selection areas etc.) this information can be supplied to transient state model. Transient state model is maintained 
     internally by abstract item view. 
 
+    If item's pixmap cache is enabled derived class should call updatePixmapCache() when ever visual appearance of the item or its children is
+    changed. For more information about enabling the pixmap cache see HbAbstractItemView::setItemPixmapCacheEnabled().
 
     \primitives
-    \primitive{background} HbIconItem representing the item background. This primitive exists in cases the model's Qt::BackgroundRole returns HbIcon or QBrush for this item.
-    \primitive{frame} HbFrameItem representing the background frame of the item. This primitive exists if background primitive does not exist and the model's Qt::BackgroundRole returns HbFrameBackground or there is a default frame set with the setDefaultFrame(). An item can have either the frame or the background primitive, but not the both at the same time.
-    \primitive{selection-icon} HbIconItem representing the checkbox in the multi selection mode.
-    \primitive{multiselection-toucharea} HbTouchArea used in extending the touch area of the selection-icon. 
+    \primitive{background} HbIconItem with item name "background" representing the item background. This primitive exists in cases the model's Qt::BackgroundRole returns HbIcon or QBrush for this item.
+    \primitive{frame} HbFrameItem with item name "frame" representing the background frame of the item. This primitive exists if background primitive does not exist and the model's Qt::BackgroundRole returns HbFrameBackground or there is a default frame set with the setDefaultFrame(). An item can have either the frame or the background primitive, but not the both at the same time.
+    \primitive{selection-icon} HbIconItem with item name "selection-icon" representing the checkbox in the multi selection mode.
+    \primitive{multiselection-toucharea} HbTouchArea with item name "multiselection-toucharea" used in extending the touch area of the selection-icon. 
+    \primitive{focus} HbFrameItem with item name "focus" for showing focus. 
+
+    \sa HbListViewItem
+    \sa HbGridViewItem
+    \sa HbTreeViewItem
 */
 
 /*!
@@ -177,10 +204,58 @@ const int HbViewItemPressDelay = 50;
     \snippet{ultimatecodesnippet/customlistviewitem.cpp,1}
 */
 
+void HbAbstractViewItemShared::updateIconItemsAsyncMode()
+{
+    foreach (HbAbstractViewItem *item, mCloneItems) {
+        QList<QGraphicsItem *> childItems = item->childItems();
+        foreach (QGraphicsItem *child, childItems) {
+            item->d_func()->updateIconItemsAsyncMode(child);
+        }
+    }
+}
+
+void HbAbstractViewItemShared::setItemView(HbAbstractItemView *view)
+{
+    if (view != mItemView) {
+        if (mItemView) {
+            disconnect(mItemView, SIGNAL(scrollingStarted()), this, SLOT(scrollingStarted()));
+        }
+        mItemView = view;
+        if (mItemView) {
+            connect(mItemView, SIGNAL(scrollingStarted()), this, SLOT(scrollingStarted()));
+        }
+    }
+}
+
 void HbAbstractViewItemShared::pressStateChangeTimerTriggered()
 {
-    HbWidgetFeedback::triggered(mPressedItem, Hb::InstantPressed, 0);
-    mPressedItem->pressStateChanged(true, mAnimatePress);
+    if (mPressedItem) {
+        HbWidgetFeedback::triggered(mPressedItem, Hb::InstantPressed, 0);
+        mPressedItem->pressStateChanged(true, mAnimatePress);
+    }
+}
+
+void HbAbstractViewItemShared::disablePixmapCaches()
+{
+    mLowGraphicsMemory = true;
+    foreach (HbAbstractViewItem *item, mCloneItems) {
+        item->update();
+    }
+}
+
+void HbAbstractViewItemShared::enablePixmapCaches()
+{
+    mLowGraphicsMemory = false;
+    foreach (HbAbstractViewItem *item, mCloneItems) {
+        item->update();
+    }
+}
+
+void HbAbstractViewItemShared::scrollingStarted()
+{
+    if (mItemView && mItemView->iconLoadPolicy() == HbAbstractItemView::LoadAsynchronouslyWhenScrolling) {
+        updateIconItemsAsyncMode();
+    }
 }
 
 void HbAbstractViewItemPrivate::init()
@@ -188,6 +263,7 @@ void HbAbstractViewItemPrivate::init()
     Q_Q(HbAbstractViewItem);
 
     q->setProperty("state", "normal");
+    q->setFlag(QGraphicsItem::ItemHasNoContents, false);
 
     if (isPrototype()) {
         q->setFocusPolicy(Qt::ClickFocus);
@@ -200,6 +276,19 @@ void HbAbstractViewItemPrivate::init()
         q->setFocusPolicy(mSharedData->mPrototype->focusPolicy());
 
         mSharedData->mCloneItems.append(q);
+
+        mFrontPixmapPainter = new HbViewItemPixmapPainter(1000, q);
+        // setChildFlags gets called in the construction phase, but the values are wrong.
+        // Here we set the flags to force FrontPixmap to obey parent opacity, this is needed in animations
+        setChildFlags(mFrontPixmapPainter, false);
+
+        mBackPixmapPainter = new HbViewItemPixmapPainter(-1000, q);
+        // setChildFlags gets called in the construction phase, but the values are wrong.
+        // Here we set the flags to force BackPixmap to obey parent opacity, this is needed in animations
+        setChildFlags(mBackPixmapPainter, false);
+
+        mChildren = q->childItems();
+        q->connect(q, SIGNAL(childrenChanged()), q, SLOT(_q_childrenChanged()));
     }
 }
 
@@ -222,6 +311,47 @@ void HbAbstractViewItemPrivate::_q_animationFinished(const HbEffect::EffectStatu
         QCoreApplication::postEvent(q, new QEvent((QEvent::Type)HbAbstractViewItemShared::ViewItemDeferredDeleteEvent));
     }
 }
+
+void HbAbstractViewItemPrivate::_q_childrenChanged()
+{
+    Q_Q(HbAbstractViewItem);
+
+    QList<QGraphicsItem *> childList = q->childItems();
+    int currentCount = childList.count();
+    int previousCount = mChildren.count();
+
+    if (currentCount > previousCount) {
+        QGraphicsItem *addedItem = 0;
+        for (int i = 0; i < currentCount; ++i) {
+            QGraphicsItem *item = childList.at(i);
+            if (item != mChildren.value(i)) {
+                addedItem = item;
+                break;
+            }
+        }
+
+        if (usePixmapCache()) {
+            setChildFlags(addedItem, true);
+        }
+
+        updateIconItemsAsyncMode(addedItem);
+    } else {
+        if (mUpdateItems.count()) {
+            int itemCount = mUpdateItems.count();
+            for (int i = 0; i < itemCount; ++i) {
+                QGraphicsItem *item = mUpdateItems.at(i);
+                int index = childList.indexOf(item);
+                if (index == -1) {
+                    mUpdateItems.remove(i);
+                    mUpdateItems.squeeze();
+                }
+            }
+        }
+    }
+
+    mChildren = childList;
+}
+
 
 void HbAbstractViewItemPrivate::repolishCloneItems()
 {
@@ -278,6 +408,7 @@ void HbAbstractViewItemPrivate::tapTriggered(QGestureEvent *event)
             if (gesture->tapStyleHint() == HbTapGesture::TapAndHold 
                 && mSharedData->mItemView
                 && mSharedData->mItemView->longPressEnabled()) {
+                q->scene()->setProperty(HbPrivate::OverridingGesture.latin1(),QVariant());
                 setPressed(false, true);
                 QPointer<HbAbstractViewItem> item = q;
                 emit item->longPressed(position);
@@ -374,6 +505,266 @@ void HbAbstractViewItemPrivate::setPressed(bool pressed, bool animate)
     }
 }
 
+void HbAbstractViewItemPrivate::drawSubPixmap(QPixmap *pixmap,
+                                              QPainter *painter,
+                                              const QStyleOptionGraphicsItem *option)
+{
+    Q_Q(HbAbstractViewItem);
+
+    QPixmap subPix;
+    QPainter pixmapPainter;
+    QStyleOptionGraphicsItem pixmapOption(*option);
+
+    QList<QGraphicsItem *> childList = q->childItems();
+
+    foreach (QGraphicsItem *subChild, mUpdateItems) {
+        pixmapOption.exposedRect = subChild->boundingRect();
+
+        subPix = QPixmap(pixmapOption.exposedRect.toRect().size());
+        subPix.fill(Qt::transparent);
+
+        pixmapPainter.begin(&subPix);
+        pixmapPainter.setRenderHints(pixmapPainter.renderHints(), false);
+        pixmapPainter.setRenderHints(painter->renderHints(), true);
+        
+        // Draw items on the pixmap
+        paintChildItemsRecursively(subChild, &pixmapPainter, &pixmapOption, QPointF());
+
+        // Search & paint overlapping child items.
+        QRectF subChildRectRelativeToParent(subChild->pos(), subChild->boundingRect().size());
+
+        int currentIndex = childList.indexOf(subChild) + 1;
+        int childCount = childList.count();
+        while (currentIndex < childCount) {
+            QGraphicsItem *item = childList.at(currentIndex);
+            if (item != mNonCachableItem 
+                && item != mFrontPixmapPainter 
+                && item != mBackPixmapPainter) {
+                QRectF itemRectRelativeToParent(item->pos(), item->boundingRect().size());
+
+                QRectF intersectionRect(itemRectRelativeToParent.intersected(subChildRectRelativeToParent));
+                if (!intersectionRect.isNull()) {
+                    QStyleOptionGraphicsItem itemPixmapOption(*option);
+                    itemPixmapOption.exposedRect = intersectionRect.translated(-item->pos());
+
+                    paintChildItemsRecursively(item, &pixmapPainter, &itemPixmapOption, subChild->mapFromParent(itemRectRelativeToParent.topLeft()));
+                }
+            }
+            ++currentIndex;
+        }
+
+        pixmapPainter.end();
+
+        if (!subPix.isNull()) {
+            // Blit the subpixmap into the main pixmap.
+            pixmapPainter.begin(pixmap);
+            pixmapPainter.translate(subChild->pos());
+            pixmapPainter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+            pixmapPainter.setClipRect(pixmapOption.exposedRect);
+            pixmapPainter.drawPixmap(pixmapOption.exposedRect.topLeft(), subPix);
+            pixmapPainter.end();
+        }
+    }
+    mUpdateItems.clear();
+}
+
+void HbAbstractViewItemPrivate::updatePixmap(QPixmap *pixmap, 
+                                             QPainter *painter, 
+                                             const QStyleOptionGraphicsItem *option, 
+                                             QGraphicsItem *startItem, 
+                                             QGraphicsItem *endItem)
+{
+    //Q_Q(HbAbstractViewItem);
+    pixmap->fill(Qt::transparent);
+
+    QPainter pixmapPainter;
+    pixmapPainter.begin(pixmap);
+
+    pixmapPainter.setRenderHints(pixmapPainter.renderHints(), false);
+    pixmapPainter.setRenderHints(painter->renderHints());
+
+    // Draw items on the pixmap
+    QStyleOptionGraphicsItem pixmapOption(*option);
+    paintItems(&pixmapPainter, &pixmapOption, startItem, endItem);
+}
+
+void HbAbstractViewItemPrivate::paintItems(QPainter *painter, QStyleOptionGraphicsItem *option, QGraphicsItem *startItem, QGraphicsItem *endItem)
+{
+    Q_Q(HbAbstractViewItem);
+
+    mInPaintItems = true;
+
+    bool itemPainted = false;
+
+    bool startItemFound = false;
+    if (!startItem) {
+        startItemFound = true;
+    }
+
+    foreach (QGraphicsItem *child, q->childItems()) {
+        if (!startItemFound) {
+            if (child == startItem) {
+                startItemFound = true;
+            }
+            continue;
+        } else if (child == endItem) {
+            break;
+        }
+
+        if (!child->isVisible() || child == mNonCachableItem || child == mFrontPixmapPainter || child == mBackPixmapPainter) {
+            continue;
+        }
+
+        if (!itemPainted && child->zValue() >= 0) {
+            option->exposedRect = q->boundingRect();
+            q->paint(painter, option, 0);
+            itemPainted = true;
+        }
+
+        if (child == mFrame) {
+            QPainter::CompositionMode mode = painter->compositionMode();
+            painter->setCompositionMode(QPainter::CompositionMode_Source);
+            painter->translate(child->pos());
+            option->exposedRect = child->boundingRect();
+            child->paint(painter, option, 0);
+            painter->setCompositionMode(mode);
+            painter->translate(-child->pos());
+            continue;
+        }
+        paintChildItemsRecursively(child,painter,option, child->pos());
+    }
+    mInPaintItems = false;
+}
+
+void HbAbstractViewItemPrivate::paintChildItemsRecursively(QGraphicsItem *child,
+                                                           QPainter *painter,
+                                                           QStyleOptionGraphicsItem *option,
+                                                           const QPointF &translatePosition)
+{
+    if (!child->isVisible())
+        return;
+    int i = 0;
+    QList<QGraphicsItem *> children =  child->childItems();
+    int count(children.size());
+    if (!translatePosition.isNull()) {
+        painter->translate(translatePosition);
+    }
+    // Draw children behind
+    for (i = 0; i < count; ++i) {
+        QGraphicsItem *subChild = children.at(i);
+        if (!(subChild->flags() & QGraphicsItem::ItemStacksBehindParent))
+            break;
+        paintChildItemsRecursively(subChild, painter,option, subChild->pos());
+    }
+    option->exposedRect = child->boundingRect();
+
+    bool restorePainter = false;
+    if (child->flags() & QGraphicsItem::ItemClipsToShape) {
+        painter->save();
+        restorePainter = true;
+
+        painter->setClipRect(child->boundingRect());
+    }
+    child->paint(painter, option, 0);
+
+    if (restorePainter) {
+        painter->restore();
+    }
+
+    // Draw children in front
+    for (; i < count; ++i) {
+        QGraphicsItem *subChild = children.at(i);
+        paintChildItemsRecursively(subChild, painter,option, subChild->pos());
+    }
+
+    if (!translatePosition.isNull()) {
+        painter->translate(-translatePosition);
+    }
+}
+
+
+void HbAbstractViewItemPrivate::setChildFlags(QGraphicsItem *child, bool pixmapCacheEnabled)
+{
+    QGraphicsItem::GraphicsItemFlags itemFlags = child->flags();
+    if (pixmapCacheEnabled) {
+        itemFlags |= QGraphicsItem::ItemHasNoContents;
+        itemFlags |= QGraphicsItem::ItemIgnoresParentOpacity;
+    }
+    else {
+        itemFlags &= ~QGraphicsItem::ItemHasNoContents;
+        itemFlags &= ~QGraphicsItem::ItemIgnoresParentOpacity;
+    }
+    child->setFlags(itemFlags);
+    foreach (QGraphicsItem *subChild, child->childItems()) {
+        setChildFlags(subChild,pixmapCacheEnabled);
+    }
+}
+
+void HbAbstractViewItemPrivate::setChildFlagRecursively(bool pixmapCacheEnabled)
+{
+    Q_Q(HbAbstractViewItem);
+    foreach (QGraphicsItem *subChild, q->childItems()) {
+        if (subChild == mNonCachableItem || subChild == mFrontPixmapPainter ||
+            subChild == mBackPixmapPainter) {
+            continue;
+        }
+        setChildFlags(subChild, pixmapCacheEnabled);
+    }
+}
+
+
+void HbAbstractViewItemPrivate::releasePixmaps()
+{
+    if (mFrontPixmapPainter) {
+        mFrontPixmapPainter->setPixmap(0);
+    }
+
+    if (mBackPixmapPainter) {
+        mBackPixmapPainter->setPixmap(0);
+    }
+}
+
+bool HbAbstractViewItemPrivate::iconLoadedCallback(HbIconItem *target, void *param)
+{
+    HbAbstractViewItemPrivate* d_ptr = (HbAbstractViewItemPrivate*)param;
+    return d_ptr->iconLoaded(target);
+}
+
+bool HbAbstractViewItemPrivate::iconLoaded(HbIconItem *target)
+{
+    Q_Q(HbAbstractViewItem);
+    
+    bool result = false;
+
+    if (usePixmapCache()) {
+        mUpdateItems.append(target);
+        if (mSharedData->mItemView && !mSharedData->mItemView->isScrolling()) {
+            q->update();
+        }
+
+        result = true;
+    }
+
+    return result;
+}
+
+void HbAbstractViewItemPrivate::updateIconItemsAsyncMode(QGraphicsItem *item)
+{
+    if (mSharedData->mItemView) {
+        HbIconItem *iconItem = qgraphicsitem_cast<HbIconItem *>(item);
+        if (iconItem) { 
+            HbAbstractItemView::IconLoadPolicy loadPolicy = mSharedData->mItemView->iconLoadPolicy();
+            if (loadPolicy == HbAbstractItemView::LoadAsynchronouslyAlways 
+                || (loadPolicy == HbAbstractItemView::LoadAsynchronouslyWhenScrolling
+                && mSharedData->mItemView->isScrolling())) {
+                HbIconItemPrivate::d_ptr(iconItem)->setAsyncCallbackFilter(&HbAbstractViewItemPrivate::iconLoadedCallback, this);
+                iconItem->setAsync(true);
+            } else {
+                iconItem->setAsync(false);
+            }
+        }
+    }
+}
 
 /*!
     Constructs an abstract view item with the given parent.
@@ -420,16 +811,15 @@ HbAbstractViewItem &HbAbstractViewItem::operator=(const HbAbstractViewItem &sour
     *d = *source.d_func();
     return *this;
 }
-
-
+    
 /*!
     Destructor.
 */
 HbAbstractViewItem::~HbAbstractViewItem()
 {
-    HB_SDD(HbAbstractViewItem);
+    HbAbstractViewItemPrivate *d = d_func();
     if (d && !d->isPrototype()) {
-        sd->mCloneItems.removeOne(this);
+        d->mSharedData->mCloneItems.removeOne(this);
     }
 }
 
@@ -490,10 +880,7 @@ QHash<QString, QVariant> HbAbstractViewItem::transientState() const
 {
     Q_D( const HbAbstractViewItem );
     QHash<QString,QVariant> state;
-    
-    if (d->mFocused) {
-        state.insert("focused", d->mFocused);
-    }
+
     if (d->mCheckState != Qt::Unchecked) {
         state.insert("checkState", d->mCheckState);
     }
@@ -507,8 +894,10 @@ QHash<QString, QVariant> HbAbstractViewItem::transientState() const
 void HbAbstractViewItem::setTransientState(const QHash<QString, QVariant> &state)
 {
     Q_D( HbAbstractViewItem );
-    d->mFocused = state.value("focused").toBool();
-    d->mCheckState = (Qt::CheckState)state.value("checkState").toInt();
+    if (state.count()) {
+        d->mCheckState = (Qt::CheckState)state.value("checkState").toInt();
+    } else
+        d->mCheckState = Qt::Unchecked;
 }
 
 /*!
@@ -527,7 +916,7 @@ HbAbstractViewItem *HbAbstractViewItem::prototype() const
 void HbAbstractViewItem::setItemView( HbAbstractItemView *itemView )
 {
     HB_SDD( HbAbstractViewItem );
-    sd->mItemView = itemView;
+    sd->setItemView(itemView);
 }
 
 /*!
@@ -539,38 +928,6 @@ HbAbstractItemView *HbAbstractViewItem::itemView() const
     return sd->mItemView;
 }
 
-/*!
-    Populates a style option object for this widget based on its current state, and stores the output in \a option.
-*/
-void HbAbstractViewItem::initStyleOption(HbStyleOptionAbstractViewItem *option) const
-{
-    HB_SDD( const HbAbstractViewItem );
-
-    HbWidget::initStyleOption(option);
-
-    option->modelItemType = d->mModelItemType;
-    option->index = d->mIndex;
-
-    option->viewItemType = type();
-    option->checkState = d->mCheckState;
-    option->background = d->mBackground;
-    if (!option->background.isValid()) {
-        if (option->modelItemType == Hb::StandardItem 
-            && !sd->mDefaultFrame.isNull()) {
-            option->background = sd->mDefaultFrame;
-        }
-    }
-
-    if (d->mPressed) {
-        option->state |= QStyle::State_Sunken;
-    }
-    if (    sd->mItemView
-        &&  sd->mItemView->selectionMode() == HbAbstractItemView::SingleSelection){
-        option->singleSelectionMode = true;
-    }
-
-    option->insidePopup = testAttribute(Hb::InsidePopup);
-}
 
 /*!
     Check whether \a position is inside the selection area of the given selectionAreaType in the view item.
@@ -578,11 +935,11 @@ void HbAbstractViewItem::initStyleOption(HbStyleOptionAbstractViewItem *option) 
     Default selection areas are for
     \li HbAbstractViewItem::SingleSelection mode: whole item
     \li HbAbstractViewItem::MultiSelection mode: whole item.
-    \li HbAbstractViewItem::ContiguousSelection mode: area of HbStyle::P_ItemViewItem_touchmultiselection icon.
+    \li HbAbstractViewItem::ContiguousSelection mode: area of icon of primitive with item name "multiselection-toucharea".
 
     The \a selectionAreaType tells what kind of selection area is requested.  The parameter value ContiguousSelection returns 
-    the area where mouse movement will extend the selection to new items. By default this contiguous selection area is 
-    the HbStyle::P_ItemViewItem_touchmultiselection.
+    the area where mouse movement will extend the selection to new items. By default this contiguous selection is area of
+    "multiselection-toucharea" primitive.
     
 */
 bool HbAbstractViewItem::selectionAreaContains(const QPointF &position, SelectionAreaType selectionAreaType) const
@@ -616,47 +973,81 @@ bool HbAbstractViewItem::selectionAreaContains(const QPointF &position, Selectio
 */
 bool HbAbstractViewItem::event(QEvent *e)
 {
-    if (e) {
-        switch (e->type()) {
-            case QEvent::GraphicsSceneResize: {
-                Q_D(HbAbstractViewItem );
-                if (d->mBackgroundItem || d->mFrame || d->mFocusItem) {
-                    HbStyleOptionAbstractViewItem styleOption;
-                    initStyleOption(&styleOption);
-                    if (d->mFocusItem) {
-                        style()->updatePrimitive(d->mFocusItem, HbStyle::P_ItemViewItem_focus, &styleOption);
-                    }
+    switch (e->type()) {
+        case QEvent::GraphicsSceneResize: {
+            Q_D(HbAbstractViewItem );            
+            QGraphicsSceneResizeEvent *resizeEvent = static_cast<QGraphicsSceneResizeEvent *>(e);
 
-                    if (d->mFrame) {
-                        style()->updatePrimitive(d->mFrame, HbStyle::P_ItemViewItem_frame, &styleOption);
-                    }
+            if (d->mFrontPixmapPainter) {
+                d->mFrontPixmapPainter->setSize(resizeEvent->newSize());
+            }
 
-                    if (d->mBackgroundItem) {
-                        style()->updatePrimitive(d->mBackgroundItem, HbStyle::P_ItemViewItem_background, &styleOption);
-                    }
+            if (d->mBackPixmapPainter) {
+                d->mBackPixmapPainter->setSize(resizeEvent->newSize());
+            }
+
+            if (d->mBackgroundItem || d->mFrame || d->mFocusItem) {
+                if (d->mFocusItem) {
+                    // HbFrameItem
+                    HbStyleFramePrimitiveData primitiveData;
+                    initPrimitiveData(&primitiveData, d->mFocusItem);
+                    style()->updatePrimitive(d->mFocusItem, &primitiveData, this);
                 }
-                break;
+
+                if (d->mFrame) {
+                    // HbFrameItem
+                    HbStyleFramePrimitiveData primitiveData;
+                    initPrimitiveData(&primitiveData, d->mFrame);
+                    style()->updatePrimitive(d->mFrame, &primitiveData, this);
+                }
+
+                if (d->mBackgroundItem) {
+                    // HbIconItem
+                    HbStyleIconPrimitiveData primitiveData;
+                    initPrimitiveData(&primitiveData, d->mBackgroundItem);
+                    style()->updatePrimitive(d->mBackgroundItem, &primitiveData, this);
+                }
             }
-            case QEvent::LayoutDirectionChange: {
-                repolish();
-                break;
-            }
-            default: {
-                if (e->type() == HbAbstractViewItemShared::ViewItemDeferredDeleteEvent) {
-                    // cannot handle ViewItemDeferredDeleteEvent in the case statement!
-                    Q_D(HbAbstractViewItem);
-                    delete d->mFocusItem;
-                    d->mFocusItem = 0;
-               }
-                break;
-            }
+            break;
         }
+        case QEvent::LayoutDirectionChange: {
+            repolish();
+            updatePixmapCache();
+            break;  
+        }
+        case QEvent::LayoutRequest: {
+            updatePixmapCache();
+            break;
+        }
+        default: {
+            if (e->type() == HbAbstractViewItemShared::ViewItemDeferredDeleteEvent) {
+                // cannot handle ViewItemDeferredDeleteEvent in the case statement!
+                Q_D(HbAbstractViewItem);
 
-        return HbWidget::event(e);
+                d->mNonCachableItem = 0;
+
+                delete d->mFocusItem;
+                d->mFocusItem = 0;
+
+                updatePixmapCache();
+            }
+            break;
+        }
     }
-
-    return false;
+    return HbWidget::event(e);
 }
+
+/*!
+    \reimp
+*/
+void HbAbstractViewItem::changeEvent(QEvent *event)
+{
+    if (event->type() == HbEvent::ThemeChanged) {
+        updatePixmapCache();
+    }
+    HbWidget::changeEvent(event);
+}
+
 
 /*!
     \reimp
@@ -678,12 +1069,183 @@ QVariant HbAbstractViewItem::itemChange(GraphicsItemChange change, const QVarian
             updateChildItems();
             break;
         }
+        case ItemVisibleHasChanged: {
+            Q_D(HbAbstractViewItem);
+            if (!value.toBool() && d->usePixmapCache()) {
+                d->setChildFlagRecursively(false);
+                d->releasePixmaps();
+                d->mResetPixmapCache = true;
+            }
+            break;
+        }
         default:
             break;
     }
 
     return HbWidget::itemChange(change, value);
 }
+
+/*!
+  Initializes the HbAbstractViewItem primitive data. 
+  
+  This function calls HbWidgetBase::initPrimitiveData().
+  \a primitiveData is data object, which is populated with data. \a primitive is the primitive.
+*/
+void HbAbstractViewItem::initPrimitiveData( HbStylePrimitiveData     *primitiveData, 
+                                            const QGraphicsObject    *primitive)
+{
+    Q_ASSERT_X(primitive && primitiveData, "HbAbstractViewItem::initPrimitiveData" , "NULL data not permitted");
+    HB_SDD(HbAbstractViewItem);
+
+    HbWidgetBase::initPrimitiveData(primitiveData, primitive);
+    if (primitiveData->type == HbStylePrimitiveData::SPD_Icon) {
+        HbStyleIconPrimitiveData *iconPrimitiveData = hbstyleprimitivedata_cast<HbStyleIconPrimitiveData*>(primitiveData);
+
+        if (primitive ==d-> mBackgroundItem) {
+            iconPrimitiveData->geometry = boundingRect();
+
+            QVariant background = d->mBackground;
+            if (!background.isValid()) {
+                if (    d->mModelItemType == Hb::StandardItem 
+                    && !sd->mDefaultFrame.isNull()) {
+                    background = sd->mDefaultFrame;
+                }
+            }
+
+            if (background.canConvert<HbIcon>()){
+                iconPrimitiveData->icon = background.value<HbIcon>();
+                iconPrimitiveData->brush = QBrush();
+            } else if (background.canConvert<QBrush>()){
+                iconPrimitiveData->icon = HbIcon();
+                iconPrimitiveData->brush = background.value<QBrush>();
+            } else {
+                iconPrimitiveData->icon = HbIcon();
+                iconPrimitiveData->brush = QBrush();
+            }
+        } else if (primitive == d->mSelectionItem) {
+            int viewItemType = type();
+            bool singleSelectionMode = false;
+            if (sd->mItemView
+                &&  sd->mItemView->selectionMode() == HbAbstractItemView::SingleSelection){
+                singleSelectionMode = true;
+            }
+
+            if (viewItemType == Hb::ItemType_RadioButtonListViewItem) {
+                if (d->mCheckState == Qt::Checked) {
+                    iconPrimitiveData->iconState = QIcon::On;
+                    if (isEnabled()) {
+                        iconPrimitiveData->iconName = QLatin1String("qtg_small_radio_selected");
+                    } else {
+                        iconPrimitiveData->iconName = QLatin1String("qtg_small_radio_selected_disabled");
+                    }
+                } else {
+                    iconPrimitiveData->iconState = QIcon::Off;
+                    if (isEnabled()) {
+                        iconPrimitiveData->iconName = QLatin1String("qtg_small_radio_unselected");
+                    } else {
+                        iconPrimitiveData->iconName = QLatin1String("qtg_small_radio_unselected_disabled");
+                    }
+                }
+            } else {
+                if (d->mCheckState == Qt::Checked) {
+                    iconPrimitiveData->iconState = QIcon::On;
+                    if (singleSelectionMode) {
+                        iconPrimitiveData->iconName = QLatin1String("qtg_small_tick");
+                    } else {
+                        iconPrimitiveData->iconName = QLatin1String("qtg_small_selected");
+                    }
+                } else if (d->mCheckState == Qt::PartiallyChecked) {
+                    iconPrimitiveData->iconState = QIcon::On;
+                    iconPrimitiveData->iconName = QLatin1String("qtg_small_selected_partial");
+                } else {
+                    iconPrimitiveData->iconState = QIcon::Off;
+                    if (singleSelectionMode) {
+                        iconPrimitiveData->iconName = QLatin1String("");
+                    } else {
+                        iconPrimitiveData->iconName = QLatin1String("qtg_small_unselected");
+                    }
+                }
+            }
+        }
+    } else if (primitiveData->type == HbStylePrimitiveData::SPD_Frame) {
+        HbStyleFramePrimitiveData *framePrimitiveData = hbstyleprimitivedata_cast<HbStyleFramePrimitiveData*>(primitiveData);
+
+        if (primitive == d->mFrame ) {
+            framePrimitiveData->geometry = boundingRect();
+
+            QVariant background = d->mBackground;
+            if (!background.isValid()) {
+                if (    d->mModelItemType == Hb::StandardItem 
+                    && !sd->mDefaultFrame.isNull()) {
+                    background = sd->mDefaultFrame;
+                }
+            }
+
+            if (background.canConvert<HbFrameBackground>()) {
+                HbFrameBackground frame = background.value<HbFrameBackground>();
+                framePrimitiveData->frameType = frame.frameType();
+                framePrimitiveData->frameGraphicsName = frame.frameGraphicsName();
+            } else {
+                int viewItemType = type();
+                bool insidePopup = testAttribute(Hb::InsidePopup);
+                if (viewItemType == Hb::ItemType_TreeViewItem) {
+                    if (d->mModelItemType == Hb::ParentItem) {
+                        framePrimitiveData->frameType = HbFrameDrawer::NinePieces;
+                        framePrimitiveData->frameGraphicsName = insidePopup ?
+                            QLatin1String("qtg_fr_popup_list_parent_normal") : QLatin1String("qtg_fr_list_parent_normal");
+                    } else if (d->mModelItemType == Hb::SeparatorItem) {
+                        framePrimitiveData->frameType = HbFrameDrawer::NinePieces;
+                        framePrimitiveData->frameGraphicsName = QLatin1String("qtg_fr_list_separator");
+                    } else {
+                        framePrimitiveData->frameType = HbFrameDrawer::NinePieces;
+                        framePrimitiveData->frameGraphicsName =  insidePopup ?
+                            QLatin1String("qtg_fr_popup_list_normal") : QLatin1String("qtg_fr_list_normal");
+                    }
+                } else if (viewItemType == Hb::ItemType_ListViewItem
+                            ||  viewItemType == Hb::ItemType_RadioButtonListViewItem) {
+                    if (d->mModelItemType == Hb::SeparatorItem) {
+                        framePrimitiveData->frameType = HbFrameDrawer::NinePieces;
+                        framePrimitiveData->frameGraphicsName = QLatin1String("qtg_fr_list_separator");
+                    } else {
+                        framePrimitiveData->frameType = HbFrameDrawer::NinePieces;
+                        framePrimitiveData->frameGraphicsName = insidePopup ?
+                            QLatin1String("qtg_fr_popup_list_normal") : QLatin1String("qtg_fr_list_normal");
+                    }
+                } else if (viewItemType == Hb::ItemType_GridViewItem
+                            || viewItemType == HbPrivate::ItemType_ColorGridViewItem) {
+                    framePrimitiveData->frameType = HbFrameDrawer::NinePieces;
+                    framePrimitiveData->frameGraphicsName = insidePopup ?
+                        QLatin1String("qtg_fr_popup_grid_normal") : QLatin1String("qtg_fr_grid_normal");
+                } else{
+                    framePrimitiveData->frameGraphicsName = QString();
+                }
+            }
+        } else if (primitive == d->mFocusItem) {
+            framePrimitiveData->geometry = boundingRect();
+
+            int viewItemType = type();
+            bool insidePopup = testAttribute(Hb::InsidePopup);
+            if (viewItemType == Hb::ItemType_TreeViewItem
+                || viewItemType == Hb::ItemType_ListViewItem
+                || viewItemType == Hb::ItemType_RadioButtonListViewItem) {
+                framePrimitiveData->frameType = HbFrameDrawer::NinePieces;
+                framePrimitiveData->frameGraphicsName = insidePopup ?
+                    QLatin1String("qtg_fr_popup_list_pressed") : QLatin1String("qtg_fr_list_pressed");
+            } else if (     viewItemType == Hb::ItemType_GridViewItem
+                        ||  viewItemType == HbPrivate::ItemType_ColorGridViewItem) {
+                framePrimitiveData->frameType = HbFrameDrawer::NinePieces;
+                framePrimitiveData->frameGraphicsName = insidePopup ?
+                    QLatin1String("qtg_fr_popup_grid_pressed") : QLatin1String("qtg_fr_grid_pressed");
+            } else{
+                framePrimitiveData->frameGraphicsName = QString();
+            }
+        }
+
+    } // else if (primitiveData->type == HbStylePrimitiveData::SPD_TouchArea) {
+        // mMultiSelectionTouchArea: no data provided
+}
+
+
 
 /*!
     \reimp
@@ -727,29 +1289,42 @@ void HbAbstractViewItem::updatePrimitives()
     }
 #endif
 
-
-    HbStyleOptionAbstractViewItem styleOption;
-    initStyleOption(&styleOption);
-
     if (d->mBackgroundItem) {
-        style()->updatePrimitive(d->mBackgroundItem, HbStyle::P_ItemViewItem_background, &styleOption);
+        // HbIconItem
+        HbStyleIconPrimitiveData primitiveData;
+        initPrimitiveData(&primitiveData, d->mBackgroundItem);
+        style()->updatePrimitive(d->mBackgroundItem, &primitiveData, this);
     }
 
     if (d->mFrame) {
-        style()->updatePrimitive(d->mFrame, HbStyle::P_ItemViewItem_frame, &styleOption);
+        // HbFrameItem
+        HbStyleFramePrimitiveData primitiveData;
+        initPrimitiveData(&primitiveData, d->mFrame);
+        style()->updatePrimitive(d->mFrame, &primitiveData, this);
     }
 
     if (d->mSelectionItem) {
-        style()->updatePrimitive(d->mSelectionItem, HbStyle::P_ItemViewItem_selection, &styleOption);
+        // HbIconItem
+        HbStyleIconPrimitiveData primitiveData;
+        initPrimitiveData(&primitiveData, d->mSelectionItem);
+        style()->updatePrimitive(d->mSelectionItem, &primitiveData, this);
     }
 
     if (d->mMultiSelectionTouchArea) {
-        style()->updatePrimitive(d->mMultiSelectionTouchArea, HbStyle::P_ItemViewItem_touchmultiselection, &styleOption);
+        // HbTouchArea
+        HbStyleTouchAreaPrimitiveData primitiveData;
+        initPrimitiveData(&primitiveData, d->mMultiSelectionTouchArea);
+        style()->updatePrimitive(d->mMultiSelectionTouchArea, &primitiveData, this);
     }
 
     if (d->mFocusItem) {
-        style()->updatePrimitive(d->mFocusItem, HbStyle::P_ItemViewItem_focus, &styleOption);
+        // HbFrameItem
+        HbStyleFramePrimitiveData primitiveData;
+        initPrimitiveData(&primitiveData, d->mFocusItem);
+        style()->updatePrimitive(d->mFocusItem, &primitiveData, this);
     }
+        
+    updatePixmapCache();
 }
 
 
@@ -789,7 +1364,7 @@ void HbAbstractViewItem::updateChildItems()
          d->mBackgroundItem is created from d-mBackground (Qt::BackgroundRole), if this is HbIcon or QBrush.
 
          If d->mBackgroundItem does not exist, d->mFrame is created from d-mBackground (Qt::BackgroundRole), 
-         if this is HbFrameBackground otherwise it either is created from sd->mDefaultFrame, 
+         if this is HbFrameBackground, otherwise it is either created from sd->mDefaultFrame, 
          not created at all or from system default.
     */
  
@@ -801,14 +1376,22 @@ void HbAbstractViewItem::updateChildItems()
             || currentBackground.canConvert<QBrush>()) {
             if (!d->mBackgroundItem) {  
                 d->mItemsChanged = true;
-                d->mBackgroundItem = style()->createPrimitive(HbStyle::P_ItemViewItem_background, this);
+                d->mBackgroundItem = style()->createPrimitive(HbStyle::PT_IconItem, QLatin1String("background"), 0);
+                d->mBackgroundItem->setParentItem(this); // To enable asynchronous icon loading.
+                d->mBackgroundItem->setZValue(-3.0);
+                HbIconItem *iconItem = qobject_cast<HbIconItem*>(d->mBackgroundItem);
+                if (iconItem) {
+                    iconItem->setAspectRatioMode(Qt::IgnoreAspectRatio);
+                }
                 delete d->mFrame;
                 d->mFrame = 0;
             }
         } else if (currentBackground.canConvert<HbFrameBackground>()) {
             if (!d->mFrame) {
                 d->mItemsChanged = true;
-                d->mFrame = style()->createPrimitive(HbStyle::P_ItemViewItem_frame, this);
+                d->mFrame = style()->createPrimitive(HbStyle::PT_FrameItem, QLatin1String("frame"), this);
+                d->mFrame->setZValue(-4.0);
+
                 delete d->mBackgroundItem;
                 d->mBackgroundItem = 0;
             }
@@ -829,7 +1412,8 @@ void HbAbstractViewItem::updateChildItems()
                     ||  sd->mDefaultFrame.isNull()))) { 
             if (!d->mFrame) {
                 d->mItemsChanged = true;
-                d->mFrame = style()->createPrimitive(HbStyle::P_ItemViewItem_frame, this);
+                d->mFrame = style()->createPrimitive(HbStyle::PT_FrameItem, QLatin1String("frame"), this);
+                d->mFrame->setZValue(-4.0);
             }
         } else if (d->mFrame) {
             d->mItemsChanged = true;
@@ -879,7 +1463,12 @@ void HbAbstractViewItem::updateChildItems()
         if (itemSelectable) {
             if (!d->mSelectionItem) {
                 d->mItemsChanged = true;
-                d->mSelectionItem = style()->createPrimitive(HbStyle::P_ItemViewItem_selection, this);
+                d->mSelectionItem = style()->createPrimitive(HbStyle::PT_IconItem, QLatin1String("selection-icon"), 0);
+                d->mSelectionItem ->setParentItem(this); // To enable asynchronous icon loading.
+                HbIconItem *iconItem = qobject_cast<HbIconItem*>(d->mSelectionItem);
+                if (iconItem) {
+                    iconItem->setAlignment(Qt::AlignCenter);
+                }
             }
         } else {
             d->mItemsChanged = true;
@@ -895,7 +1484,7 @@ void HbAbstractViewItem::updateChildItems()
         &&  selectionMode == HbAbstractItemView::MultiSelection) {
         if (!d->mMultiSelectionTouchArea) {
             d->mItemsChanged = true;
-            d->mMultiSelectionTouchArea = style()->createPrimitive(HbStyle::P_ItemViewItem_touchmultiselection, this);
+            d->mMultiSelectionTouchArea = style()->createPrimitive(HbStyle::PT_TouchArea, QLatin1String("multiselection-toucharea"), this);
         }
     } else if (d->mMultiSelectionTouchArea) {
         d->mItemsChanged = true;
@@ -908,13 +1497,14 @@ void HbAbstractViewItem::updateChildItems()
     if (!d->mContentChangedSupported
         || d->mItemsChanged) {
         updateGeometry();   // ensures that sizehint is calculated again in case items have been created or deleted
-        d->mRepolishRequested = true;
-        // handle QEvent::Polish & QEvent::LayoutRequest event itself in ::sizeHint() as our performance is slightly better
-        // (saving a layoutrequest and going event loop through twice)
-        if (sd->mItemView && sd->mItemView->isScrolling()) {
+        
+        if (d->viewAnimating()) {
+            // Force QEvent::Polish & QEvent::LayoutRequest event handling to be synchronous (handled when sizeHint() is called) 
+            // when view is animating (=scrollling) because of better performance.
             d->mHandlingRepolishSynchronously = true;
         }
         repolish();
+
         d->mHandlingRepolishSynchronously = false;
     }
     d->mItemsChanged = false;
@@ -965,21 +1555,28 @@ void HbAbstractViewItem::pressStateChanged(bool pressed, bool animate)
     if (sd->mItemView && !(sd->mItemView->enabledAnimations() & HbAbstractItemView::TouchDown)) {
         doAnimate = false;
     }
+
     if (pressed) {
         if (!d->mFocusItem) {
-            d->mFocusItem = style()->createPrimitive(HbStyle::P_ItemViewItem_focus, this);
+            d->mFocusItem = style()->createPrimitive(HbStyle::PT_FrameItem, QLatin1String("focus") , this);
+            d->mFocusItem->setZValue(-1.0);
+            // setChildFlags gets called in the construction phase, but the values are wrong.
+            // Here we set the flags to force focusItem to be painted even when itemPixmapCache is on
+            d->setChildFlags(d->mFocusItem, false);
         }
 
-        HbStyleOptionAbstractViewItem styleOption;
-        initStyleOption(&styleOption);
-
         if (d->mFocusItem) {
-            style()->updatePrimitive(d->mFocusItem, HbStyle::P_ItemViewItem_focus, &styleOption);
+            HbStyleFramePrimitiveData primitiveData;
+            initPrimitiveData(&primitiveData, d->mFocusItem);
+            style()->updatePrimitive(d->mFocusItem, &primitiveData, this);
         }
 
         if (doAnimate) {
             HbEffect::cancel(this, "released");
             HbEffect::cancel(d->mFocusItem, "released");
+
+            d->mNonCachableItem = d->mFocusItem;
+            updatePixmapCache();
 
             HbEffect::start(this, sd->mItemType, "pressed");
             HbEffect::start(d->mFocusItem, sd->mItemType + QString("-focus"), "pressed");
@@ -988,6 +1585,9 @@ void HbAbstractViewItem::pressStateChanged(bool pressed, bool animate)
         if (doAnimate) {
             HbEffect::cancel(this, "pressed");
             HbEffect::cancel(d->mFocusItem, "pressed");
+
+            d->mNonCachableItem = d->mFocusItem;
+            updatePixmapCache();
 
             HbEffect::start(this, sd->mItemType, "released");
             HbEffect::start(d->mFocusItem, sd->mItemType + QString("-focus"), "released", this, "_q_animationFinished");
@@ -1020,14 +1620,13 @@ void HbAbstractViewItem::polish(HbStyleParameters& params)
     HB_SDD(HbAbstractViewItem);
 
     if (!d->polished && layout()) {
-    return;
+        return;
     }
 
     if (sd->mItemView) {
         setProperty("layoutName", sd->mItemView->layoutName());
     }
 
-    d->mRepolishRequested = false;
     HbWidget::polish(params);
 
     // TODO Brush background is overridden by css system even if bursh would not be set
@@ -1049,17 +1648,11 @@ void HbAbstractViewItem::polish(HbStyleParameters& params)
 QSizeF HbAbstractViewItem::sizeHint(Qt::SizeHint which, const QSizeF &constraint) const
 {
     Q_D(const HbAbstractViewItem);
-    if (d->mRepolishRequested) {
-        if (d->repolishOutstanding) {
-            // force the polish event in order to get the real size
-            // updateGeometry() in ::updateChildItems() causes this function to be called
-            // before QEvent::Polish of repolish() is handled from the event loop
-            QCoreApplication::sendPostedEvents(const_cast<HbAbstractViewItem*>(this), QEvent::Polish);
-        } else {
-            // needed for pure widget or at startup phase, if first polish has not yet been done
-            QEvent polishEvent(QEvent::Polish);
-            QCoreApplication::sendEvent(const_cast<HbAbstractViewItem *>(this), &polishEvent);
-        }
+    if (d->repolishOutstanding) {
+        // force the polish event in order to get the real size
+        // updateGeometry() in ::updateChildItems() causes this function to be called
+        // before QEvent::Polish of repolish() is handled from the event loop.
+        QCoreApplication::sendPostedEvents(const_cast<HbAbstractViewItem*>(this), QEvent::Polish);
         QCoreApplication::sendPostedEvents(const_cast<HbAbstractViewItem *>(this), QEvent::LayoutRequest);
     }
     return HbWidget::sizeHint(which, constraint);
@@ -1117,6 +1710,81 @@ void HbAbstractViewItem::gestureEvent(QGestureEvent *event)
     }
 }
 
+/*!
+    \reimp
+*/
+void HbAbstractViewItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+{
+    Q_UNUSED(widget);
+
+    Q_D(HbAbstractViewItem);
+    
+    if (!d->mFrontPixmapPainter) {
+        return;
+    }
+    
+    if (!d->mInPaintItems) {
+        bool usePixmapCache = d->usePixmapCache();
+
+        if (usePixmapCache) {
+            QRect rect = boundingRect().toAlignedRect();
+            if (    d->mFrontPixmapPainter->pixmap()
+                &&  rect.size() != d->mFrontPixmapPainter->pixmap()->size()) {
+                d->mResetPixmapCache = true;
+                d->releasePixmaps();
+            }
+
+            if (!d->mResetPixmapCache && d->mUpdateItems.count() && d->mFrontPixmapPainter->pixmap()) {
+                 d->drawSubPixmap(d->mFrontPixmapPainter->pixmap(), painter, option);
+            }
+
+            if (d->mResetPixmapCache) {
+                if (!d->mFrontPixmapPainter->pixmap()) {
+                    d->setChildFlagRecursively(true);
+                    QPixmap *pixmap = new QPixmap(rect.size());
+                    d->mFrontPixmapPainter->setPixmap(pixmap);
+                }
+                
+                d->mUpdateItems.clear();
+
+                d->updatePixmap(d->mFrontPixmapPainter->pixmap(), painter, option, d->mNonCachableItem, 0);
+
+                if (d->mNonCachableItem) {
+                    if (!d->mBackPixmapPainter->pixmap()) {
+                        QPixmap *pixmap = new QPixmap(rect.size());
+                        d->mBackPixmapPainter->setPixmap(pixmap);
+                    } 
+                    d->updatePixmap(d->mBackPixmapPainter->pixmap(), painter, option, 0, d->mNonCachableItem);
+                } else if (d->mBackPixmapPainter) {
+                    d->mBackPixmapPainter->setPixmap(0);
+                }
+
+                d->mResetPixmapCache = false;
+            }
+        } else {
+            if (d->mFrontPixmapPainter->pixmap()) {
+                d->setChildFlagRecursively(false);
+                d->releasePixmaps();
+            }
+        }
+    }
+}
+
+/*!
+    Updates the pixmap cache.
+
+    Call this function when cache pixmap requires updating due to item or child state change
+    that affects its visual appearance.
+*/
+void HbAbstractViewItem::updatePixmapCache()
+{
+    Q_D(HbAbstractViewItem);
+
+    if (!d->mResetPixmapCache && d->usePixmapCache()) {
+        d->mResetPixmapCache = true;
+        update();
+    }
+}
 
 #include "moc_hbabstractviewitem.cpp"
 

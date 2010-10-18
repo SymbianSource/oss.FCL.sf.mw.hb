@@ -34,8 +34,8 @@ HbStyleOptionProgressSlider::HbStyleOptionProgressSlider()
 {
     type = Type;
     version = Version;
-	pressedState = false;
-	disableState = false;
+    pressedState = false;
+    disableState = false;
 }
 
 HbStyleOptionProgressSlider::HbStyleOptionProgressSlider(const HbStyleOptionProgressSlider &other) :

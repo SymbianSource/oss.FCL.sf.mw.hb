@@ -45,6 +45,7 @@ symbian {
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.UID3 = 0x2002DC75
     TARGET.UID2 = 0x10009d8d
+    MMP_RULES += SMPSAFE
         
     LIBS += -leuser
     LIBS += -lecom
@@ -53,9 +54,9 @@ symbian {
   
     myrssrules = \
      "START RESOURCE hbthemeserveroogmplugin.rss" \
-	 "TARGETPATH resource/plugins" \
-	 "TARGET     hbthemeserveroogmplugin.rsc" \
-	 "END"
+     "TARGETPATH resource/plugins" \
+     "TARGET     hbthemeserveroogmplugin.rsc" \
+     "END"
     
     MMP_RULES += myrssrules
 

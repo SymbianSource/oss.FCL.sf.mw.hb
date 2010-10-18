@@ -23,11 +23,11 @@
 **
 ****************************************************************************/
 #include "hbcolorgridviewitem_p.h"
-#include <hbstyleoptioncolorgridviewitem_p.h>
 #include <hbgridviewitem_p.h>
 #include <hbcolorscheme.h>
 #include <hbiconitem.h>
 #include <hbevent.h>
+#include <hbstyleiconprimitivedata.h>
 
 /*!
   \primitives
@@ -53,11 +53,11 @@ public:
     bool isNoneBlock() const;
 
     // center of color field, colored according to color
-    QGraphicsItem *mColorItem;
+    QGraphicsObject *mColorItem;
     // borders of color field, beneath mColorItem, or 'none' block
-    QGraphicsItem *mBorderItem;
+    QGraphicsObject *mBorderItem;
     // selection indication
-    QGraphicsItem *mCheckMarkItem;
+    QGraphicsObject *mCheckMarkItem;
     // background frame, "grid"
     HbFrameBackground* mFrameBackGround;
 
@@ -99,18 +99,13 @@ void HbColorGridViewItemPrivate::createPrimitives()
     Q_Q( HbColorGridViewItem );
 
     if (!mBorderItem ) {
-        mBorderItem = q->style()->createPrimitive(HbStyle::P_ColorGridViewItem_borderIcon, q);
-        static_cast<HbIconItem*>(mBorderItem)->setFlags(HbIcon::Colorized);
-        q->style()->setItemName( mBorderItem, "cg-border-icon" );
+        mBorderItem = q->style()->createPrimitive(HbStyle::PT_IconItem, "cg-border-icon", q);
      }
     if (!mColorItem && !isNoneBlock()) {
-        mColorItem = q->style()->createPrimitive(HbStyle::P_ColorGridViewItem_colorIcon, q);
-        static_cast<HbIconItem*>(mColorItem)->setFlags(HbIcon::Colorized);
-        q->style()->setItemName( mColorItem, "cg-color-icon" );
+        mColorItem = q->style()->createPrimitive(HbStyle::PT_IconItem, "cg-color-icon", q);
     }
     if(!mCheckMarkItem) {
-        mCheckMarkItem = q->style()->createPrimitive(HbStyle::P_ColorGridViewItem_checkIcon, q);
-        q->style()->setItemName( mCheckMarkItem, "cg-selection-icon" );
+        mCheckMarkItem = q->style()->createPrimitive(HbStyle::PT_IconItem, "cg-selection-icon", q);
     }
 
     if (!mFrameBackGround) {
@@ -125,31 +120,40 @@ void HbColorGridViewItemPrivate::updatePrimitives()
 {  
     Q_Q( HbColorGridViewItem );
 
-    HbStyleOptionColorGridViewItem option;
-    q->initStyleOption(&option);
-   
     if (mBorderItem) {
-        q->style()->updatePrimitive(mBorderItem, HbStyle::P_ColorGridViewItem_borderIcon, &option);
+        HbStyleIconPrimitiveData data;
+        q->initPrimitiveData(&data, mBorderItem);
+        q->style()->updatePrimitive(mBorderItem, &data, 0);
+        mBorderItem->setZValue(mBorderItem->parentItem()->zValue()+1);
+        mBorderItem->update();
     }
 
     if (mColorItem) {
-        q->style()->updatePrimitive(mColorItem, HbStyle::P_ColorGridViewItem_colorIcon, &option);
+        HbStyleIconPrimitiveData data;
+        q->initPrimitiveData(&data, mColorItem);
+        q->style()->updatePrimitive(mColorItem, &data, 0);
+        mColorItem->setZValue(mColorItem->parentItem()->zValue()+2);
+        mColorItem->update();
     }
 
     if (mCheckMarkItem) {
-        q->style()->updatePrimitive(mCheckMarkItem, HbStyle::P_ColorGridViewItem_checkIcon, &option);
+        HbStyleIconPrimitiveData data;
+        q->initPrimitiveData(&data, mCheckMarkItem);
+        q->style()->updatePrimitive(mCheckMarkItem, &data, 0);
+        mCheckMarkItem->setZValue(mCheckMarkItem->parentItem()->zValue()+3);
         if ( isChecked() ) {
             mCheckMarkItem->show();
         } else {
             mCheckMarkItem->hide();
         }
+        mCheckMarkItem->update();
     }
 }
 
 void HbColorGridViewItemPrivate::updateChildItems()
 {
     createPrimitives();
-    updatePrimitives();		
+    updatePrimitives();     
 }
 
 HbColorGridViewItem::HbColorGridViewItem(QGraphicsItem *parent) :
@@ -220,39 +224,30 @@ void HbColorGridViewItem::updatePrimitives()
     HbGridViewItem::updatePrimitives();
 }
 
-
-QGraphicsItem * HbColorGridViewItem::primitive(HbStyle::Primitive primitive) const
+void HbColorGridViewItem::initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive)
 {
     Q_D( const HbColorGridViewItem );
+    HbGridViewItem::initPrimitiveData(primitiveData, primitive);
 
-    if (primitive == HbStyle::P_ColorGridViewItem_checkIcon) {
-        return d->mCheckMarkItem;
+    QString itemName = HbStyle::itemName(primitive);
+    if (itemName == QLatin1String("cg-border-icon")) {
+        HbStyleIconPrimitiveData *data = hbstyleprimitivedata_cast<HbStyleIconPrimitiveData*>(primitiveData);
+        if( d->isNoneBlock() && d->mBorderItem ) {
+            data->iconName = QLatin1String("qtg_graf_colorpicker_empty");
+        } else {
+            data->iconName = QLatin1String("qtg_graf_colorpicker_filled");
+        }
+        data->color = HbColorScheme::color("qtc_popup_grid_normal");
+        data->iconFlags = HbIcon::Colorized;
+    } else if (itemName == QLatin1String("cg-color-icon")) {
+        HbStyleIconPrimitiveData *data = hbstyleprimitivedata_cast<HbStyleIconPrimitiveData*>(primitiveData);
+        data->iconName = QLatin1String("qtg_graf_colorpicker_mask");
+        data->color = d->mIndex.data(HbColorGridViewItem::ColorRole).value<QColor>();
+        data->iconFlags = HbIcon::Colorized;
+    } else if (itemName == QLatin1String("cg-selection-icon")) {
+        HbStyleIconPrimitiveData *data = hbstyleprimitivedata_cast<HbStyleIconPrimitiveData*>(primitiveData);
+        data->iconName = QLatin1String("qtg_small_tick");
     }
-
-    if (primitive == HbStyle::P_ColorGridViewItem_colorIcon) {
-        return d->mColorItem;
-    }
-
-    if (primitive == HbStyle::P_ColorGridViewItem_borderIcon) {
-        return d->mBorderItem;
-    }
-
-    return HbGridViewItem::primitive(primitive);
-}
-
-void HbColorGridViewItem::initStyleOption(HbStyleOptionColorGridViewItem *option) const
-{
-    Q_D( const HbColorGridViewItem ); 
-    HbGridViewItem::initStyleOption(option);
-
-    if( d->isNoneBlock() && d->mBorderItem ) {
-        option->borderIcon = "qtg_graf_colorpicker_empty";
-    } else {
-        option->borderIcon = "qtg_graf_colorpicker_filled";
-    }
-    
-    option->color = d->mIndex.data(HbColorGridViewItem::ColorRole).value<QColor>(); 
-    option->borderColor = HbColorScheme::color("qtc_popup_grid_normal");
 }
 
 void HbColorGridViewItem::resizeEvent ( QGraphicsSceneResizeEvent * event )

@@ -179,11 +179,6 @@ void HbDataItemContainer::setModelIndexes(const QModelIndex &startIndex )
             nextItem = 0;            
         }
     }
-    if (scene()) {
-        QMetaObject::invokeMethod(scene(),"_q_polishItems",Qt::DirectConnection); 
-        QEvent event(QEvent::LayoutRequest);
-        QCoreApplication::sendEvent(this, &event);
-    }
 }
 
 HbAbstractViewItem *HbDataItemContainer::createDefaultPrototype() const

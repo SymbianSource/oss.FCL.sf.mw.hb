@@ -43,7 +43,7 @@
 
 class HbEditorInterface;
 
-class HbEditorInterfacePrivate : public QObject
+class HB_CORE_PRIVATE_EXPORT HbEditorInterfacePrivate : public QObject
 {
     Q_OBJECT
 
@@ -89,8 +89,7 @@ private:
     QMutex mMutex;
 };
 
-
-class HbEditorInterfacePrivateCache : public QObject
+class HB_CORE_PRIVATE_EXPORT HbEditorInterfacePrivateCache : public QObject
 {
     Q_OBJECT
 
@@ -112,7 +111,7 @@ public slots:
     void actionDestroyed(QObject *object);
 
 private:
-    QVector<HbEditorInterfacePrivate *> mObjectCache;
+    QList<HbEditorInterfacePrivate *> mObjectCache;
 };
 
 /// @endcond

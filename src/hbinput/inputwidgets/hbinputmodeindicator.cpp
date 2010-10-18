@@ -84,7 +84,7 @@ void HbInputModeIndicatorPrivate::updatePrediction()
 /// @endcond
 
 /*!
-@proto
+@stable
 @hbinput
 \class HbInputModeIndicator
 \brief Predictive mode indicator

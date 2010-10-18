@@ -32,6 +32,7 @@
 #include <hbglobal.h>
 #include <hbnamespace.h>
 #include <hbanchor.h>
+#include <hbframedrawer.h>
 
 #include <QGraphicsWidget>
 #include <QGraphicsLayout>
@@ -98,6 +99,7 @@ class HB_CORE_PRIVATE_EXPORT HbXmlLoaderAbstractActions
             const HbXmlLengthValue &hintHeight,
             bool fixed);
         virtual bool setToolTip( const HbXmlVariable &tooltip );
+        virtual bool setBackground( const QString &name, HbFrameDrawer::FrameType type );
 
         virtual bool createAnchorLayout( const QString &widget, bool modify );
         virtual bool addAnchorLayoutItem(

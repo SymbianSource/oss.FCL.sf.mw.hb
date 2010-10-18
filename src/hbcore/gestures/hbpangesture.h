@@ -75,6 +75,7 @@ private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbPanGesture)
     Q_DISABLE_COPY(HbPanGesture)
     friend class HbPanGestureLogic;
+    friend class HbPanGestureRecognizer;
 };
 
 #endif // HBPANGESTURE_H

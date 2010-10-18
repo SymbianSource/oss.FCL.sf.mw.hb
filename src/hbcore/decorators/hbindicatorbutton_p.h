@@ -61,7 +61,9 @@ public slots:
     void activate(const QList<IndicatorClientInfo> &clientInfo);
     void deactivate(const QList<IndicatorClientInfo> &clientInfo);
     void activateAll(const QList<IndicatorClientInfo> &clientInfo);
+    void update(const QList<IndicatorClientInfo> &clientInfo);
     void resetBackground();
+    void showIndicatorMenu();
 
 protected:
     virtual void initStyleOption(HbStyleOptionIndicatorButton *option) const;

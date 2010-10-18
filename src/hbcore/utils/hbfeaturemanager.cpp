@@ -27,11 +27,11 @@
 
 #include <QString>
 
-#if defined(Q_WS_S60)
+#if defined(Q_OS_SYMBIAN)
 #include <centralrepository.h>
 #else
 #include <QSettings>
-#endif // Q_WS_S60
+#endif // Q_OS_SYMBIAN
 
 /*!
     @alpha
@@ -54,7 +54,8 @@
     This needs to be enabled if you want to get the localization layout
     metrics from your application.
 
-    Zero means disabled, non-zero means enabled.
+    Zero means disabled, non-zero means enabled. Value 2 means that
+    text measurement is done automatically when Hb applications are run.
 */
 
 /*!
@@ -63,7 +64,7 @@
     Runtime variation flag for "the test utility"
 
     This needs to be enabled if you want to utilize "the test utility"
-    (the four floating buttons) in your application. 
+    (the four floating buttons) in your application.
 
     Zero means disabled, non-zero means enabled.
 */
@@ -73,7 +74,7 @@
 */
 
 
-#if defined(Q_WS_S60)
+#if defined(Q_OS_SYMBIAN)
 const TUid HBFM_CREPO_ID  = {0x2002C304};
 #endif
 
@@ -86,11 +87,11 @@ public:
 
     QString toString( HbFeatureManager::Feature feature );
 
-#if defined(Q_WS_S60)
+#if defined(Q_OS_SYMBIAN)
     CRepository *mRepo;
 #else
     QSettings *mSettings;
-#endif // Q_WS_S60
+#endif // Q_OS_SYMBIAN
 };
 
 /*!
@@ -98,14 +99,15 @@ public:
 */
 HbFeatureManagerPrivate::HbFeatureManagerPrivate()
 {
-#if defined(Q_WS_S60)
+#if defined(Q_OS_SYMBIAN)
     TRAPD( err, mRepo = CRepository::NewL( HBFM_CREPO_ID ) );
     if( err ) {
         qWarning( "HbFeatureManager construction fails, error code = %d", err );
     }
     // Default values defined in cenrep file.
 #else
-    mSettings = new QSettings( "Nokia", "Hb feature manager" );
+    mSettings = new QSettings( "Nokia", "Hb" );
+    mSettings->beginGroup( "FeatureManager" );
     // Set default values:
     if( !mSettings->contains( toString( HbFeatureManager::TextMeasurement ) ) ) {
         mSettings->setValue( toString( HbFeatureManager::TextMeasurement ), 0 );
@@ -113,7 +115,7 @@ HbFeatureManagerPrivate::HbFeatureManagerPrivate()
     if( !mSettings->contains( toString( HbFeatureManager::TheTestUtility ) ) ) {
         mSettings->setValue( toString( HbFeatureManager::TheTestUtility ), 0 );
     }
-#endif // Q_WS_S60
+#endif // Q_OS_SYMBIAN
 }
 
 /*!
@@ -121,11 +123,11 @@ HbFeatureManagerPrivate::HbFeatureManagerPrivate()
 */
 HbFeatureManagerPrivate::~HbFeatureManagerPrivate()
 {
-#if defined(Q_WS_S60)
+#if defined(Q_OS_SYMBIAN)
     delete mRepo;
 #else
     delete mSettings;
-#endif // Q_WS_S60
+#endif // Q_OS_SYMBIAN
 }
 
 /*!
@@ -166,7 +168,7 @@ HbFeatureManager::~HbFeatureManager()
 */
 int HbFeatureManager::featureStatus( Feature feature )
 {
-#if defined(Q_WS_S60)
+#if defined(Q_OS_SYMBIAN)
     if (!d->mRepo) {
         return 0;
     }
@@ -193,7 +195,7 @@ int HbFeatureManager::featureStatus( Feature feature )
 */
 void HbFeatureManager::setFeatureStatus( Feature feature, int status )
 {
-#if defined(Q_WS_S60)
+#if defined(Q_OS_SYMBIAN)
     if (!d->mRepo) {
         return;
     }

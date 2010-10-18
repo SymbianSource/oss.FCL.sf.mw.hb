@@ -126,14 +126,12 @@ public:
 
     QModelIndex mCurrentIndex; //Note that this is not the same as d->mHitItem
     HbRadioButtonList::PreviewMode mPreviewMode;
-    bool mPreviewGoingOn;
     bool mStartUp;
 };
 
 HbRadioButtonListPrivate::HbRadioButtonListPrivate() :
     HbListViewPrivate(),
     mPreviewMode(HbRadioButtonList::NoPreview),
-    mPreviewGoingOn(false),
     mStartUp(true)
 {     
 }
@@ -314,32 +312,32 @@ void HbRadioButtonList::emitActivated(const QModelIndex &modelIndex)
     Q_D( HbRadioButtonList );
      
     if(d->mPreviewMode == HbRadioButtonList::Preview && d->mCurrentIndex != modelIndex){
-        QTimer::singleShot(HB_RADIOBUTTONLIST_PREVIEW_TIMER, this, SLOT(_q_itemPreviewTimerExpired()));          
+        QTimer::singleShot(HB_RADIOBUTTONLIST_PREVIEW_TIMER, this, SLOT(_q_itemPreviewTimerExpired())); 
+        QModelIndexList selected;
+
+        if (d->mCurrentIndex.isValid()) {
+            selected.append(d->mCurrentIndex);
+        } else {
+            selected = d->mSelectionModel->selectedIndexes();
+        }
+        int count = selected.count();
+        for (int i=0; i<count; i++) {
+            HbAbstractViewItem* item = itemByIndex(selected.at(i));
+            if (item) {
+                item->setCheckState(Qt::Unchecked);
+            }
+        }
+
+        HbAbstractViewItem *item = itemByIndex(modelIndex);
+        if (item) {
+            itemByIndex(modelIndex)->setCheckState(Qt::Checked);
+        }
         d->mCurrentIndex=modelIndex;
     }else {
         //Now we let the activate signal go to the application
         d->mCurrentIndex=modelIndex;
         QTimer::singleShot(HB_RADIOBUTTONLIST_ITEM_ACTIVATION_TIMER, this, SLOT(_q_itemActivationTimerExpired()));
     }
-}
-
-/*!
-    \reimp
-*/
-void HbRadioButtonList::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
-{
-    Q_D(HbRadioButtonList);     
-    if(d->mPreviewMode == HbRadioButtonList::Preview ){    
-        HbAbstractViewItem *hitItem = d->itemAt(event->scenePos());
-        if (hitItem){
-            if (hitItem->modelIndex() == d->mCurrentIndex) {
-                d->mPreviewGoingOn=false;
-            } else {
-                d->mPreviewGoingOn=true;
-            }
-        }
-    }
-    HbListView::mouseReleaseEvent(event);
 }
 
 /*!
@@ -355,7 +353,7 @@ QItemSelectionModel::SelectionFlags HbRadioButtonList::selectionCommand(const Hb
         || event->type() != QEvent::GraphicsSceneMouseRelease){
             return QItemSelectionModel::NoUpdate;
     } else {
-        if(d->mPreviewGoingOn==true) {
+        if(d->mPreviewMode == HbRadioButtonList::Preview && d->mCurrentIndex != item->modelIndex()){
             return QItemSelectionModel::NoUpdate;
         } else {
             return QItemSelectionModel::ClearAndSelect;

@@ -64,7 +64,6 @@ HbDeviceDialogServerPrivate::~HbDeviceDialogServerPrivate()
 #ifdef HB_HAVE_QT_MOBILITY
     delete mDeviceInfo;
 #endif // HB_HAVE_QT_MOBILITY     
-    
     // delete mExitTimer;
 }
 

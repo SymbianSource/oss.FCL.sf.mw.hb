@@ -70,9 +70,7 @@ HbEffectTheme *HbEffectTheme::instance()
 
 QString HbEffectTheme::getEffectXml(const QString &fileNameLogical, bool &fromTheme) const 
 {
-#ifdef THEME_INDEX_TRACES
-    qDebug() <<  "ThemeIndex: getEffectXml effect: " << fileNameLogical;
-#endif  
+    THEME_INDEX_DEBUG() <<  "ThemeIndex: getEffectXml effect: " << fileNameLogical;
 
     if (HbThemeUtils::isLogicalName(fileNameLogical)) {
         // Try to get themed icon information from theme index

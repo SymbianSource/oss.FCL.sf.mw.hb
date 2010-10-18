@@ -1,14 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="16px" version="1.1" viewBox="0 0 16 16" width="16px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
-<circle cx="8" cy="8" fill-opacity="0.1" r="8" stroke-opacity="0.1"/>
-<path d="M8,15c-3.86,0-7-3.141-7-7c0-3.86,3.14-7,7-7c3.859,0,7,3.14,7,7C15,11.859,11.859,15,8,15L8,15z" fill="url(#SVGID_1_)"/>
-<path d="M8,2C4.691,2,2,4.691,2,8s2.691,6,6,6s6-2.691,6-6S11.309,2,8,2z M8,13c-2.757,0-5-2.244-5-5  c0-2.757,2.243-5,5-5s5,2.243,5,5C13,10.756,10.757,13,8,13z" fill="#FFFFFF" fill-opacity="0.2" stroke-opacity="0.2"/>
-<path d="M8,1C4.14,1,1,4.14,1,8c0,3.859,3.14,7,7,7c3.859,0,7-3.141,7-7C15,4.14,11.859,1,8,1z M8,14  c-3.309,0-6-2.691-6-6s2.691-6,6-6s6,2.691,6,6S11.309,14,8,14z" fill-opacity="0.2" stroke-opacity="0.2"/>
+<svg baseProfile="tiny" height="20px" version="1.1" viewBox="0 0 20 20" width="20px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<g>
+<g fill-opacity="0.5" stroke-opacity="0.5">
+<path d="M2,8c0-4.42,3.582-8,8-8c4.42,0,8,3.58,8,8c0,4.418-3.58,12-8,12C5.582,20,2,12.418,2,8z" fill-opacity="0.2" stroke-opacity="0.2"/>
+<path d="M10,1c3.861,0,7,3.141,7,7s-3.139,11-7,11c-3.859,0-7-7.141-7-11S6.141,1,10,1L10,1z" fill="url(#SVGID_1_)"/>
+<path d="M10,18c3.309,0,6-6.691,6-10s-2.691-6-6-6C6.692,2,4,4.691,4,8S6.692,18,10,18z M10,3    c2.758,0,5,2.242,5,5c0,2.756-2.242,9-5,9c-2.755,0-5-6.244-5-9C5,5.242,7.244,3,10,3z" fill="#FFFFFF" fill-opacity="0.2" stroke-opacity="0.2"/>
+<path d="M10,19c3.861,0,7-7.141,7-11s-3.139-7-7-7C6.141,1,3,4.141,3,8S6.141,19,10,19z M10,2c3.309,0,6,2.691,6,6    s-2.691,10-6,10c-3.308,0-6-6.691-6-10S6.692,2,10,2z" fill-opacity="0.2" stroke-opacity="0.2"/>
 <defs>
-<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="7.9995" x2="7.9995" y1="1" y2="15.0005">
+<linearGradient gradientUnits="userSpaceOnUse" id="SVGID_1_" x1="9.9998" x2="9.9998" y1="0.7441" y2="19.2447">
 <stop offset="0" style="stop-color:#66B8CC"/>
 <stop offset="1" style="stop-color:#3F89A9"/>
 </linearGradient>
 </defs>
+</g>
+<rect fill="none" height="20" width="20" x="0"/>
+</g>
 </svg>

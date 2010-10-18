@@ -32,12 +32,10 @@
 #include <hbstyle.h>
 
 class HbTreeViewItemPrivate;
-class HbStyleOptionTreeViewItem;
+class HbStylePrimitiveData;
 
-QT_BEGIN_NAMESPACE
+class QGraphicsObject;
 class QPointF;
-class QGraphicsItem;
-QT_END_NAMESPACE
 
 class HB_WIDGETS_EXPORT HbTreeViewItem : public HbListViewItem
 {
@@ -79,7 +77,8 @@ protected:
 
     HbTreeViewItem(HbTreeViewItemPrivate &dd, QGraphicsItem * parent);
 
-    void initStyleOption(HbStyleOptionTreeViewItem *option) const;
+    void initPrimitiveData( HbStylePrimitiveData     *primitiveData, 
+                            const QGraphicsObject    *primitive);
 
 private:
 

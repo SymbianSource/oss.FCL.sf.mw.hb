@@ -65,23 +65,18 @@ void HbDataGroupHeadingWidget::createPrimitives()
 {   
     QObject::connect(mParent, SIGNAL(longPressed(const QPointF )), this, SLOT(longPressed(const QPointF )));
     if(!mBackgroundItem) {
-        mBackgroundItem = style()->createPrimitive(HbStyle::P_DataGroup_background, this);
+        mBackgroundItem = HbStylePrivate::createPrimitive(HbStylePrivate::P_DataGroup_background, this);
     }
 
-    if(!mHeading.isEmpty()) {
-        if(!mHeadingItem) {
-            mHeadingItem = style()->createPrimitive(HbStyle::P_DataGroup_heading, this);
-            setProperty("state","normal");
-        }
-    } else {
-        if(mHeadingItem) {
-            delete mHeadingItem;
-            mHeadingItem = 0;
-        }
+    //if heading is empty still heading item has to be layouted
+    if(!mHeadingItem) {
+        mHeadingItem = HbStylePrivate::createPrimitive(HbStylePrivate::P_DataGroup_heading, this);
+        setProperty("state","normal");
     }
+
     if(!mDescription.isEmpty()) {
         if(!mDescriptionItem) {
-            mDescriptionItem = style()->createPrimitive(HbStyle::P_DataGroup_description, this);
+            mDescriptionItem = HbStylePrivate::createPrimitive(HbStylePrivate::P_DataGroup_description, this);
             setProperty("state","normal");
         }
     } else {
@@ -92,7 +87,7 @@ void HbDataGroupHeadingWidget::createPrimitives()
     }
 
     if(!mIconItem) {
-        mIconItem = style()->createPrimitive(HbStyle::P_DataGroup_icon, this);
+        mIconItem = HbStylePrivate::createPrimitive(HbStylePrivate::P_DataGroup_icon, this);
     }
 
     repolish();
@@ -104,21 +99,21 @@ void HbDataGroupHeadingWidget::updatePrimitives()
     initStyleOption(&settingGroupOption);
 
     if(mHeadingItem) {
-        style()->updatePrimitive( 
-            mHeadingItem, HbStyle::P_DataGroup_heading, &settingGroupOption);
+        HbStylePrivate::updatePrimitive( 
+            mHeadingItem, HbStylePrivate::P_DataGroup_heading, &settingGroupOption);
     }
     
     if(mDescriptionItem) {
-        style()->updatePrimitive( 
-            mDescriptionItem, HbStyle::P_DataGroup_description, &settingGroupOption);
+        HbStylePrivate::updatePrimitive( 
+            mDescriptionItem, HbStylePrivate::P_DataGroup_description, &settingGroupOption);
     }
     if(mIconItem) {
-        style()->updatePrimitive( mIconItem, HbStyle::P_DataGroup_icon, &settingGroupOption);
+        HbStylePrivate::updatePrimitive( mIconItem, HbStylePrivate::P_DataGroup_icon, &settingGroupOption);
     }
 
     if(mBackgroundItem) {
-        style()->updatePrimitive(
-            mBackgroundItem, HbStyle::P_DataGroup_background, &settingGroupOption);
+        HbStylePrivate::updatePrimitive(
+            mBackgroundItem, HbStylePrivate::P_DataGroup_background, &settingGroupOption);
     }
 }
 
@@ -143,8 +138,8 @@ void HbDataGroupHeadingWidget::mousePressEvent(QGraphicsSceneMouseEvent *event)
     HbStyleOptionDataGroupHeadingWidget settingGroupOption;
     initStyleOption(&settingGroupOption);
     if(mBackgroundItem) {
-        style()->updatePrimitive(
-            mBackgroundItem, HbStyle::P_DataGroup_background, &settingGroupOption);
+        HbStylePrivate::updatePrimitive(
+            mBackgroundItem, HbStylePrivate::P_DataGroup_background, &settingGroupOption);
     }
 
     Hb::InteractionModifiers modifiers = Hb::ModifierExpandedItem;
@@ -170,8 +165,8 @@ void HbDataGroupHeadingWidget::mouseReleaseEvent(QGraphicsSceneMouseEvent *event
     HbStyleOptionDataGroupHeadingWidget settingGroupOption;
     initStyleOption(&settingGroupOption);
     if(mBackgroundItem) {
-        style()->updatePrimitive(
-            mBackgroundItem, HbStyle::P_DataGroup_background, &settingGroupOption);
+        HbStylePrivate::updatePrimitive(
+            mBackgroundItem, HbStylePrivate::P_DataGroup_background, &settingGroupOption);
     }
 
     HbWidgetFeedback::triggered(this, Hb::InstantReleased, modifiers);
@@ -199,8 +194,8 @@ void HbDataGroupHeadingWidget::gestureEvent(QGestureEvent *event)
                 HbStyleOptionDataGroupHeadingWidget settingGroupOption;
                 initStyleOption(&settingGroupOption);
                 if(mBackgroundItem) {
-                    style()->updatePrimitive(
-                    mBackgroundItem, HbStyle::P_DataGroup_background, &settingGroupOption);
+                    HbStylePrivate::updatePrimitive(
+                    mBackgroundItem, HbStylePrivate::P_DataGroup_background, &settingGroupOption);
                 }
                 modifiers = Hb::ModifierExpandedItem;
                 HbWidgetFeedback::triggered(this, Hb::InstantPressed, modifiers);
@@ -221,8 +216,8 @@ void HbDataGroupHeadingWidget::gestureEvent(QGestureEvent *event)
                 HbStyleOptionDataGroupHeadingWidget settingGroupOption;
                 initStyleOption(&settingGroupOption);
                 if(mBackgroundItem) {
-                    style()->updatePrimitive(
-                    mBackgroundItem, HbStyle::P_DataGroup_background, &settingGroupOption);
+                    HbStylePrivate::updatePrimitive(
+                    mBackgroundItem, HbStylePrivate::P_DataGroup_background, &settingGroupOption);
                 }
 
                 HbWidgetFeedback::triggered(this, Hb::InstantReleased, modifiers);
@@ -239,8 +234,8 @@ void HbDataGroupHeadingWidget::gestureEvent(QGestureEvent *event)
             HbStyleOptionDataGroupHeadingWidget settingGroupOption;
             initStyleOption(&settingGroupOption);
             if(mBackgroundItem) {
-                style()->updatePrimitive(
-                mBackgroundItem, HbStyle::P_DataGroup_background, &settingGroupOption);
+                HbStylePrivate::updatePrimitive(
+                mBackgroundItem, HbStylePrivate::P_DataGroup_background, &settingGroupOption);
             }
 
             HbWidgetFeedback::triggered(this, Hb::InstantReleased, modifiers);

@@ -32,14 +32,15 @@
 
 
 HbStyleOptionTitlePane::HbStyleOptionTitlePane() :
-    HbStyleOption(), caption(""), mode(QIcon::Normal), transparent(false)
+    HbStyleOption(), caption(""), mode(QIcon::Normal), transparent(false), margueeAnimation(false)
 {
     type = Type;
     version = Version;
 }
 
 HbStyleOptionTitlePane::HbStyleOptionTitlePane(const HbStyleOptionTitlePane &other) :
-    HbStyleOption(other), caption(other.caption), mode(other.mode), transparent(other.transparent)
+    HbStyleOption(other), caption(other.caption), mode(other.mode), transparent(other.transparent),
+        margueeAnimation(other.margueeAnimation)
 {
     type = Type;
     version = Version;

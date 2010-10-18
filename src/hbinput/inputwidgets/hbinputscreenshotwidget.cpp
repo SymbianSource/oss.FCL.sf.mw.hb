@@ -35,16 +35,12 @@
 #include "hbinputvkbwidget.h"
 
 /*!
-@proto
+@stable
 @hbinput
-\class HbInputVkbWidget
-\brief A base class for touch keypads.
+\class HbInputScreenshotWidget
+\brief The HbInputScreenshotWidget class provides screenshots of virtual keyboards for animation purposes.
 
-This class implements default mechanisms for opening and closing touch keypads.
-It know how to operate in landscape and in portait modes and it know how
-implement split view -mechasnism for S60 QT UI's Hb library. It also implements
-closing mechansim, where used is able to close the touch keypad by sliding it downwards
-with a finger. This class also implements background drawing for touch keypads.
+This class is used, for example, in HbInputVkbWidget when it shows an animation during a virtual keyboard change.
 */
 
 /// @cond
@@ -78,7 +74,7 @@ HbInputScreenshotWidgetPrivate::~HbInputScreenshotWidgetPrivate()
 /// @endcond
 
 /*!
-Costructs the object.
+Constructor.
 */
 HbInputScreenshotWidget::HbInputScreenshotWidget(QGraphicsItem *parent)
     : HbWidget(*new HbInputScreenshotWidgetPrivate, parent)
@@ -99,12 +95,15 @@ HbInputScreenshotWidget::HbInputScreenshotWidget(QGraphicsItem *parent)
 }
 
 /*!
-Destructs the object.
+Destructor.
 */
 HbInputScreenshotWidget::~HbInputScreenshotWidget()
 {
 }
 
+/*!
+Sets \a pixmap as the current pixmap of the widget.
+*/
 void HbInputScreenshotWidget::setScreenshot(QPixmap &pixmap)
 {
     Q_D(HbInputScreenshotWidget);
@@ -122,7 +121,7 @@ void HbInputScreenshotWidget::setScreenshot(QPixmap &pixmap)
 }
 
 /*!
-handles mouse press event.
+Handles a mouse press event.
 */
 void HbInputScreenshotWidget::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
@@ -130,7 +129,7 @@ void HbInputScreenshotWidget::mousePressEvent(QGraphicsSceneMouseEvent *event)
 }
 
 /*!
-Handles mouse release event.
+Handles a mouse release event.
 */
 void HbInputScreenshotWidget::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
@@ -138,7 +137,7 @@ void HbInputScreenshotWidget::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 }
 
 /*!
-The paint method. Draws the widget.
+Draws the widget. Parameters \a option and \a widget are not used.
 */
 void HbInputScreenshotWidget::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
@@ -165,8 +164,8 @@ void HbInputScreenshotWidget::paint(QPainter *painter, const QStyleOptionGraphic
 
 
 /*!
-shape function actually refines the bounding rect. This function is used for collision detection
-and hit test.
+Returns the bounding area of the widget as a graphical shape,
+which can be used for collision detection and hit test.
 */
 QPainterPath HbInputScreenshotWidget::shape() const
 {

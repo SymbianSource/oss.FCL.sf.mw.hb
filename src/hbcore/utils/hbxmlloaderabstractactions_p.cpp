@@ -173,6 +173,14 @@ bool HbXmlLoaderAbstractActions::setToolTip( const HbXmlVariable &tooltip )
     return RETURNVALUE;
 }
 
+bool HbXmlLoaderAbstractActions::setBackground( const QString &name, HbFrameDrawer::FrameType type )
+{
+    Q_UNUSED(name);
+    Q_UNUSED(type);
+    return RETURNVALUE;
+}
+
+
 bool HbXmlLoaderAbstractActions::createAnchorLayout( const QString &widget, bool modify )
 {
     Q_UNUSED(widget);

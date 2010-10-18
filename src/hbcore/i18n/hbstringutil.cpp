@@ -45,61 +45,185 @@
     @stable
     @hbcore
     \class HbStringUtil
-    \brief The HbStringUtil class can be used to execute operations on strings,
-    such as comparisons and finding data sequences.
+    \brief The HbStringUtil class supports locale-based comparing and ordering of strings, and digit conversion.
+    
+    \section _hbstringutil_stringcomparison Comparing and ordering strings
+    
+    Using HbStringUtil, you can execute locale-aware operations on collated 
+    strings, such as comparisons and finding data sequences in target strings. 
+    HbStringUtil also provides similar functions for operations on folded data.
+    
+    Choose the right HbStringUtil functions for your purpose, depending on 
+    whether you want to operate on collated or folded data:
+    
+    <ul>
+    
+    <li>Because different languages have different alphabets, they also require 
+    different ways of ordering strings. The technical term for ordering and 
+    comparing strings in a locale-specific manner is \b collating. When 
+    comparing strings in natural languages, it is recommended that you use the 
+    HbStringUtil collation functions: matchC(), compareC() and findC(), and 
+    sort() for operations on multiple strings.
+    
+    For example, for languages using the Latin script, collation defines when 
+    punctuation should be ignored, how accents are handled, and so on. A 
+    locale's settings usually include rules for collation.
+    
+    As an example of handling accents, in German, the letter "o with umlaut" or 
+    "ö" is just a variation of "o", whereas in Swedish it is the letter "ö", 
+    which comes last in the alphabet. There can also be country-specific 
+    variations within a language, for example, between Iberian Spanish and Latin 
+    American Spanish.</li>
+    
+    <li>\b Folding normalises text for comparison, for example, by removing case 
+    distinctions and accents from characters. This can be useful, for example, 
+    if you need to determine if two file names are identical.
+    
+    Folding is not locale-aware. For example, folding is not able to handle 
+    character relationships that are not one-to-one, for example, mapping from 
+    the German uppercase SS to the lowercase ß. When you need to compare 
+    strings in natural languages, use collation instead.</li>
+    
+    </ul>
+    
+    \section _hbstringutil_digitconversion Digit conversion
+    
+    Internal processing of numeric expressions uses Latin digits. To display 
+    digits correctly to the user, you need to convert them to the appropriate 
+    digit type.
+   
+    If you are inserting numbers into a localizable string at runtime using 
+    arguments, you can localize the digit type used for the numbers using the \c 
+    L notation in the placeholder in the string (see hbTrId()). However, this 
+    only works for integers. When displaying more complex numeric expressions 
+    such as dates and times, use HbStringUtil to convert the digits to the digit 
+    type appropriate to the UI language.
 
-    \sa HbStringUtil
+    \note In internal processing, converting numbers from one digit type to 
+    another is not always allowed. For example, native digits are filtered out 
+    of IP addresses, and native digits in phone numbers are converted and sent 
+    to the network as Latin digits. This is because different networks may not 
+    be able to handle native digits.
+    
+    HbExtendedLocale, QLocale and HbNumberGrouping also provide functions for 
+    locale-dependent number formatting.
+
+    \sa HbLocaleUtil
 */
 
 /*!
     \enum HbStringUtil::Option
 
-    This enum describes the way collation is done for matchC, compareC
-    Pass one of these values to setReadChannel() to set the
-    current read channel of QProcess.
-
-    \value Default          Use the default System flags.
-     
-    \value IgnoreNone       Don't ignore anything.
+    Defines the collation levels ('flags') for matchC() and compareC(). This is 
+    based on the Symbian TCollationMethod enumeration, and it is not used on 
+    other platforms.
     
-    \value SwapCase         Reverse case ordering.
-    
-    \value AccentsBackwards Compare secondary keys which represent accents in reverse order.
-    
-    \value SwapKana         Reverse order for katakana/hiragana.
-    
-    \value FoldCase         Fold to lower case, file comparisons.
-    
-    \value MatchingTable    Table used for matching.
-    
-    \value IgnoreCombining  Ignore check for adjacent combining characters. 
-    
-    \sa compareC, matchC
 */
 
 /*!
-    Searches source string's collated data for a
-    match with collated data supplied in pattern string
+    \var HbStringUtil::Default
+    Use the default system flags.
+   
+*/
+
+/*!     
+    \var HbStringUtil::IgnoreNone
+    
+    Do not ignore any keys (by default, for example, punctuation marks and 
+    spaces are ignored).
+
+*/
+    
+/*!    
+    \var HbStringUtil::SwapCase
+    
+    Reverse the normal order for characters that only differ in case.
+
+    
+*/
+    
+/*!    
+    \var HbStringUtil::AccentsBackwards
+    
+    Compare secondary keys representing accents in reverse order (from right to 
+    left). This is needed for French when comparing words that only differ in 
+    accents.
+
+    
+*/
+    
+/*!    
+    \var HbStringUtil::SwapKana
+    
+    Reverse the normal order for characters that only differ in whether they are 
+    Katakana or Hiragana.
+
+    
+*/
+   
+/*!    
+    \var HbStringUtil::FoldCase
+    
+    Fold all characters to lowercase before extracting keys. This is needed when 
+    comparing file names; case is ignored but other Unicode collation level 2 
+    distinctions are not.
+
+*/
+   
+/*!    
+    \var HbStringUtil::MatchingTable
+    
+    Specify a specific collation method to be used for matching purposes.
+    
+*/
+   
+/*!    
+    \var HbStringUtil::IgnoreCombining
+    
+    Ignore a check for adjacent combining characters. A combining character 
+    effectively changes the character it combines with into another character, 
+    which means a match does not occur. Setting this flag allows character 
+    matching regardless of any combining characters.
+        
+*/
+
+/*!
       
-    \attention Cross-Platform API
+    Searches \a strFrom for a match of \a strToMatch based on the locale's 
+    collation settings. You can optionally specify the level of collation with 
+    \a maxLevel and \a flags, and the wild card and escape characters for the 
+    search with \a wildChar, \a wildSequenceChar and \a escapeChar. If the 
+    parameters are not specified, the default values are used.
     
-    \param strFrom Source string.
-    \param strToMatch Pattern string.
-    \param maxLevel Determines the tightness of the collation.
-    Level 0 - Character identity; 
-    Level 1 - Character identity and accents; 
-    Level 2 - Character identity, accents and case; 
-    Level 3 - Character identity, accents, case and Unicode value; 
-    \param flags The flags that will be used. Default value is Default.
-    \param wildChar Wild card character.
-    \param wildSequenceChar Wild card sequence character.
-    \param escapeChar The escape character, for example,  '?', '*'.
+    \param strFrom The source string.    
+    \param strToMatch The string whose data is to be searched within the source 
+    string. The value can contain the wildcard characters "*" and "?", where "*" 
+    matches zero or more consecutive occurrences of any character, and "?" 
+    matches a single occurrence of any character (default).
+    \param maxLevel (optional) The level of collation. Possible values:
+    - \c 0: Only character identities are distinguished.
+    - \c 1: Character identities and accents are distinguished.
+    - \c 2: Character identities, accents, and case are distinguished.    
+    - \c 3: All valid Unicode characters are considered different.
+    - For details, see Symbian documentation on collation, for example, as used 
+    by TDesC16::MatchC().
+    \param flags A list of (comma-separated) HbStringUtil::Option flags that 
+    will be used. The default value is \c Default.
+    \param wildChar (optional) Wild card character ('?' by default).
+    \param wildSequenceChar (optional) Wild card sequence character ('*' by default).
+    \param escapeChar (optional) The escape character, for example, '?', '*' or '\\\\' (default).
     
-    \return If a match is found the offset within source string's
-    data where the match first occurs. -1 if match is not found.
+    \return The offset from the beginning of \a strFrom where the match first 
+    occurs. If the data sequence in \a strToMatch is not found, returns -1.
     
     Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,3}
+    
+    \attention On the Symbian platform, this class uses a Symbian-specific 
+    collation match. On other platforms, the search is not locale-based, and 
+    only the \a strFrom and \a strToMatch parameters are used.
+    
+    \sa findC()
  */
 int HbStringUtil::matchC( const QString &strFrom, const QString &strToMatch,
                                     int maxLevel, Options flags,
@@ -109,9 +233,9 @@ int HbStringUtil::matchC( const QString &strFrom, const QString &strToMatch,
     TPtrC s1Ptr( strFrom.utf16() );
     TPtrC s2Ptr( strToMatch.utf16() );
 
-	if ( (maxLevel < 0) || (maxLevel > 3) ) {
-		maxLevel = 0;
-	}
+    if ( (maxLevel < 0) || (maxLevel > 3) ) {
+        maxLevel = 0;
+    }
     if ( (flags < 0) || (flags > 127) ) {
         flags = Default;
     }
@@ -130,7 +254,7 @@ int HbStringUtil::matchC( const QString &strFrom, const QString &strToMatch,
     // if no regular expressions defined do standard MatchF
     return strFrom.indexOf( strToMatch, 0, Qt::CaseSensitive );
 #else    
-    // works with standard wildcards is not correct
+    // works with standard wildcards
     QRegExp locStrToMatch( strToMatch, Qt::CaseSensitive, QRegExp::Wildcard );    
     return strFrom.indexOf( locStrToMatch, 0 );
 #endif    
@@ -139,25 +263,36 @@ int HbStringUtil::matchC( const QString &strFrom, const QString &strToMatch,
 }
 
 /*!
-    Compares source string's data with the other string's
-    data using the specified collation method.
+ 
+    Compares \a string1 with \a string2 based on the locale's collation 
+    settings. You can optionally specify the level of collation with \a maxLevel 
+    and \a flags. If the parameters are not specified, the default values are 
+    used.
     
-    \attention Cross-Platform API
-    
-    \param string1 Source string.
-    \param string2 String whose data is to be compared with the source string.
-    \param maxLevel Maximum level to use for comparing.
-    Level 0 - Character identity; 
-    Level 1 - Character identity and accents; 
-    Level 2 - Character identity, accents and case; 
-    Level 3 - Character identity, accents, case and Unicode value; 
-    \param flags The flags that will be used. Default value is Default.
-    
-    \return Positive if source string is greater, negative if it is less and 
-    zero	if the content of both strings match.
+    \param string1 The source string.
+    \param string2 The string whose data is to be compared with the source string.
+    \param maxLevel (optional) The level of collation. Possible values:
+    - \c 0: Only character identities are distinguished.
+    - \c 1: Character identities and accents are distinguished.
+    - \c 2: Character identities, accents, and case are distinguished.    
+    - \c 3: All valid Unicode characters are considered different (default).
+    - For details, see Symbian documentation on collation, for example, as used 
+    by TDesC16::CompareC().
+    \param flags (optional) A list of (comma-separated) HbStringUtil::Option flags that 
+    will be used. The default value is \c Default.
+        
+    \return Positive if the \a string1 is greater (that is, comes after \a 
+    string2 when the strings are ordered), negative if \a string2 is greater, 
+    and zero if the content of the strings matches.
     
     Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,1}
+    
+    \attention Locale-specific collation settings are used, and the return value 
+    may vary on different platforms. The \a maxLevel and \a flags parameters are 
+    not used.
+    
+    \sa compareF()
  */
 int HbStringUtil::compareC( const QString &string1, const QString &string2,
                                         int maxLevel, Options flags )
@@ -166,9 +301,9 @@ int HbStringUtil::compareC( const QString &string1, const QString &string2,
     TPtrC s1Ptr(string1.utf16());
     TPtrC s2Ptr(string2.utf16());
    
-	if ( (maxLevel < 0) || (maxLevel > 3) ) {
-		maxLevel = 3;
-	}
+    if ( (maxLevel < 0) || (maxLevel > 3) ) {
+        maxLevel = 3;
+    }
     if ( (flags < 0) || (flags > 127) ) {
         flags = Default;
     }
@@ -185,25 +320,34 @@ int HbStringUtil::compareC( const QString &string1, const QString &string2,
 }
 
 /*!
-    Searches for the first occurrence of the specified collated 
-    data sequence in the aStrFrom to the specified maximum
-    collation level.
+   
+    Searches \a strFrom for the first occurrence of \a strToFind based on the 
+    locale's collation settings. You can optionally specify the collation level 
+    with \a maxLevel. If the parameter is not specified, the default value is 
+    used.
     
-    \attention Cross-Platform API
+    \param strFrom The source string.
+    \param strToFind The string whose data is to be searched within the source string.
+    \param maxLevel (optional) The level of collation. Possible values:
+    - \c 0: Only character identities are distinguished (default).
+    - \c 1: Character identities and accents are distinguished.
+    - \c 2: Character identities, accents, and case are distinguished.    
+    - \c 3: All valid Unicode characters are considered different.
+    - For details, see Symbian documentation on collation, for example, as used 
+    by TDesC16::FindC().
     
-    \param strFrom Source string.
-    \param strToFind String whose data is to be compared with the source string.
-    \param maxLevel The maximum collation level.
-    Level 0 - Character identity; 
-    Level 1 - Character identity and accents; 
-    Level 2 - Character identity, accents and case; 
-    Level 3 - Character identity, accents, case and Unicode value; 
-    
-    \return Offset of the data sequence from the beginning of the
-    aStrFrom. -1 if the data sequence cannot be found.
+    \return The offset from the beginning of \a strFrom where the match first 
+    occurs. If the data sequence in \a strToFind cannot be found, returns -1. If 
+    the length of \a strToFind is zero, returns zero.
     
     Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,5}
+    
+    \attention On the Symbian platform, this class uses a Symbian-specific 
+    collation search. On other platforms, the search is not locale-based, and 
+    the \a maxLevel parameter is not used.
+    
+    \sa matchC()
  */
 int HbStringUtil::findC( const QString &strFrom,
                          const QString &strToFind,
@@ -213,9 +357,9 @@ int HbStringUtil::findC( const QString &strFrom,
     TPtrC s1Ptr( strFrom.utf16() );
     TPtrC s2Ptr( strToFind.utf16() );
     
-	if ( (maxLevel < 0) || (maxLevel > 3) ) {
-		maxLevel = 0;
-	}
+    if ( (maxLevel < 0) || (maxLevel > 3) ) {
+        maxLevel = 0;
+    }
     return s1Ptr.FindC( s2Ptr.Ptr(),
                         s2Ptr.Length(),
                         maxLevel );
@@ -226,19 +370,26 @@ int HbStringUtil::findC( const QString &strFrom,
 }
 
 /*!
-    Searches source string's folded data for a
-    match with folded data supplied in pattern string
+     
+    Searches the folded data in \a strFrom for a match with the folded data in 
+    \a strToMatch.
     
-    \attention Cross-Platform API
+    \param strFrom The source string.    
+    \param strToMatch The string whose data is to be searched within the source 
+    string. The value can contain the wildcard characters "*" and "?", where "*" 
+    matches zero or more consecutive occurrences of any character, and "?" 
+    matches a single occurrence of any character.
     
-    \param strFrom Source string.
-    \param strToMatch Pattern string.
-    
-    \return If a match is found the offset within source string's
-    data where the match first occurs. -1 if match is not found.
+    \return The offset from the beginning of \a strFrom where the match first 
+    occurs. If the data sequence in \a strToMatch is not found, returns -1.
     
     Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,4}
+    
+    \attention On the Symbian platform, this class uses a Symbian-specific 
+    folding match. On other platforms, the search is not locale-based.
+    
+    \sa findF()
  */
 int HbStringUtil::matchF( const QString &strFrom,
                           const QString &strToMatch )
@@ -261,20 +412,25 @@ int HbStringUtil::matchF( const QString &strFrom,
 }
 
 /*!
-    Searches for the first occurrence of the specified folded 
-    data sequence in the strFrom.
+
+    Searches the folded data in \a strFrom for the first occurrence of the 
+    folded data in \a strToFind.
     
-    \attention Cross-Platform API
+    \param strFrom The source string.
+    \param strToFind The string whose data is to be searched within the source string.
     
-    \param strFrom Source string.
-    \param strToFind String whose data is to be compared with the source string.
-    
-    \return Offset of the data sequence from the beginning of the
-    strFrom. -1 if the data sequence cannot be found. Zero,
-    if the length of search data sequence is zero.
+    \return The offset from the beginning of \a strFrom where the match first 
+    occurs. If the data sequence in \a strToFind cannot be found, returns -1. If 
+    the length of \a strToFind is zero, returns zero.
     
     Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,6}
+    
+    \attention On the Symbian platform, this class uses a Symbian-specific 
+    folding search. On other platforms, the search is not locale-based, and the 
+    \a maxLevel parameter is not used.
+    
+    \sa matchF()
  */
 int HbStringUtil::findF( const QString &strFrom,
                          const QString &strToFind )
@@ -290,19 +446,23 @@ int HbStringUtil::findF( const QString &strFrom,
 }
 
 /*!
-    Compares source string's folded data with the other string's
-    folded data.
+
+    Compares the folded data in \a string1 with the folded data in \a string2.
     
-    \attention Cross-Platform API
+    \param string1 The source string.
+    \param string2 The string whose data is to be compared with the source string.
     
-    \param string1 Source string.
-    \param string2 String whose data is to be compared with the source string.
-    
-    \return Positive if source string is greater, negative if it is less and 
-    zero if the content of both strings match.
+    \return Positive if \a string1 is greater (that is, comes after \a string2 
+    when the strings are ordered), negative if \a string2 is greater, and zero 
+    if the content of the strings matches.
     
     Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,2}
+    
+    \attention On the Symbian platform, this class uses Symbian-specific folding 
+    comparison. On other platforms, the comparison is not locale-based.
+    
+    \sa compareC()
  */
 int HbStringUtil::compareF( const QString &string1,
                             const QString &string2 )
@@ -318,9 +478,11 @@ int HbStringUtil::compareF( const QString &string1,
 }
 
 /*!
-    Returns the starting digit range of the native digit
-    \param ch native digit
-    \return starting digit range
+    
+    Returns the starting digit range of the native digit.
+    
+    \param ch The native digit.
+    
  */
 static QChar nativeDigitBase(QChar ch)
 {
@@ -335,32 +497,65 @@ static QChar nativeDigitBase(QChar ch)
 }
 
 /*!
-    Converts digits to native digits based on current UI language.
     
-    \attention Cross-Platform API
+    Converts digits to the native digits based on the current UI language.
     
-    \param str digits to be converted.
+    \param str The digits to be converted.
+    
+    For example:
+    
+    \code
+    QString date = "07.09.2010";
+    QString result = HbStringUtil::convertDigits(date);
+    \endcode
+    
+    \sa convertDigitsTo(), QLocale::toString()
  */
 QString HbStringUtil::convertDigits( const QString str ) 
 {
-	HbExtendedLocale locale = HbExtendedLocale::system();
-	DigitType digitType = WesternDigit;
-	if (locale.language() == HbExtendedLocale::Arabic) {
-		digitType = ArabicIndicDigit;
-	} else if (locale.language() == HbExtendedLocale::Persian || locale.language() == HbExtendedLocale::Urdu) {
-		digitType = EasternArabicIndicDigit;
-	}
-	QString converted = HbStringUtil::convertDigitsTo(str, digitType);
-	return converted;
+    DigitType digitType = WesternDigit;
+#if defined( Q_OS_SYMBIAN )
+    TExtendedLocale extLocale;
+    extLocale.LoadSystemSettings();
+    TDigitType type = extLocale.GetLocale()->DigitType();
+    switch (type)
+        {
+        case EDigitTypeArabicIndic:
+            digitType = ArabicIndicDigit;
+            break;
+        case EDigitTypeEasternArabicIndic:
+            digitType = EasternArabicIndicDigit;
+            break;
+        default:
+            break;
+        };
+#else
+    HbExtendedLocale locale = HbExtendedLocale::system();
+    QChar zero = locale.zeroDigit();
+    if (zero == 0x660) {
+        digitType = ArabicIndicDigit;
+    }
+    if (zero == 0x6F0) {
+        digitType = EasternArabicIndicDigit;
+    }
+#endif
+    QString converted = HbStringUtil::convertDigitsTo(str, digitType);
+    return converted;
 }
 
 /*!
-    Converts the digit from Latin to native or native to latin or native to native
+
+    Returns digits converted into the specified digit type. If you need to 
+    process an integer, use QLocale::toString() to first convert it to a string.
     
-    \attention Cross-Platform API
+    \param str The digits to be converted.
+    \param digitType The digit type that the given digits are to be converted to. Possible values:
+    - \c WesternDigit - Latin digits
+    - \c ArabicIndicDigit - Arabic-Indic digits
+    - \c EasternArabicIndicDigit - Eastern Arabic-Indic digits
+    - \c DevanagariDigit - Devanagari digits
     
-    \param str digits to be converted.
-    \param digitType type of the digit to be converted to
+    \sa convertDigits(), QLocale::toString()
  */
 QString HbStringUtil::convertDigitsTo( const QString str, const DigitType digitType ) 
 {
@@ -382,7 +577,7 @@ QString HbStringUtil::convertDigitsTo( const QString str, const DigitType digitT
                convDigit[i] = QChar(convertedDigit);
                break;
            default:
-        	   convDigit[i] = QChar(digit);
+               convDigit[i] = QChar(digit);
                break;
            };
        }
@@ -390,29 +585,33 @@ QString HbStringUtil::convertDigitsTo( const QString str, const DigitType digitT
 }
 
 /*!
-    Sorts QStrings into alphabetically order (overwrites the strList's original content)
     
-    \attention Cross-Platform API
+    Sorts QString objects into alphabetical order based on the locale's 
+    collation settings. This overwrites the original content of \a strList.
     
-    \param strList List of QStrings which need to be sorted.
+    \param strList The list of QStrings that need to be sorted.
     
     Example:
     \snippet{unittest_hbstringutil/unittest_hbstringutil.cpp,7}
+    
+    \attention Locale-specific collation settings are used, and the return value 
+    may vary on different platforms.
+    
  */
 void HbStringUtil::sort( QStringList &strList )
 {
-	if ( strList.size() > 1 ) {
-		qSort(strList.begin(), strList.end(), hbStringUtil_SortHelper);
-	}
+    if ( strList.size() > 1 ) {
+        qSort(strList.begin(), strList.end(), hbStringUtil_SortHelper);
+    }
 }
 
 bool hbStringUtil_SortHelper( const QString &s1, const QString &s2 )
 {
-	if ( HbStringUtil::compareC(s1, s2) < 0 ) {
-		// s1 is before s2
-		return true;
-	} else {
-		// s1 is after s2 (or they are equal) 
-		return false;
-	}			
+    if ( HbStringUtil::compareC(s1, s2) < 0 ) {
+        // s1 is before s2
+        return true;
+    } else {
+        // s1 is after s2 (or they are equal) 
+        return false;
+    }           
 }

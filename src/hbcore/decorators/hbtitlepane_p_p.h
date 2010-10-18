@@ -28,6 +28,9 @@
 
 #include <hbwidget_p.h>
 
+class HbTapGesture;
+class HbSwipeGesture;
+
 class HbTitlePanePrivate : public HbWidgetPrivate
 {
     Q_DECLARE_PUBLIC(HbTitlePane)
@@ -36,19 +39,25 @@ public:
     HbTitlePanePrivate();
     void delayedConstruction();
 
+    void init();
+
     void createPrimitives();
     void updatePrimitives();
 
-    void init();
-    void toggle(bool on);
+    void handleTap(HbTapGesture *tap);
+    void handleSwipe(HbSwipeGesture *swipe);
+    void cancelTap();
 
     QString mText;
     QGraphicsItem *mTextItem;
-    bool mToggled;
     QGraphicsItem *mIcon;
 
     QIcon::Mode mMode;
     QGraphicsItem *mTouchArea;
+    bool mMargueeAnimation;
+
+    bool mTapStarted;
+    bool mSwipeStarted;
 };
 
 

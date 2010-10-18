@@ -25,6 +25,7 @@
 
 #include "hbvgchainedeffect_p.h"
 #include "hbvgchainedeffect_p_p.h"
+#include "hbinstance_p.h"
 #include <QPainter>
 
 /*!
@@ -49,6 +50,11 @@
  * For the sake of simplicity the opacity and caching properties of
  * ChainedEffect instances is ignored, use the property of the
  * individual effects instead.
+ *
+ * Software-based mask effects in the chain are handled specially. If
+ * such an effect is present at any position, it will be applied first
+ * and the other effects will get its output as their source pixmap.
+ * (this works only in hw mode)
  */
 
 /*!
@@ -139,6 +145,18 @@ HbVgEffect *HbVgChainedEffect::at(int index)
 }
 
 /*!
+ * Returns all effects in a list and removes them from the chain
+ * without destroying them.
+ */
+QList<HbVgEffect *> HbVgChainedEffect::takeAll()
+{
+    Q_D(HbVgChainedEffect);
+    QList<HbVgEffect *> result = d->effects.toList();
+    d->effects.clear();
+    return result;
+}
+
+/*!
  * \reimp
  */
 QRectF HbVgChainedEffect::boundingRectFor(const QRectF &rect) const
@@ -181,21 +199,59 @@ void HbVgChainedEffect::performEffect(QPainter *painter,
 {
 #ifdef HB_EFFECTS_OPENVG
     Q_D(HbVgChainedEffect);
+    // If some effect wants to be the source then have it rendered
+    // into a pixmap first (works only for sw-based effects).
+    QPixmap src = d->srcPixmap;
+    QVariant srcVgImage = vgImage;
     foreach(HbVgEffect * effect, d->effects) {
+        if (effect->chainBehavior() == ChainBehavAsSource) {
+            // Restore the world transform temporarily because the sw
+            // version has slightly different semantics.
+            painter->setWorldTransform(d->worldTransform);
+            QPixmap modSrc = src;
+            QPointF modOffset;
+            // This can be nothing but a mask effect and it can produce smaller output if
+            // the source is based on a scroll area (or anything that clips its children,
+            // as long as the source pixmaps are not restricted to obey the clipping). So
+            // have its output in a temporary pixmap and copy it into the original source
+            // pixmap to the (hopefully) appropriate position afterwards.
+            effect->performEffectSw(painter, &modSrc, &modOffset);
+            qreal dx = modOffset.x() - offset.x();
+            qreal dy = modOffset.y() - offset.y(); 
+            painter->setWorldTransform(QTransform());
+            if (dx >= 0 && dy >= 0) {
+                src.fill(Qt::transparent);
+                QPainter p(&src);
+                p.drawPixmap(QPointF(dx, dy), modSrc);
+                p.end();
+                srcVgImage = QVariant::fromValue<VGImage>(qPixmapToVGImage(src));
+            }
+            break;
+        }
+    }
+    bool hadNormalEffects = false;
+    foreach(HbVgEffect * effect, d->effects) {
+        if (effect->chainBehavior() == ChainBehavAsSource) {
+            continue;
+        }
         // Set up srcPixmap and others for the individual effects
         // because the base class does it only for us, not for the
         // contained ones.
         HbVgEffectPrivate *effD = HbVgEffectPrivate::d_ptr(effect);
-        effD->srcPixmap = d->srcPixmap;
+        effD->srcPixmap = src;
         effD->worldTransform = d->worldTransform;
         // Draw.
-        effect->performEffect(painter, offset, vgImage, vgImageSize);
+        effect->performEffect(painter, offset, srcVgImage, vgImageSize);
         // The flags must be cleared manually for the contained effects.
         effD->paramsChanged = effD->cacheInvalidated = false;
+        if (effD->alwaysClearPixmaps || HbInstancePrivate::d_ptr()->mDropHiddenIconData) {
+            effD->clearPixmaps();
+        }
+        hadNormalEffects = true;
     }
     // If there are no effects in the chain then just draw the source.
-    if (d->effects.isEmpty()) {
-        painter->drawPixmap(offset, d->srcPixmap);
+    if (d->effects.isEmpty() || !hadNormalEffects) {
+        painter->drawPixmap(offset, src);
     }
 
 #else
@@ -208,17 +264,24 @@ void HbVgChainedEffect::performEffect(QPainter *painter,
 
 /*!
  * \reimp
+ *
+ * Sw-mode for a chained effect does not make much sense and will
+ * usually not have any good results because typically the only
+ * sw-based effect is the mask effect and that would need special
+ * handling which is impossible to provide here.
  */
-void HbVgChainedEffect::performEffectSw(QPainter *painter)
+void HbVgChainedEffect::performEffectSw(QPainter *devicePainter,
+                                        QPixmap *result,
+                                        QPointF *resultPos)
 {
     Q_D(HbVgChainedEffect);
     foreach(HbVgEffect * effect, d->effects) {
-        effect->performEffectSw(painter);
+        effect->performEffectSw(devicePainter, result, resultPos);
         HbVgEffectPrivate *effD = HbVgEffectPrivate::d_ptr(effect);
         effD->paramsChanged = effD->cacheInvalidated = false;
     }
     if (d->effects.isEmpty()) {
-        drawSource(painter);
+        drawSource(devicePainter);
     }
 }
 

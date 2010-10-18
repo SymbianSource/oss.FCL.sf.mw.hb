@@ -85,7 +85,7 @@ private:
     Q_DECLARE_PRIVATE_D(d_ptr, HbDialog)
     Q_DISABLE_COPY(HbIndicatorMenu)
 
-    int	mLastError;
+    int mLastError;
     bool mShowEventReceived;
 };
 

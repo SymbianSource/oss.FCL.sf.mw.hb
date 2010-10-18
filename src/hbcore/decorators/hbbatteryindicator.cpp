@@ -26,9 +26,11 @@
 #include "hbbatteryindicator_p.h"
 #include "hbbatteryindicator_p_p.h"
 #include "hbstyleoptionbatteryindicator_p.h"
+#include "hbstyle_p.h"
 
 #include <hbinstance.h>
 #include <hbevent.h>
+
 
 /*
     \class HbBatteryIndicator
@@ -40,6 +42,12 @@
 
 // 0-33% for low, 34-66% for medium and 67-100% for high
 static const int batteryThreshold[] = {33, 66, 100};
+
+enum ThresholdLevel {
+    lowLevel = 0,
+    mediumLevel = 1,
+    highLevel = 2
+};
 
 HbBatteryIndicatorPrivate::HbBatteryIndicatorPrivate() :
     mLevelPercent(-1),
@@ -97,7 +105,7 @@ HbBatteryIndicator::HbBatteryIndicator(QGraphicsItem *parent)
     updatePrimitives();
 
 #ifdef HB_HAVE_QT_MOBILITY
-	Q_D(HbBatteryIndicator);
+    Q_D(HbBatteryIndicator);
     connect(d->mSystemDeviceInfo, SIGNAL(batteryLevelChanged(int)), this, SLOT(setLevel(int)));
     connect(d->mSystemDeviceInfo, SIGNAL(powerStateChanged(QSystemDeviceInfo::PowerState)), this, 
         SLOT(_q_setPowerState(QSystemDeviceInfo::PowerState)));
@@ -120,12 +128,40 @@ void HbBatteryIndicator::delayedConstruction()
 
 }
 
+int HbBatteryIndicator::level() const
+{ 
+    Q_D(const HbBatteryIndicator);
+    return d->mLevelPercent;
+}
+
+bool HbBatteryIndicator::isCharging() const
+{
+    Q_D(const HbBatteryIndicator);
+    // Cannot use mChargingOn only because this function must work
+    // reliably even when called while being in setLevel(). On the
+    // other hand the timer is stopped while being in sleep mode. So
+    // check both.
+    return d->mChargingTimer.isActive() || d->mChargingOn;
+}
+
+void HbBatteryIndicator::chargingEvent(bool start)
+{
+    Q_D(HbBatteryIndicator);
+    if (start) {
+        if (d->mChargingOn) {
+            d->mChargingTimer.start(250, this);
+        }
+    } else {
+        d->mChargingTimer.stop();
+    }
+}
+
 void HbBatteryIndicator::createPrimitives()
 {
     Q_D(HbBatteryIndicator);
-    d->mBatteryIcon = style()->createPrimitive(HbStyle::P_BatteryIndicator_icon, this);
-    d->mBatteryBackgroundIcon = style()->createPrimitive(HbStyle::P_BatteryLevel_background, this);
-    d->mBatteryLevelIcon = style()->createPrimitive(HbStyle::P_BatteryLevel_icon, this);
+    d->mBatteryIcon = HbStylePrivate::createPrimitive(HbStylePrivate::P_BatteryIndicator_icon, this);
+    d->mBatteryBackgroundIcon = HbStylePrivate::createPrimitive(HbStylePrivate::P_BatteryLevel_background, this);
+    d->mBatteryLevelIcon = HbStylePrivate::createPrimitive(HbStylePrivate::P_BatteryLevel_icon, this);
 }
 
 void HbBatteryIndicator::updatePrimitives()
@@ -133,15 +169,9 @@ void HbBatteryIndicator::updatePrimitives()
     Q_D(HbBatteryIndicator);
     HbStyleOptionBatteryIndicator option;
     initStyleOption(&option);
-    style()->updatePrimitive(d->mBatteryIcon, HbStyle::P_BatteryIndicator_icon, &option);
-    style()->updatePrimitive(d->mBatteryBackgroundIcon, HbStyle::P_BatteryLevel_background, &option);
-    style()->updatePrimitive(d->mBatteryLevelIcon, HbStyle::P_BatteryLevel_icon, &option);
-}
-
-int HbBatteryIndicator::level() const
-{ 
-    Q_D(const HbBatteryIndicator);
-    return d->mLevelPercent;
+    HbStylePrivate::updatePrimitive(d->mBatteryIcon, HbStylePrivate::P_BatteryIndicator_icon, &option);
+    HbStylePrivate::updatePrimitive(d->mBatteryBackgroundIcon, HbStylePrivate::P_BatteryLevel_background, &option);
+    HbStylePrivate::updatePrimitive(d->mBatteryLevelIcon, HbStylePrivate::P_BatteryLevel_icon, &option);
 }
 
 /*  
@@ -174,10 +204,10 @@ void HbBatteryIndicator::timerEvent(QTimerEvent *event)
 #ifdef HB_HAVE_QT_MOBILITY        
         currentLevel = d->mSystemDeviceInfo->batteryLevel();
 #endif // HB_HAVE_QT_MOBILITY        
-        if (currentLevel < batteryThreshold[0]) {
-            currentLevel = batteryThreshold[0] - 1;
+        if (currentLevel < batteryThreshold[lowLevel]) {
+            currentLevel = batteryThreshold[lowLevel] - 1;
             step = 2;
-        } else if (currentLevel < batteryThreshold[1]) {
+        } else if (currentLevel < batteryThreshold[mediumLevel]) {
             step = 3;
         }
         d->mChargingOn = false;
@@ -196,28 +226,22 @@ void HbBatteryIndicator::initStyleOption(HbStyleOptionBatteryIndicator *option) 
     HbWidget::initStyleOption(option);
 
     //battery level setting
-    if (d->mLevelPercent >= 0 && d->mLevelPercent <= batteryThreshold[0]) { // low
-        option->batteryLevel = HbStyleOptionBatteryIndicator::Low;
-    } else if (d->mLevelPercent >= batteryThreshold[0] &&
-               d->mLevelPercent <= batteryThreshold[1]) { // medium
-        option->batteryLevel = HbStyleOptionBatteryIndicator::Medium;
-    } else if (d->mLevelPercent >= batteryThreshold[1] &&
-               d->mLevelPercent <= batteryThreshold[2]) { // high
+    if (isCharging()) {
         option->batteryLevel = HbStyleOptionBatteryIndicator::Full;
     } else {
-        option->batteryLevel = HbStyleOptionBatteryIndicator::Zero;
+        if (d->mLevelPercent >= 0 && d->mLevelPercent <= batteryThreshold[lowLevel]) {
+            option->batteryLevel = HbStyleOptionBatteryIndicator::Low;
+        } else if (d->mLevelPercent >= batteryThreshold[lowLevel] &&
+                   d->mLevelPercent <= batteryThreshold[mediumLevel]) { 
+            option->batteryLevel = HbStyleOptionBatteryIndicator::Medium;
+        } else if (d->mLevelPercent >= batteryThreshold[mediumLevel] &&
+                   d->mLevelPercent <= batteryThreshold[highLevel]) { // high
+            option->batteryLevel = HbStyleOptionBatteryIndicator::Full;
+        } else {
+            option->batteryLevel = HbStyleOptionBatteryIndicator::Zero;
+        }
     }
     option->batteryValue = d->mLevelPercent;
-}
-
-bool HbBatteryIndicator::isCharging() const
-{
-    Q_D(const HbBatteryIndicator);
-    // Cannot use mChargingOn only because this function must work
-    // reliably even when called while being in setLevel(). On the
-    // other hand the timer is stopped while being in sleep mode. So
-    // check both.
-    return d->mChargingTimer.isActive() || d->mChargingOn;
 }
 
 /*!

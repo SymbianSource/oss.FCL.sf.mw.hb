@@ -37,6 +37,10 @@
 #include "hbstyleoptionlabel_p.h"
 #include "hbwidgetbase.h"
 #include "hblabel.h"
+#include "hbstyle_p.h"
+#include "hbstyletextprimitivedata.h"
+#include "hbstylerichtextprimitivedata.h"
+#include "hbstyleiconprimitivedata.h"
 
 /*!
     @alpha
@@ -89,60 +93,72 @@ class HbLabelPrivate: public HbWidgetPrivate {
     Q_DECLARE_PUBLIC(HbLabel)
 
 public:
-            HbLabelPrivate ();
-    ~HbLabelPrivate ();
+    HbLabelPrivate();
+    ~HbLabelPrivate();
+
+    void init();
+    void clear();
 
     void clearAll();
 
-    void setText(const QString &text, HbStyle::Primitive primitiveId);
+    void setText(const QString &text, HbStyle::PrimitiveType primitiveId);
     void setIcon(const HbIcon &icon);
 
     void updatePrimitives ();
     void createPrimitives ();
 
     //shared between icon and text
-    Qt::Alignment mAlignment;
+    HbStyleValue<Qt::Alignment> mAlignment;
 
     // text section
-    QString mText;
-    Qt::TextElideMode mElideMode;
-    Hb::TextWrapping mTextWrapping;
-    QColor mColor;
+    HbStyleValue<QString> mText;
+    HbStyleValue<Qt::TextElideMode> mElideMode;
+    HbStyleValue<Hb::TextWrapping> mTextWrapping;
+    HbStyleValue<QColor> mColor;
+    HbStyleValue<int> mMaxLines;
 
     // icon section
-    HbIcon mIcon;
-    Qt::AspectRatioMode mAspectRatioMode;
+    HbStyleValue<HbIcon> mIcon;
+    HbStyleValue<Qt::AspectRatioMode> mAspectRatioMode;
 
     // primitive handling
-    QGraphicsItem *mPrimitiveItem;
-    HbStyle::Primitive mActivePrimitive;
+    QGraphicsObject *mPrimitiveItem;
+
+    HbStyle::PrimitiveType mActivePrimitive;
 };
 
 HbLabelPrivate::HbLabelPrivate() :
         HbWidgetPrivate(),
-        mAlignment(Qt::AlignLeft | Qt::AlignVCenter),
-        mText(QString()),
-        mElideMode(Qt::ElideRight),
-        mTextWrapping(Hb::TextNoWrap),
-        mAspectRatioMode(Qt::KeepAspectRatio),
         mPrimitiveItem(0),
-        mActivePrimitive(HbStyle::P_None)
+        mActivePrimitive(HbStyle::PT_None)
 {
 }
+
+void HbLabelPrivate::init()
+{
+    Q_Q(HbLabel);
+    q->setFlag(QGraphicsItem::ItemClipsChildrenToShape, true);
+}
+
+void HbLabelPrivate::clear()
+{
+    // no implementation needed
+}
+
 
 void HbLabelPrivate::clearAll()
 {
     if (mPrimitiveItem) {
         delete mPrimitiveItem;
         mPrimitiveItem = 0;
-        mActivePrimitive = HbStyle::P_None;
+        mActivePrimitive = HbStyle::PT_None;
     }
 
     mText.clear();
     mIcon.clear();
 }
 
-void HbLabelPrivate::setText(const QString &text, HbStyle::Primitive primitiveId)
+void HbLabelPrivate::setText(const QString &text, HbStyle::PrimitiveType primitiveId)
 {
     Q_Q(HbLabel);
 
@@ -155,7 +171,7 @@ void HbLabelPrivate::setText(const QString &text, HbStyle::Primitive primitiveId
         clearAll();
     }
 
-    if (mText != text || mText.isNull()) {
+    if (mText!=text) {
         mText = text;
         if (mActivePrimitive != primitiveId) {
             mActivePrimitive = primitiveId;
@@ -175,15 +191,15 @@ void HbLabelPrivate::setIcon(const HbIcon &icon)
         return;
     }
 
-    if (mActivePrimitive != HbStyle::P_Label_icon) {
+    if (mActivePrimitive != HbStyle::PT_IconItem) {
         clearAll();
     }
 
     if (mIcon != icon) {
         mIcon = icon;
 
-        if (mActivePrimitive != HbStyle::P_Label_icon) {
-            mActivePrimitive = HbStyle::P_Label_icon;
+        if (mActivePrimitive != HbStyle::PT_IconItem) {
+            mActivePrimitive = HbStyle::PT_IconItem;
             createPrimitives();
             q->repolish(); // reconecting new primitive to HbAnchorLayout so it is really needed!
         }
@@ -201,8 +217,21 @@ void HbLabelPrivate::createPrimitives()
 
     Q_ASSERT(mPrimitiveItem==0);
 
-    if (mActivePrimitive != HbStyle::P_None) {
-        mPrimitiveItem = q->style()->createPrimitive(mActivePrimitive, q);
+    switch (mActivePrimitive) {
+    case HbStyle::PT_None:
+        break;
+
+    case HbStyle::PT_IconItem:
+        mPrimitiveItem = q->style()->createPrimitive(mActivePrimitive, QString("icon"),q);
+        break;
+
+    case HbStyle::PT_TextItem: // no break
+    case HbStyle::PT_RichTextItem:
+        mPrimitiveItem = q->style()->createPrimitive(mActivePrimitive, QString("text"),q);
+        break;
+
+    default:
+        Q_ASSERT(0);
     }
 }
 
@@ -210,14 +239,68 @@ void HbLabelPrivate::updatePrimitives()
 {
     Q_Q(HbLabel);
 
-    if (mActivePrimitive != HbStyle::P_None) {
-        Q_ASSERT(mActivePrimitive == HbStyle::P_Label_icon
-                 || mActivePrimitive == HbStyle::P_Label_richtext
-                 || mActivePrimitive == HbStyle::P_Label_text);
+    if (mActivePrimitive != HbStyle::PT_None) {
+        Q_ASSERT(mActivePrimitive == HbStyle::PT_IconItem
+                 || mActivePrimitive == HbStyle::PT_RichTextItem
+                 || mActivePrimitive == HbStyle::PT_TextItem);
 
-        HbStyleOptionLabel option;
-        q->initStyleOption(&option);
-        q->style()->updatePrimitive(mPrimitiveItem, mActivePrimitive, &option);
+        switch (mActivePrimitive) {
+        case HbStyle::PT_IconItem: {
+                HbStyleIconPrimitiveData data;
+                // set common data:
+                data.alignment = mAlignment;
+
+                // set icon data:
+                data.aspectRatioMode = mAspectRatioMode;
+                data.icon = mIcon;
+
+                q->style()->updatePrimitive(mPrimitiveItem,
+                                            &data);
+            }
+            break;
+        case HbStyle::PT_TextItem: {
+                HbStyleTextPrimitiveData data;
+
+                // set common data:
+                data.alignment = mAlignment;
+
+                // set text common data:
+                data.text = mText;
+                data.textColor = mColor;
+                data.textWrapping = mTextWrapping;
+
+                // plain text specyfic:
+                data.elideMode = mElideMode;
+                data.maximumLines = mMaxLines;
+
+                q->style()->updatePrimitive(mPrimitiveItem,
+                                            &data);
+            }
+            break;
+
+        case HbStyle::PT_RichTextItem: {
+                HbStyleRichTextPrimitiveData data;
+
+                // set common data:
+                data.alignment = mAlignment;
+
+                // set text common data:
+                data.text = mText;
+                data.defaultColor = mColor;
+                data.textWrappingMode = mTextWrapping;
+
+                q->style()->updatePrimitive(mPrimitiveItem,
+                                            &data);
+            }
+            break;
+
+        case 0: {
+            }
+            break;
+
+        default:
+            Q_ASSERT(0);
+        }
     }
 }
 
@@ -228,7 +311,8 @@ void HbLabelPrivate::updatePrimitives()
 HbLabel::HbLabel(QGraphicsItem *parent) :
         HbWidget(*new HbLabelPrivate, parent)
 {
-    setFlag(QGraphicsItem::ItemClipsChildrenToShape, true);
+    Q_D(HbLabel);
+    d->init();
 }
 
 /*!
@@ -237,7 +321,8 @@ HbLabel::HbLabel(QGraphicsItem *parent) :
 HbLabel::HbLabel(HbLabelPrivate &dd, QGraphicsItem * parent) :
         HbWidget(dd, parent)
 {
-    setFlag(QGraphicsItem::ItemClipsChildrenToShape, true);
+    Q_D(HbLabel);
+    d->init();
 }
 
 /*!
@@ -259,6 +344,8 @@ HbLabel::HbLabel(const QString &displayText, QGraphicsItem *parent) :
  */
 HbLabel::~HbLabel ()
 {
+    Q_D(HbLabel);
+    d->clear();
 }
 
 /*!
@@ -309,14 +396,17 @@ void HbLabel::setElideMode (Qt::TextElideMode elideMode)
     Q_D(HbLabel);
     if (elideMode != d->mElideMode) {
         d->mElideMode = elideMode;
-        if (!d->mText.isNull()) {
+        if (d->mText.isSet()) {
             updatePrimitives();
         }
     }
 }
 
 /*!
-    Default elide mode is Qt::ElideRight.
+    By default this method returns invalid value to indicate that
+    eliding is controlled by CSS (setElideMode was not used).
+    In CSS elide by default is set to Qt::ElideRight.
+
     \return the elide mode of the text.
 
     \sa HbLabel::setElideMode()
@@ -324,7 +414,11 @@ void HbLabel::setElideMode (Qt::TextElideMode elideMode)
 Qt::TextElideMode HbLabel::elideMode() const
 {
     Q_D(const HbLabel);
-    return d->mElideMode;
+    if (d->mElideMode.isSet()) {
+        return d->mElideMode;
+    } else {
+        return (Qt::TextElideMode)-1;
+    }
 }
 
 /*!
@@ -338,7 +432,7 @@ void HbLabel::setTextWrapping(Hb::TextWrapping mode)
     Q_D(HbLabel);
     if (d->mTextWrapping != mode) {
         d->mTextWrapping = mode;
-        if (!d->mText.isNull()) {
+        if (d->mText.isSet()) {
             updatePrimitives();
         }
     }
@@ -346,14 +440,19 @@ void HbLabel::setTextWrapping(Hb::TextWrapping mode)
 
 /*!
     \return the label's current text wrapping mode.
-    Default value is NoWrap.
+    Default value is Hb::TextNoWrap.
 
     \sa setTextWrapping()
  */
 Hb::TextWrapping HbLabel::textWrapping() const
 {
     Q_D(const HbLabel);
-    return d->mTextWrapping;
+
+    if (d->mTextWrapping.isSet()) {
+        return d->mTextWrapping;
+    } else {
+        return Hb::TextNoWrap;
+    }
 }
 
 /*!
@@ -378,7 +477,12 @@ void HbLabel::setIcon(const HbIcon &icon)
 HbIcon HbLabel::icon() const
 {
     Q_D(const HbLabel);
-    return d->mIcon;
+
+    if (d->mIcon.isSet()) {
+        return d->mIcon;
+    } else {
+        return HbIcon();
+    }
 }
 
 /*!
@@ -403,7 +507,7 @@ void HbLabel::setAspectRatioMode(Qt::AspectRatioMode aspectRatioMode)
     Q_D(HbLabel);
     if (d->mAspectRatioMode != aspectRatioMode) {
         d->mAspectRatioMode = aspectRatioMode;
-        if (!d->mIcon.isNull()) {
+        if (d->mIcon.isSet()) {
             updatePrimitives();
         }
     }
@@ -418,7 +522,12 @@ void HbLabel::setAspectRatioMode(Qt::AspectRatioMode aspectRatioMode)
 Qt::AspectRatioMode HbLabel::aspectRatioMode() const
 {
     Q_D(const HbLabel);
-    return d->mAspectRatioMode;
+
+    if (d->mAspectRatioMode.isSet()) {
+        return d->mAspectRatioMode;
+    } else {
+        return Qt::KeepAspectRatio;
+    }
 }
 
 /*!
@@ -432,7 +541,7 @@ Qt::AspectRatioMode HbLabel::aspectRatioMode() const
 void HbLabel::setPlainText(const QString &text)
 {
     Q_D(HbLabel);
-    d->setText(text, HbStyle::P_Label_text);
+    d->setText(text, HbStyle::PT_TextItem);
 }
 
 /*!
@@ -446,7 +555,7 @@ void HbLabel::setPlainText(const QString &text)
 void HbLabel::setHtml(const QString &text)
 {
     Q_D(HbLabel);
-    d->setText(text, HbStyle::P_Label_richtext);
+    d->setText(text, HbStyle::PT_RichTextItem);
 }
 
 /*!
@@ -460,21 +569,29 @@ void HbLabel::setAlignment(Qt::Alignment alignment)
     Q_D(HbLabel);
     if (d->mAlignment != alignment) {
         d->mAlignment = alignment;
-        if (d->mActivePrimitive!=HbStyle::P_None) {
+        if (alignment == 0) {
+            d->mAlignment.clear();
+        }
+        if (d->mActivePrimitive!=HbStyle::PT_None) {
             updatePrimitives();
         }
     }
 }
 
 /*!
-    \return the alignment. Default alignment is 'Qt::AlignLeft | Qt::AlignVCenter'
+    \return the alignment. Default alignment is '0' indicating that nothing was
+    set (so CSS cotrols alignment).
 
     \sa HbLabel::setAlignment()
  */
 Qt::Alignment HbLabel::alignment() const
 {
     Q_D(const HbLabel);
-    return d->mAlignment;
+    if (d->mAlignment.isSet()) {
+        return d->mAlignment;
+    } else {
+        return 0;
+    }
 }
 
 /*!
@@ -490,7 +607,7 @@ Qt::Alignment HbLabel::alignment() const
 bool HbLabel::isEmpty() const
 {
     Q_D(const HbLabel);
-    return d->mActivePrimitive == HbStyle::P_None;
+    return d->mActivePrimitive == HbStyle::PT_None;
 }
 
 /*!
@@ -500,7 +617,7 @@ bool HbLabel::isEmpty() const
 
     Returns a pointer to the QGraphicsItem primitive used by this label.
     \param primitive - the type of graphics primitive required.
-    HbLabel supports HbStyle::P_Label_text and HbStyle::P_Label_icon.
+    HbLabel supports HbStyle::PT_TextItem and HbStyle::PT_IconItem.
     \return the QGraphicsItem used by the label. It is 0 if type \a primitive not currently in use.
     It is also 0 if the text or icon object is empty.
 
@@ -511,10 +628,29 @@ bool HbLabel::isEmpty() const
 QGraphicsItem * HbLabel::primitive(HbStyle::Primitive primitive) const
 {
     Q_D(const HbLabel);
-    if (primitive == d->mActivePrimitive) {
+    switch ((HbStylePrivate::Primitive)primitive) {
+    case HbStylePrivate::P_Label_icon:
+        if (d->mActivePrimitive != HbStyle::PT_IconItem) {
+            break;
+        }
         return d->mPrimitiveItem;
+
+    case HbStylePrivate::P_Label_text:
+        if (d->mActivePrimitive != HbStyle::PT_TextItem) {
+            break;
+        }
+        return d->mPrimitiveItem;
+
+    case HbStylePrivate::P_Label_richtext:
+        if (d->mActivePrimitive != HbStyle::PT_RichTextItem) {
+            break;
+        }
+        return d->mPrimitiveItem;
+
+    default:
+        return HbWidget::primitive(primitive);
     }
-    return HbWidget::primitive(primitive);
+    return 0;
 }
 
 /*!
@@ -531,14 +667,15 @@ void HbLabel::initStyleOption(HbStyleOptionLabel *option) const
 
     option->alignment = d->mAlignment;
 
-    if (!d->mText.isNull()) {
+    if (d->mText.isSet()) {
         option->text = d->mText;
         option->elideMode = d->mElideMode;
         option->textWrapMode = d->mTextWrapping;
         option->color = d->mColor;
+        option->maximumLines = d->mMaxLines;
     }
 
-    if (!d->mIcon.isNull()) {
+    if (d->mIcon.isSet()) {
         option->icon = d->mIcon;
         option->aspectRatioMode = d->mAspectRatioMode;
     }
@@ -546,7 +683,7 @@ void HbLabel::initStyleOption(HbStyleOptionLabel *option) const
 
 QSizeF HbLabel::sizeHint ( Qt::SizeHint which, const QSizeF & constraint ) const
 {
-    if (isEmpty()) {
+    if (isEmpty() && which!=Qt::MaximumSize) {
         return QSizeF(0,0);
     }
     return HbWidget::sizeHint(which,constraint);
@@ -576,7 +713,7 @@ int HbLabel::type() const
 QString HbLabel::plainText() const
 {
     Q_D(const HbLabel);
-    if (d->mActivePrimitive == HbStyle::P_Label_text) {
+    if (d->mActivePrimitive == HbStyle::PT_TextItem) {
         return d->mText;
     }
     return QString();
@@ -588,7 +725,7 @@ QString HbLabel::plainText() const
 QString HbLabel::html() const
 {
     Q_D(const HbLabel);
-    if (d->mActivePrimitive == HbStyle::P_Label_richtext) {
+    if (d->mActivePrimitive == HbStyle::PT_RichTextItem) {
         return d->mText;
     }
     return QString();
@@ -602,7 +739,7 @@ void HbLabel::setTextColor( const QColor &textColor )
     Q_D(HbLabel);
     if (d->mColor!=textColor) {
         d->mColor=textColor;
-        if (!d->mText.isNull()) {
+        if (d->mText.isSet()) {
             updatePrimitives();
         }
     }
@@ -614,7 +751,50 @@ void HbLabel::setTextColor( const QColor &textColor )
 QColor HbLabel::textColor() const
 {
     Q_D(const HbLabel);
-    return d->mColor;
+
+    if (d->mColor.isSet()) {
+        return d->mColor;
+    } else {
+        return QColor();
+    }
+}
+
+/*!
+    If plain text is used (\sa setPlainText) this will set maximum number of lines
+    to be visible in label.
+    Zero or negative value disables the feature.
+
+    \sa maximumLines()
+ */
+void HbLabel::setMaximumLines(int maxLines)
+{
+    Q_D(HbLabel);
+
+    maxLines = qMax(maxLines, 0);
+    if (d->mMaxLines != maxLines) {
+        d->mMaxLines = maxLines;
+        if (d->mActivePrimitive == HbStyle::PT_TextItem) {
+            updatePrimitives();
+        }
+    }
+}
+
+/*!
+    Returns maximum number of lines which can be visible in label when
+    plain text is used (\sa setPlainText).
+    Zero value means that there is no limitation.
+
+    \sa setMaximumLines(int)
+ */
+int HbLabel::maximumLines() const
+{
+    Q_D(const HbLabel);
+
+    if (d->mMaxLines.isSet()) {
+        return d->mMaxLines;
+    } else {
+        return 0;
+    }
 }
 
 #include "moc_hblabel.cpp"

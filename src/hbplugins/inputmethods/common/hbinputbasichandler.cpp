@@ -181,7 +181,7 @@ bool HbInputBasicHandler::filterEvent(const QKeyEvent *event)
         if(d->mAutoCompleter) {
             d->mInputMethod->closeAutoCompletionPopup();
         }
-		break;
+        break;
     default:
         ret = HbInputModeHandler::filterEvent(event);
         break;
@@ -194,7 +194,15 @@ bool HbInputBasicHandler::filterEvent(const QKeyEvent *event)
 */
 bool HbInputBasicHandler::actionHandler(HbInputModeAction action)
 {
-    return HbInputModeHandler::actionHandler(action);
+    bool ret = true;
+    switch (action) {
+    case HbInputModeActionRestorePreviousState:
+        refreshAutoCompleter();
+        break;
+    default:
+        ret = HbInputModeHandler::actionHandler(action);
+    }
+    return ret;
 }
 
 /*!

@@ -29,7 +29,6 @@
 #include <hbdialog.h>
 #include <hbinputdef.h>
 #include <hbinputvirtualkeyboard.h>
-#include <hbinputvirtualrocker.h>
 
 const int HbRepeatTimeout = 1000;
 const int HbRepeatTimeoutShort = 150;
@@ -37,7 +36,7 @@ const int HbRepeatTimeoutShort = 150;
 const QString backgroundGraphics("qtg_fr_input_v_bg");
 const QString HbInputVkbHandleIcon("qtg_graf_input_v_swipe");
 const qreal HbCloseHandleHeight = 0;
-const qreal HbCloseHandleHeightInUnits = 3.13;
+const qreal HbCloseHandleHeightInUnits = 2.68;
 const qreal HbCloseHandleWidthInUnits = 18.8;
 
 class HbInputVkbWidgetPrivate;
@@ -45,6 +44,7 @@ class HbInputMethod;
 class HbView;
 class HbKeymap;
 class HbPanGesture;
+class HbFrameDrawer;
 
 class HB_INPUT_EXPORT HbInputVkbWidget : public HbWidget, public HbVirtualKeyboard
 {
@@ -71,19 +71,17 @@ public:
         HbSctViewSmiley
     };
 
-    HbInputVkbWidget(QGraphicsItem *parent = 0);  
+    HbInputVkbWidget(QGraphicsItem *parent = 0);
     virtual ~HbInputVkbWidget();
 
 public: // From HbVirtualKeyboard
     QWidget *asWidget();
     QGraphicsWidget *asGraphicsWidget();
     QSizeF preferredKeyboardSize();
-    QSizeF minimizedKeyboardSize();
     virtual void aboutToOpen(HbVkbHost *host);
     virtual void aboutToClose(HbVkbHost *host);
     virtual void keyboardOpened(HbVkbHost *host);
     virtual void keyboardClosed(HbVkbHost *host);
-    virtual void keyboardMinimized(HbVkbHost *host);
     virtual void keyboardAnimationFrame(HbVkbAnimationType type, qreal x);
 
     virtual void setKeymap(const HbKeymap *keymap);
@@ -94,9 +92,6 @@ public: // From HbVirtualKeyboard
 
     virtual void setContentItem(QGraphicsLayoutItem *item);
     virtual QGraphicsLayoutItem *contentItem() const;
-
-    virtual void setRockerVisible(bool visible);
-    virtual bool isRockerVisible() const;
 
     virtual void setKeyboardDimmed(bool dimmed);
     virtual void setBackgroundDrawing(bool backgroundEnabled);
@@ -117,15 +112,15 @@ protected: // From QGraphicsItem
 
 protected:
     // layout
-    QSizeF keypadButtonAreaSize();
-    virtual QPointF rockerPosition();
+    QSizeF keypadButtonAreaSize();    
+    HbFrameDrawer* iconDrawer();
 
 public slots:
     void showSettingList();
     void showSettingsView();
     void closeSettingsView();
     void executeMethodDialog();
-    void closeSettingList();
+    virtual void closeSettingList();
     void settingsClosed();
     void showSmileyPicker(int rows = 0, int columns = 0);
     void keypadLanguageChangeAnimationUpdate(qreal value);
@@ -139,11 +134,11 @@ public slots:
 
 signals:
     void keypadCloseEventDetected(HbInputVkbWidget::HbVkbCloseMethod closeMethod);
-    void rockerDirection(int direction, HbInputVirtualRocker::RockerSelectionMode selectionMode);
     void flickEvent(HbInputVkbWidget::HbFlickDirection direction);
     void smileySelected(QString text);
     void mouseMovedOutOfButton();
     void aboutToActivateCustomAction(HbAction *custAction);
+    void settingsListClosed();
 protected:
     HbInputVkbWidget(HbInputVkbWidgetPrivate &dd, QGraphicsItem *parent);
 

@@ -48,6 +48,7 @@ public:
     bool isCurrentValueVisible()const;
 
     virtual void setToolTipVisible(bool);
+    virtual void gestureEvent(QGestureEvent *event);
 
 protected:
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event);

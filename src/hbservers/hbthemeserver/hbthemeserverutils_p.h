@@ -35,8 +35,8 @@
 #include "hbsharedcache_p.h"
 #include "hbiconloader_p.h"
 #include "hbcssparser_p.h"
-#include "hbcache_p.h"
-class HbCache;
+#include "hbiconprocessor_p.h"
+
 class QString;
 class QSizeF;
 
@@ -47,20 +47,33 @@ public:
     static QString formatFromPath(const QString &iconPath);
     static int getSharedStylesheet(const QString &fileName,
                                    HbLayeredStyleLoader::LayerPriority priority,
+                                   bool &fileExists,
                                    bool *inSharedCache = 0);
-    static bool parseCssFile(HbCss::Parser &parser, const QString &fileName, int &cssOffset);
-    static void cleanupUnusedCss(HbCache *cache);
+    static int getMissedHbCssFilesOffset();
+    static bool parseCssFile(HbCss::Parser &parser, 
+                             const QString &fileName, 
+                             int &cssOffset,
+                             bool &fileExists);
     static int getSharedEffect(const QString &fileName);
     static int getSharedLayoutDefinition(const QString & fileName,
                                          const QString &layout,
-                                         const QString &section);
+                                         const QString &section,
+                                         bool &fileExists);
     static void createDeviceProfileDatabase();
     static bool removeSharedEffect(const QString &fileName);
     static void clearSharedEffects();
+    static int computeCpuCost(const HbIconKey & key, HbIconFormatType iconType,
+                                bool isConsolidatedIcon);
+    static int computeGpuCost(const HbIconKey & key, HbIconFormatType iconType,
+                                bool isConsolidatedIcon);
+    static int computeFrameItemCpuCost(const HbIconKey & key, 
+                                                            HbIconFormatType iconType,
+                                                            HbRenderingMode rm); 
 
     static void createThemeIndex(const QString &themePath, const HbThemeType &themetype);
 
 private:
+    static void initMissedHbCssFilesList();
 };
 
 #endif // HBTHEMESERVERUTILS_P_H

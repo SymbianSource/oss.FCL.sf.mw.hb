@@ -46,10 +46,13 @@ public:
     void updateState(QAbstractAnimation::State newState, QAbstractAnimation::State oldState) {
         if (oldState != QAbstractAnimation::Stopped && newState == QAbstractAnimation::Stopped && mEntry) {
             mEntry->timerFired();
-            mEntry->mAnim = 0; // to prevent confusing unregisterEntry() and double deletion
-            HbTimer::instance()->unregisterEntry(mEntry);
-            if (mEntry->mDeleteWhenFinishedNormally) {
-                delete mEntry;
+            // mEntry may be nulled out due to an unregister call from the callback.
+            if (mEntry) {
+                mEntry->mAnim = 0; // to prevent confusing unregisterEntry() and double deletion
+                HbTimer::instance()->unregisterEntry(mEntry);
+                if (mEntry->mDeleteWhenFinishedNormally) {
+                    delete mEntry;
+                }
             }
         }
     }

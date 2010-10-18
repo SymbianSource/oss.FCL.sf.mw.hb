@@ -42,18 +42,18 @@ public:
                   char *argv[],
                   Hb::ApplicationFlags flags = Hb::DefaultApplicationFlags);
 
-#if defined(Q_WS_S60)
+#if defined(Q_OS_SYMBIAN)
     HbApplication(QApplication::QS60MainApplicationFactory factory,
                   int &argc,
                   char *argv[],
                   Hb::ApplicationFlags flags = Hb::DefaultApplicationFlags);
-#endif // Q_WS_S60
+#endif // Q_OS_SYMBIAN
 
     ~HbApplication();
 
-#if defined(Q_WS_S60)
+#if defined(Q_OS_SYMBIAN)
     virtual bool symbianEventFilter(const QSymbianEvent *event);
-#endif // Q_WS_S60
+#endif // Q_OS_SYMBIAN
 
 signals:
     void activate();
@@ -66,6 +66,8 @@ public:
     QVariant activateData();
 
     void hideSplash();
+
+    static bool startedToBackground(int argc = 0, char *argv[] = 0);
 
 protected:
     HbApplicationPrivate *d_ptr;

@@ -34,12 +34,17 @@
 #include <hbinputmethod.h>
 #include <hbinputsettingproxy.h>
 #include <hbinputregioncollector_p.h>
-
-#include "hbdialog_p.h"
+#include "hbinputpopupbase_p.h"
+/*!
+@stable
+@hbinput
+\class HbInputMethodSelectionList
+\brief Selection list popup for picking input methods.
+*/
 
 /// @cond
 
-class HbInputMethodSelectionListPrivate : public HbDialogPrivate
+class HbInputMethodSelectionListPrivate : public HbInputPopupBasePrivate
 {
     Q_DECLARE_PUBLIC(HbInputMethodSelectionList)
 
@@ -68,8 +73,9 @@ void HbInputMethodSelectionListPrivate::createSelectionList()
     mList->setItemRecycling(false);
 
     HbInputSettingProxy *proxy = HbInputSettingProxy::instance();
-    HbInputMethodDescriptor descriptor = proxy->preferredInputMethod();
-    QByteArray customData = proxy->preferredInputMethodCustomData(q->mainWindow()->orientation());
+    Qt::Orientation orientation = q->mainWindow()->orientation();
+    HbInputMethodDescriptor descriptor = proxy->preferredInputMethod(orientation);
+    QByteArray customData = proxy->preferredInputMethodCustomData(orientation);
 
     QList<HbInputMethodDescriptor> methodList = HbInputMethod::listCustomInputMethods(q->mainWindow()->orientation(), proxy->globalInputLanguage());
     methodList.insert(0, HbInputMethod::defaultInputMethod(q->mainWindow()->orientation()));
@@ -134,16 +140,15 @@ void HbInputMethodSelectionListPrivate::createSelectionList()
 Constructs input method selection list
 */
 HbInputMethodSelectionList::HbInputMethodSelectionList(QGraphicsWidget* parent)
- : HbDialog(*new HbInputMethodSelectionListPrivate(), parent)
+ : HbInputPopupBase(*new HbInputMethodSelectionListPrivate(), parent)
 {
     Q_D(HbInputMethodSelectionList);
     HbInputRegionCollector::instance()->attach(this);
 
-    HbStyle style;
     qreal listWidth(300);
-    style.parameter(QString("expr(var(hb-param-screen-short-edge)-(2*var(hb-param-margin-gene-screen)))"), listWidth);
+    style()->parameter(QString("expr(var(hb-param-screen-short-edge)-(2*var(hb-param-margin-gene-screen)))"), listWidth);
     qreal margin(5);
-    style.parameter(QString("hb-param-margin-gene-popup"), margin);
+    style()->parameter(QString("hb-param-margin-gene-popup"), margin);
 
     QGraphicsLinearLayout *layout = new QGraphicsLinearLayout();
     layout->setContentsMargins(margin, margin, margin, margin);
@@ -154,10 +159,6 @@ HbInputMethodSelectionList::HbInputMethodSelectionList(QGraphicsWidget* parent)
     setDismissPolicy(TapOutside);
     setPreferredWidth(listWidth);
     setModal(true);
-
-    // Make sure input method selection list never steals focus.
-    setFlag(QGraphicsItem::ItemIsPanel, true);
-    setActive(false);
 
     d->createSelectionList();
 

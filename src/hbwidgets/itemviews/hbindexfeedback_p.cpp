@@ -26,17 +26,20 @@
 #include "hbindexfeedback_p.h"
 #include "hbindexfeedback.h"
 
+#include <hbapplication.h>
 #include <hbscrollbar.h>
 #include <hbabstractitemview.h>
 #include <hbabstractviewitem.h>
 #include <hbstyle.h>
 #include <hbabstractitemcontainer_p.h>
-#include <hbapplication.h>
+#include <hbtextitem.h>
+#include <hbframeitem.h>
+#include <hbframedrawer.h>
 
 #include <hbeffect.h>
 #include <hbeffectinternal_p.h>
 
-#include <hbstyleoptionindexfeedback_p.h>
+#include <hbabstractitemview_p.h>
 
 #include <QTimer>
 #include <QSize>
@@ -118,7 +121,6 @@ void HbIndexFeedbackPrivate::init()
 
     //mItemView = 0; // double check that this is safe.
 
-    HbEffect::add(HB_INDEXFEEDBACK_TYPE, "indexfeedback_appear", EFFECT_IFAPPEAR);
     if (!HbEffect::add(HB_INDEXFEEDBACK_TYPE, "indexfeedback_disappear", EFFECT_IFDISAPPEAR)) {
         mDisappearTimer = new QTimer(q);
         mDisappearTimer->setSingleShot(true);
@@ -144,18 +146,23 @@ void HbIndexFeedbackPrivate::init()
 */
 void HbIndexFeedbackPrivate::showIndexFeedback()
 {
+    Q_Q( HbIndexFeedback );
     if (!mItemView 
         || mIndexFeedbackPolicy == HbIndexFeedback::IndexFeedbackNone) {
         return;
     }
 
-    QList <HbAbstractViewItem *> visibleItems = mItemView->visibleItems();
+    HbAbstractItemViewPrivate *viewPrivate = HbAbstractItemViewPrivate::d_ptr(mItemView);
+    QList<HbAbstractViewItem *> items = viewPrivate->mContainer->items();
+    QModelIndex targetIndex;
 
-    QModelIndex targetIndex = visibleItems.first()->modelIndex();   
-    qreal top = visibleItems.first()->mapToItem(mItemView, 0, 0).y();
-    if (top < 0 
-        && visibleItems.count() > 1) {
-        targetIndex = visibleItems.at(1)->modelIndex();
+    const int count(items.count());
+    for (int i = 0; i < count; ++i) {
+        HbAbstractViewItem *item = items.at(i);
+        if(viewPrivate->visible(item, true)) {
+            targetIndex = item->modelIndex();
+            break;
+        }
     }
 
     if (targetIndex.isValid()) {
@@ -165,17 +172,16 @@ void HbIndexFeedbackPrivate::showIndexFeedback()
             QString testString = displayText(data);
             if (testString != mPopupContent) {
                 mPopupContent = testString;
-                updatePrimitives();
+                q->updatePrimitives();
             }
 
-            if (mTextItem && mTextItem->opacity() == 0.0) {
-                HbEffect::start(mPopupItemList, HB_INDEXFEEDBACK_TYPE, EFFECT_IFAPPEAR);
-            }
-            if (mTextItem) {
+           if (mTextItem) {
+                mTextItem->setOpacity(1.0);
                 mTextItem->show();
             }
 
             if (mPopupItem) {
+                mPopupItem->setOpacity(1.0);
                 mPopupItem->show();
             }
 
@@ -224,6 +230,7 @@ QString HbIndexFeedbackPrivate::displayText(const QVariant &data) const
 */
 void HbIndexFeedbackPrivate::scrollBarPressed()
 {
+    cancelEffect(EFFECT_IFDISAPPEAR);
     showIndexFeedback();
 
     // need to record the scrollbar values    
@@ -334,23 +341,6 @@ void HbIndexFeedbackPrivate::_q_itemViewDestroyed()
 }
 
 /*
-    Update the primitives for the index feedback.
-*/
-void HbIndexFeedbackPrivate::updatePrimitives()
-{
-    Q_Q( HbIndexFeedback );
-
-    HbStyleOptionIndexFeedback option;
-    q->initStyleOption(&option);
-    if (mTextItem) {
-        q->style()->updatePrimitive(mTextItem, HbStyle::P_IndexFeedback_popup_text, &option);
-    }
-    if (mPopupItem) {
-        q->style()->updatePrimitive(mPopupItem, HbStyle::P_IndexFeedback_popup_background, &option);
-    }
-}
-
-/*
     Create the primitives for the index feedback.
 */
 void HbIndexFeedbackPrivate::createPrimitives()
@@ -360,13 +350,33 @@ void HbIndexFeedbackPrivate::createPrimitives()
     mPopupItemList.clear();
 
     if (!mTextItem) {
-        mTextItem = q->style()->createPrimitive(HbStyle::P_IndexFeedback_popup_text, q);
+        mTextItem = q->style()->createPrimitive(HbStyle::PT_TextItem, QLatin1String("index-text"), q);
+        mTextItem->setZValue(4);
+
+        HbTextItem *textItem = qobject_cast<HbTextItem*>(mTextItem);
+        if (textItem) {
+            textItem->setAlignment(Qt::AlignCenter);
+            textItem->setTextWrapping(Hb::TextNoWrap);
+        }
+
         mTextItem->hide();
         mPopupItemList.append(mTextItem);
     }
 
     if (!mPopupItem) {
-        mPopupItem = q->style()->createPrimitive(HbStyle::P_IndexFeedback_popup_background, q);
+        mPopupItem = q->style()->createPrimitive(HbStyle::PT_FrameItem, QLatin1String("index-background"), q);
+        mPopupItem->setZValue(3);
+        HbFrameItem *frameItem = qobject_cast<HbFrameItem*>(mPopupItem);
+        if (frameItem) {
+            HbFrameDrawer &frameDrawer(frameItem->frameDrawer());
+            frameDrawer.setFrameGraphicsName(QLatin1String("qtg_fr_popup_preview"));
+            frameDrawer.setFrameType(HbFrameDrawer::NinePieces);
+
+            qreal cornerPieceSize = 0;
+            q->style()->parameter(QLatin1String("hb-param-background-popup-preview"),cornerPieceSize);
+            frameDrawer.setBorderWidths(cornerPieceSize, cornerPieceSize, cornerPieceSize, cornerPieceSize);
+        }
+
         mPopupItem->hide();
         mPopupItemList.append(mPopupItem);
     }
@@ -553,3 +563,12 @@ qreal HbIndexFeedbackPrivate::textWidth() const
 
     return retVal;
 }
+
+void HbIndexFeedbackPrivate::cancelEffect(const QString& effect)
+{
+    int count = mPopupItemList.count();
+    for (int i=0; i<count; i++) {
+        HbEffect::cancel(mPopupItemList.at(i),effect);
+    }
+}
+

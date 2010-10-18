@@ -1,4 +1,4 @@
-HbGroupBoxHeadingWidget[groupBoxType="1"] 
+HbGroupBoxHeadingWidget[groupBoxType="1"]
 {
     layout:simple_label;
     size-policy-vertical:fixed;
@@ -35,8 +35,9 @@ HbGroupBoxHeadingWidget[groupBoxType="1"]::background
 HbGroupBoxHeadingWidget[groupBoxType="3"]::icon
 {
     right:var(hb-param-margin-gene-right);
-    fixed-width:var(hb-param-graphic-size-secondary);
-    fixed-height:var(hb-param-graphic-size-secondary);
+    /* hb-param-graphic-size-primary-small for collapse/expand icon as per groubox_params_v09.pdf */
+    fixed-width:var(hb-param-graphic-size-primary-small);
+    fixed-height:var(hb-param-graphic-size-primary-small);
 }
 
 HbGroupBoxHeadingWidget[groupBoxType="3"]::text

@@ -23,9 +23,8 @@
 **
 ****************************************************************************/
 
-#include "hbgestures_p.h"
 #include "hbtapgesture.h"
-#include "hbtapgesture_p.h"
+#include "hbgestures_p.h"
 
 #include <QPointF>
 #include <QVariant>
@@ -38,10 +37,6 @@
 # define DEBUG qDebug
 #endif
 
-
-HbTapGesturePrivate::HbTapGesturePrivate(): mTapStyleHint(HbTapGesture::Tap), mTimerId(0)
-{
-}
 
 /*!
    @proto

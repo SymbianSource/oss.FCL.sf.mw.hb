@@ -25,25 +25,36 @@
 
 /*!
     \class HbIndicator
-    \brief HbIndicator can be used to activate and deactivate indicators.
+    \brief HbIndicator can be used to activate, update and deactivate indicators.
 
-    HbIndicator sends a request for indicator activation and deactivation to
-    server side. Indicators are identified by their type-string and there must be a
-    server side indicator implementation for that type.
+    Indicators are used to indicate events to user. For example unread mail, missed calls, etc. 
+    They appear as icon in status bar and/or indicator menu. In addition of an icon, indicator menu
+    may also contains text for an indicator. From the menu, user can interact with an indicator
+    by tapping it. 
 
-    Active indicators may appear in the status indicator area as an icon,
-    and/or inside universal indicator popup showing icon and text.
-    Depending on the indicator implementation, activated indicator may also show up with
-    a discreet popup and some indicators can be interacted by the user in universal indicator popup.
+    Indicators are implemented by plugins loaded by indicator service. Indicator implementations
+    in plugins are identified by unique strings.
 
-    When deactivated, icons are removed from the status
-    indicator area and in universal indicator popup.
+    Activating indicator adds it into status bar and/or menu. Deactivating removes it.
 
-    User can interact with indicator from the indicator menu. Client is notified about
-    the user interaction via userActivated signal. Interaction notification and data 
-    sent by the indicator is a contract between HbIndicator class and indicator.
-    
-    \sa HbIndicatorPluginInterface
+    Activating an already active indicator updates it with a new data set. The plugin implementation
+    is called the same way as first time activate is called.  
+
+    HbIndicator indicates data from the plugin implementation by HbIndicator::userActivated() signal.
+    The pugin may trigger this signal for example when user interacts with the indicator from
+    indicator menu. Data accompanying the signal originates from indicator plugin and is
+    passed by indicator framework unmodified. All instances of HbIndicator that have activated
+    the indicator, receive the signal.
+
+    The code below activates and deactivates an indicator.
+    \code
+    static const char indicatorType[] = "com.nokia.hb.unittestfirstindicator0/1.0";
+    // Activate with an integer parameter value 0
+    mIndicator.activate(indicatorType, QVariant(0));
+    mIndicator.deactivate(indicatorType);
+    \endcode
+
+    \sa HbIndicatorPluginInterface, HbIndicatorInterface
 
     \stable
     \hbcore
@@ -55,8 +66,7 @@
 */
 /*!
     \var HbIndicator::ErrorRange HbIndicator::FrameworkErrors
-    Start of an error range for errors originating from device dialog framework (client or server).
-    Error codes are defined in hbdevicedialogerrors.h
+    Start of an error range for errors originating from indicator framework (client or server).
 */
 /*!
     \var HbIndicator::ErrorRange HbIndicator::PluginErrors
@@ -70,9 +80,10 @@
 /*!
     \fn void HbIndicator::userActivated(const QString &type, const QVariantMap &data)
 
-    The class should emit this signal, when client needs to be notified of the
-    user interaction.
-    @param type Type of the indicator that user interacted with.
+    Signal indicates data from indicator plugin implentation. Indicator plugin may originate the signal
+    for example when user interacts with the indicator from indicator menu.
+
+    @param type Indicator type (identification).
     @param data Data sent by indicator.
 */
 
@@ -90,7 +101,7 @@
 #endif // defined(Q_OS_SYMBIAN)
 
 /*!
-    Constructs an indicator object. \a parent is a pointer to the parent.
+    Constructs HbIndicator with \a parent.
 */
 HbIndicator::HbIndicator(QObject *parent) :
     QObject(parent), d_ptr(new HbIndicatorPrivate)
@@ -100,6 +111,9 @@ HbIndicator::HbIndicator(QObject *parent) :
     d->init();
 }
 
+/*!
+    Constructs HbIndicator. Allows class derivation by shared d-pointer paradigm.
+*/
 HbIndicator::HbIndicator(HbIndicatorPrivate &dd, QObject *parent) :
     QObject(parent), d_ptr(&dd)
 {
@@ -108,17 +122,23 @@ HbIndicator::HbIndicator(HbIndicatorPrivate &dd, QObject *parent) :
     d->init();
 }
 
+/*!
+    Destructs HbIndicator.
+*/
 HbIndicator::~HbIndicator()
 {
     delete d_ptr;
 }
 
 /*!
-    Activates an indicator of type \a indicatorType.
-    An extra parameter can be passed along to the indicator plugin.
-    Returns true, if the indicator is activated, false, if an error occurred.    
+    Activates an indicator. If indicator was already active, updates it.
 
-    \sa deactivate
+    \param indicatorType Indicator to activate.
+    \param parameter Parameter to pass into indicator plugin implementation.
+
+    \return Returns true if the indicator was activated, false if an error occurred.
+    
+    \sa deactivate()
  */
 bool HbIndicator::activate(const QString &indicatorType, const QVariant &parameter)
 {
@@ -126,12 +146,15 @@ bool HbIndicator::activate(const QString &indicatorType, const QVariant &paramet
 }
 
 /*!
-    Deactivates an indicator of type \a indicatorType.
-    An extra parameter can be passed along to the indicator plugin.
-    If indicator is not currently active, does nothing and returns true.
-    Returns false, if error occurred.
+    Deactivates an indicator.
 
-    \sa activate
+    \param indicatorType Indicator to deactivate.
+    \param parameter Parameter to pass into indicator plugin implementation.
+
+    \return Returns true if the indicator was deactivated or wasn't active,
+    false if an error occurred.
+
+    \sa activate()
  */
 bool HbIndicator::deactivate(const QString &indicatorType, const QVariant &parameter)
 {

@@ -72,6 +72,7 @@ public:
     bool createSharedBlock(int aSize);
     QString name() const;
     QString fileName() const;
+    QString convertToRomanNumerals(int id) const;
 
     void removeEntry(int index);
     void addEntry(int index, const QString &newWord);

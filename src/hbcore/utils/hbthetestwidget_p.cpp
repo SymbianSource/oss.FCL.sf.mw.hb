@@ -35,7 +35,7 @@
 #include "hbdialog.h"
 #include "hbthemecommon_p.h"
 #include "hbthemeclient_p.h"
-
+#include "hbstyle_p.h"
 
 #ifdef Q_OS_SYMBIAN
 #include <eikenv.h>
@@ -56,7 +56,7 @@
 #include <QDebug> // for qWarning
 
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
-#include "hbtextmeasurementutility_p.h"
+#include "hbtextmeasurementutility_r.h"
 #endif //HB_TEXT_MEASUREMENT_UTILITY
 
 //#ifdef Q_OS_SYMBIAN
@@ -115,13 +115,13 @@ void HbTheTestButton::updatePrimitives()
 
     initStyleOption(&option);
     if (d->frameItem) {
-        style()->updatePrimitive(d->frameItem, HbStyle::P_ToolButton_frame, &option);
+        HbStylePrivate::updatePrimitive(d->frameItem, HbStylePrivate::P_ToolButton_frame, &option);
     }
     if (d->textItem) {
-        style()->updatePrimitive(d->textItem, HbStyle::P_ToolButton_text, &option);
+        HbStylePrivate::updatePrimitive(d->textItem, HbStylePrivate::P_ToolButton_text, &option);
     }
     if (d->iconItem) {
-        style()->updatePrimitive(d->iconItem, HbStyle::P_ToolButton_icon, &option);
+        HbStylePrivate::updatePrimitive(d->iconItem, HbStylePrivate::P_ToolButton_icon, &option);
     }
 }
 
@@ -196,6 +196,9 @@ public:
     HbTheTestButton *mButton3;
     HbTheTestButton *mButton4;
     QGraphicsGridLayout *mLayout;
+#ifdef HB_TEXT_MEASUREMENT_UTILITY
+    HbDeviceProfile mLocalizationMetricsProfile;
+#endif
 };
 
 /*!
@@ -217,22 +220,18 @@ HbTheTestWidget::HbTheTestWidget(HbMainWindow *mainWindow, QGraphicsItem *parent
     HbAction *action1 = new HbAction(QString("1"),this);
     d->mButton1 = new HbTheTestButton(this);
     d->mButton1->setAction(action1);
-    d->mButton1->setToolButtonStyle(HbToolButton::ToolButtonText);
 
     HbAction *action2 = new HbAction(QString("2"),this);
     d->mButton2 = new HbTheTestButton(this);
     d->mButton2->setAction(action2);
-    d->mButton2->setToolButtonStyle(HbToolButton::ToolButtonText);
 
     HbAction *action3 = new HbAction(QString("3"),this);
     d->mButton3 = new HbTheTestButton(this);
     d->mButton3->setAction(action3);
-    d->mButton3->setToolButtonStyle(HbToolButton::ToolButtonText);
 
     HbAction *action4 = new HbAction(QString("4"),this);
     d->mButton4 = new HbTheTestButton(this);
     d->mButton4->setAction(action4);
-    d->mButton4->setToolButtonStyle(HbToolButton::ToolButtonText);
 
     d->mLayout->addItem(d->mButton1, 0, 0);
     d->mLayout->addItem(d->mButton2, 0, 1);
@@ -313,7 +312,17 @@ void HbTheTestWidget::textLayoutMeasure()
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
     HbTextMeasurementUtility *measureUtility = HbTextMeasurementUtility::instance();
     if ( measureUtility->locTestMode() ) {
+        HbDeviceProfile profile = HbDeviceProfile::profile(d->mMainWindow);
+        if (profile.name() != d->mLocalizationMetricsProfile.name()) {
+            measureUtility->reset();
+            d->mLocalizationMetricsProfile = profile;
+        }
+
+        QFileInfo info(QCoreApplication::applicationFilePath());
+        // Existing result file is updated. Previous data is read to memory first.  
+        measureUtility->readReport(profile, info.baseName());
         measureUtility->measureItems();
+        measureUtility->writeReport(profile, info.baseName());
     } else {
         showWarning("Localization metrics run-time flag disabled!");
     }
@@ -325,15 +334,8 @@ void HbTheTestWidget::textLayoutMeasure()
 void HbTheTestWidget::textLayoutWriteReport()
 {
 #ifdef HB_TEXT_MEASUREMENT_UTILITY
-    HbTextMeasurementUtility *measureUtility = HbTextMeasurementUtility::instance();
-    if ( measureUtility->locTestMode() ) {
-        HbDeviceProfile profile = HbDeviceProfile::profile(d->mMainWindow);
-        QFileInfo info(QCoreApplication::applicationFilePath());
-        measureUtility->writeReport(profile, info.baseName());
-        measureUtility->reset();
-    } else {
-        showWarning("Localization metrics run-time flag disabled!");
-    }
+    // For compatibility.
+    textLayoutMeasure();
 #else
     showWarning("Localization metrics compile-time flag disabled!");
 #endif //HB_TEXT_MEASUREMENT_UTILITY

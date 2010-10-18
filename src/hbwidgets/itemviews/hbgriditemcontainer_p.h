@@ -64,7 +64,7 @@ public:
     virtual void resizeContainer();
 
 protected:
-    HbGridItemContainer( HbGridItemContainerPrivate &dd, QGraphicsItem *parent = 0 );
+    HbGridItemContainer(HbGridItemContainerPrivate &dd, QGraphicsItem *parent = 0);
     virtual QPointF recycleItems(const QPointF &delta);
     virtual void viewResized(const QSizeF &size);
     virtual void setItemModelIndex(HbAbstractViewItem *item, const QModelIndex &index);

@@ -31,7 +31,7 @@
 class HB_CORE_PRIVATE_EXPORT HbDirectoryNameLocalizerPrivate
 {
 public:    
-	QMap<QString,QString> localizedNames;
+    QMap<QString,QString> localizedNames;
 };
 
 #endif /* DIRECTORYNAMELOCALIZER_P_H */

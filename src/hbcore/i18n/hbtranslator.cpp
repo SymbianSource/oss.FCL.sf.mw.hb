@@ -28,6 +28,7 @@
 #include <QLocale>
 #include <QTranslator> 
 #include <QHash>
+#include <QDir>
 
 #include <hbfindfile.h>
 #include <hbtranslator.h>
@@ -42,14 +43,13 @@
 #endif
 
 #ifdef Q_OS_SYMBIAN
-const char* defaultPath   = "/resource/qt/translations/";
-const char* defaultDrive  = "Z:";
+const char* defaultPath = "/resource/qt/translations/";
+const char* defaultDrive = "Z:";
 const char* defaultCommon = "common_";
 #else
 const char* defaultPath = "";
 const char* defaultDrive  = "";
-const char* defaultCommon = "common_";
-
+const char* defaultCommon = "commonstrings_";
 #endif
 
 #ifdef Q_OS_SYMBIAN
@@ -180,8 +180,8 @@ HbTranslator::HbTranslator(): d(new HbTranslatorPrivate())
 {
     QFileInfo info(qApp->applicationFilePath());
     QString defaultName = info.baseName();  // defaultname = <executablename>
-    d->translatorPath=defaultPath;
-    d->translatorFile=defaultName;
+    d->translatorPath = defaultPath;
+    d->translatorFile = defaultName;
     d->installTranslator(defaultPath, defaultName);
 }
 
@@ -192,8 +192,8 @@ HbTranslator::HbTranslator(): d(new HbTranslatorPrivate())
 */
 HbTranslator::HbTranslator(const QString &file): d(new HbTranslatorPrivate())
 {
-    d->translatorPath=defaultPath;
-    d->translatorFile=file;    
+    d->translatorPath = defaultPath;
+    d->translatorFile = file;    
     d->installTranslator(defaultPath, file);
 }
 
@@ -208,8 +208,8 @@ HbTranslator::HbTranslator(const QString &file): d(new HbTranslatorPrivate())
 */
 HbTranslator::HbTranslator(const QString &path, const QString &file): d(new HbTranslatorPrivate())
 {
-    d->translatorPath=defaultPath;
-    d->translatorFile=file;    
+    d->translatorPath = path;
+    d->translatorFile = file;    
     d->installTranslator(path, file);
 }
 
@@ -227,7 +227,8 @@ static bool commonTr = false;
 Q_GLOBAL_STATIC_WITH_ARGS(QMutex, gs_CommonTrMutex, (QMutex::Recursive) )
 
 /*!
-    Loads common.ts translations from default location.
+    Loads common UI translations from default location.
+    qm file for Symbian is common_xx.qm and commonstrings_xx.qm for other platforms, where xx is language code for current UI language.
     
     \attention Cross-Platform API
 */
@@ -236,25 +237,26 @@ void HbTranslator::loadCommon()
     QMutexLocker ml(gs_CommonTrMutex());
     if (!commonTr) {
         QString lang = QLocale::system().name();
-        d->languageDowngrade(lang);    
+        d->languageDowngrade(lang);
         QString commonts;
-        commonts += QString(defaultDrive);
-        commonts += QString(defaultPath);
-        commonts += QString(defaultCommon);
-        commonts += lang;
-#ifdef Q_OS_SYMBIAN        
+#ifdef Q_OS_SYMBIAN
+        commonts += QString(defaultDrive) + QString(defaultPath);
+        commonts += QString(defaultCommon) + lang;
         toSymbianPath(commonts);
-#endif    
+#else
+        commonts += QString(HB_TRANSLATIONS_DIR) + QDir::separator();
+        commonts += QString(defaultCommon) + lang;
+#endif        
         bool loaded;
-        uchar *commonData=0;
+        uchar *commonData = 0;
         loaded = loadTranslatorData(d->common, commonts, d->commonData);
         if (loaded) {
             d->commonData = commonData;
-            d->commonTr=true;
+            d->commonTr = true;
             qApp->installTranslator(&d->common);    
-            commonTr=true;
+            commonTr = true;
         }
-    }    
+    }
 }
 
 /*!
@@ -262,11 +264,11 @@ void HbTranslator::loadCommon()
 */ 
 HbTranslatorPrivate::~HbTranslatorPrivate()
 {
-    qApp->removeTranslator(&translator);    
+    qApp->removeTranslator(&translator);
     if (translatorData) {
         delete [] translatorData;
     }
-    qApp->removeTranslator(&common);    
+    qApp->removeTranslator(&common);
     if (commonData) {        
         delete [] commonData;
     }
@@ -287,65 +289,64 @@ void HbTranslatorPrivate::installTranslator(const QString &pth, const QString &n
     QString lang2 = lang;
     languageDowngrade(lang);
     QString path(pth);
-    if (path.isNull() || path.isEmpty()) {
-        return;
-    }
-    if (path.at(0) == ':') {
-        QString tsfile = path + name + QString("_") + lang;
-        if ( translator.load(tsfile) ) {
-            qApp->installTranslator(&translator);
-        }
-        return;
-    }
-    
+    if (!path.isNull() && !path.isEmpty()) {
+        if (path.at(0) == ':') {
+            QString tsfile = path + name + QString("_") + lang;
+            if ( translator.load(tsfile) ) {
+                qApp->installTranslator(&translator);
+            }
+            return;
+        }                
 #ifdef PLATFORM_WITH_DRIVES
 #ifdef Q_OS_SYMBIAN        
-    toSymbianPath(path);
+        toSymbianPath(path);
 #endif    
-    QString filepath = qApp->applicationFilePath();
-    QChar drive;
-    if (filepath.length()>=2 && filepath.at(1) == ':') {
-        drive = filepath.at(0);
-    }    
-            
-    QString tsfile = path + name + QString("_") + lang;
-    QString tsfileQM = tsfile + QString(".qm"); 
-
-    bool loaded = false;    
-    if (HbFindFile::hbFindFile(tsfileQM, drive)) {
-        tsfileQM.chop(3);        
-        loaded = loadTranslatorData(translator,tsfileQM,translatorData);        
-    }
-    else {
-        tsfile = path + name + QString("_") + lang2;
-        tsfileQM = tsfile + QString(".qm");
+        QString filepath = qApp->applicationFilePath();
+        QChar drive;
+        if (filepath.length()>=2 && filepath.at(1) == ':') {
+            drive = filepath.at(0);
+        }    
+                
+        QString tsfile = path + name + QString("_") + lang;
+        QString tsfileQM = tsfile + QString(".qm"); 
+    
+        bool loaded = false;    
         if (HbFindFile::hbFindFile(tsfileQM, drive)) {
-            tsfileQM.chop(3);
+            tsfileQM.chop(3);        
             loaded = loadTranslatorData(translator,tsfileQM,translatorData);        
+        } else {
+            tsfile = path + name + QString("_") + lang2;
+            tsfileQM = tsfile + QString(".qm");
+            if (HbFindFile::hbFindFile(tsfileQM, drive)) {
+                tsfileQM.chop(3);
+                loaded = loadTranslatorData(translator,tsfileQM,translatorData);        
+            } else {
+                QList<QString> fallBack;
+                fallBack.append("en");
+                fallBack.append("en_US");
+                int len = fallBack.length();
+                for (int i=0; i<len; i++) {
+                    QString lang;
+                    tsfile = path + name + QString("_") + fallBack.at(i);
+                    tsfileQM = tsfile + QString(".qm");
+                    if (HbFindFile::hbFindFile(tsfileQM, drive)) {
+                        tsfileQM.chop(3);
+                        loaded = loadTranslatorData(translator,tsfileQM,translatorData);        
+                    }    
+                }        
+            }
         }
-        else {
-            QList<QString> fallBack;
-            fallBack.append("en");
-            fallBack.append("en_US");
-            int len = fallBack.length();
-            for (int i=0; i<len; i++) {
-                QString lang;
-                tsfile = path + name + QString("_") + fallBack.at(i);
-                tsfileQM = tsfile + QString(".qm");
-                if (HbFindFile::hbFindFile(tsfileQM, drive)) {
-                    tsfileQM.chop(3);
-                    loaded = loadTranslatorData(translator,tsfileQM,translatorData);        
-                }    
-            }        
+           
+        if (loaded) {
+            qApp->installTranslator(&translator);
+            return;
         }
-    }
-
-    if (loaded) {
-        qApp->installTranslator(&translator);
-    }
-#else    
-    QString tsfile2 = path + name + QString("_") + lang;
-    if ( translator.load(tsfile2) ) {
+#endif    
+    }   
+#ifndef Q_OS_SYMBIAN
+    // This is for other platforms than Symbian        
+    QString tsfile3 = path + name + QString("_") + lang;
+    if ( translator.load(tsfile3) ) {
         qApp->installTranslator(&translator);
     }
 #endif    
@@ -371,7 +372,7 @@ LanguageHash::LanguageHash(){
     (*this)["it_IT"] = "it";
     (*this)["sv_SE"] = "sv";
     (*this)["da_DK"] = "da";
-    (*this)["no_NO"] = "no";
+    (*this)["nb_NO"] = "nb";
     (*this)["fi_FI"] = "fi";
     (*this)["en_US"] = "en_US";
     (*this)["pt_PT"] = "pt";
@@ -386,7 +387,7 @@ LanguageHash::LanguageHash(){
     (*this)["sl_SI"] = "sl";
     (*this)["zh_TW"] = "zh_TW";
     (*this)["zh_HK"] = "zh_HK";
-    (*this)["zh_CN"] = "zh_CN";
+    (*this)["zh_CN"] = "zh";
     (*this)["ja_JP"] = "ja";
     (*this)["th_TH"] = "th";
     (*this)["ar_AE"] = "ar";
@@ -407,8 +408,8 @@ LanguageHash::LanguageHash(){
     (*this)["ms_MY"] = "ms";
     (*this)["pt_BR"] = "pt_BR";
     (*this)["ro_RO"] = "ro";
-    (*this)["sr_YU"] = "sr";
-    (*this)["es_MX"] = "es_MX";
+    (*this)["sr_RS"] = "sr";
+    (*this)["es_419"] = "es_419";
     (*this)["uk_UA"] = "uk";
     (*this)["ur_PK"] = "ur";
     (*this)["vi_VN"] = "vi";

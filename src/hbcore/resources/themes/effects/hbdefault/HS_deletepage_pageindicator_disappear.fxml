@@ -1,0 +1,20 @@
+<layers>
+	<visual src="Item">
+		<param name="translation_y" type="anim">
+			<duration>0.3</duration>
+			<style>inback</style>
+			<keyframe at="0.0">0.0</keyframe>
+			<keyframe at="1.0">1.0</keyframe>
+			<start ref="visual.top">1.0</start>
+			<end ref="screen.bottom">1.0</end>
+		</param>
+		<param name="translation_x" type="anim">
+			<duration>0.3</duration>
+			<style>outquad</style>
+			<keyframe at="0.0">0.0</keyframe>
+			<keyframe at="1.0">1.0</keyframe>
+			<start ref="visual.left">1.0</start>
+			<end ref="visual.left">1.06</end>
+		</param>
+	</visual>
+</layers>

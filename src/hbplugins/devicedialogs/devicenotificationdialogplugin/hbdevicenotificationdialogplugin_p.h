@@ -52,6 +52,7 @@ public:
     QStringList deviceDialogTypes() const;
     PluginFlags pluginFlags() const;
     int error() const;
+    static int showLevel(const QVariantMap &parameters);
 
 private:
     Q_DISABLE_COPY(HbDeviceNotificationDialogPlugin)

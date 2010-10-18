@@ -34,12 +34,12 @@
 #include <hbcolorscheme.h>
 #include <hbinpututils.h>
 #include <hbinputbutton.h>
+#include <hbmainwindow.h>
+
 #include "../touchinput/virtualqwerty.h"
 
 #include "hbinputpredictionhandler_p.h"
 #include "hbinputabstractbase.h"
-
-static const qreal HbDeltaHeight = 3.0;
 
 HbInputPredictionHandlerPrivate::HbInputPredictionHandlerPrivate()
     :mEngine(0),
@@ -58,6 +58,9 @@ HbInputPredictionHandlerPrivate::~HbInputPredictionHandlerPrivate()
     if (mCandidates) {
         delete mCandidates;
         mCandidates = 0;
+    }
+    if (mSpellQueryDialog) {
+        mSpellQueryDialog->deleteLater();
     }
 }
 
@@ -79,14 +82,14 @@ void HbInputPredictionHandlerPrivate::deleteOneCharacter()
         //To prevent showing autocompletion part while deleting the characters using backspace key
         mShowTail = false;
         mShowTooltip = false;
-		bool unused = false;
+        bool unused = false;
         mEngine->updateCandidates(mBestGuessLocation, unused);
-		//If Input length greater or equal to one then Append the current word to candidate 
-		if (!mCandidates->count() && mEngine->inputLength() >= 1) {
-			mCandidates->append(mEngine->currentWord());
+        //If Input length greater or equal to one then Append the current word to candidate 
+        if (!mCandidates->count() && mEngine->inputLength() >= 1) {
+            mCandidates->append(mEngine->currentWord());
         }
-		mCanContinuePrediction = true;
-		// update the editor with the new preedit text.
+        mCanContinuePrediction = true;
+        // update the editor with the new preedit text.
         updateEditor();
         return;
     } else {
@@ -94,7 +97,7 @@ void HbInputPredictionHandlerPrivate::deleteOneCharacter()
         // once the word is committed, we can not bring it back to inline edit.
         // so if the engine does not have any data, we just send backspace event to the editor.
         Q_Q(HbInputPredictionHandler);
-        QKeyEvent event = QKeyEvent(QEvent::KeyPress, Qt::Key_Backspace, Qt::NoModifier);		
+        QKeyEvent event = QKeyEvent(QEvent::KeyPress, Qt::Key_Backspace, Qt::NoModifier);       
         q->sendAndUpdate(event);
         event = QKeyEvent(QEvent::KeyRelease, Qt::Key_Backspace, Qt::NoModifier);
         q->sendAndUpdate(event);
@@ -206,7 +209,7 @@ void HbInputPredictionHandlerPrivate::updateEditor()
             int taillength = mCandidates->at(mBestGuessLocation).length() - mEngine->inputLength();
             if (taillength > 0 && mShowTail) {
                 // TODO: Color from skin should be used
-				QColor col = HbColorScheme::color("qtc_input_hint_normal");
+                QColor col = HbColorScheme::color("qtc_input_hint_normal");
                 QBrush brush(col);
                 QTextCharFormat gray;
                 gray.setForeground(brush);
@@ -218,11 +221,11 @@ void HbInputPredictionHandlerPrivate::updateEditor()
                 } else {
                     list.append(QInputMethodEvent::Attribute(QInputMethodEvent::TextFormat, mEngine->inputLength(), taillength, gray));
                 }
-				list.append(QInputMethodEvent::Attribute(QInputMethodEvent::Cursor, mEngine->inputLength(), 0, 0));
+                list.append(QInputMethodEvent::Attribute(QInputMethodEvent::Cursor, mEngine->inputLength(), 0, 0));
                 QInputMethodEvent event(mCandidates->at(mBestGuessLocation), list);
                 focusedObject->sendEvent(event);
             } else {
-				list.append(QInputMethodEvent::Attribute(QInputMethodEvent::Cursor, mCandidates->at(mBestGuessLocation).length(), 0, 0));
+                list.append(QInputMethodEvent::Attribute(QInputMethodEvent::Cursor, mCandidates->at(mBestGuessLocation).length(), 0, 0));
                 QInputMethodEvent event(mCandidates->at(mBestGuessLocation).left(mEngine->inputLength()), list);
                 focusedObject->sendEvent(event);
             }
@@ -264,14 +267,14 @@ bool HbInputPredictionHandlerPrivate::filterEvent(const QKeyEvent * event)
         {
             QString currentSelection = focusObject->inputMethodQuery(Qt::ImCurrentSelection).toString();
             if(currentSelection.length()) {
-                QKeyEvent event = QKeyEvent(QEvent::KeyPress, Qt::Key_Backspace, Qt::NoModifier);		
+                QKeyEvent event = QKeyEvent(QEvent::KeyPress, Qt::Key_Backspace, Qt::NoModifier);       
                 q->sendAndUpdate(event);
                 event = QKeyEvent(QEvent::KeyRelease, Qt::Key_Backspace, Qt::NoModifier);
                 q->sendAndUpdate(event);
             } else {
                 deleteOneCharacter();
             }
-		}
+        }
         ret = true;
         break;
     
@@ -328,6 +331,9 @@ bool HbInputPredictionHandlerPrivate::filterEvent(const QKeyEvent * event)
                 //for the give input sequence.
                 handleEmptyCandidateList();
                 updateEditor();
+                if (isCustomWord) {
+                    mShowTail = false;
+                }
                 mInputMethod->updateState();
                 ret = true;
             }
@@ -379,15 +385,18 @@ void HbInputPredictionHandlerPrivate::mouseHandler(int cursorPosition, QMouseEve
 
         //The mouse has been clicked on the pre-editing word, launch candidate list
         mInputMethod->launchCandidatePopup(*mCandidates);
-        }	
+        }   
     }
 }
 
 void HbInputPredictionHandlerPrivate::init()
 {
     mEngine = 0;
-    HbInputLanguage language = HbInputSettingProxy::instance()->globalInputLanguage();
-    mEngine = HbPredictionFactory::instance()->predictionEngineForLanguage(language.language());
+    HbInputLanguage language = mInputMethod->inputState().language();
+    if(!language.language()) {
+        language = HbInputSettingProxy::instance()->globalInputLanguage();
+    }
+    mEngine = HbPredictionFactory::instance()->predictionEngineForLanguage(language.language());    
     if (mEngine && !mCandidates) {
         mCandidates = new QStringList();
     }
@@ -406,12 +415,12 @@ void HbInputPredictionHandlerPrivate::reset()
 void HbInputPredictionHandlerPrivate::commit()
 {
     if (mEngine && mEngine->inputLength() > 0 && mCandidates->count() > 0) {
-		
-		// Close exact word pop up in qwerty when the word is committed
-		if(HbInputUtils::isQwertyKeyboard(mInputMethod->inputState().keyboard())) {
-			mInputMethod->closeExactWordPopup();
-		}
-		
+        
+        // Close exact word pop up in qwerty when the word is committed
+        if(HbInputUtils::isQwertyKeyboard(mInputMethod->inputState().keyboard())) {
+            mInputMethod->closeExactWordPopup();
+        }
+        
         QString commitString = getCommitString();
 
         // need to update the freq information
@@ -448,11 +457,9 @@ void HbInputPredictionHandlerPrivate::commit(const QString& string, bool addToUs
     Q_Q(HbInputPredictionHandler);
 
     // Close exact word pop up in qwerty when the word is committed
-	if(HbInputUtils::isQwertyKeyboard(mInputMethod->inputState().keyboard())) {
-		mInputMethod->closeExactWordPopup();
-	}
-
-    q->commitAndUpdate(string, 0, 0, isAsync);
+    if(HbInputUtils::isQwertyKeyboard(mInputMethod->inputState().keyboard())) {
+        mInputMethod->closeExactWordPopup();
+    }
 
     if(mEngine) {
         if(addToUsedWordDict && !string.isEmpty()) {
@@ -464,6 +471,7 @@ void HbInputPredictionHandlerPrivate::commit(const QString& string, bool addToUs
         }
         mEngine->clear();
     }
+    q->commitAndUpdate(string, 0, 0, isAsync);
 
     //Enable the flag after commit
     mCanContinuePrediction = true;
@@ -480,10 +488,10 @@ void HbInputPredictionHandlerPrivate::commit(QInputMethodEvent & event,bool addT
 {
     Q_Q(HbInputPredictionHandler);
 
-	// Close exact word pop up in qwerty when the word is committed
-	if(HbInputUtils::isQwertyKeyboard(mInputMethod->inputState().keyboard())) {
-		mInputMethod->closeExactWordPopup();
-	}
+    // Close exact word pop up in qwerty when the word is committed
+    if(HbInputUtils::isQwertyKeyboard(mInputMethod->inputState().keyboard())) {
+        mInputMethod->closeExactWordPopup();
+    }
 
     q->sendAndUpdate(event);
 
@@ -529,7 +537,7 @@ void HbInputPredictionHandlerPrivate::handleEmptyCandidateList()
         mEngine->deleteKeyPress();
         mEngine->updateCandidates(mBestGuessLocation, isCustomWord);
         if (mCandidates->count()){
-			(*mCandidates)[mBestGuessLocation] = (*mCandidates)[mBestGuessLocation].left(mEngine->inputLength());
+            (*mCandidates)[mBestGuessLocation] = (*mCandidates)[mBestGuessLocation].left(mEngine->inputLength());
             (*mCandidates)[mBestGuessLocation].append("?");
         } else {
             //Should the mBestGuessLocation not be zero. 
@@ -553,9 +561,9 @@ void HbInputPredictionHandlerPrivate::setPreEditTextToEditor(QString string, boo
 {
     //update the editor with pre-edit text
     mEngine->setWord(string);
-    bool used = false;	 
+    bool used = false;   
     mEngine->updateCandidates(mBestGuessLocation, used);
-    if(showAutocompletionPart) {
+    if(showAutocompletionPart && mShowTail) {
         mShowTail = true;
     } else {
         mShowTail =  false;
@@ -619,7 +627,7 @@ bool HbInputPredictionHandler::actionHandler(HbInputModeAction action)
         break;
         case HbInputModeActionSetKeypad: {
             if (d->mEngine) {
-                d->mEngine->setKeyboard(d->mInputMethod->inputState().keyboard());
+                d->mEngine->setKeyboard(d->mInputMethod->currentKeyboardType());
             } else {
                 ret = false;;
             }
@@ -639,7 +647,7 @@ bool HbInputPredictionHandler::actionHandler(HbInputModeAction action)
             break;
         case HbInputModeActionPrimaryLanguageChanged:
             if(!d->mEngine) {
-            d->init();
+                d->init();
             }
             if (d->mEngine) {
                 d->mEngine->setLanguage(HbInputSettingProxy::instance()->globalInputLanguage());
@@ -650,6 +658,9 @@ bool HbInputPredictionHandler::actionHandler(HbInputModeAction action)
             break;
         case HbInputModeActionCloseSpellQuery:
             closeSpellQueryDialog();
+            break;
+        case HbInputModeActionRestorePreviousState:
+            showExactWordPopupIfNeeded();
             break;
         default:
             ret = HbInputModeHandler::actionHandler(action);
@@ -726,7 +737,7 @@ bool HbInputPredictionHandler::filterEvent(const QKeyEvent * event)
 void HbInputPredictionHandler::sctCharacterSelected(QString character)
 {
     Q_D(HbInputPredictionHandler);
-	//d->mShowTail = false;
+    //d->mShowTail = false;
     d->commit();
     HbInputModeHandler::sctCharacterSelected(character);
 }
@@ -785,6 +796,9 @@ void HbInputPredictionHandler::launchSpellQueryDialog()
         return;
     }
 
+    //store the secondary language
+    d->mSecLanguage = HbInputSettingProxy::instance()->globalSecondaryInputLanguage();
+
     // As of now we need to delete and create mSpellQueryDialog every time 
     // we launch it. If we launch the same dialog, keypad does not open sometimes. 
     // Will take sometime to find out the root cause of this, and will fix this. 
@@ -794,7 +808,6 @@ void HbInputPredictionHandler::launchSpellQueryDialog()
     }
     if(!d->mSpellQueryDialog) {
         d->mSpellQueryDialog = new HbInputSpellQuery(d->mInputMethod,this); 
-        d->mSpellQueryDialog->setParent(this);
     }
 
     QString string;
@@ -802,6 +815,10 @@ void HbInputPredictionHandler::launchSpellQueryDialog()
         string = (*(d->mCandidates))[d->mBestGuessLocation].left(d->mEngine->inputLength());
     }
     d->reset();
+    
+    QObject::connect(d->mSpellQueryDialog->mainWindow(), SIGNAL(orientationChanged(Qt::Orientation)),
+                    this, SLOT(closeSpellQueryDialog()));
+    
     d->mSpellQueryDialog->launch(string);
 
 }
@@ -826,19 +843,39 @@ void HbInputPredictionHandler::spellQueryDialogClosed(QObject *savedFocusObject
     Q_D(HbInputPredictionHandler);
     // set the focus back to the editor which caused the launch of spell dialog.
     HbInputFocusObject *newFocusObject = new HbInputFocusObject(savedFocusObject);
+    HbInputState savedState;
+    newFocusObject->editorInterface().lastFocusedState(savedState);
     newFocusObject->releaseFocus();
-    newFocusObject->setFocus();
+    HbInputMethod *activeMethod = HbInputMethod::activeInputMethod();
+    if(activeMethod->isFocusLocked()) {
+        activeMethod->unlockFocus();
+        newFocusObject->setFocus();
+        //By this time the active input method has been changed.
+        HbInputMethod::activeInputMethod()->setFocusObject(newFocusObject);
+        activeMethod->lockFocus();
+    } else {
+        newFocusObject->setFocus();
+        HbInputMethod::activeInputMethod()->setFocusObject(newFocusObject);
+    }
     HbAbstractEdit *abstractEdit = qobject_cast<HbAbstractEdit*>(savedFocusObject);
     if(abstractEdit) {
         abstractEdit->setCursorPosition(abstractEdit->cursorPosition());
     }
-    d->mInputMethod->setFocusObject(newFocusObject);
 
     if (closeReason == HbInputSpellQuery::HbOkPressed) {
         d->commit(string,true);
     } else if(closeReason == HbInputSpellQuery::HbCancelPressed) {
-        //update the editor with pre-edit text
-        d->setPreEditTextToEditor(string, d->mCanContinuePrediction);
+        if(!HbInputSettingProxy::instance()->predictiveInputStatus(HbKeyboardSetting12key) || savedState.language()!= d->mInputMethod->inputState().language().language()
+            || d->mSecLanguage != HbInputSettingProxy::instance()->globalSecondaryInputLanguage()) {
+            //This check is for: If user do a prediction off from the input setting or if user change the 
+            //language when the spell query is launched and then if user presses cancel 
+            //on the spell query then whatever user have already entered 
+            //in the inline mode should get commit to the editor.
+            d->commit(string,false);
+        } else {
+            //update the editor with pre-edit text
+            d->setPreEditTextToEditor(string, d->mCanContinuePrediction);
+        }
         // This update is need for below usecase
         // Editor is empty => enter some data till their is no match => click on word
         // to launch spell query => now press cancel => testcase of keypad is uppercase,
@@ -871,5 +908,17 @@ void HbInputPredictionHandler::setAutocompletionStatus(bool status)
         d->mEngine->enableFeature(HbPredFeatureWordCompletion);
     }
 
+}
+
+void HbInputPredictionHandler::setLanguage(HbInputLanguage& language)
+{
+    Q_D(HbInputPredictionHandler);
+    if(!d->mEngine) {
+        d->init();
+    }
+    // set the engines language only if the current language is different
+    if(d->mEngine && d->mEngine->language().language() != language.language()) { 
+        d->mEngine->setLanguage(language);
+    }
 }
 // EOF

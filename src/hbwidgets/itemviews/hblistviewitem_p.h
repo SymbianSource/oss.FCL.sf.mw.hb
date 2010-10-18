@@ -32,29 +32,34 @@
 #include "hbabstractviewitem_p.h"
 #include "hbabstractitemview.h"
 
-class HbStyleOptionListViewItem;
-
-class QGraphicsItem;
+class QGraphicsObject;
 
 class HbListViewItemShared : public HbAbstractViewItemShared
 {
-    public:
+public:
 
-        HbListViewItemShared() :
-            HbAbstractViewItemShared(),
-            mTextFormat(Qt::PlainText),
-            mStretchingStyle(HbListViewItem::NoStretching),
-            mGraphicsSize(HbListViewItem::MediumIcon),
-            mMinimumSecondaryTextRowCount(-1),
-            mMaximumSecondaryTextRowCount(-1)
-        {
-        }
+    HbListViewItemShared() :
+        HbAbstractViewItemShared(),
+        mTextFormat(Qt::PlainText),
+        mStretchingStyle(HbListViewItem::NoStretching),
+        mGraphicsSize(HbListViewItem::MediumIcon),
+        mMinimumSecondaryTextRowCount(-1),
+        mMaximumSecondaryTextRowCount(-1)
+    {
+    }
 
-        Qt::TextFormat    mTextFormat;
-        HbListViewItem::StretchingStyle mStretchingStyle;
-        HbListViewItem::GraphicsSize mGraphicsSize;
-        int mMinimumSecondaryTextRowCount;
-        int mMaximumSecondaryTextRowCount;
+    ~HbListViewItemShared()
+    {
+    }
+
+
+public:
+
+    Qt::TextFormat    mTextFormat;
+    HbListViewItem::StretchingStyle mStretchingStyle;
+    HbListViewItem::GraphicsSize mGraphicsSize;
+    int mMinimumSecondaryTextRowCount;
+    int mMaximumSecondaryTextRowCount;
 };
 
 class HbListViewItemPrivate : public HbAbstractViewItemPrivate
@@ -80,12 +85,12 @@ public:
     void setDisplayRole(const QString &value,
                         const int index);
 
-    inline HbStyle::Primitive displayPrimitive() const {
-        HbStyle::Primitive primitive = HbStyle::P_ListViewItem_text;
+    inline HbStyle::PrimitiveType displayPrimitive() const {
+        HbStyle::PrimitiveType primitive = HbStyle::PT_TextItem;
         const HbListViewItemShared *sd = static_cast<const HbListViewItemShared *>(mSharedData.constData());
 
         if (sd->mTextFormat != Qt::PlainText) {
-            primitive = HbStyle::P_ListViewItem_richtext;
+            primitive = HbStyle::PT_RichTextItem;
         }
         return primitive;
     }
@@ -101,8 +106,8 @@ public:
     }
 
     inline bool isStretching() const {
-        if (    isLandscape()
-            &&  static_cast<const HbListViewItemShared*>(mSharedData.constData())->mStretchingStyle == HbListViewItem::StretchLandscape) {
+        if (static_cast<const HbListViewItemShared*>(mSharedData.constData())->mStretchingStyle == HbListViewItem::StretchLandscape
+            && isLandscape()) {
             return true;
         }
         return false;
@@ -115,19 +120,19 @@ public:
                 ||  isStretching()); 
     }
 
-    inline HbStyle::Primitive decorationPrimitive(const QVariant& decoration) {
-        HbStyle::Primitive primitive = HbStyle::P_None;
+    inline HbStyle::PrimitiveType decorationPrimitive(const QVariant& decoration) {
+        HbStyle::PrimitiveType primitive = HbStyle::PT_None;
 
         if (decoration.isValid()) {
             if (decoration.canConvert<HbIcon>() || decoration.canConvert<QIcon>()) {
-                primitive = HbStyle::P_ListViewItem_icon;
+                primitive = HbStyle::PT_IconItem;
             }
         }
         return primitive;
     }
 
-    QList<QGraphicsItem *> mDisplayRoleTextItems;
-    QList<QGraphicsItem *> mDecorationRoleItems;
+    QList<QGraphicsObject *> mDisplayRoleTextItems;
+    QList<QGraphicsObject *> mDecorationRoleItems;
 
     QStringList     mStringList;
     QVariantList    mDecorationList;

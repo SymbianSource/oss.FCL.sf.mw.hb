@@ -37,7 +37,7 @@ static QHash<QString, HbString> strMap;
 // CSS converter utilizes it to automatically adjust the offsets if allocated cells are moved.
 
 // Map is used only to get faster lookups, item's value is obsolete
-static QMap<int *, int> registered;
+static QMap<qptrdiff *, int> registered;
 
 
 // Shared chunk allocation information for css data
@@ -46,26 +46,26 @@ static int totalAllocated = 0;
 // so the cell with offset 0 which is the HbCss::StyleSheet structure
 // is always first in the cell list, so its offset does not get changed
 // when the chunk is defragmented.
-static QMap<int, int> cells;
+static QMap<qptrdiff, int> cells;
 
 
-void HbCssConverterUtils::registerOffsetHolder(int *offset)
+void HbCssConverterUtils::registerOffsetHolder(qptrdiff *offset)
 {
     registered.insert(offset, 1);
 }
 
-void HbCssConverterUtils::unregisterOffsetHolder(int *offset)
+void HbCssConverterUtils::unregisterOffsetHolder(qptrdiff *offset)
 {
     registered.remove(offset);
 }
 
-QMultiHash<int, int *> HbCssConverterUtils::registeredOffsetHolders()
+QMultiHash<int, qptrdiff *> HbCssConverterUtils::registeredOffsetHolders()
 {
-    QMultiHash<int, int *> holders;
+    QMultiHash<int, qptrdiff *> holders;
     holders.reserve(registered.size());
-    QMap<int *, int>::const_iterator end = registered.constEnd();
-    for (QMap<int *, int>::const_iterator i = registered.constBegin(); i != end; ++i) {
-        int *holder = i.key();
+    QMap<qptrdiff *, int>::const_iterator end = registered.constEnd();
+    for (QMap<qptrdiff *, int>::const_iterator i = registered.constBegin(); i != end; ++i) {
+        qptrdiff *holder = i.key();
         holders.insertMulti(*holder, holder);
     }
     return holders;
@@ -77,13 +77,13 @@ void HbCssConverterUtils::unregisterAll()
 }
 
 
-void HbCssConverterUtils::cellAllocated(int offset, int size)
+void HbCssConverterUtils::cellAllocated(qptrdiff offset, int size)
 {
     cells.insert(offset, ALIGN(size));
     totalAllocated += ALIGN(size);
 }
 
-void HbCssConverterUtils::cellFreed(int offset)
+void HbCssConverterUtils::cellFreed(qptrdiff offset)
 {
     int size = cells.value(offset, 0);
     totalAllocated -= size;
@@ -95,10 +95,10 @@ void HbCssConverterUtils::cellFreed(int offset)
         HbSharedMemoryManager *shared = static_cast<HbSharedMemoryManager*>(manager);
         const char *chunkBase = static_cast<const char *>(shared->base());
         const char *freedEnd = chunkBase + offset + size;
-        const int *freedStart = reinterpret_cast<const int *>(chunkBase + offset);
+        const qptrdiff *freedStart = reinterpret_cast<const qptrdiff *>(chunkBase + offset);
 
-        QMap<int *, int>::iterator freedHolders =
-                registered.lowerBound(const_cast<int *>(freedStart));
+        QMap<qptrdiff *, int>::iterator freedHolders =
+                registered.lowerBound(const_cast<qptrdiff *>(freedStart));
         while(freedHolders != registered.end()
               && reinterpret_cast<char*>(freedHolders.key()) <  freedEnd) {
             freedHolders = registered.erase(freedHolders);
@@ -106,7 +106,7 @@ void HbCssConverterUtils::cellFreed(int offset)
     }
 }
 
-void HbCssConverterUtils::cellMoved(int offset, int newOffset)
+void HbCssConverterUtils::cellMoved(qptrdiff offset, qptrdiff newOffset)
 {
     int size = cells.value(offset, 0);
 
@@ -117,15 +117,15 @@ void HbCssConverterUtils::cellMoved(int offset, int newOffset)
         HbSharedMemoryManager *shared = static_cast<HbSharedMemoryManager*>(manager);
         const char *chunkBase = static_cast<const char *>(shared->base());
         const char *freedEnd = chunkBase + offset + size;
-        const int *freedStart = reinterpret_cast<const int *>(chunkBase + offset);
+        const qptrdiff *freedStart = reinterpret_cast<const qptrdiff *>(chunkBase + offset);
 
-        QMap<int *, int>::iterator freedHolders =
-                registered.lowerBound(const_cast<int *>(freedStart));
-        QList<int *> newHolders;
+        QMap<qptrdiff *, int>::iterator freedHolders =
+                registered.lowerBound(const_cast<qptrdiff *>(freedStart));
+        QList<qptrdiff *> newHolders;
         while(freedHolders != registered.end()
               && reinterpret_cast<char*>(freedHolders.key()) <  freedEnd) {
             char *holderC = reinterpret_cast<char*>(freedHolders.key());
-            newHolders.append(reinterpret_cast<int*>(holderC + newOffset - offset));
+            newHolders.append(reinterpret_cast<qptrdiff*>(holderC + newOffset - offset));
             freedHolders = registered.erase(freedHolders);
         }
         for (int i = 0; i < newHolders.size(); ++i) {
@@ -148,28 +148,28 @@ int HbCssConverterUtils::defragmentChunk()
     // Register shared cache pointer in chunk header
     //as shared cache may also be moved in defragmentation
     HbSharedChunkHeader *chunkHeader = static_cast<HbSharedChunkHeader*>(shared->base());
-    registerOffsetHolder(reinterpret_cast<int *>(&chunkHeader->sharedCacheOffset));
+    registerOffsetHolder(reinterpret_cast<qptrdiff *>(&chunkHeader->sharedCacheOffset));
 
-    QMultiHash<int, int *> offsetHolders = registeredOffsetHolders();
+    QMultiHash<int, qptrdiff *> offsetHolders = registeredOffsetHolders();
 
     // Create new buffer where the current chunk contents are defragmented
     char *buffer = static_cast<char*>(::malloc(shared->size()));
-    int newCurrentOffset = 0;
+    qptrdiff newCurrentOffset = 0;
 
     // Create new cell order and update offset holders
-    QMap<int,int>::const_iterator end = cells.constEnd();
+    QMap<qptrdiff,int>::const_iterator end = cells.constEnd();
 
-    for (QMap<int,int>::const_iterator i = cells.constBegin(); i != end; ++i) {
+    for (QMap<qptrdiff,int>::const_iterator i = cells.constBegin(); i != end; ++i) {
         // Get the old cell
-        int offset = i.key();
+        qptrdiff offset = i.key();
         int size = i.value();
         
         // Update registered offset holders
-        QList<int *> values = offsetHolders.values(offset);
+        QList<qptrdiff *> values = offsetHolders.values(offset);
         offsetHolders.remove(offset);
-        int newOffset = newCurrentOffset + sizeof(HbSharedChunkHeader);
+        qptrdiff newOffset = newCurrentOffset + sizeof(HbSharedChunkHeader);
         for (int j = 0; j < values.size(); ++j) {
-            int *holder = values[j];
+            qptrdiff *holder = values[j];
             *holder = newOffset;
             offsetHolders.insertMulti(*holder, holder);
         }
@@ -178,9 +178,9 @@ int HbCssConverterUtils::defragmentChunk()
 
     newCurrentOffset = 0;
     // Move allocated cells to a linear buffer
-    for (QMap<int, int>::const_iterator i = cells.constBegin(); i != end; ++i) {
+    for (QMap<qptrdiff, int>::const_iterator i = cells.constBegin(); i != end; ++i) {
         // Get the old cell
-        int offset = i.key();
+        qptrdiff offset = i.key();
         int size = i.value();
         // Copy to new chunk
         memcpy(buffer + newCurrentOffset, static_cast<char*>(shared->base()) + offset, size);
@@ -192,14 +192,14 @@ int HbCssConverterUtils::defragmentChunk()
     // done in it after this.
 
     unregisterAll();
-    QList<int> keys = cells.keys();
+    QList<qptrdiff> keys = cells.keys();
 
     for (int j = 0; j < keys.count(); ++j) {
         shared->free(keys.at(j));
     }
 
     // CSS binary data is placed after the chunk header.
-    int cssBinaryOffset = sizeof(HbSharedChunkHeader);
+    qptrdiff cssBinaryOffset = sizeof(HbSharedChunkHeader);
     char *address = HbMemoryUtils::getAddress<char>(HbMemoryManager::SharedMemory, cssBinaryOffset);
     memcpy(address, buffer, newCurrentOffset);
 

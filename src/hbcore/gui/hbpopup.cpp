@@ -39,11 +39,11 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QShowEvent>
 #include <QHideEvent>
-#include <QEventLoop>
 #include <QPointer>
 #include <QDebug>
 #include <QBitmap>
 #include <hbinstance_p.h>
+#include <QGraphicsScene>
 #include <QApplication> // krazy:exclude=qclasses
 
 #include <hbwidgetfeedback.h>
@@ -56,152 +56,261 @@ bool HbPopupPrivate::popupEffectsLoaded = false;
     @beta
     @hbcore
     \class HbPopup
-    \brief HbPopup is a base class for different popups in Hb library.
+    \brief The HbPopup class defines a set of properties that control the behavior of 
+    the many dialog and popup classes that derive from it. 
+    
+    Objects of classes derived from %HbPopup are called \b popups. Typically they
+    are displayed above other objects within the view, at the highest z-order. The %HbPopup
+    class simply defines a frame with a number of properties. If you want to create an
+    application dialog with a heading, content and a toolbar, use the HbDialog class (which
+    is derived from %HbPopup) or one of its convenience subclasses.
+    
+    %HbPopup provides properties that you can use to customize the following aspects of a popup:
+    
+    - \b Modality. You can define whether the popup is modal or non-modal. A modal popup stops
+      the user interacting with anything outside of the popup until it closes. A non-modal 
+      popup does not block the user's interaction with things outside of the popup. You 
+      set and get the modality by calling setModal() and isModal(), respectively.  
+    
+    - <b>Dismiss policy</b>. You can define which user actions, if any, cause the popup to 
+      close. Possible values are defined by HbPopup::DismissPolicy. You set and get the dismiss 
+      policy by calling setDismissPolicy() and dismissPolicy(), respectively.
+    
+    - <b>Background fade policy</b>. You can set a policy to fade everything behind the 
+      popup. This is useful for modal dialogs, because the user cannot interact with 
+      anything behind the popup. You control this policy by calling setBackgroundFaded() and 
+      get the current policy by calling isBackgroundFaded().
+    
+    - \b Timeout. You can define a timeout that causes the popup to be dismissed automatically
+      after a set a period. You set and get this property by calling setTimeout() and 
+      timeout(), respectively. Call the setTimeout(HbPopup::DefaultTimeout) overload to use the 
+      default value for the popup type, which provides a common look and feel.
+      
+    - <b>Frame background type</b>. You can define the popup's background style. However, 
+      the actual appearance of the popup depends on the theme. You set and get this property by
+      calling setFrameType() and frameType(), respectively.
+      
+    By default, popups are displayed in the center of the screen. Typically you should not override
+    the default position of modal dialogs. However, some popups, such as context menus, need to be 
+    in a specific position. For these, you can use the setPreferredPos() method to set the 
+    preferred position.
+    
+    Popups that contain an editor may be repositioned by the virtual keyboard when it opens. 
+    When the virtual keyboard closes, it attempts to reposition the popup back to its 
+    previous position. However, this is not always possible, particularly when there has also
+    been an orientation switch.
 
-    Popup is a widget that is displayed above other widgets in the view.
+    \section _usecases_hbpopup Using the HbPopup class
+    
+    Although it is possible to create an instance of the HbPopup class, it is designed as a
+    base class to provide common features to the many popup and dialog classes that are 
+    derived from it (such as HbMenu, HbDialog, HbToolBarExtension, HbZoomSliderPopup). 
+    
+    How you open a popup depends on whether it is modal. It is important to use the 
+    appropriate method, because this ensures the correct touch event handling.
+    
+    <table border="1" style="border-collapse: collapse; border: solid;">
+    <tr><th>To open</TH><TH>Call</th></tr>
+    <tr><td>Modal popups</td><td>open()</td></tr>
+    <tr><td>Non-modal popups</td><td>\link QGraphicsItem::show() show()\endlink</td></tr>
+    </table>
 
-    Lastly shown popup is always positioned in Z order on the the top
-    of already visible popups.  
-
-    A popup can be permanent or automatically dismissed after a
-    time-out.  Modal popups interrupt any other user interaction
-    outside of the popup while they are visible, whereas non-modal
-    popups do not.
-
-    \sa HbDialog
+    \sa HbDialog, HbMenu
 */
 
 /*!
-    \reimp
     \fn int HbPopup::type() const
  */
 
 /*!
     \enum HbPopup::DefaultTimeout
 
-    This enum defines available default timeout values to be used in method
-    setTimeout(HbPopup::DefaultTimeout).
+    Identifies default timeout values for various popup types. The timeout defines a time
+    period after which the popup is automatically closed. Using these default values 
+    provides a consistent look and feel.
+    \sa setTimeout(HbPopup::DefaultTimeout)
  */
 
 /*!
     \var HbPopup::NoTimeout
-
-    No timeout is defined for automatically closing the popup. i.e. the popup is permanent.
+    Defines a permanent popup, for which no timeout is defined.
  */
 
 /*!
     \var HbPopup::ConfirmationNoteTimeout
-
-    Timeout value intended to be used by confirmation notes.
+    The default timeout value for confirmation notes.
  */
 
 /*!
     \var HbPopup::StandardTimeout
-
-    The default timeout value intended to be used by most non-permanent popups e.g. by notes.
+    The default timeout value for standard non-permanent popups, such as notes.
  */
 
 /*!
     \var HbPopup::ContextMenuTimeout
-
-    The default timeout value intended to be used by context menus.
+    The default timeout value for context menus.
  */
 
 /*!
     \enum HbPopup::DismissPolicy
 
-    This enum defines available dismiss policy values.
-
-    The dismiss policy defines what user actions will cause the popup to be dismissed i.e. closed.
+    Defines the available dismiss policy values. The dismiss policy defines which
+    user actions cause the popup to close.
+    
+    \sa setDismissPolicy(), dismissPolicy()
  */
 
 /*!
     \var HbPopup::NoDismiss
-
-    The popup cannot be dismissed automatically by user interaction.
+    The popup cannot be closed by the user.
  */
 
 /*!
     \var HbPopup::TapInside
-
-    The popup is dismissed when user taps within the bounding rectangle of the popup.
+    Closes the popup when the user taps within the popup's bounding rectangle.
  */
 
 /*!
     \var HbPopup::TapOutside
 
-    The popup is dismissed when user taps outside of the bounding rectangle of the popup.
+    Closes the popup when the user taps outside of the popup's bounding rectangle.
  */
 
 /*!
     \var HbPopup::TapAnywhere
-
-    The popup is dismissed when user taps either within or outside
-    of the bounding rectangle of the popup.
+    Closes the popup when the user taps either inside or outside the popup's bounding 
+    rectangle.
  */
 
 /*!
     \enum HbPopup::FrameType
 
-    This enum defines available frame type values.
+    Identifies the background graphical styles of the popup's frame.
 
-    The frame types defines what frame item backgrounds will be used
-    by the popup. Actual appearance is dependent on theme.
+    \sa setFrameType(), frameType()
  */
 
 /*!
     \var HbPopup::Strong
-
-    The popup is using strong frame.
+    Use the "strong" frame background style.
  */
 
 /*!
     \var HbPopup::Weak
-
-    The popup is using weak frame.
+    Use the "weak" frame background style.
  */
 
 /*!
     \fn void HbPopup::aboutToShow();
 
-    This signal is emitted when the popup is about to be shown i.e. when method show() is called.
+    This signal is emitted when the popup is about to be shown; that is, when 
+    \link QGraphicsItem::show() show()\endlink is called.
  */
 
 /*!
     \fn void HbPopup::aboutToHide();
 
-    This signal is emitted when the popup is about to be hidden i.e. when method hide() is called.
+    This signal is emitted when the popup is about to be hidden; that is, when 
+    \link QGraphicsItem::hide() hide()\endlink is called.
  */
 
 
 /*!
     \fn void HbPopup::aboutToClose();
 
-    This signal is emitted when the popup is about to be closed i.e. when method close() is called
-    or the popup is
-    dismissed by the user or timeout.
+    This signal is emitted when the popup is about to close; that is, when 
+    \link QGraphicsWidget::close() close()\endlink is called or the popup is dismissed 
+    by the user or timeout.
  */
 
 /*!
     \enum HbPopup::Placement
-
-    Placement is the corner or edge to which position of the popup refers to.
+    Identifies the corners and edges of the popup for use when setting its position
+    using setPreferredPos(). 
   */
-
+  
 /*!
+    \var HbPopup::TopLeftCorner
+    The popup's top left corner.
+ */
+  
+/*!
+    \var HbPopup::TopRightCorner
+    The popup's top right corner.
+ */
+   
+/*!
+    \var HbPopup::BottomLeftCorner
+    The popup's bottom left corner.
+ */
+   
+/*!
+    \var HbPopup::BottomRightCorner
+    The popup's bottom right corner.
+ */
+   
+/*!
+    \var HbPopup::TopEdgeCenter
+    The center of the popup's top edge.
+ */
+   
+/*!
+    \var HbPopup::RightEdgeCenter
+    The center of the popup's rightmost edge.
+ */
+    
+/*!
+    \var HbPopup::BottomEdgeCenter
+    The center of the popup's bottom edge.
+ */
+    
+/*!
+    \var HbPopup::LeftEdgeCenter
+    The center of the popup's leftmost edge.
+ */
+ 
+ /*!
+    \var HbPopup::Center
+    The center of the popup.
+ */
+
+namespace {
+    //initial values if not found from hbpopup.css
+    static const int NO_TIMEOUT = 0;
+    static const int CONFIRMATION_NOTE_TIMEOUT = 1500;
+    static const int STANDARD_TIMEOUT = 3000;
+    static const int CONTEXT_MENU_TIMEOUT = 6000;
+
+    static const QLatin1String NO_TIMEOUT_STRING("no-timeout");
+    static const QLatin1String CONFIRMATION_NOTE_TIMEOUT_STRING("confirmation-note-timeout");
+    static const QLatin1String STANDARD_TIMEOUT_STRING("standard-timeout");
+    static const QLatin1String CONTEXT_MENU_TIMEOUT_STRING("context-menu-timeout");
+}
+
+/*
+   Currently, virtual keyboard must be able to position a popup
+   containing an editor to an arbitrary place. VKB does its best to
+   reposition the popup back to original position when needed. At least in
+   orientation switch the old position naturally is wrong, hence popup
+   must be relayouted.
+
+   It would be unreasonable to make special checks for popup in vkb
+   side. It also would be unreasonable to do special checks for vkb in
+   popup side. Hence this semi-hidden dynamic property for
+   communicating this special case.
+
+   WARNING: Do not count on this special behaviour, we might remove it
+   without prior notice. If you do require such a behavior, please
+   raise a feature request and we might make this a proper API.
+ */
+const char* KPositionManagedByVKB("PositionManagedByVKB");
+
+/*
     \primitives
-    \primitive{background} HbFrameItem representing the popup background. The background can be weak or strong (different graphical styles) depending on popup type.
+    \primitive{background} HbFrameItem representing the popup background. The background can be 
+    weak or strong (different graphical styles) depending on popup type.
     \primitive{P_Popup_heading_frame} HbFrameItem representing the popup heading text background
   */
-
-static const struct { HbPopup::DefaultTimeout timeout; int value; } timeoutValues[] =
-{
-    {HbPopup::NoTimeout,0},
-    {HbPopup::ConfirmationNoteTimeout,1500},
-    {HbPopup::StandardTimeout,3000},
-    {HbPopup::ContextMenuTimeout,6000},
-};
-
 HbPopupBackGround::HbPopupBackGround(HbPopup * popup, QGraphicsItem *parent) :
         QGraphicsItem(parent),
         popup(popup)
@@ -273,10 +382,10 @@ bool HbPopupBackGround::sceneEvent(QEvent *event)
 }
 
 HbPopupPrivate::HbPopupPrivate( ) :
-    eventLoop(0),
     hasEffects(false),
     closed(false),
     hidingInProgress(true),
+    showingInProgress(false),
     delayedHide(false),
     deleteOnClose(false),
     modal(true), // must be in sync QGraphicsItem::ItemIsFocusable of backgroundItem
@@ -285,7 +394,9 @@ HbPopupPrivate::HbPopupPrivate( ) :
     aboutToShowSignalGuard(false),
     duplicateShowEvent(false),
     timedOut(false),
-    timeout(HbPopupPrivate::timeoutValue(HbPopup::StandardTimeout)),
+    timeout(-1),
+    timeoutPending(true),
+    pendingTimeout(HbPopup::StandardTimeout),
     //    priorityValue(HbPopup::Default),
     priorityValue(0),
     dismissPolicy(HbPopup::TapOutside),
@@ -293,12 +404,18 @@ HbPopupPrivate::HbPopupPrivate( ) :
     mousePressLocation(None),
     frameType(HbPopup::Strong),
     preferredPosSet(false),
-    mStartEffect(false),
+    placement(HbPopup::TopLeftCorner),
+    mStartEffect(true),
     mScreenMargin(0.0),
     mAutoLayouting(true),
     mOriginalAutoLayouting(mAutoLayouting),
+    mActivePopup(true),
+    mMaskedItem(0),
+    mPopupMask(0),
     mVgMaskEffect(0),
     mOrientationEffectHide(false),
+    mGestureOverride(false),
+    mFullScreen(false),
     timeoutTimerInstance(0)
 {
 }
@@ -307,6 +424,7 @@ HbPopupPrivate::~HbPopupPrivate()
 {
     stopTimeout();
     delete timeoutTimerInstance;
+    delete mPopupMask;
 }
 
 void HbPopupPrivate::init()
@@ -316,8 +434,8 @@ void HbPopupPrivate::init()
     q->setAttribute(Hb::InsidePopup);
 
     // By default popups are focusable
-    q->setFocusPolicy(Qt::StrongFocus);    
-    setBackgroundItem(HbStyle::P_Popup_background);
+    q->setFocusPolicy(Qt::StrongFocus);
+    q->setBackgroundItem(new HbFrameItem(QLatin1String("qtg_fr_popup"), HbFrameDrawer::NinePieces), -1);
     q->updatePrimitives();
 
 
@@ -325,7 +443,6 @@ void HbPopupPrivate::init()
     if (!q->parentItem()) {
         backgroundItem = new HbPopupBackGround(q);
         backgroundItem->setVisible(false);
-
         // Popup is invisible by default (explicit show or open call is required)
         q->setVisible(false);
     }
@@ -334,17 +451,35 @@ void HbPopupPrivate::init()
     itemFlags |= QGraphicsItem::ItemClipsToShape;
     itemFlags |= QGraphicsItem::ItemClipsChildrenToShape;
     itemFlags |= QGraphicsItem::ItemSendsGeometryChanges;
-    //itemFlags |= QGraphicsItem::ItemIsPanel;
-    q->setFlags(itemFlags);  
+    itemFlags |= QGraphicsItem::ItemIsPanel;
+    q->setFlags(itemFlags);
+    q->setActive(false);
+
+    q->setAcceptTouchEvents(true);
+
+    defaultTimeouts[HbPopup::NoTimeout] = NO_TIMEOUT;
+    defaultTimeouts[HbPopup::ConfirmationNoteTimeout] = CONFIRMATION_NOTE_TIMEOUT;
+    defaultTimeouts[HbPopup::StandardTimeout] = STANDARD_TIMEOUT;
+    defaultTimeouts[HbPopup::ContextMenuTimeout] = CONTEXT_MENU_TIMEOUT;
 }
+
 void HbPopupPrivate::_q_appearEffectEnded(HbEffect::EffectStatus status)
 {
-	Q_UNUSED(status);
+    Q_UNUSED(status);
+    Q_Q(HbPopup);
+
+    showingInProgress = false;
+    q->emit popupReady();
+}
+
+void HbPopupPrivate::_q_maskEffectDestroyed()
+{
+    mVgMaskEffect = 0;
 }
 
 CSystemToneService* HbPopupPrivate::systemToneService()
 {
-	return HbInstancePrivate::d_ptr()->systemTone();
+    return HbInstancePrivate::d_ptr()->systemTone();
 }
 /*
  Sets the priority for a popup.
@@ -365,7 +500,6 @@ void HbPopupPrivate::setPriority(quint8 priority)
 void HbPopupPrivate::_q_delayedHide(HbEffect::EffectStatus status)
 {
     Q_UNUSED(status);
-
     Q_Q(HbPopup);
 
     // Apply forceHide only if the effect started successfully
@@ -379,6 +513,7 @@ void HbPopupPrivate::_q_delayedHide(HbEffect::EffectStatus status)
         q->deleteLater();
     }
     hidingInProgress = false;
+    mGestureOverride = false;
 }
 
 void HbPopupPrivate::_q_orientationAboutToChange(Qt::Orientation orient, bool animate)
@@ -397,14 +532,22 @@ void HbPopupPrivate::_q_orientationChanged()
 {
     Q_Q(HbPopup);
     if (q->isVisible()) {
-        QEvent userEvent(QEvent::ContextMenu);
+        QEvent userEvent(QEvent::LayoutRequest);
         QCoreApplication::sendEvent(q, &userEvent);
     }
+
+    q->repolish();
 #ifdef HB_EFFECTS
     if (mOrientationEffectHide) {
+        QRectF extRect(0.0,
+                       -q->boundingRect().height(),
+                       q->boundingRect().width(),
+                       0);
         HbEffect::cancel(q);
-        HbEffect::start(q, "HB_POPUP", "orient_appear");
+        HbEffect::start(q, "HB_POPUP", "orient_appear", q, "_q_appearEffectEnded",
+                        QVariant(), extRect);
         mOrientationEffectHide = false;
+        showingInProgress = true;
     }
 #endif
 }
@@ -434,6 +577,7 @@ void HbPopupPrivate::setTimeout(int msec)
 {
     Q_Q(HbPopup);
 
+    timeoutPending = false;
     int prevTimeout = timeout;
     timeout = msec;
     if (msec > 0) {
@@ -481,7 +625,7 @@ void HbPopupPrivate::handleBackgroundMousePressEvent()
 {
     Q_Q(HbPopup);
     mousePressLocation = Background;
-    if (dismissPolicy & HbPopup::TapOutside) {
+    if (dismissPolicy & HbPopup::TapOutside && !modal) {
         q->close();
     }
 }
@@ -509,21 +653,14 @@ void HbPopupPrivate::handleBackgroundMouseReleaseEvent(QGraphicsSceneMouseEvent 
                     q->close();
                 }
             }
+        } else if ( mousePressLocation == Background &&
+                    dismissPolicy & HbPopup::TapOutside && modal) {
+            q->close();
         }
     }
 
     // reset mousePressLocation
     mousePressLocation = None;
-}
-
-
-int HbPopupPrivate::timeoutValue(HbPopup::DefaultTimeout timeout)
-{
-    int count = sizeof(timeoutValues) / sizeof(timeoutValues[0]);
-    if (timeout < 0 || timeout >= count) {
-        return timeoutValues[HbPopup::NoTimeout].value;
-    }
-    return timeoutValues[timeout].value;
 }
 
 void HbPopupPrivate::forceHide()
@@ -582,67 +719,113 @@ void HbPopupPrivate::doSetModal( bool modal ) {
     }
 }
 
+void HbPopupPrivate::setFullScreen(bool enable)
+{
+    if (mFullScreen != enable) {
+        Q_Q(HbPopup);
+        mFullScreen = enable;
+        if (enable) {
+            q->setBackgroundItem(new HbFrameItem(QLatin1String("qtg_graf_screen_bg_prt"), HbFrameDrawer::OnePiece), -1);
+        } else {
+            if (frameType == HbPopup::Weak) {
+                q->setBackgroundItem(new HbFrameItem(QLatin1String("qtg_fr_popup_secondary"), HbFrameDrawer::NinePieces), -1);
+            } else {
+                q->setBackgroundItem(new HbFrameItem(QLatin1String("qtg_fr_popup"), HbFrameDrawer::NinePieces), -1);
+            }
+        }
+        q->repolish();
+    }
+}
+
 void HbPopupPrivate::calculateShape()
 {
-#if 0
     Q_Q(HbPopup);
+    // Only used for HbMenu currently, this is not fully correct as some dialogs may need masking too.
+    if (q->type() != Hb::ItemType_Menu && q->type() != Hb::ItemType_ColorDialog) {
+        return;
+    }
+    // Cannot set up masking if the background item is not available.
+    if (!q->backgroundItem() || !q->backgroundItem()->boundingRect().isValid()) {
+        return;
+    }
     // Contrary to the name, HbVgMaskEffect has a software
     // implementation too, and we will actually force the usage of
     // that here, ignoring the pure OpenVG version.
     if (!mVgMaskEffect) {
+        if (!mMaskedItem) {
+            mMaskedItem = q;
+        }
         mVgMaskEffect = new HbVgMaskEffect;
         // Masking does not work reliably on HW.
         mVgMaskEffect->setForceSwMode(true);
         // There may be children (like the scroll area in menus) that
         // would mess up the masking so exclude those.
         mVgMaskEffect->setIncludeSourceItemOnly(true);
-        if (!q->graphicsEffect()) {
-            // Attach the effect. Ownership is transferred to q.
-            mVgMaskEffect->install(q);
+        if (!mMaskedItem->graphicsEffect()) {
+            // Attach the effect. Ownership is transferred to the chain. The
+            // ownership of the chain is transferred to q.  The chain is needed
+            // because we must co-exist with FXML-based filter effects.
+            HbVgChainedEffect *c = new HbVgChainedEffect;
+            c->add(mVgMaskEffect);            
+            c->install(mMaskedItem);
         } else {
-            // Avoid replacing already set effects. Do not mask if
-            // this is not possible, otherwise we would unexpectedly
-            // delete the previously set graphics effect.
-            HbVgChainedEffect *c = qobject_cast<HbVgChainedEffect *>(q->graphicsEffect());
+            // Avoid replacing already set effects. Do not mask if this is not
+            // possible, otherwise we would unexpectedly delete the previously
+            // set graphics effect. However by being able to add the effect to a
+            // chain makes it possible to co-exist with FXML-based filter
+            // effects. Similar solution is also present in HbEffectGroup.
+            HbVgChainedEffect *c = qobject_cast<HbVgChainedEffect *>(mMaskedItem->graphicsEffect());
             if (c) {
                 c->add(mVgMaskEffect);
             } else {
                 delete mVgMaskEffect;
+                mVgMaskEffect = 0;
             }
         }
+        if (mVgMaskEffect) {
+            // Make sure that mask effect is reset when destroyed
+            QObject::connect(mVgMaskEffect, SIGNAL(destroyed()), q, SLOT(_q_maskEffectDestroyed()));
+        }
     }
-    QPixmap image(QSize(static_cast<int>(q->backgroundItem()->boundingRect().width()),
-                        static_cast<int>(q->backgroundItem()->boundingRect().height())));
+    /*if (!mPopupMask) {
+        mPopupMask= new HbFrameItem();
+        mPopupMask->frameDrawer().setFrameType(HbFrameDrawer::NinePieces);
+        mPopupMask->frameDrawer().setFrameGraphicsName(QLatin1String("qtg_fr_popup_mask"));
+    }
+    mPopupMask->setGeometry(q->boundingRect());*/
+
+    QPixmap image(q->backgroundItem()->boundingRect().size().toSize());
     image.fill(Qt::transparent);
     QPainter imagePainter(&image);
+    //mPopupMask->paint(&imagePainter, 0, 0);
     q->backgroundItem()->paint(&imagePainter, 0, 0);
     imagePainter.end();
     mVgMaskEffect->setMask(image);
-#endif
 }
 
+
+
 /*!
- Constructs a popup with given  \a parent graphics item.\n
- Note: popups with \a parent set as 0 are behaving as real popups.
- This is actually the intended use.
+    Constructs a popup with the given \a parent graphics item. For true popup 
+    behavior (which means that it opens above other objects, at the highest z-order) 
+    set \a parent to 0. This is the primary intended use of this class.
 
- However in some situation could be useful to embedd a popup into a QGraphicsItem.
- In this case a non zero \a parent value must be passed.
- Popups with parent items behaving just like any other QGraphicsWidget.
- The following features are not supported (i.e. ignored) for popup with parents:
-
-       - modality
-       - timeout
-       - unfadedItems
-       - dismissPolicy
-       - signal aboutToClose
+    However, it may sometimes be useful to embed a popup into a QGraphicsItem. To do 
+    this, pass a non-zero \a parent value. HbPopup objects that have a parent are 
+    not real popups: they behave like any other QGraphicsWidget object and following
+    properties are ignored. In addition the aboutToClose() signal is not emitted.
+    
+    - \link isModal() modal\endlink property
+    - \link timeout() timeout\endlink  property
+    - \link isBackgroundFaded() Backgroundfaded\endlink property
+    - \link  dismissPolicy() dismissPolicy\endlink property
 */
 HbPopup::HbPopup(QGraphicsItem *parent) :
     HbWidget(*new HbPopupPrivate,parent)
 {
     Q_D(HbPopup);
     d->q_ptr = this;
-    d->init();    
+    d->init();
 }
 
 
@@ -654,10 +837,10 @@ HbPopup::HbPopup(HbPopupPrivate &dd, QGraphicsItem *parent) :
 {
     Q_D(HbPopup);
     d->q_ptr = this;
-    d->init();    
+    d->init();
 }
 /*!
- Destroys the popup.
+    Destructor.
 */
 HbPopup::~HbPopup()
 {
@@ -671,9 +854,6 @@ HbPopup::~HbPopup()
         hbScene->d_ptr->hidePopup(this);
     }
 
-    if (d->eventLoop) {
-        d->eventLoop->exit();
-    }
     if (d->backgroundItem) {
         // Set backgroundItem->popup to 0 to avoid double deletion
         // e.g. when popup is deleted by scene before its backgroundItem
@@ -688,46 +868,86 @@ HbPopup::~HbPopup()
     }
 }
 
-
 /*!
- Returns the popup timeout property in milliseconds.
- If this property is not set the deafult is HbPopup::StandardTimeout.
- \sa setTimeout()
+    Returns the popup's timeout property in milliseconds. The timeout causes the popup to
+    be dismissed automatically after the specified time period has elapsed. A value of
+    zero or less than zero, means that the popup is permanent and the user must take 
+    some explicit action in order to close the popup. 
+    
+    The default value for this property is HbPopup::StandardTimeout.
+      
+    \sa setTimeout(), setTimeout(HbPopup::DefaultTimeout)
 */
 int HbPopup::timeout() const
 {
     Q_D(const HbPopup);
+    if (d->timeoutPending) {
+        HbStyleParameters params;
+        QLatin1String timeoutString("");
+        switch (d->pendingTimeout) {
+            case HbPopup::NoTimeout:
+                timeoutString = NO_TIMEOUT_STRING;
+                break;
+            case HbPopup::ContextMenuTimeout:
+                timeoutString = CONTEXT_MENU_TIMEOUT_STRING;
+                break;
+            case HbPopup::StandardTimeout:
+                timeoutString = STANDARD_TIMEOUT_STRING;
+                break;
+            case HbPopup::ConfirmationNoteTimeout:
+                timeoutString = CONFIRMATION_NOTE_TIMEOUT_STRING;
+                break;
+        }
+        params.addParameter(timeoutString);
+
+        style()->widgetParameters(params, const_cast<HbPopup *>(this));
+
+        if (!params.value(timeoutString).isNull()) {
+           return params.value(timeoutString).toInt();
+       } else {
+           return d->timeout;
+       }
+    } else {
     return d->timeout;
+}
 }
 
 /*!
- Sets the popup timeout property in milliseconds.
- If timeout <= 0 then the popup is permanent and not closed automatically.
- \sa timeout() setTimeout(HbPopup::DefaultTimeout) QGraphicsWidget::close()
+    Sets the popup's timeout property in milliseconds. A value of zero or less than zero
+    means that the popup is permanent and is not closed automatically.
+    
+    \overload
+    \sa timeout() setTimeout(HbPopup::DefaultTimeout), QGraphicsWidget::close()
 */
 void HbPopup::setTimeout(int timeout)
 {
-    Q_D(HbPopup);
+    Q_D(HbPopup);    
     d->setTimeout(timeout);
-    //d->timeout = timeout;
 }
 
 /*!
- It is a convenience overload of \a timeout() for setting HbPopup::DefaultTimeout values
- to achieve common look & feel.
- \sa enum DefaultTimeout
- \sa timeout() setTimeout(int) QGraphicsWidget::close()
+    Sets the popup's timeout property to the default value for a standard popup type.
+    This has the advantage of creating a common look and feel.
+
+    \overload
+    \sa timeout(), setTimeout(int), QGraphicsWidget::close()
 */
 void HbPopup::setTimeout(HbPopup::DefaultTimeout timeout)
 {
-    setTimeout(HbPopupPrivate::timeoutValue(timeout));
+    Q_D(HbPopup);
+    if (d->polished) {
+        int newTimeout = d->defaultTimeouts.value(timeout);        
+        setTimeout(newTimeout);
+    } else {
+        d->timeoutPending = true;
+        d->pendingTimeout = timeout;
+    }
 }
 
 /*!
- Returns the popup modality property.
- A modal popup blocks any user initiated events outside of the popup
- until it is closed.
- \sa setModal()
+    Returns the popup's modality property. A modal popup blocks any user-initiated
+    events outside of the popup until it is closed.
+    \sa setModal()
 */
 bool HbPopup::isModal() const
 {
@@ -736,20 +956,23 @@ bool HbPopup::isModal() const
 }
 
 /*!
- Sets the popup modality property.
- \sa isModal()
+    Sets the popup's modality property.
+    
+    To open a modal popup, call open(). To open a non-modal popup, call 
+    \link QGraphicsItem::show() show()\endlink.
+    \sa isModal()
 */
-void HbPopup::setModal(bool enabled)
+void HbPopup::setModal(bool modal)
 {
     Q_D(HbPopup);
-    d->modal = enabled;
+    d->modal = modal;
     d->doSetModal( d->modal );
 }
 
 /*!
- Sets the background of popup faded if \a fadeBackground is true otherwise
- the background will not be faded.
- \sa isBackgroundFaded()
+    Sets the popup's background fade policy property. When this is set to true, it causes
+    everything behind the popup to be faded. 
+    \sa isBackgroundFaded()
 */
 void HbPopup::setBackgroundFaded(bool fadeBackground)
 {
@@ -758,9 +981,10 @@ void HbPopup::setBackgroundFaded(bool fadeBackground)
 }
 
 /*!
- Returns if the background of the popup is faded or not.
- Default: true
- \sa isBackgroundFaded()
+    Returns the popup's background fade policy property. This controls whether 
+    everything behind the popup is faded while the popup is on the screen. Typically
+    this property is set to true for modal dialogs only. The default is true.
+    \sa setBackgroundFaded()
 */
 bool HbPopup::isBackgroundFaded() const
 {
@@ -769,9 +993,9 @@ bool HbPopup::isBackgroundFaded() const
 }
 
 /*!
- Returns the dismiss policy of the popup.
- Default is HbPopup::TapOutside.
- \sa setDismissPolicy()
+    Returns the popup's dismiss policy. This defines which user actions (if any) cause 
+    the popup to close. The default is HbPopup::TapOutside.
+    \sa setDismissPolicy()
 */
 HbPopup::DismissPolicy HbPopup::dismissPolicy() const
 {
@@ -780,9 +1004,9 @@ HbPopup::DismissPolicy HbPopup::dismissPolicy() const
 }
 
 /*!
- Sets the dismiss policy property for the the popup.
+    Sets the popup's dismiss policy property.
 
- \sa dismissPolicy()
+    \sa dismissPolicy()
 */
 void HbPopup::setDismissPolicy(HbPopup::DismissPolicy dismissPolicy)
 {
@@ -791,9 +1015,10 @@ void HbPopup::setDismissPolicy(HbPopup::DismissPolicy dismissPolicy)
 }
 
 /*!
- Returns the frame type of the popup.
- Default is HbPopup::Strong
- \sa setFrameType()
+    Returns the popup's frame type. This controls the popup's background style. However, 
+    the actual appearance depends on the theme. The default value is HbPopup::Strong.
+    
+    \sa setFrameType()
 */
 HbPopup::FrameType HbPopup::frameType() const
 {
@@ -801,38 +1026,74 @@ HbPopup::FrameType HbPopup::frameType() const
     return d->frameType;
 }
 
-/*!
- Sets the frame typeproperty for the the popup.
+void HbPopupPrivate::doSetFrameType(HbPopup::FrameType newFrameType)
+{
+    Q_Q(HbPopup);
+    switch( newFrameType ) {
+    case HbPopup::Weak:
+        q->setBackgroundItem(new HbFrameItem(QLatin1String("qtg_fr_popup_secondary"), HbFrameDrawer::NinePieces), -1);
+        break;
+    case HbPopup::Strong:
+    default:
+        q->setBackgroundItem(new HbFrameItem(QLatin1String("qtg_fr_popup"), HbFrameDrawer::NinePieces), -1);
+        break;
+    }
+}
 
- \sa frameType()
+/*!
+    Sets the popup's frame type, which controls the popup's background style.
+
+    \sa frameType()
 */
 void HbPopup::setFrameType(HbPopup::FrameType frameType)
 {
     Q_D(HbPopup);
     if ( d->frameType != frameType ) {
-        switch( frameType ) {
-        case HbPopup::Weak:
-            d->setBackgroundItem(HbStyle::P_Popup_background_weak);
-            break;
-        case HbPopup::Strong:
-        default:
-            d->setBackgroundItem(HbStyle::P_Popup_background);
-            break;
-        }
         d->frameType = frameType;
+        d->doSetFrameType(frameType);
         updatePrimitives();
     }
 }
 
+/*!
+    Returns true if the popup is set to occupy the whole screen, false if not.
+
+    \sa setFullScreen()
+*/
+bool HbPopup::isFullScreen() const
+{
+    Q_D(const HbPopup);
+    return d->mFullScreen;
+}
 
 /*!
- Shows the popup as modal popup returning immediately.  
+    Sets the popup to occupy the whole screen. When the popup is in full screen different
+    background graphics are used and there are no margins between popup and the main window.
 
- Connects aboutToClose() signal to the slot specified by \a receiver and
- \a member. The signal will be disconnected from the slot when the
- popup is closed.
+    Inherited classes may have different color and graphics for full screen popups.
 
- For non modal popups, use show().  
+    \param enable A Boolean value; true for full screen popup, false for regular popup.
+
+    \sa isFullScreen()
+*/
+void HbPopup::setFullScreen(bool fullScreen)
+{
+    Q_D(HbPopup);
+    d->setFullScreen(fullScreen);
+}
+
+/*!
+    Displays the popup on the screen and returns immediately. This function also 
+    connects the popup's aboutToClose() signal to a specified slot. The signal 
+    is disconnected from the slot when the popup closes.
+    
+    Use this function to open modal popups. To open non-modal popups, call 
+    \link QGraphicsItem::show() show()\endlink.  
+
+    \param receiver  The object that is to receive the signal.  
+    \param member  The slot on the receiver to which the signal is to connect. 
+    
+    \sa isModal() 
 */
 void HbPopup::open( QObject *receiver, const char *member )
 {
@@ -843,35 +1104,44 @@ void HbPopup::open( QObject *receiver, const char *member )
     d->receiverToDisconnectOnClose = receiver;
     d->memberToDisconnectOnClose = member;
 
+    d->showingInProgress = true;
     show();
 }
 
 /*!
-    \reimp
+    
  */
 QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value )
 {
     Q_D(HbPopup);
 
-    if (change == QGraphicsItem::ItemPositionChange) {
+    if (change == QGraphicsItem::ItemPositionChange) {        
+        // Skipping X-coordinate changes made by VKB since popupmanager handles popup to be in the
+        // center of the screen
+        if (property(KPositionManagedByVKB).isValid() && property(KPositionManagedByVKB).toBool() &&
+            !d->mAutoLayouting && value.isValid() && !value.toPointF().isNull()) {
+            QPointF newPointF(geometry().x(), value.toPointF().y());
+            d->mAutoLayouting = false;
+            return newPointF;
+        }
         d->mAutoLayouting = false;
     }
     if (change == QGraphicsItem::ItemVisibleHasChanged) {
         if (value.toBool()) {
-            if(d->hasEffects && boundingRect().isValid()) {
+            if (d->hasEffects && boundingRect().isValid() && d->polished) {
 
 #ifdef HB_EFFECTS
                 QRectF extRect(0.0,
                                -boundingRect().height(),
                                boundingRect().width(),
                                0);
-                d->mStartEffect = true;
                 HbEffect::cancel(this);
                 d->mStartEffect = false;
-                HbEffect::start(this, d->effectType, "appear", this, "_q_appearEffectEnded", QVariant(), extRect);
-#endif//HB_EFFECTS
-            } else {
-                d->mStartEffect = true;
+                HbEffectInternal::start(this, this, HbEffectInternal::UpdateAtEachStep,
+                                        d->effectType, "appear", this, "_q_appearEffectEnded",
+                                        QVariant(), extRect);
+                d->showingInProgress = true;
+#endif //HB_EFFECTS
             }
         }
     }
@@ -889,11 +1159,13 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
             // Note: when visibility changes to "visible" base class implementation needs
             //       to be called otherwise showEvent() is not called.
         } else {
+            if(isPanel() && isActive() && d->mActivePopup) {
+                setActive(false);
+            }
             d->aboutToShowSignalGuard = false;
             if (!d->hidingInProgress) {
                 emit aboutToHide();
             }
-
             if (d->delayedHide &&  // about to hide and we wanna delay hiding
                 d->hasEffects && !parentItem()) { // only for popup without parent
                 bool hideDelayed = d->delayedHide;
@@ -905,12 +1177,14 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
                                    boundingRect().width(),
                                    0);
                     HbEffect::cancel(this);
-                    if (!HbEffect::start(this, d->effectType, "disappear",
-                                         this, "_q_delayedHide",
-                                         QVariant(), extRect)) {
+                    if (!HbEffectInternal::start(this, this, HbEffectInternal::UpdateAtEachStep,
+                                                 d->effectType, "disappear",
+                                                 this, "_q_delayedHide",
+                                                 QVariant(), extRect)) {
                         d->delayedHide = false;
                         return HbWidget::itemChange(change, value);
                     }
+                    d->mGestureOverride = true;
 #endif
                 }
                 if (hideDelayed) {
@@ -938,19 +1212,7 @@ QVariant HbPopup::itemChange ( GraphicsItemChange change, const QVariant & value
 }
 
 /*!
- \deprecated HbPopup::handlePopupPos()
-         is deprecated. This function should not be used from the application side.
- Handles the popup position when Orientation changes
-*/
-void HbPopup::handlePopupPos()
-{
-    HB_DEPRECATED("HbPopup::handlePopupPos() is deprecated.");
-    QEvent userEvent(QEvent::ContextMenu);
-    QCoreApplication::sendEvent(this, &userEvent);    
-}
-
-/*!
-    \reimp
+    Reimplemented from QGraphicsItem.
  */
 void HbPopup::mousePressEvent(QGraphicsSceneMouseEvent *event )
 {
@@ -972,17 +1234,19 @@ void HbPopup::mousePressEvent(QGraphicsSceneMouseEvent *event )
 }
 
 /*!
-    \reimp
+    Reimplemented from QGraphicsItem.
  */
 void HbPopup::mouseReleaseEvent(QGraphicsSceneMouseEvent *event )
 {
-    QGraphicsItem::mouseReleaseEvent(event);        
+    Q_D(HbPopup);
+    d->handleBackgroundMouseReleaseEvent(event);
+
+    QGraphicsItem::mouseReleaseEvent(event);
     event->accept();
-    // Note: Mouse release event is always handled in handleBackgroundMouseReleaseEvent
 }
 
 /*!
-    \reimp
+    Reimplemented from QGraphicsWidget. 
  */
 //
 // Shows the popup with an animation and starts the timer to dismiss the popup,
@@ -1002,7 +1266,11 @@ void HbPopup::showEvent(QShowEvent *event)
     //  - and registered to HbPopupManager
     //  otherwise popup is treated as normal widget
     if(d->duplicateShowEvent){
-        d->duplicateShowEvent = false;
+        d->duplicateShowEvent = false;        
+        //setting popup as active panel failed in previous showEvent
+        if (d->mActivePopup) {
+            setActive(true);
+        }
         return;
     }
     if (!parentItem()) {
@@ -1011,12 +1279,13 @@ void HbPopup::showEvent(QShowEvent *event)
         if(d->addPopupToScene()) {
               d->duplicateShowEvent = true;
         }
-        //setActive(true);
+        if (d->mActivePopup) {
+            setActive(true);
+        }
         // Popup clears closed state
         d->closed = false;
         if (d->backgroundItem) {
             d->backgroundItem->setVisible(true);
-            d->backgroundItem->setAcceptHoverEvents(isModal());
             if (isModal()) {
                 d->backgroundItem->setFlag(QGraphicsItem::ItemIsPanel);
              }
@@ -1043,7 +1312,7 @@ void HbPopup::showEvent(QShowEvent *event)
 }
 
 /*!
-    \reimp
+    Reimplemented from QGraphicsWidget. 
  */
 void HbPopup::hideEvent(QHideEvent *event)
 {
@@ -1060,16 +1329,12 @@ void HbPopup::hideEvent(QHideEvent *event)
     }
 
     HbWidgetFeedback::triggered(this, Hb::InstantPopupClosed);
-    if (d->eventLoop) {
-        d->eventLoop->exit();
-    }
 
     d->doSetModal( d->modal );
-
 }
 
 /*!
-    \reimp
+    Reimplemented from QGraphicsWidget. 
  */
 void HbPopup::resizeEvent( QGraphicsSceneResizeEvent * event )
 {    
@@ -1082,7 +1347,7 @@ void HbPopup::resizeEvent( QGraphicsSceneResizeEvent * event )
 }
 
 /*!
-    \reimp
+    Reimplemented from QGraphicsWidget. 
  */
 void HbPopup::closeEvent ( QCloseEvent * event )
 {
@@ -1111,26 +1376,8 @@ void HbPopup::closeEvent ( QCloseEvent * event )
     HbWidget::closeEvent(event);
 }
 
-
-/* Currently, virtual keyboard must be able to position a popup
-   containing a editor to an arbitrary place. VKB does it's best to
-   reposition popup back to original position when needed. At least in
-   orientation switch the old position naturally is wrong, hence popup
-   must be relayouted.
-
-   It would be unreasonable to make special checks for popup in vkb
-   side. It also would be unreasonable to do special checks for vkb in
-   popup side. Hence this semi-hidden dynamic property for
-   communicating this special case.
-
-   WARNING: Do not count on this special behaviour, we might remove it
-   without prior notice. If you do require such a behavior, please
-   raise a feature request and we might make this a proper API.
- */
-const char* KPositionManagedByVKB("PositionManagedByVKB");
-
 /*!
-    \reimp
+    Reimplemented from QGraphicsWidget. 
  */
 bool HbPopup::event(QEvent *event)
 {
@@ -1154,41 +1401,54 @@ bool HbPopup::event(QEvent *event)
     } else if (event->type() == QEvent::LayoutRequest) {
         //Workaround when showing first time                           
 #ifdef HB_EFFECTS
-        if(d->mStartEffect && boundingRect().isValid()) {
+        if (d->mStartEffect && boundingRect().isValid()) {
             d->mStartEffect = false;
             QCoreApplication::sendPostedEvents(this, QEvent::LayoutRequest);
             QRectF extRect(0.0,
                            -boundingRect().height(),
                            boundingRect().width(),
                            0);
-            d->mStartEffect = true;
             HbEffect::cancel(this);
-            d->mStartEffect = false;
-            HbEffect::start(this, d->effectType, "appear", this, "_q_appearEffectEnded", QVariant(), extRect);            
+            HbEffectInternal::start(this, this, HbEffectInternal::UpdateAtEachStep,
+                                    d->effectType, "appear", this, "_q_appearEffectEnded",
+                                    QVariant(), extRect);
+            d->showingInProgress = true;
+        } else if (d->mStartEffect) {
         }
-#endif//HB_EFFECTS
-        //workaround ends
+#endif //HB_EFFECTS
+    } else if (event->type() == QEvent::TouchBegin) {
+        // Accept all touch begin events to get the full Begin..End sequence
+        event->accept();
+        return true;
+    } else if (d->mGestureOverride && event->type() == QEvent::GestureOverride) {
+        event->accept();
+        return true;
     }
+
     return HbWidget::event(event);
 }
 
 /*!
-  Sets preferred position\a position for popup with \a placement
-  as origin.
+    Sets the preferred position of the popup. By default, the popup is placed in the middle
+    of the screen. If you use this function to set the preferred position, it is your 
+    responsibility to ensure that this position works correctly on devices with different 
+    screen sizes.
+  
+    Typically you should set the preferred position only for context aware popups, such as 
+    context menus and slider popups. The position is not relevant for most dialogs and
+    popups and you should use the default position for these.
 
-  By default popup is placed in the middle of the screen. If other positions are needed please
-  ensure that the preferred position is working properly with different screen sizes.
+    \param preferredPos Defines the coordinates of preferred position on the screen where 
+           the popup is to open.
+    \param placement The corner or edge of the dialog that is to be placed at \a preferredPos.
 
-  \param position is the position at which the popup is shown.
-  \param placement is the corner or edge which \a position refers to
-
-  Example usage:
-  \code
-  HbPopup *popup = new HbPopup();
-  ...
-  popup->setPreferredPosition( QPointF(x,y), HbPopupBase::BottomEdgeCenter );
-  popup->show();
-  \endcode
+    \b Example:
+    \code
+    HbPopup *popup = new HbPopup();
+  
+    popup->setPreferredPos( QPointF(x,y), HbPopup::BottomEdgeCenter );
+    popup->show();
+    \endcode
  */
 void HbPopup::setPreferredPos( const QPointF& preferredPos,
                                HbPopup::Placement placement )
@@ -1212,9 +1472,8 @@ void HbPopup::setPreferredPos( const QPointF& preferredPos,
 }
 
 /*!
-  \reimp
-  Returns the shape of this item as a QPainterPath.
-  */
+     Returns the shape of this item as a QPainterPath.
+ */
 QPainterPath HbPopup::shape() const
 {    
 #if 0
@@ -1227,6 +1486,48 @@ QPainterPath HbPopup::shape() const
 #else
     return HbWidget::shape();
 #endif
+}
+
+/*!
+    Reimplemented from HbWidget.
+ */
+void HbPopup::polish(HbStyleParameters &params)
+{
+    if (isVisible()) {
+        Q_D(HbPopup);
+
+        // fetch scrolling parameters from css
+
+        params.addParameter(NO_TIMEOUT_STRING);
+        params.addParameter(CONFIRMATION_NOTE_TIMEOUT_STRING);
+        params.addParameter(STANDARD_TIMEOUT_STRING);
+        params.addParameter(CONTEXT_MENU_TIMEOUT_STRING);
+
+        HbWidget::polish(params);
+
+        if (!params.value(NO_TIMEOUT_STRING).isNull()) {
+            d->defaultTimeouts[HbPopup::NoTimeout] = params.value(NO_TIMEOUT_STRING).toInt();
+        }
+        if (!params.value(CONFIRMATION_NOTE_TIMEOUT_STRING).isNull()) {
+            d->defaultTimeouts[HbPopup::ConfirmationNoteTimeout] = params.value(CONFIRMATION_NOTE_TIMEOUT_STRING).toInt();
+        }
+        if (!params.value(STANDARD_TIMEOUT_STRING).isNull()) {
+            d->defaultTimeouts[HbPopup::StandardTimeout] = params.value(STANDARD_TIMEOUT_STRING).toInt();
+        }
+        if (!params.value(CONTEXT_MENU_TIMEOUT_STRING).isNull()) {
+            d->defaultTimeouts[HbPopup::ContextMenuTimeout] = params.value(CONTEXT_MENU_TIMEOUT_STRING).toInt();
+        }
+        if (d->timeoutPending) {
+            d->timeout = d->defaultTimeouts[d->pendingTimeout];
+            if (d->timeout > 0) {
+                d->timeoutTimer()->setInterval(d->timeout);
+                d->startTimeout();
+            }
+            d->timeoutPending = false;
+        }
+    } else {
+        HbWidget::polish(params);
+    }
 }
 
 #include "moc_hbpopup.cpp"

@@ -107,6 +107,10 @@ public:
     const QList<HbBadgeIconInfo> badges() const;
     HbIconFormatType iconFormatType() const;
 
+    typedef void (*AsyncCallback)(void *);
+    void setAsync(bool async, AsyncCallback callback, void *param);
+    bool async() const;
+
 private:
     void ensureSignalConnections();
     QPixmap getPixmapFromAnimation() const;
@@ -115,10 +119,14 @@ private:
                             Qt::AspectRatioMode aspectRatioMode,
                             QIcon::Mode,
                             QIcon::State);
+    void finishPaintHelper(HbIconImpl *icon);
 
     bool loadFailed(QIcon::Mode mode, QIcon::State state) const;
 
     HbIconAnimation *animation() const;
+    
+    void init();
+    void forceFlagUpdate();
 
 public:
     enum ClearingFlag {
@@ -127,6 +135,8 @@ public:
         UnloadedByServer = 0x04
     };
     Q_DECLARE_FLAGS(ClearingFlags, ClearingFlag)
+
+    static void asyncLoadCallback(HbIconImpl *icon, void *param, bool wasSync);
 
 public slots:
     void clearStoredIconContent(ClearingFlags flags = 0);
@@ -140,6 +150,7 @@ private slots:
     void handleAnimationStarted();
     void handleAnimationStopped();
     void handleAnimationFinished();
+    void asyncLoadFinished(HbIconImpl *icon, bool wasSync);
 
 private:
     HbIconEnginePrivate *d;

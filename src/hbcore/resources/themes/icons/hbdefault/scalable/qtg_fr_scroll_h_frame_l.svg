@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg baseProfile="tiny" height="10px" version="1.1" viewBox="0 0 10 10" width="10px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
-<rect fill="none" height="10" width="10" y="0"/>
-<rect fill="none" height="10" width="10"/>
-<path d="M10,8H3C1.346,8,0,6.654,0,5s1.346-3,3-3h7V8z" fill-opacity="0.35" stroke-opacity="0.35"/>
-<path d="M0,5c0,1.656,1.343,3,3,3s7,0,7,0V7H3C1.896,7,1,6.104,1,5s0.896-2,2-2h7V2c0,0-5.855,0-7,0  C1.343,2,0,3.343,0,5z" fill-opacity="0.1" stroke-opacity="0.1"/>
+<svg baseProfile="tiny" height="15px" version="1.1" viewBox="0 0 15 15" width="15px" x="0px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+<g>
+<rect fill="#FFFFFF" fill-rule="evenodd" height="15" width="15"/>
+<g>
+<path d="M6.001,1.5C2.691,1.5,0,4.192,0,7.5s2.691,6,6.001,6H15v-12    H6.001z" fill="#A5A5A5" fill-rule="evenodd"/>
+<path d="M6.001,12.001C3.52,12.001,1.5,9.98,1.5,7.5s2.02-4.501,4.501-4.501H15V1.5H6.001C2.691,1.5,0,4.192,0,7.5    s2.691,6,6.001,6H15v-1.499H6.001z" fill-opacity="0.1" stroke-opacity="0.1"/>
+</g>
+</g>
 </svg>

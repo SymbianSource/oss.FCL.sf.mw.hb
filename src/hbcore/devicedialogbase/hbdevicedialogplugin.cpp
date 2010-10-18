@@ -31,14 +31,18 @@
     service. The service queues and displays device dialogs according to client requests and
     system state. The service displays widgets in it's window (HbApplication window).
 
-    <b>Platform dependent.</b> Currently server is implemented only for Symbian platform. On other platforms,
-    device dialog are displayed on client's mainwindow.
+    \section _creation Creation of device dialogs
 
     Device dialog widgets are created by plugins. The service loads a plugin to create and display
     a device dialog. A single plugin may implement several different dialogs or just one.
+
+    \subsection _identification Identification
+
     Dialogs are identified by a string. By convention the string should follow
     inverted domain name format. For example com.nokia.hb.devicedialog.note/1.0.
     Function deviceDialogTypes() returns a list of dialog types the plugin implements.
+
+    \subsection _versioning Versioning
 
     Appending version number into device dialog type string enables versioning of device dialogs.
     A plugin should handle versioning by returning device dialog type string for all versions it
@@ -48,18 +52,7 @@
     numbers in type strings. It performs string comparison of the whole string when searching
     for a plugin.
 
-    Device dialogs are divided into five groups: generic, notification, indicator-menu, security
-    and critical groups. The group dictates how and when a dialog is shown. Generic and
-    notification dialogs are intended for application use. Indicator, security and critical dialogs are
-    for platform. Each dialog indicates which group it belongs to. The group need not be fixed.
-    It may change depending on create parameters.
-
-    Device dialog groups may prioritize (queueing) device dialogs in respect to other groups.
-    In addition each device dialog has an individual queueing priority that may affect how it is
-    shown inside a group. Currently there is no queueing implemented for device dialogs. All
-    dialogs are displayed in order requests are received. Z-order of dialogs on display is
-    determined by popup framework. Last dialog created is on top. Device dialog framework
-    manipulates Z-order of dialogs. Device dialogs themselves should not change the popup Z-order.
+    \subsection _widgets Dialog widgets
 
     Device dialog widgets have to be derived from HbPopup either directly or by ancestry.
 
@@ -69,19 +62,28 @@
     and HbDeviceDialogInterface. In this case a container can be used to to create and manage the
     widget. See code example at the end.
 
-    <div style="color:gray">
-    <b>For future needs. Not implemented.</b>
-    Device dialog may be shared by several device dialog clients. Each client can update the
-    device dialog and receive signals from it equally. Clients attach to a shared device dialog
-    instance by agreeing on an unique tag. The tag is appended into device dialog type with a %
-    separator. For example here the tag "#1" is appended into device dialog type
-    "hb.devicedialog.note/1.0%#1". If a device dialog instance exists, a client is attached into it
-    instead of creating a new one. To allow sharing, plugin must set
-    HbDeviceDialogPlugin::SharedDeviceDialog.
-    </div>
+    \section _types Types of device dialogs
 
-    <b>Symbian.</b>Plugins are run by a server with platform security capabilities ProtServ, SwEvent,
-    TrustedUI and ReadDeviceData.
+    Device dialogs are divided into four groups:
+
+    - Generic
+    - Notification
+    - Indicator-menu
+    - Security
+
+    The group dictates how and when a dialog is shown. Generic and notification dialogs are
+    intended for application use. Indicator-menu and security dialogs are for platform.
+    Each dialog indicates which group it belongs to. The group need not be fixed.
+    It may change depending on create parameters.
+
+    \subsection _priority Priority
+
+    Device dialog groups prioritize device dialogs (z-order) in respect to other groups.
+    Dialogs belonging to the same group are displayed in order requests are received.
+    Popup framework is utilized to manage z-order of dialogs. Z-order is set by devicedialog
+    framework and device dialogs themselves should not change the popup z-order.
+
+    \section _security Security
 
     Plugins are responsible for maintaining system security for their own part. If plugin
     performs operations that may compromise security or want's to limit access to specific
@@ -91,22 +93,58 @@
     function returns false. In addition, HbDeviceDialogPlugin constructor has a check which
     allows only device dialog service to load plugins derived from it.
 
-    <b>Symbian.</b>Device dialog plugins can be installed into a device. If a plugin doesn't have
-    required platform security capabilities it will not load. Plugins are searched from device's
-    local drives. The search order is rom-drives, non-removable drives and removable drives. Once
-    a pluging is found the search stops. This implies that plugins on rom drives cannot be
-    overriden by plugins on other drives.
+    \section _exceptions Exception handling
 
-    <b>Platform dependent.</b>Plugin location differs depending on platform. On Symbian, device dialog
-    plugin stubs (.qtplugin) are located in /resource/plugins/devicedialogs directory and executables
-    in /sys/bin directory. On other platforms plugin executables are searched from application's
-    current directory and HB_PLUGINS_DIR/devicedialogs directory.
+    Device dialog service uses two strategies in exception handling: Avoidance and trapping.
+    Memory allocation exceptions while a dialog is running are avoided by ensuring there is
+    sufficient heap space available before allowing new dialogs. Trapping is used while
+    a dialog is created. A call to createDeviceDialog() is enclosed in try/catch block.
+    Memory allocation exception causes dialog creation to fail and an error is returned
+    to a client. Plugin should take care there are no memory leaks if exception is thrown
+    inside createDeviceDialog(). All calls to HbDeviceDialogInterface functions are trapped
+    and thrown allocation exceptions are ignored. Plugins can provide more fine grained
+    exception handling by trapping exceptions themselves. 
+
+    \section _checklist Checklist for well behaving device dialogs
+
+    Well behaving plugin should observe following rules:
+    - Delay plugin initializations until HbDeviceDialogPluginInterface::createDeviceDialog() is
+    called. Plugin may be loaded/unloaded several times by different threads during plugin search. 
+    The search is slowed down by unnessary initializations by plugins.
 
     Well behaving dialog widget should observe following rules:
     - Should not create and show other dialogs
     - No calls to show(), hide() or setVisible()
     - Not setting popup Z-order
     - No time consuming operations performed
+
+    \section _platform_hbdevicedialogplugin Platform-specific implementation notes for HbDeviceDialogPlugin
+
+    \subsection _nonsymbian Non-Symbian
+
+    The server is implemented only for the Symbian platform. On other platforms, plugins are loaded into client
+    process and dialogs shown on client's main window.
+
+    Plugin executables are searched from application's current directory and HB_PLUGINS_DIR/devicedialogs
+    directory.
+
+    \subsection _symbian Symbian
+
+    Plugins are run by a server with platform security capabilities ProtServ, SwEvent,
+    TrustedUI and ReadDeviceData. If a plugin doesn't have required platform security
+    capabilities it will not load.
+
+    Device dialog plugins can be installed into a device. Plugins are searched from device's
+    local drives. The search order is rom-drives, non-removable drives and removable drives.
+    Search order inside each group is alphabethical. Eclipsing is allowed only if plugin file
+    names are the same. This means that in order to replace a device dialog in a plugin earlier
+    in search order, the file name of the replacement plugin has to be the same as the the one
+    it replaces.
+
+    Device dialog plugin stubs (.qtplugin) are searched from /resource/plugins/devicedialogs directory
+    and executables in /sys/bin directory in each drive.
+
+    \section _creation Creating a plugin
 
     Creating a device dialog plugin and widget involves following steps.
     - Set in .pro file TEMPLATE = lib and CONFIG += hb plugin
@@ -316,7 +354,7 @@
     Defines device dialog groups. Each of these groups have different rules for showing
     device dialogs.
 
-    \sa deviceDialogInfo DeviceDialogInfo
+    \sa deviceDialogInfo() DeviceDialogInfo
 */
 /*!
     \var HbDeviceDialogPlugin::DeviceDialogGroup HbDeviceDialogPlugin::GenericDeviceDialogGroup
@@ -328,16 +366,40 @@
 */
 /*!
     \var HbDeviceDialogPlugin::DeviceDialogGroup HbDeviceDialogPlugin::IndicatorGroup
-    Indicators. Only platform device dialogs may belong to this group.
+    Reserved for platform use, indicator menu. Not to be used by any other dialog.
 */
 /*!
     \var HbDeviceDialogPlugin::DeviceDialogGroup HbDeviceDialogPlugin::SecurityGroup
-    Screen saver and alarm dialogs. Only platform device dialogs may belong to this group.
+    Reserved for platform use, screen saver. Not to be used by any other dialog.
 */
 /*!
     \var HbDeviceDialogPlugin::DeviceDialogGroup HbDeviceDialogPlugin::CriticalGroup
     High priority dialogs shown on top other dialogs. Only platform device dialogs may
     belong to this group.
+
+    \deprecated HbDeviceDialogPlugin::CriticalGroup
+    is deprecated. Instead use HbDeviceDialogPlugin::GenericDeviceDialogGroup and set
+    HbDeviceDialogPlugin::CriticalLayer. 
+*/
+
+/*!
+    \enum HbDeviceDialogPlugin::ShowLevel
+    Defines a level (z-value) a device dialog is shown.
+
+    \sa deviceDialogInfo() DeviceDialogInfo
+*/
+/*!
+    \var HbDeviceDialogPlugin::ShowLevel HbDeviceDialogPlugin::NormalLevel
+    A default value to be used by applications.
+*/
+/*!
+    \var HbDeviceDialogPlugin::ShowLevel HbDeviceDialogPlugin::SecurityLevel
+    Reserved for platform use, screen saver. Not to be used by other dialogs.
+    Dialog is shown on top of normal level dialogs.
+*/
+/*!
+    \var HbDeviceDialogPlugin::ShowLevel HbDeviceDialogPlugin::CriticalLevel
+    Reserved for platform use. Dialog is shown on top of security level dialogs.
 */
 
 /*!
@@ -405,6 +467,10 @@
     HbDeviceDialogPlugin::DefaultPriority.
 */
 /*!
+    \var HbDeviceDialogPlugin::DeviceDialogInfo::showLevel
+    Level (z-value) the device dialog widget is shown. HbDeviceDialogPlugin::ShowLevel.
+*/
+/*!
     \var HbDeviceDialogPlugin::DeviceDialogInfo::spare
     Spare space for future needs.
 */
@@ -426,24 +492,10 @@
      Currently only Symbian is defined.
      <table>
          <caption> Symbian security information </caption>
-         <tr>
-         <th>Key</th>
-         <th>Value type</th>
-         <th>Description</th>
-         </tr>
-         <tr>
-         <td>"sym-secureId"</td>
-         <td>quint32</td>
-         <td>Client's secure ID</td>
-         </tr>
-         <tr>
-         <td>"sym-vendorId"</td>
-         <td>quint32</td>
-         <td>Client's vendor ID</td>
-         </tr>
-         <tr>
-         <td>"sym-caps"</td>
-         <td>quint32</td>
+         <tr><th>Key</th><th>Value type</th><th>Description</th></tr>
+         <tr><td>"sym-secureId"</td><td>quint32</td><td>Client's secure ID</td></tr>
+         <tr><td>"sym-vendorId"</td><td>quint32</td><td>Client's vendor ID</td></tr>
+         <tr><td>"sym-caps"</td><td>quint32</td>
          <td>Client's capability set as a bitmap. Bit positions correspond to Symbian enum TCapability</td>
          </tr>
      </table>
@@ -503,12 +555,29 @@
     HbDeviceDialogPlugin.
 
     Following popup convention, the widget is not visible immediately after is created.
-    Device dialog framework calls HbPopup::show() to display the widget. The service may change
-    The service may change visibility of the widget by HbPopup::setVisible function.
+    Device dialog framework calls HbPopup::show() to display the widget.
+    The service may change visibility of the widget by HbPopup::setVisible() function.
 
     The widget should close itself by either a timeout or user interaction. It may also be closed
     gracefully either by system or the client by a closeDeviceDialog() function. It is assumed that
     the widget object can be ungracefully destroyed (delete) at any time.
+
+    \section _checklist Checklist for well behaving device dialog widgets
+
+    - Should not create and show other dialogs
+    - No calls to show(), hide() or setVisible()
+    - Not setting popup Z-order
+    - No time consuming operations performed
+
+    \section _implementation_tips Implementation tips
+
+    In order to allow possible disappear effect to complete, deviceDialogClosed() can be emitted
+    from hideEvent(). In order not to signal close if the widget is only hidden but not closed,
+    following pattern can be followed:
+    - Reimplement QGraphicsWidget::hideEvent() and QGraphicsWidget::closeEvent() functions
+    - In closeEvent(). Set a flag that event has been received. If isVisible() returns false, emit deviceDialogClosed().
+    - In hideEvent(). If close event has has been received (flag set), emit deviceDialogClosed().
+    - Don't forget to call base class closeEvent() and hideEvent().
 
     \b Signals:
 
@@ -578,7 +647,7 @@
 
     Returns a pointer to an object that is a sender of deviceDialogClosed() and deviceDialogData()
     signals. There is a default implementation which returns null. In this case it is assumed that
-    the device dialog widget is the signal source. This function may be overriden for example in
+    the device dialog widget is the signal source. This function may be overridden for example in
     a case where the dialog widget is encapsulated by a container class which sends the required
     signals. Note that there has to be one to one relationship between the widget and the sender.
     I.e. there is a one sender object per widget.
@@ -604,8 +673,9 @@
     \fn virtual HbDeviceDialogPluginInterface *HbDeviceDialogPluginInterface::createDeviceDialog(
         const QString &deviceDialogType, const QVariantMap &parameters) = 0
 
-    Creates a device dialog widget. The widget becomes visible immediately. Returns a pointer to
-    the device dialog widget interface or null if widget cannot be created.
+    Called by device dialog framework to create a device dialog widget. The widget should be
+    left unvisible. The framework calls show() at a suitable time to make it visible.
+    Returns a pointer to the device dialog widget interface or null if widget cannot be created.
 
     \param deviceDialogType Device dialog type to create.
     \param parameters Device dialog parameters. The structure and meaning of parameters is a
@@ -622,7 +692,9 @@
 #include <e32base.h>
 #endif // Q_OS_SYMBIAN
 
-// Constructor
+/*!
+    Constructs HbDeviceDialogPlugin.
+*/
 HbDeviceDialogPlugin::HbDeviceDialogPlugin()
 {
 #ifdef Q_OS_SYMBIAN
@@ -636,7 +708,9 @@ HbDeviceDialogPlugin::HbDeviceDialogPlugin()
 #endif // Q_OS_SYMBIAN
 }
 
-// Destructor
+/*!
+    Destructs HbDeviceDialogPlugin.
+*/
 HbDeviceDialogPlugin::~HbDeviceDialogPlugin()
 {
 }

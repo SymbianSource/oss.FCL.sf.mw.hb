@@ -33,12 +33,15 @@
 #include <hbevent.h>
 #include <hbframedrawer.h>
 #include <hbframeitem.h>
+#include <hbgraphicsscene_p.h>
 #include <hbiconitem.h>
 #include <hbinstance.h>
 #include <hblayeredstyleloader_p.h>
 #include <hbmainwindow_p.h>
 #include <hbmarqueeitem.h>
 #include <hbnamespace_p.h>
+#include <hbpopupmanager_p.h>
+#include <hbpopupmanager_p_p.h>
 #include <hbscreen_p.h>
 #include <hbtextitem.h>
 #include <hbwidgetloadersyntax_p.h>
@@ -66,8 +69,8 @@
 #include <QVBoxLayout>
 #include <QXmlStreamWriter>
 #include <qmath.h>
-
-#define NODEPTR_N(x) HbCss::StyleSelector::NodePtr n = {n.ptr = (void *)x};
+#include <QMetaEnum>
+#include <QTimer>
 
 const QString CSS_HTML_HEADER("<style type=\"text/css\"> \
                                 .overridden {color:#999; text-decoration:line-through;} \
@@ -87,7 +90,7 @@ const QString WIDGETML_HTML_HEADER("<style type=\"text/css\"> \
 const QString WIDGETML_HTML_FOOTER("</pre>");
 
 const QStringList SKIPPED_CHILD_ITEMS(QStringList() << "HbTextItem" << "HbTouchArea"
-        << "HbIconItem" << "HbFrameItem" << "HbSpacerItem" << "HbWidgetBase" 
+        << "HbIconItem" << "HbFrameItem" << "HbWidgetBase" 
         << "HbMarqueeItem" << "QGraphicsWidget" << "QGraphicsItem");
 
 const QStringList SKIPPED_GLOBAL_ITEMS(QStringList() << "HbPopupLayoutManager" << "HbAnchorArrowDrawer" << "HbCssInfoDrawer");
@@ -103,6 +106,13 @@ const qreal SIZE_PREF_MINIMUM_THRESHOLD = 4.0 * SIZE_PREF_DRAW_SIZE;
 const qreal SIZE_PREF_LINE_WIDTH = 1.0;
 const qreal SIZE_PREF_ALLOWED_OVERLAP = 2.0;
 const qreal SIZE_PREF_BOX_SIZE = 0.4 * SIZE_PREF_DRAW_SIZE;
+const QString ROOT_TREE_ELEMENT("HbScreen");
+const QString SIZE_HINTS_TEXT("Size Hints: ");
+const QString ACTUAL_SIZE_TEXT("Actual Size: ");
+const QString POSITION_TEXT("Position: ");
+const QString HORIZONTAL_TEXT("Horizontal: ");
+const QString VERTICAL_TEXT("Vertical: ");
+const int TIMER_INTERVAL = 500;
 
 static QString itemClass(const QGraphicsItem *item)
 {
@@ -185,6 +195,18 @@ static QString itemInParentLayout(const QGraphicsItem *item)
     return QString(); // Non-widget parent
 }
 
+static QString sizePolicyText(QSizePolicy::Policy policy)
+{
+    const QMetaObject *meta = &QSizePolicy::staticMetaObject;
+    const int enumIndex = meta->indexOfEnumerator("Policy");
+    Q_ASSERT( enumIndex != -1 );
+    QString name(meta->enumerator(enumIndex).valueToKey((int)policy));
+    if (name.isEmpty()) {
+        name = "[Unrecognised]";
+    }
+    return name;
+}
+
 static QString cssItemText(const QGraphicsItem *item)
 {
     QString txt(itemClass(item));
@@ -205,35 +227,63 @@ static QString cssItemText(const QGraphicsItem *item)
     return txt;
 }
 
+static bool convertToUnits = true;
 
 static QString convertMeasurementToText(const QGraphicsItem *item, qreal hint)
 {
-    qreal unit = HbDeviceProfile::profile(item).unitValue();
-
-    if (unit != 0) {
-        hint = (hint / unit);
+    QString hintText;
+    if (convertToUnits) {
+        qreal unit = HbDeviceProfile::profile(item).unitValue();
+        if (unit != 0) {
+            hint = (hint / unit);
         }
-    QString hintText(QString::number(hint, 'g', 2));
+        hintText = QString::number(hint, 'g', 2);
+    } else {
+        hintText = QString::number(hint);
+    }
     if (hintText.contains('+')) {
         hintText = BIG_NUMBER_CHAR;
-    } else {
-        if (hint !=0 && unit != 0) {
-            hintText += "un";
-        }
+    } else if (hint !=0) {
+        hintText += convertToUnits ? "un" : "px";
     }
     return hintText;
 }
 
+static QString sizeOrPosToText(const QGraphicsItem *item, qreal x, qreal y)
+{
+    QString text('(');
+    if (item) {
+        text += convertMeasurementToText(item, x) + ',';
+        text += convertMeasurementToText(item, y) + ')';
+    }
+    return text;
+}
+
 static QString convertEffectiveSizeHintToText(const QGraphicsWidget *item, Qt::SizeHint which)
 {
-    QString hintText('(');
     if (item) {
         const QSizeF &size = item->effectiveSizeHint(which);
-        hintText += convertMeasurementToText(item, size.width()) + ',';
-        hintText += convertMeasurementToText(item, size.height());
+        return sizeOrPosToText(item, size.width(), size.height());
     }
-    hintText += ')';
-    return hintText;
+    return QString();
+}
+
+static QString actualItemSize(const QGraphicsItem *item)
+{
+    if (item) {
+        const QSizeF &size = item->boundingRect().size();
+        return sizeOrPosToText(item, size.width(), size.height());
+    }
+    return QString();
+}
+
+static QString itemPositionText(const QGraphicsItem *item)
+{
+    if (item) {
+        const QPointF &tl = item->sceneBoundingRect().topLeft();
+        return sizeOrPosToText(item, tl.x(), tl.y());
+    }
+    return QString();
 }
 
 static QString cssItemHintText(const QGraphicsItem *item)
@@ -258,23 +308,7 @@ static QString cssSizePolicyText(const QGraphicsItem *item, Qt::Orientation dir)
         ? widget->sizePolicy().verticalPolicy()
         : widget->sizePolicy().horizontalPolicy();
 
-    if (pol == QSizePolicy::Fixed) {
-        return "Fixed";
-    } else if (pol == QSizePolicy::Minimum) {
-        return "Minimum";
-    } else if (pol == QSizePolicy::Maximum) {
-        return "Maximum";
-    } else if (pol == QSizePolicy::Preferred) {
-        return "Preferred";
-    } else if (pol == QSizePolicy::MinimumExpanding) {
-        return "Minimum expanding";
-    } else if (pol == QSizePolicy::Expanding) {
-        return "Expanding";
-    } else if (pol == QSizePolicy::Ignored) {
-        return "Ignored";
-    } else {
-        return "[Unrecognised]";
-    }
+    return sizePolicyText( pol );
 }
 
 static QRectF cssItemHintRect(const QGraphicsItem *item, Qt::SizeHint which)
@@ -305,6 +339,17 @@ static QString anchorEdgeName(Hb::Edge edge)
     return name;
 }
 
+static QString anchorDirText(HbAnchor::Direction dir)
+{
+    QString name;
+    switch (dir) {
+        // these are hardwired inside the parser
+        case HbAnchor::Negative: name = QString("NEGATIVE"); break;
+        case HbAnchor::Positive: name = QString("POSITIVE"); break;
+        }
+    return name;
+}
+
 QString HbCssInspectorWindow::anchorItemName(QGraphicsLayoutItem* item, QGraphicsLayout* layout, bool& isIdBased)
 {
     isIdBased = true;
@@ -330,8 +375,11 @@ QString HbCssInspectorWindow::anchorItemName(QGraphicsLayoutItem* item, QGraphic
 }
 
 
-QString HbCssInspectorWindow::anchorsToHtmlInfo(HbAnchorLayout *anchorLayout, const QString itemName, const QString layoutName)
+QString HbCssInspectorWindow::anchorsToHtmlInfo(const QGraphicsWidget *widget, const QString layoutName)
 {
+    HbAnchorLayout *anchorLayout = dynamic_cast<HbAnchorLayout *>(widget->layout());
+    QString itemName = itemClass(widget);
+
     QString widgetML;
     QXmlStreamWriter xmlWriter(&widgetML);
     xmlWriter.setAutoFormatting(true);
@@ -376,8 +424,33 @@ QString HbCssInspectorWindow::anchorsToHtmlInfo(HbAnchorLayout *anchorLayout, co
                 anchorEdgeName(anchor->endEdge()));
             if ( !anchor->anchorId().isEmpty() ) {
                 xmlWriter.writeAttribute(
-                    syntax.lexemValue(HbXmlLoaderAbstractSyntax::AL_SPACER),
+                    syntax.lexemValue(HbXmlLoaderAbstractSyntax::AL_ANCHOR_ID),
                     anchor->anchorId());
+            }
+            if ( anchor->sizePolicy() != QSizePolicy::Fixed ) {
+                xmlWriter.writeAttribute(
+                    syntax.lexemValue(HbXmlLoaderAbstractSyntax::AL_MIN_LENGTH),
+                    convertMeasurementToText(widget, anchor->minimumLength()));
+                xmlWriter.writeAttribute(
+                    syntax.lexemValue(HbXmlLoaderAbstractSyntax::AL_PREF_LENGTH),
+                    convertMeasurementToText(widget, anchor->preferredLength()));
+                xmlWriter.writeAttribute(
+                    syntax.lexemValue(HbXmlLoaderAbstractSyntax::AL_MAX_LENGTH),
+                    convertMeasurementToText(widget, anchor->maximumLength()));
+                xmlWriter.writeAttribute(
+                    syntax.lexemValue(HbXmlLoaderAbstractSyntax::AL_DIRECTION),
+                    anchorDirText(anchor->direction()));
+                xmlWriter.writeAttribute(
+                    syntax.lexemValue(HbXmlLoaderAbstractSyntax::AL_SIZEPOLICY),
+                    sizePolicyText(anchor->sizePolicy()));
+            } else {
+                qreal spacing = anchor->preferredLength();
+                if ( anchor->direction() == HbAnchor::Negative ) {
+                    spacing *= -1.0;
+                }
+                xmlWriter.writeAttribute(
+                    syntax.lexemValue(HbXmlLoaderAbstractSyntax::AL_SPACING),
+                    convertMeasurementToText(widget, spacing));
             }
             xmlWriter.writeEndElement(); // anchoritem
         }
@@ -413,8 +486,8 @@ HbCssInfoDrawer::HbCssInfoDrawer(QGraphicsItem *parent) :
     mPrefHintRect(0,0,0,0),
     mMaxHintRect(0,0,0,0)
 {
-	updateColors();
-	setVisible(false);
+    updateColors();
+    setVisible(false);
 }
 
 
@@ -745,9 +818,45 @@ void CodeWidget::setLayoutDirection(Qt::LayoutDirection dir)
 }
 
 
+/******************************************************************************************/
+ModelItemWrapper::ModelItemWrapper(QGraphicsItem *item)
+    : mGraphicsItem(item), mWindow(0), mPopupMgr(0)
+{
+}
+
+ModelItemWrapper::ModelItemWrapper(HbMainWindow *win)
+    : mGraphicsItem(0), mWindow(win), mPopupMgr(0)
+{
+}
+
+ModelItemWrapper::ModelItemWrapper(HbPopupManager *mgr)
+    : mGraphicsItem(0), mWindow(0), mPopupMgr(mgr)
+{
+}
+
+ModelItemWrapper::ModelItemWrapper()
+    : mGraphicsItem(0), mWindow(0), mPopupMgr(0)
+{
+}
+
+QGraphicsItem* ModelItemWrapper::graphicsItem() const
+{
+    return mGraphicsItem;
+}
+
+HbMainWindow* ModelItemWrapper::window() const
+{
+    return mWindow;
+}
+
+HbPopupManager* ModelItemWrapper::popupManager() const
+{
+    return mPopupMgr;
+}
+
 
 /******************************************************************************************/
-CssInspectorModelItem::CssInspectorModelItem(QGraphicsItem *item, int row, CssInspectorModelItem *parent)
+CssInspectorModelItem::CssInspectorModelItem(ModelItemWrapper *item, int row, CssInspectorModelItem *parent)
     : mItem(item), mParent(parent), mRow(row)
 {
 }
@@ -757,6 +866,7 @@ CssInspectorModelItem::~CssInspectorModelItem()
     QHash<int, CssInspectorModelItem*>::iterator it;
     for (it = mChildren.begin(); it!= mChildren.end(); ++it)
         delete it.value();
+    delete mItem;
 }
 
 CssInspectorModelItem* CssInspectorModelItem::child(int i)
@@ -764,12 +874,41 @@ CssInspectorModelItem* CssInspectorModelItem::child(int i)
     if (mChildren.contains(i))
         return mChildren[i];
 
-    if (i>=0 && i < mItem->childItems().count()) {
-        QGraphicsItem *child = mItem->childItems().at(i);
-        CssInspectorModelItem *childItem = new CssInspectorModelItem(child, i, this);
+    if (i < 0)
+        return 0;
+
+    ModelItemWrapper *wrapper = 0;
+    if (mItem->graphicsItem() && i < mItem->graphicsItem()->childItems().count()) {
+        QGraphicsItem *child = mItem->graphicsItem()->childItems().at(i);
+        wrapper = new ModelItemWrapper(child);
+    } else if (mItem->popupManager() && i < mItem->popupManager()->d->popupList.count()) {
+        HbPopup *popup = mItem->popupManager()->d->popupList.at(i);
+        wrapper = new ModelItemWrapper(popup);
+    } else if (mItem->window()) {
+        HbMainWindowPrivate *winPriv = HbMainWindowPrivate::d_ptr(mItem->window());
+        QGraphicsItem *screen = winPriv->element(HbMainWindowPrivate::ViewportItem);
+        if (i < screen->childItems().count()) {
+            wrapper = new ModelItemWrapper(screen->childItems().at(i));
+        } else if (i == screen->childItems().count()) {
+            // Out of bounds due to zero index, return popup manager (this is a special case)
+            HbGraphicsScenePrivate *scenePriv = HbGraphicsScenePrivate::d_ptr(winPriv->mScene);
+            HbPopupManager *mgr = scenePriv->popupManager();
+            wrapper = new ModelItemWrapper(mgr);
+        }
+    } else {
+        // Root node, return from all main windows
+        if (i < hbInstance->allMainWindows().count()) {
+            HbMainWindow *win = hbInstance->allMainWindows().at(i);
+            wrapper = new ModelItemWrapper(win);
+        }
+    }
+
+    if (wrapper) {
+        CssInspectorModelItem *childItem = new CssInspectorModelItem(wrapper, i, this);
         mChildren[i] = childItem;
         return childItem;
     }
+
     return 0;
 }
 
@@ -778,7 +917,7 @@ CssInspectorModelItem* CssInspectorModelItem::parent()
     return mParent;
 }
 
-QGraphicsItem* CssInspectorModelItem::data()
+ModelItemWrapper* CssInspectorModelItem::data()
 {
     return mItem;
 }
@@ -789,11 +928,10 @@ int CssInspectorModelItem::row()
 }
 
 /******************************************************************************************/
-CssInspectorModel::CssInspectorModel(HbMainWindow *win, QObject *parent)
-    : QAbstractItemModel(parent), mWin(win), mRootItem(0)
+CssInspectorModel::CssInspectorModel(QObject *parent)
+    : QAbstractItemModel(parent), mRootItem(0)
 {
-    QGraphicsItem *screen = HbMainWindowPrivate::d_ptr(win)->mClippingItem;
-    mRootItem = new CssInspectorModelItem(screen, 0);
+    mRootItem = new CssInspectorModelItem(new ModelItemWrapper, 0);
 }
 
 CssInspectorModel::~CssInspectorModel()
@@ -807,14 +945,26 @@ QVariant CssInspectorModel::data(const QModelIndex &index, int role) const
         return QVariant();
 
     CssInspectorModelItem *item = static_cast<CssInspectorModelItem*>(index.internalPointer());
-    QGraphicsItem *graphicsItem = item->data();
+    QGraphicsItem *graphicsItem = item->data()->graphicsItem();
 
-    switch (index.column()) {
-        case 0: return itemClass(graphicsItem);
-        case 1: return objName(graphicsItem);
-        case 2: return HbStyle::itemName(graphicsItem);
-        case 3: return itemValue(graphicsItem);
-        case 4: return itemInParentLayout(graphicsItem);
+    if (graphicsItem) {
+        switch (index.column()) {
+            case 0: return itemClass(graphicsItem);
+            case 1: return objName(graphicsItem);
+            case 2: return HbStyle::itemName(graphicsItem);
+            case 3: return itemValue(graphicsItem);
+            case 4: return itemInParentLayout(graphicsItem);
+            default: return QVariant();
+        }
+    } else {
+        if (index.column() == 0) {
+            // Return correct item name
+            if (item->data()->popupManager()) {
+                return "HbPopupManager";
+            } else if (item->data()->window()) {
+                return "HbScreen";
+            }
+        }
     }
     return QVariant();
 }
@@ -877,7 +1027,18 @@ int CssInspectorModel::rowCount(const QModelIndex &parent) const
     else
         parentItem = static_cast<CssInspectorModelItem*>(parent.internalPointer());
 
-    return parentItem->data()->childItems().count();
+    ModelItemWrapper *wrapper = parentItem->data();
+    if (wrapper->graphicsItem()) {
+        return wrapper->graphicsItem()->childItems().count();
+    } else if (wrapper->popupManager()) {
+        return wrapper->popupManager()->d->popupList.count();
+    } else if (wrapper->window()) {
+        HbMainWindowPrivate *winPriv = HbMainWindowPrivate::d_ptr(wrapper->window());
+        QGraphicsItem *screen = winPriv->element(HbMainWindowPrivate::ViewportItem);
+        return screen->childItems().count() + 1; // Special case to add PopupManager
+    } else {
+        return hbInstance->allMainWindows().count();
+    }
 }
 
 int CssInspectorModel::columnCount(const QModelIndex &parent) const
@@ -903,9 +1064,9 @@ void ItemColorDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
                               const QModelIndex &index) const
 {
     if (index.column() == ITEMNAME_COLUMN) {
-        if (index.data().toString() == "") {
+        if (index.data().toString().length() == 0) {
             CssInspectorModelItem *modelItem = static_cast<CssInspectorModelItem*>(index.internalPointer());
-            QGraphicsItem *item = modelItem->data();
+            QGraphicsItem *item = modelItem->data()->graphicsItem();
             if (parentHasAnchorLayout(item)) {
                 painter->fillRect(option.rect, Qt::red);
             }
@@ -919,15 +1080,20 @@ void ItemColorDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 }
 /******************************************************************************************/
 
+static QPointer<HbCssInspectorWindow> cssWindow = 0;
+
 HbCssInspectorWindow *HbCssInspectorWindow::instance()
 {
-    static QPointer<HbCssInspectorWindow> window = 0;
-    if (!window) {
-        window = new HbCssInspectorWindow;
+    if (!cssWindow) {
+        cssWindow = new HbCssInspectorWindow;
     }
-    return window;
+    return cssWindow;
 }
 
+bool HbCssInspectorWindow::exists()
+{
+    return !cssWindow.isNull();
+}
 
 void HbCssInspectorWindow::refresh()
 {
@@ -948,11 +1114,20 @@ void HbCssInspectorWindow::removeFilters()
 void HbCssInspectorWindow::updateFromTreeView(const QModelIndex &index)
 {
     CssInspectorModelItem *modelItem = static_cast<CssInspectorModelItem*>(index.internalPointer());
-    QGraphicsItem *item = modelItem->data();
+    QGraphicsItem *item = modelItem->data()->graphicsItem();
     updateFocusItem(item);
     foreach (HoveredWidgetFilter *filter, mInstalledFilters) {
         filter->mCssInfoDrawer->updateFocusItem(item);
         filter->mArrowDrawer->updateFocusItem(item);
+    }
+}
+
+void HbCssInspectorWindow::updateCurrentItem()
+{
+    updateFocusItem(mCurrentItem);
+    foreach (HoveredWidgetFilter *filter, mInstalledFilters) {
+        filter->mCssInfoDrawer->updateFocusItem(mCurrentItem);
+        filter->mArrowDrawer->updateFocusItem(mCurrentItem);
     }
 }
 
@@ -962,11 +1137,46 @@ void HbCssInspectorWindow::updateColumnSizes(const QModelIndex &index)
     mTreeView->header()->resizeSections(QHeaderView::ResizeToContents);
 }
 
+void HbCssInspectorWindow::changeMode()
+{
+    QObject *obj = sender();
+    HoveredWidgetFilter::UpdateMode mode = HoveredWidgetFilter::Hover;
+    if (mRefreshRadio == obj) {
+        mode = HoveredWidgetFilter::AutoRefresh;
+    } else if (mHoverRadio == obj) {
+        mode = HoveredWidgetFilter::Hover;
+    } else if (mClickRadio == obj) {
+        mode = HoveredWidgetFilter::Click;
+    } else if (mBlockRadio == obj) {
+        mode = HoveredWidgetFilter::ClickBlocking;
+    } else if (mManualRadio == obj) {
+        mode = HoveredWidgetFilter::Manual;
+    }
+    
+    if (mode == HoveredWidgetFilter::AutoRefresh) {
+        mUpdateTimer->start(TIMER_INTERVAL);
+    } else {
+        mUpdateTimer->stop();
+    }
+    emit modeChanged(mode);
+}
+
+void HbCssInspectorWindow::updateSizeMode()
+{
+    QObject *obj = sender();
+    if (obj == mSizePxRadio) {
+        convertToUnits = false;
+    } else if (obj == mSizeUnRadio) {
+        convertToUnits = true;
+    }
+    updateCurrentItem();
+}
+
 void HbCssInspectorWindow::addFilters()
 {
-    foreach (HbMainWindow *window, hbInstance->allMainWindows()) {
-        mTreeView->setModel(new CssInspectorModel(window));
+    mTreeView->setModel(new CssInspectorModel);
 
+    foreach (const HbMainWindow *window, hbInstance->allMainWindows()) {
         HoveredWidgetFilter *filter = new HoveredWidgetFilter(window->scene());
         window->scene()->installEventFilter(filter);
         mInstalledFilters.append(filter);
@@ -981,6 +1191,12 @@ void HbCssInspectorWindow::addFilters()
             SLOT(setDrawOutlines(bool)));
         connect(mSpacersCheck, SIGNAL(toggled(bool)), filter->mArrowDrawer,
             SLOT(setDrawSpacers(bool)));
+        connect(mMinSizeHintCheck, SIGNAL(toggled(bool)), filter->mArrowDrawer,
+            SLOT(setDrawMinLength(bool)));
+        connect(mPrefSizeHintCheck, SIGNAL(toggled(bool)), filter->mArrowDrawer,
+            SLOT(setDrawPrefLength(bool)));
+        connect(mMaxSizeHintCheck, SIGNAL(toggled(bool)), filter->mArrowDrawer,
+            SLOT(setDrawMaxLength(bool)));
         connect(mGuideLinesCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer,
             SLOT(setGuideLinesVisible(bool)));
 
@@ -995,8 +1211,8 @@ void HbCssInspectorWindow::addFilters()
         connect(mSizePrefCheck, SIGNAL(toggled(bool)), filter->mCssInfoDrawer,
             SLOT(setSizePrefsVisible(bool)));
 
-        connect(mHoverRadio, SIGNAL(toggled(bool)), filter, SLOT(setHoverMode(bool)));
-        connect(mBlockRadio, SIGNAL(toggled(bool)), filter, SLOT(setBlockingMode(bool)));
+        connect(this, SIGNAL(modeChanged(HoveredWidgetFilter::UpdateMode)), 
+            filter, SLOT(setMode(HoveredWidgetFilter::UpdateMode)));
 
         filter->mCssInfoDrawer->setItemTextVisible(mObjectNameCheck->isChecked());
         filter->mArrowDrawer->setDrawArrows(mAnchorArrowsCheck->isChecked());
@@ -1008,14 +1224,12 @@ void HbCssInspectorWindow::addFilters()
         filter->mCssInfoDrawer->setPrefHintBoxVisible(mPrefSizeHintCheck->isChecked());
         filter->mCssInfoDrawer->setMaxHintBoxVisible(mMaxSizeHintCheck->isChecked());
         filter->mCssInfoDrawer->setSizePrefsVisible(mSizePrefCheck->isChecked());
-        filter->setHoverMode(mHoverRadio->isChecked());
-        filter->setBlockingMode(mBlockRadio->isChecked());
     }
 }
 
 
 HbCssInspectorWindow::HbCssInspectorWindow(QWidget *parent)
-    : QWidget(parent)
+    : QWidget(parent), mCurrentItem(0)
 {
     QGroupBox *generalGroup = new QGroupBox(tr("General"), this);
     QVBoxLayout *genLayout = new QVBoxLayout(this);
@@ -1051,31 +1265,58 @@ HbCssInspectorWindow::HbCssInspectorWindow(QWidget *parent)
     mHoverRadio = new QRadioButton(tr("Hover mode"), this);
     mClickRadio = new QRadioButton(tr("Click locking mode"), this);
     mBlockRadio = new QRadioButton(tr("Blocked locking mode"), this);
+    mManualRadio = new QRadioButton(tr("Manual"), this);
+    qreal timerInSeconds = (qreal)TIMER_INTERVAL / 1000;
+    QString timerStr = "Auto refresh (" + QString::number(timerInSeconds) + "s)";
+    mRefreshRadio = new QRadioButton(timerStr, this);
     eventLayout->addWidget(mHoverRadio);
     eventLayout->addWidget(mClickRadio);
     eventLayout->addWidget(mBlockRadio);
+    eventLayout->addWidget(mManualRadio);
+    eventLayout->addWidget(mRefreshRadio);
+    connect(mHoverRadio, SIGNAL(pressed()), this, SLOT(changeMode()));
+    connect(mClickRadio, SIGNAL(pressed()), this, SLOT(changeMode()));
+    connect(mBlockRadio, SIGNAL(pressed()), this, SLOT(changeMode()));
+    connect(mManualRadio, SIGNAL(pressed()), this, SLOT(changeMode()));
+    connect(mRefreshRadio, SIGNAL(pressed()), this, SLOT(changeMode()));
 
     QHBoxLayout *settingLayout = new QHBoxLayout;
     settingLayout->addWidget(generalGroup);
     settingLayout->addWidget(sizeHintOptsGroup);
     settingLayout->addWidget(eventModeGroup);
 
-    QGroupBox *sizeHintGroup = new QGroupBox(tr("Size hint"), this);
-    QHBoxLayout *sizeHLayout = new QHBoxLayout;
+    QGroupBox *sizeModeGroup = new QGroupBox(tr("Size mode"), this);
+    QVBoxLayout *sizeModeLayout = new QVBoxLayout(this);
+    sizeModeGroup->setLayout(sizeModeLayout);
+    mSizePxRadio = new QRadioButton(tr("Pixels"), this);
+    mSizeUnRadio = new QRadioButton(tr("Units"), this);
+    mSizeUnRadio->setChecked(true);
+    sizeModeLayout->addWidget(mSizePxRadio);
+    sizeModeLayout->addWidget(mSizeUnRadio);
+    connect(mSizePxRadio, SIGNAL(pressed()), this, SLOT(updateSizeMode()));
+    connect(mSizeUnRadio, SIGNAL(pressed()), this, SLOT(updateSizeMode()));
+
+    QGroupBox *sizeHintGroup = new QGroupBox(tr("Sizes"), this);
+    QVBoxLayout *sizeHLayout = new QVBoxLayout;
     sizeHintGroup->setLayout(sizeHLayout);
-    mSizeHintLabel = new QLabel("", this);
+    mSizeHintLabel = new QLabel(SIZE_HINTS_TEXT, this);
+    mActualSizeLabel = new QLabel(ACTUAL_SIZE_TEXT, this);
+    mPositionLabel = new QLabel(POSITION_TEXT, this);
     sizeHLayout->addWidget(mSizeHintLabel);
+    sizeHLayout->addWidget(mActualSizeLabel);
+    sizeHLayout->addWidget(mPositionLabel);
 
     QGroupBox *sizePolicyGroup = new QGroupBox(tr("Size Policies"), this);
-    QHBoxLayout *sizePolicyLayout = new QHBoxLayout;
+    QVBoxLayout *sizePolicyLayout = new QVBoxLayout;
     sizePolicyGroup->setLayout(sizePolicyLayout);
-    mSizePolicyHoriz = new QLabel(this);
-    mSizePolicyVert = new QLabel(this);
+    mSizePolicyHoriz = new QLabel(HORIZONTAL_TEXT, this);
+    mSizePolicyVert = new QLabel(VERTICAL_TEXT, this);
     sizePolicyLayout->addWidget(mSizePolicyHoriz);
     sizePolicyLayout->addWidget(mSizePolicyVert);
 
     QHBoxLayout *sizeLayout = new QHBoxLayout;
     sizeLayout->setContentsMargins(0,0,0,0);
+    sizeLayout->addWidget(sizeModeGroup);
     sizeLayout->addWidget(sizeHintGroup);
     sizeLayout->addWidget(sizePolicyGroup);
 
@@ -1085,6 +1326,7 @@ HbCssInspectorWindow::HbCssInspectorWindow(QWidget *parent)
     treeContainer->setLayout(treeLayout);
     mTreeView = new QTreeView(this);
     mTreeView->setItemDelegate(new ItemColorDelegate);
+    mTreeView->setAttribute(Qt::WA_InputMethodEnabled, false);
     QLabel *treeLabel = new QLabel(tr("Item tree"));
     treeLayout->addWidget(treeLabel);
     treeLayout->addWidget(mTreeView);
@@ -1094,7 +1336,7 @@ HbCssInspectorWindow::HbCssInspectorWindow(QWidget *parent)
     connect(mTreeView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(updateFromTreeView(const QModelIndex&)));
 
     QSplitter *widgetSplitter = new QSplitter(this);
-    mWidgetMLBox = new CodeWidget(tr("WidgetML"), this);
+    mWidgetMLBox = new CodeWidget(tr("Effective layout"), this);
     widgetSplitter->addWidget(treeContainer);
     widgetSplitter->addWidget(mWidgetMLBox);
 
@@ -1117,10 +1359,7 @@ HbCssInspectorWindow::HbCssInspectorWindow(QWidget *parent)
     mainLayout->addWidget(mPathLabel);
 
     // Lock in left-to-right mode
-    mSizeHintLabel->setLayoutDirection(Qt::LeftToRight);
-    mLayoutCssBox->setLayoutDirection(Qt::LeftToRight);
-    mColorsCssBox->setLayoutDirection(Qt::LeftToRight);
-    mWidgetMLBox->setLayoutDirection(Qt::LeftToRight);
+    setLayoutDirection(Qt::LeftToRight);
 
     // Set default options
     mObjectNameCheck->setChecked(true);
@@ -1130,6 +1369,9 @@ HbCssInspectorWindow::HbCssInspectorWindow(QWidget *parent)
     mHoverRadio->setChecked(true);
 
     setLayout(mainLayout);
+
+    mUpdateTimer = new QTimer(this);
+    connect(mUpdateTimer, SIGNAL(timeout()), this, SLOT(updateCurrentItem()));
 }
 
 
@@ -1151,9 +1393,10 @@ void HbCssInspectorWindow::setVisible(bool visible)
 
 void HbCssInspectorWindow::updateFocusItem(const QGraphicsItem *item)
 {
+    mCurrentItem = item;
     if (item != 0 && item->isWidget()) {
         const QGraphicsWidget *widget = static_cast<const QGraphicsWidget *>(item);
-        NODEPTR_N(widget);
+        HbCss::StyleSelector::NodePtr n(const_cast<QGraphicsWidget *>(widget));
         HbDeviceProfile profile(HbDeviceProfile::profile(widget));
 
         HbLayeredStyleLoader *layoutStack =
@@ -1176,8 +1419,7 @@ void HbCssInspectorWindow::updateFocusItem(const QGraphicsItem *item)
             // Update widgetML box
             QString html;
             if (widget->layout()) {
-                HbAnchorLayout *anchorLayout = dynamic_cast<HbAnchorLayout *>(widget->layout());
-                html = anchorsToHtmlInfo(anchorLayout, itemClass(widget), layoutName);
+                html = anchorsToHtmlInfo(widget, layoutName);
             }
             mWidgetMLBox->setHtml(html);
         }
@@ -1192,9 +1434,11 @@ void HbCssInspectorWindow::updateFocusItem(const QGraphicsItem *item)
         }
 
         // Update text labels
-        mSizeHintLabel->setText(cssItemHintText(item));
-        mSizePolicyHoriz->setText("Horizontal: " + cssSizePolicyText(item, Qt::Horizontal));
-        mSizePolicyVert->setText("Vertical: " + cssSizePolicyText(item, Qt::Vertical));
+        mSizeHintLabel->setText(SIZE_HINTS_TEXT + cssItemHintText(item));
+        mActualSizeLabel->setText(ACTUAL_SIZE_TEXT + actualItemSize(item));
+        mPositionLabel->setText(POSITION_TEXT + itemPositionText(item));
+        mSizePolicyHoriz->setText(HORIZONTAL_TEXT + cssSizePolicyText(item, Qt::Horizontal));
+        mSizePolicyVert->setText(VERTICAL_TEXT + cssSizePolicyText(item, Qt::Vertical));
         const QGraphicsItem *pathItem = item;
         QString cssPath = cssItemText(pathItem);
         while (pathItem->parentItem()) {
@@ -1211,47 +1455,79 @@ void HbCssInspectorWindow::updateFocusItem(const QGraphicsItem *item)
             ancestorItems << ancestor;
             ancestor = ancestor->parentItem();
         }
-        bool foundRoot = false;
-        QModelIndex index;
-        for (int i=ancestorItems.count() -1; i>=0; i--) {
-            const QGraphicsItem *thisItem = ancestorItems.at(i);
-            if (!foundRoot) {
-                const QGraphicsWidget *wid = static_cast<const QGraphicsWidget*>(thisItem);
-                if (wid) {
-                    QString name = wid->metaObject()->className();
-                    if (name == "HbScreen") {
-                        foundRoot = true;
-                    }
+
+        CssInspectorModel *model = static_cast<CssInspectorModel*>(mTreeView->model());
+        // Find root element
+        int rootItemIndex = 0; // This is used later (outside for loop)
+        bool rootIsInScreen = false;
+
+        // Iterating forwards in a reverse containment-order list
+        for (; rootItemIndex < ancestorItems.count(); ++rootItemIndex) {
+            const QGraphicsItem *thisItem = ancestorItems.at(rootItemIndex);
+            const QGraphicsWidget *widget = static_cast<const QGraphicsWidget*>(thisItem);
+            if (widget) {
+                if (widget->metaObject()->className() == ROOT_TREE_ELEMENT) {
+                    rootIsInScreen = true;
+                    break;
                 }
-            } else {
-                // Find and open tree node for item
-                CssInspectorModel *model = static_cast<CssInspectorModel*>(mTreeView->model());
-                if (model) {
-                    int rowCount = model->rowCount(index);
-                    for (int row=0; row<rowCount; row++) {
-                        QModelIndex idx = model->index(row, 0, index);
-                        CssInspectorModelItem *modelItem = static_cast<CssInspectorModelItem*>(idx.internalPointer());
-                        QGraphicsItem *graphicsItem = modelItem->data();
-                        if (graphicsItem == thisItem) {
-                            index = idx;
-                            break;
-                        }
+            }
+        }
+        // Get the correct window
+        QModelIndex parentIndex;
+        bool foundWindow = false;
+        int winCount = model->rowCount(QModelIndex());
+        const HbWidget *hbWidget = static_cast<const HbWidget*>(item);
+        if (hbWidget) {
+            for (int idx=0; idx<winCount; idx++) {
+                parentIndex = model->index(idx, 0, QModelIndex());
+                CssInspectorModelItem *modelItem = static_cast<CssInspectorModelItem*>(parentIndex.internalPointer());
+                if (modelItem->data()->window() == hbWidget->mainWindow()) {
+                    foundWindow = true;
+                    break;
+                }
+            }
+        }
+
+        if (foundWindow) {
+            if (!rootIsInScreen) {
+                // Need to set parentIndex to popupmgr
+                parentIndex = model->index(model->rowCount(parentIndex)-1, 0, parentIndex);
+                rootItemIndex--;
+            }
+            // Now descend containment heirarchy getting index
+            for (int itemIdx=rootItemIndex; itemIdx>=0; itemIdx--) {
+                const QGraphicsItem *thisItem = ancestorItems.at(itemIdx);
+                int rowCount = model->rowCount(parentIndex);
+                for (int row=0; row<rowCount; row++) {
+                    QModelIndex thisIndex = model->index(row, 0, parentIndex);
+                    CssInspectorModelItem *modelItem = static_cast<CssInspectorModelItem*>(thisIndex.internalPointer());
+                    QGraphicsItem *gItem = modelItem->data()->graphicsItem();
+                    if (gItem == thisItem) {
+                        parentIndex = thisIndex;
+                        break;
                     }
                 }
             }
         }
-        mTreeView->collapseAll();
-        mTreeView->scrollTo(index, QAbstractItemView::EnsureVisible);
-        mTreeView->expand(index);
+        if (mTreeView->currentIndex() != parentIndex) {
+            mTreeView->collapseAll();
+            mTreeView->scrollTo(parentIndex, QAbstractItemView::EnsureVisible);
+        }
+        if (!mTreeView->isExpanded(parentIndex)) {
+            mTreeView->expand(parentIndex);
+        }
 
     } else {
-        mWidgetMLBox->setText("");
-        mLayoutCssBox->setText("");
-        mColorsCssBox->setText("");
-        mPathLabel->setText("");
-        mSizeHintLabel->setText("");
-        mSizePolicyHoriz->setText("");
-        mSizePolicyVert->setText("");
+        mWidgetMLBox->setText(QString());
+        mLayoutCssBox->setText(QString());
+        mColorsCssBox->setText(QString());
+        mPathLabel->setText(QString());
+        mSizeHintLabel->setText(SIZE_HINTS_TEXT);
+        mActualSizeLabel->setText(ACTUAL_SIZE_TEXT);
+        mPositionLabel->setText(POSITION_TEXT);
+        mSizePolicyHoriz->setText(HORIZONTAL_TEXT);
+        mSizePolicyVert->setText(VERTICAL_TEXT);
+        mTreeView->collapseAll();
     }
 }
 
@@ -1261,8 +1537,10 @@ void HbCssInspectorWindow::updateFocusItem(const QGraphicsItem *item)
 
 bool HoveredWidgetFilter::eventFilter(QObject *obj, QEvent *event)
 {
-    if ((event->type() == QEvent::GraphicsSceneMouseMove && mHoverMode)
-            || (event->type() == QEvent::GraphicsSceneMousePress && !mHoverMode)){
+    QEvent::Type evType = event->type();
+    if ((mMode == Hover && evType == QEvent::GraphicsSceneMouseMove)
+            || (mMode == Click && evType == QEvent::GraphicsSceneMousePress)
+            || (mMode == ClickBlocking && evType == QEvent::GraphicsSceneMousePress)) {
         QGraphicsSceneMouseEvent *mouseEvent = static_cast<QGraphicsSceneMouseEvent *>(event);
         QPointF eventPos = mouseEvent->scenePos();
 
@@ -1287,14 +1565,14 @@ bool HoveredWidgetFilter::eventFilter(QObject *obj, QEvent *event)
             }
         }
 
-        if (mBlockingMode) {
+        if (mMode == ClickBlocking) {
             return true;
         }
-    } else if(event->type() == QEvent::Leave && mHoverMode) {
+    } else if(mMode == Hover && event->type() == QEvent::Leave) {
         emit newItemHovered(0);
         mCurrentItem = 0;
 #ifdef HB_GESTURE_FW
-    } else if(mBlockingMode && event->type() == QEvent::Gesture) {
+    } else if(mMode == ClickBlocking && event->type() == QEvent::Gesture) {
         QGestureEvent *gesEvent = static_cast<QGestureEvent*>(event);
         if (gesEvent->gesture(Qt::TapGesture)) {
             return true;
@@ -1307,7 +1585,7 @@ bool HoveredWidgetFilter::eventFilter(QObject *obj, QEvent *event)
 
 HoveredWidgetFilter::HoveredWidgetFilter(QGraphicsScene *scene)
     : mScene(scene), mCurrentItem(0), mArrowDrawer(0),
-    mCssInfoDrawer(0), mHoverMode(true), mBlockingMode(false)
+    mCssInfoDrawer(0), mMode(Hover)
 {
     mCssInfoDrawer = new HbCssInfoDrawer(0);
     mScene->addItem(mCssInfoDrawer);

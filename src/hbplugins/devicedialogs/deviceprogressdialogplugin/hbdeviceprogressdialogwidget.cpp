@@ -40,7 +40,7 @@ HbDeviceProgressDialogWidget::HbDeviceProgressDialogWidget(HbProgressDialog::Pro
     TRACE_ENTRY
     mLastError = NoError;
     mProgressDialogType = progressDialogType;
-    mShowEventReceived = false;
+    mCloseEventReceived = false;
     mAction = 0;
     resetProperties();
     constructDialog(parameters);
@@ -52,6 +52,7 @@ HbDeviceProgressDialogWidget::HbDeviceProgressDialogWidget(HbProgressDialog::Pro
         }
     }
     setBackgroundFaded(true);
+    setDismissOnAction(false);
     TRACE_EXIT
 }
 
@@ -92,11 +93,6 @@ void HbDeviceProgressDialogWidget::closeDeviceDialog(bool byClient)
     TRACE_ENTRY
     Q_UNUSED(byClient);
     cancel();
-    // If show event has been received, close is signalled from hide event. If not,
-    // hide event does not come and close is signalled from here.
-    if (!mShowEventReceived) {
-        emit deviceDialogClosed();
-    }
     TRACE_EXIT
 }
 
@@ -208,7 +204,7 @@ QString HbDeviceProgressDialogWidget::cancelAction() const
 {
     TRACE_ENTRY
     QAction *act = action(Cancel);
-	QString actionData;
+    QString actionData;
     if (act) {
         actionData.append(actionTextTag);
         actionData.append(act->text());
@@ -277,18 +273,36 @@ void HbDeviceProgressDialogWidget::setAnimationDefinition(QString &animationDefi
     mAnimationDefinition = animationDefinition;
 }
 
+void HbDeviceProgressDialogWidget::setShowLevel(int level)
+{
+    // Level can only be set on construction
+    Q_UNUSED(level)
+}
+
+int HbDeviceProgressDialogWidget::showLevel() const
+{
+    return 0;
+}
+
 // Widget is about to hide. Closing effect has ended.
 void HbDeviceProgressDialogWidget::hideEvent(QHideEvent *event)
 {
     HbProgressDialog::hideEvent(event);
-    emit deviceDialogClosed();
+    if (mCloseEventReceived) {
+        emit deviceDialogClosed();
+    }
 }
 
-// Widget is about to show
-void HbDeviceProgressDialogWidget::showEvent(QShowEvent *event)
+// Widget is about to close, close() has been called
+void HbDeviceProgressDialogWidget::closeEvent(QCloseEvent * event)
 {
-    HbProgressDialog::showEvent(event);
-    mShowEventReceived = true;
+    HbProgressDialog::closeEvent(event);
+    mCloseEventReceived = true;
+    // If widget is visible, close is signalled from hide event. If not,
+    // hide event does not come and close is signalled from here.
+    if (!isVisible()) {
+        emit deviceDialogClosed();
+    }
 }
 
 // Primary action triggered
@@ -298,5 +312,6 @@ void HbDeviceProgressDialogWidget::cancelTriggered()
     QVariantMap data;
     data.insert("act", "c");
     emit deviceDialogData(data);
+    close();
     TRACE_EXIT
 }

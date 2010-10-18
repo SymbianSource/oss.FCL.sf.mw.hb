@@ -96,6 +96,7 @@ void HbColorDialogPrivate::init()
 {
     Q_Q(HbColorDialog);
     mContentWidget = new HbColorDialogContentWidget(mGridView ,q, this);
+    mMaskedItem = mContentWidget;
     
     q->setContentWidget(mContentWidget);
     q->setDismissPolicy(HbPopup::TapOutside);
@@ -136,6 +137,7 @@ void HbColorDialogPrivate::_q_setCurrentSelectedColor(const QModelIndex &index)
     }
     emit q->finished( mSelectedColor, !color.isValid() );
 
+    mPolished = false;
     q->close();
 }
 
@@ -144,6 +146,7 @@ void HbColorDialogPrivate::noneSelected()
     Q_Q(HbColorDialog);
     mNoneBlockSelected = true;
     emit q->noneSelected();
+    mPolished = false;
     q->close();
 }
 
@@ -433,7 +436,7 @@ void HbColorDialog::polish(HbStyleParameters &params)
         params.addParameter( color.arg(i) );
     }
 
-    style()->setItemName( this, "HbColorDialog" );
+    HbStyle::setItemName( this, "HbColorDialog" );
     HbDialog::polish(params);
 
     if (!d->mPolished) {

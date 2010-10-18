@@ -189,14 +189,16 @@ int HbStackedWidget::insertWidget(int index, QGraphicsWidget *widget)
 /*!
     \brief Removes a widget.
 
-    Removes the given \a widget from the stack. The widget is not deleted.
-    The widget is set invisible.
+    Removes the given \a widget from the stack. The widget is not destroyed.
 
     Removing the current widget will set the next widget (or previous
     if the current widget was the last one) to be the current widget.
 
     Removing a widget from an index less than the current index will
     decrement the current index, but keep the current widget.
+
+    Make no assumptions about the visibility of \a widget or about being part of the scene.
+    If needed, call QGraphicsItem::setVisible(), QGraphicsScene::removeItem(), etc. after removeWidget().
 
     \param widget widget to be removed.
  */

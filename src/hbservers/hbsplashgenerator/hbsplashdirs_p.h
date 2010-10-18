@@ -27,6 +27,7 @@
 #define HBSPLASHDIRS_P_H
 
 #include <QStringList>
+#include "hbsplashdefs_p.h"
 
 #ifdef Q_OS_SYMBIAN
 #include <driveinfo.h>
@@ -36,7 +37,7 @@
 inline QString hbsplash_output_dir()
 {
 #if defined(Q_OS_SYMBIAN)
-    QString path("c:/private/2002E68B");
+    QString path("c:/private/2002E68B/spl");
     TInt driveType = DriveInfo::EDefaultMassStorage;
     TInt drive;
     TChar driveLetter;
@@ -46,9 +47,9 @@ inline QString hbsplash_output_dir()
         CCoeEnv *env = CCoeEnv::Static();
         if (env) {
             TUint driveStatus;
-            qDebug("[hbsplash] dir selection: trying drive %d %c", drive, (char) driveLetter);
+            splDebug("[hbsplash] dir selection: trying drive %d %c", drive, (char) driveLetter);
             if (DriveInfo::GetDriveStatus(env->FsSession(), drive, driveStatus) == KErrNone) {
-                qDebug("[hbsplash] drive status is %x", driveStatus);
+                splDebug("[hbsplash] drive status is %x", driveStatus);
                 // Check if the drive is really internal (devices without internal mass
                 // storage will return the memory card which is not what we want here).
                 if (!(driveStatus & DriveInfo::EDriveInternal)
@@ -56,11 +57,11 @@ inline QString hbsplash_output_dir()
                         || !(driveStatus & DriveInfo::EDriveFormatted)
                         || (driveStatus & DriveInfo::EDriveCorrupt)
                         || (driveStatus & DriveInfo::EDriveInUse)) {
-                    qDebug("[hbsplash] drive not usable, skipping");
+                    splDebug("[hbsplash] drive not usable, skipping");
                     driveUsable = false;
                 }
             } else {
-                qDebug("[hbsplash] GetDriveStatus failed, skipping");
+                splDebug("[hbsplash] GetDriveStatus failed, skipping");
                 driveUsable = false;
             }
         }

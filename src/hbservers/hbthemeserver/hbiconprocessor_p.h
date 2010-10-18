@@ -50,7 +50,7 @@ struct HbIconKey
             mode(m),
             mirrored(mir),
             color(clr),
-			renderMode(rMode)
+            renderMode(rMode)
     {
     }
 
@@ -77,7 +77,7 @@ struct HbIconKey
             mirrored = other.mirrored;
             filename = other.filename;
             color = other.color;
-	        renderMode = other.renderMode;
+            renderMode = other.renderMode;
         }
         return *this;
     }

@@ -31,33 +31,29 @@
 
 #include <QSequentialAnimationGroup>
 #include <QGraphicsObject>
+#include "hbtextitem.h"
+#include "hbtextitem_p.h"
 
+class QPropertyAnimation;
 
-class HbMarqueeContent : public QGraphicsObject
+class HbMarqueeContent : public HbTextItem
 {
     Q_OBJECT
-    Q_PROPERTY(int alpha READ alpha WRITE setAlpha)
+    Q_PROPERTY(qreal alpha READ alpha WRITE setAlpha)
+    Q_PROPERTY(qreal xOffset READ xOffset WRITE setXOffset)
+
 public:
     explicit HbMarqueeContent(HbMarqueeItem *parent = 0);
-    virtual ~HbMarqueeContent(){};
+    virtual ~HbMarqueeContent(){}
 
-    QRectF boundingRect() const;
-    QPen pen();
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget =0);
+    void setAlpha(qreal alpha);
+    qreal alpha() const;
 
-    void updateTextMetaData();
-    void setAlpha(int alpha);
-    int alpha() const;
+    qreal xOffset() const;
+    void setXOffset(qreal newOffset);
 
-    HbMarqueeItem *parent;
-    QString mText;
-    Qt::LayoutDirection mTextDirection;
-    qreal mTextWidth;
-    QPointF gradientStart;
-    QPointF gradientStop;
-    int mAlpha;
-    qreal mFadeLength;
-    QRectF mBoundingRect;
+private:
+    Q_DECLARE_PRIVATE_D(d_ptr, HbTextItem)
 };
 
 class HbMarqueeItemPrivate : public HbWidgetBasePrivate
@@ -68,18 +64,25 @@ public:
 
     HbMarqueeItemPrivate();
     void init();
-    void updateTextMetaData();
-    void initContentPosition();
-    void initGradient();
-    void initAnimations();
+    void createAnimation();
+    void updateAnimation();
+    void connectToMainWidow();
     void _q_stateChanged();
+
+    void _q_tryToResumeAnimation();
+    void _q_temporaryStopAnimation();
+    void toggleAnimation(bool toStart);
 
     HbMarqueeContent *content;
     mutable QColor mDefaultColor;
     QColor mColor;
-    bool mAnimationPending;
+    bool mUserRequestedAnimation;
 
     QSequentialAnimationGroup mAnimGroup;
+    QPropertyAnimation *mOffsetAnimation; // this animation should be updated on resize
+    QPropertyAnimation *mBackAnimation; // this animation should be updated on resize
+    bool mAnimationIsNeeded;
+    qreal mLastPrefWidth;
 };
 
 #endif // HBMARQUEEITEM_P_H

@@ -36,8 +36,9 @@
 bool HbMenuPrivate::menuEffectsLoaded = false;
 #endif
 #include "hbglobal_p.h"
-
+#include <QGraphicsSceneMouseEvent>
 #include <QPointer>
+#include <QGraphicsLinearLayout>
 
 Q_DECLARE_METATYPE (QAction*)// krazy:exclude=qclasses
 
@@ -53,7 +54,8 @@ HbMenuPrivate::HbMenuPrivate():
     mDownMargin(0.0),
     delayMenuConstruction(true),
     receiverToDisconnectOnClose(0),
-    mNumberOfColumns(1)
+    mNumberOfColumns(1),
+    mCloseAllMenus(false)
 {
 }
 
@@ -75,18 +77,27 @@ void HbMenuPrivate::init()
 void HbMenuPrivate::addPopupEffects()
 {
 #ifdef HB_EFFECTS
-    effectType = "HB_MENU";
+    if (menuType == HbMenu::OptionsMenu) {
+        effectType = "HB_MENU";
+    } else {
+        effectType = "HB_SUBMENU";
+    }
     hasEffects = menuEffectsLoaded;
     if (menuEffectsLoaded)
         return;
     menuEffectsLoaded = true;
     hasEffects = HbEffectInternal::add("HB_MENU", "menu_appear", "appear");
     if (hasEffects) {
-        //We load the disappear effect only if appear effect was also loaded
         hasEffects = HbEffectInternal::add("HB_MENU", "menu_disappear", "disappear");
 
         if (hasEffects) {
             hasEffects = HbEffectInternal::add("HB_menuitem", "menuitem_press", "clicked");
+        }
+        if (hasEffects) {
+            hasEffects = HbEffectInternal::add("HB_SUBMENU", "submenu_appear", "appear");
+        }
+        if (hasEffects) {
+            hasEffects = HbEffectInternal::add("HB_SUBMENU", "submenu_disappear", "disappear");
         }
     }
 #endif
@@ -103,7 +114,6 @@ void HbMenuPrivate::_q_triggerAction(HbMenuItem *currentItem)
         }
 #endif
         HbAction *hbAction = qobject_cast<HbAction *>(currentItem->action());
-        q->setActiveAction(hbAction);
         if (hbAction && hbAction->menu() && !actionTriggered) {
             hbAction->trigger();
             stopTimeout();
@@ -122,29 +132,35 @@ void HbMenuPrivate::createMenuView()
 {
     Q_Q(HbMenu);
     if (!menuItemView && q->actions().count()){
-        menuItemView = new HbMenuListView(q, q);        
+        menuItemView = new HbMenuListView(q, q);
+
         HbStyle::setItemName(menuItemView, "content");
         //This optimises case of options menu which otherwise updates its primitives twice.
         if (menuType ==  HbMenu::OptionsMenu)
             q->setFrameType(HbPopup::Strong);
-    	else
+        else
             q->setFrameType(HbPopup::Weak);
         if (polished)//This check can be removed once base class repolish is fixed.
             q->repolish();
-    }	
+    }   
 }
 
 void HbMenuPrivate::delayedLayout()
 {
-    createMenuView();
-    if(menuItemView)
-        menuItemView->doDelayedLayout();
-    delayMenuConstruction = false;
+    if (delayMenuConstruction) {
+        createMenuView();
+        if(menuItemView) {
+            menuItemView->doDelayedLayout();
+        }
+        addPopupEffects();
+        delayMenuConstruction = false;
+    }
 }
 
 void HbMenuPrivate::changeToOptionsMenu()
 {
     menuType = HbMenu::OptionsMenu;
+    effectType = "HB_MENU";
 }
 
 HbMenuItem *HbMenuPrivate::subMenuItem()
@@ -160,9 +176,12 @@ void HbMenuPrivate::setSubMenuItem(HbMenuItem *menuItem)
 void HbMenuPrivate::_q_onActionTriggered()
 {
     Q_Q(HbMenu);
-       HbAction *action = qobject_cast<HbAction *>(q->sender());
-    if (action && !action->menu() ) { // do not trigger from opening submenu
-        emit q->triggered(action);
+    HbAction *action = qobject_cast<HbAction *>(q->sender());
+    if (action) {
+        q->setActiveAction(action);
+        if (!action->menu()) { // do not trigger from opening submenu
+            emit q->triggered(action);
+        }
     }
 }
 
@@ -173,6 +192,7 @@ void HbMenuPrivate::_q_subMenuItemTriggered(HbAction *action)
     // do not close the menu tree if the triggered action is
     // submenu item
     if (!action->menu()) { 
+        mCloseAllMenus = true;
         q->close();
     } else {
         stopTimeout();
@@ -210,9 +230,9 @@ void HbMenuPrivate::actionChanged(QActionEvent *actionEvent)
 }
 
 /*
-   Returns current focusable action based on current row of the menuItemView or index if specified.
-   If there is no focusable action it returns 0.
-   Also returns the active item representing the active action or 0.
+    Returns current focusable action based on current row of the menuItemView or index if specified.
+    If there is no focusable action it returns 0.
+    Also returns the active item representing the active action or 0.
 */
 HbAction *HbMenuPrivate::activeAction(HbMenuItem *&activeItem) const
 {
@@ -229,7 +249,7 @@ HbAction *HbMenuPrivate::activeAction(HbMenuItem *&activeItem) const
 }
 
 /*
-  Convenience overload
+    Convenience overload
 */
 HbAction *HbMenuPrivate::activeAction() const
 {
@@ -238,8 +258,8 @@ HbAction *HbMenuPrivate::activeAction() const
 }
 
 /*
-  Opens a submenu for activeItem. If activeItem is 0 it uses activeAction() to determine active item
-  and opens submenu for it if active action has submenu.
+    Opens a submenu for activeItem. If activeItem is 0 it uses activeAction() to determine active item
+    and opens submenu for it if active action has submenu.
 */
 void HbMenuPrivate::openSubmenu(HbMenuItem *activeItem)
 {
@@ -269,6 +289,51 @@ void HbMenuPrivate::openSubmenu(HbMenuItem *activeItem)
     }
 }
 
+/*
+    reimp
+*/
+void HbMenuPrivate::handleBackgroundMouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+{
+    Q_Q(HbMenu);
+
+    // Handle cases only for Background or Popup originated mouse presses and when
+    // any dismiss policy defined
+    if (mousePressLocation != None && dismissPolicy != HbPopup::NoDismiss) {
+
+        MouseEventLocationType mouseReleaseLocation = Background;
+        HbMenu* tempMenu = 0;
+        QList<QGraphicsItem*> itemList = q->scene()->items(event->pos());
+        foreach (QGraphicsItem* sceneItem, itemList ){
+            QGraphicsWidget *focusWidget = 0;
+            HbMenu *focusMenu = 0;
+            if (sceneItem && sceneItem->isWidget()) {
+                focusWidget = static_cast<QGraphicsWidget*>(sceneItem);
+                focusMenu = qobject_cast<HbMenu *>(focusWidget);
+            }
+            if( focusMenu ) {
+                mouseReleaseLocation = Popup;
+                tempMenu = focusMenu;
+                break;
+            }
+        }
+        // Mouse is released within menu
+        if (mouseReleaseLocation == Popup) {
+            HbAction* menuAction = tempMenu->activeAction();
+            if(menuAction){
+                mCloseAllMenus = false;
+                closeMenuRecursively(menuAction);
+            }
+        mousePressLocation = None;
+        }
+        else {
+            // trigger the menu to close whole menu
+            mCloseAllMenus = true;
+            q->close();
+            mousePressLocation = None;
+        }
+    }
+}
+
 void HbMenuPrivate::_q_subMenuTimedOut()
 {
     Q_Q(HbMenu);
@@ -280,7 +345,12 @@ void HbMenuPrivate::_q_subMenuTimedOut()
         q->close();
     } else {
         startTimeout();
+        mCloseAllMenus = false;
     }
+    if (activeSubMenu && HbMenuPrivate::d_ptr(activeSubMenu)->mCloseAllMenus) {
+        mCloseAllMenus = true;
+        q->close();
+   }
 }
 
 void HbMenuPrivate::_q_handleMenuClose()
@@ -298,8 +368,8 @@ void HbMenuPrivate::_q_handleMenuClose()
     }
 }
 
-/*!
- Handles menu close
+/*
+    Handles menu close
 */
 void HbMenuPrivate::closeMenu()
 {
@@ -361,7 +431,7 @@ void HbMenuPrivate::setSubMenuPosition()
                            mSubMenuItem->size().width() +
                            mRightMargin - q->size().width();
             }
-            q->setPreferredPos(QPointF(leftEdge, upperEdge));
+            q->setPreferredPos(QPointF(leftEdge, upperEdge), HbPopup::TopLeftCorner);
         } else {
             qreal rightEdge = mSubMenuItem->scenePos().x() + mRightMargin;
             if ((rightEdge - q->size().width()) < 0) {
@@ -377,53 +447,133 @@ void HbMenuPrivate::setSubMenuPosition()
     @beta
     @hbcore
     \class HbMenu
-    \brief HbMenu is a menu widget for use in HbView.
+    \brief The HbMenu class provides a widget that shows a list of options.
 
-    \image html hbmenu.png A menu with checkable items and a sub-menu.
+    A menu consists of a list of options that the user can select. When the user selects
+    an option, it triggers a command. Menus are hidden by default and open in response
+    to an action from the user. For this reason, the toolbar (HbToolBar class) usually
+    provides access to the most important commands (called first order commands) and
+    menus provide access to second order commands.
 
-    Use an HbMenu to show a list of options. There are two main types of menus:
+    \image html hbmenu.png An options menu with a submenu that has checkable actions
 
-    - The view options menu
-    - Context menus (popup menus)
+    You can use the %HbMenu class to create the following:
 
-    There is one view options menu for each view.
-    It is shown by tapping the title bar. You can access the view options menu by calling
-    HbView::menu() which returns a pointer to a new empty menu if one does not already exist.
+    - An \b options \b menu, which shows options that relate to the whole view. It is
+    a drop-down menu that is directly owned by the view (HbView object). It opens when the
+    user taps on the view's title bar. You can access a view's options menu by calling
+    HbView::menu(). This returns a pointer to a new empty menu if the menu does not
+    already exist. A view can have only one options menu.
 
-    You can create any number of context menus.
-    Context menus are usually invoked by a user action, such as tapping a widget.
+    - A \b context \b menu, which is a pop-up menu that shows options that relate to a
+    specific item, rather than to the entire view. It typically opens in response to a
+    UI event, such as a tap on a widget or a particular point within the view. You can
+    create any number of context menus.
 
-    A menu contains a list of items. You can add three kinds of items to a menu:
+    A menu is a list of actions, which are objects of class HbAction. A menu can contain:
 
-    - Actions
-    - Sub-menus
-    - Separators
+    - \b Separators, which are actions that group related items. Use addSeparator() or
+    insertSeparator() to create a separator and add it to a menu.
 
-    An action is an object of class HbAction that performs an action when it is triggered.
-    Use addAction() to add an action to a menu. Actions can be checkable (QAction::setCheckable).
-    Use clearActions() to clear all actions from a menu.
-    Use removeAction() to remove individual actions from a menu.
+    - Actions that trigger a \b submenu to open. Submenus are menus that are nested within
+    another menu. Use addMenu() or insertMenu() to add a submenu to a menu. Although it is
+    possible to nest submenus within other submenus, generally this is not considered good
+    design practice.
 
-    A sub-menu is a menu that is nested within another menu. Use addMenu() or insertMenu() to add a sub-menu to a menu.
-    Sub-menus can be nested within sub-menus.
+    - \b Action \b items, which represent the menu options. Use addAction() and insertAction() to
+    add an action to a menu. Use addActions() and insertActions() to add and insert multiple
+    actions in one operation. Use clearActions() to clear all of the actions from a menu and
+    removeAction() to remove individual actions from a menu.
 
-    Separators group related items in a menu.
-    Use addSeparator() or insertSeparator() to create and add a separator to a menu.
+    The order of the actions within the menu controls the order of the options that the user sees.
+    When you add the actions directly to the menu, addAction() and addActions() append the actions
+    to the end of the menu and insertAction() and insertActions() enable you to specify the position.
+    For options menus, however, there is an alternative approach to ordering the action items.
+    This is to call HbView::addAction() to add actions to the \b view and let the view distribute
+    them to the options menu or toolbar, depending on the preference set, the UI command distribution
+    template, and taking into account the available space in the toolbar. The menu and toolbar
+    then order the actions according to their defined roles and the UI command container template.
+    This approach makes it easier to create consistent user interfaces and applications that
+    work well on a variety of different devices.
 
-    \image html hbmenu.png A menu with checkable actions and a sub-menu.
+    An action item can be checkable, which means that it has an on/off state. You specify that an
+    action item is checkable by calling \c setCheckable() on the action. Use \c isChecked()
+    to discover if an action is checked. You can also use the QAction::toggled(bool) signal to
+    receive notification of a change in the checked status.
 
-    After you add an action to your menu, you specify a receiver object and its slot (you can also
-    add an action and specify a receiver slot at the same time).
-    The receiver is notifed when the action is triggered (QAction::triggered()).
-    HbMenu also has a triggered() menu signal, which signals which HbAction was triggered in the menu.
+    After you add an action item to a menu, you can connect its \link HbAction::triggered()
+    triggered()\endlink signal to a slot on a receiver object. Alternatively you can use the
+    addAction(const QString &, const QObject *, const char *) overload to add an action item and
+    specify a receiver slot at the same time. The receiver is notified when the action item
+    is \link HbAction::triggered() triggered()\endlink.
 
-    An example of how to create an option menu.
+    You can also connect the HbMenu::triggered(HbAction*) signal to a receiver object's slot. This
+    signal is emitted when any menu action is triggered. You can find out which action was
+    triggered from the HbAction parameter.
+
+    \section _usecases_hbmenu Using the HbMenu class
+
+    \subsection _uc_001_hbmenu Creating an options menu
+
+    The following example creates an options menu for a view.
     \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,2}
 
-    An example of how to create and show a context menu from the gesture.
+    \subsection _uc_002_hbmenu Creating a context menu
+
+    The following example creates a context menu and shows it in response to a tap and hold gesture.
     \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,54}
 
-    \sa HbDialog, HbView
+    \subsection _uc_004_hbmenu Adding actions to the view
+
+    The following example creates two action items, specifies their command roles, and then
+    adds them to the view. The view places them in the menu or toolbar according to the
+    priorities of the actions and the space available in the toolbar and the menu orders them
+    according to their roles and priorities.
+
+    \code
+    HbAction* actionExit = new HbAction(tr("Exit"));
+    actionExit->setCommandRole(HbAction::ExitRole);
+
+    HbAction* actionHelp = new HbAction(tr("Help"));
+    actionHelp->setCommandRole(HbAction::HelpRole);
+
+    // Add actions to the view.
+    myView->addAction(actionExit);
+    myView->addAction(actionHelp);
+    \endcode
+
+    \subsection _uc_003_hbmenu Creating action items that are checkable
+
+    You can create a menu that contains multiple checkable actions (actions with checkbox behavior).
+    For simple checkbox behavior, just set the actions to be checkable by calling \c setCheckable(true).
+    For example:
+
+    \code
+    ...
+    checkAction1->setCheckable(true);
+    checkAction2->setCheckable(true);
+    checkAction3->setCheckable(true);
+    ...
+    \endcode
+
+    \subsection _uc_005_hbmenu Creating radio button style options
+
+    To create a group of related actions, only one of which can be checked (radio button behavior),
+    create a QActionGroup object and add the actions to that. For example:
+
+    \code
+    HbAction *redAction = menu->addAction(tr("Red"));
+    HbAction *blueAction = menu->addAction(tr("Blue"));
+
+    redAction->setCheckable(true);
+    blueAction->setCheckable(true);
+
+    QActionGroup *actionGroup = new QActionGroup(view);
+    actionGroup->addAction(redAction);
+    actionGroup->addAction(blueAction);
+    \endcode
+
+    \sa HbView, HbToolBar, HbAction
 */
 
 /*!
@@ -434,35 +584,30 @@ void HbMenuPrivate::setSubMenuPosition()
 /*!
     \fn void HbMenu::triggered(HbAction *action)
 
-    This signal is emitted when one of the action items is selected.
-    \param action the action that was triggered in the menu.
- */
+    This signal is emitted when one of the menu options is selected.
+    \param action The action that was selected.
+*/
 
 /*!
     \enum HbMenu::MenuType
 
-    This enum describes different types of HbMenu.
+    The MenuType enum identifies the possible HbMenu types.
 */
 /*!
     \var HbMenu::ContextMenu
-
-    ContextMenu is a menu which position is set by user.
+    A popup menu.
 */
 /*!
-    \var HbMenu::OptionMenu
-
-    OptionMenu is set by HbView. Its position cannot be changed.
+    \var HbMenu::OptionsMenu
+    The main options menu in a view. Its position cannot be changed.
 */
 /*!
     \var HbMenu::SubMenu
-
-    Menu becomes SubMenu when it is added to another menu.
+    A submenu, which is a menu that has been added to another menu.
 */
 
 /*!
     Constructs a menu with \a parent graphics item.
-
-    \param parent is the parent graphics item.
 */
 HbMenu::HbMenu(QGraphicsItem *parent) :
         HbPopup(*new HbMenuPrivate, parent)
@@ -475,8 +620,6 @@ HbMenu::HbMenu(QGraphicsItem *parent) :
 
 /*!
     Constructs a menu with \a title and \a parent graphics item.
-    \param title is the menu title.
-    \param parent is the parent graphics item.
 */
 HbMenu::HbMenu(const QString &title, QGraphicsItem *parent) :
         HbPopup(*new HbMenuPrivate, parent)
@@ -498,6 +641,9 @@ HbMenu::HbMenu(HbMenuPrivate &dd, QGraphicsItem *parent) :
     d->init();
 }
 
+/*!
+    Destructor
+*/
 HbMenu::~HbMenu()
 {
     if (!scene() || !scene()->property("destructed").isValid()) {
@@ -527,9 +673,12 @@ void HbMenu::showEvent(QShowEvent *event)
 }
 
 /*!
-    Creates a new action with title \a text. It adds the newly created action to the menu's list of actions.
-    \param text is the text for the new action.
-    \return the new action.
+    Creates a new action and adds it to the end of the menu.
+
+    \overload
+
+    \param text The menu text for the new action.
+    \return The new action.
 */
 HbAction *HbMenu::addAction(const QString &text)
 {
@@ -539,12 +688,16 @@ HbAction *HbMenu::addAction(const QString &text)
 }
 
 /*!
-    Creates a new action with \a text.
-    The action's triggered() signal is connected to the
-    \a receiver's \a member slot. The function adds the newly created
-    action to the menu's list of actions.
-    \return the new action.
- */
+    Creates a new action, adds it to the end of the menu and connects the action's
+    \link HbAction::triggered() triggered()\endlink signal to a receiver's slot.
+
+    \overload
+
+    \param text The menu text for the new action.
+    \param receiver The object that is to receive the new action's signal.
+    \param member The slot on the receiver to which the action's signal is to connect.
+    \return The new action.
+*/
 HbAction *HbMenu::addAction(const QString &text, const QObject *receiver, const char *member)
 {
     HbAction *action = new HbAction(text, this);
@@ -554,33 +707,35 @@ HbAction *HbMenu::addAction(const QString &text, const QObject *receiver, const 
 }
 
 /*!
-    Adds \a menu as a sub-menu.
-    \param menu is the menu that is added to this one.
-    \return the action for the added sub-menu.
- */
+    Adds \a menu to the current menu as a submenu.
+
+    \return  The action for the added submenu.
+*/
 HbAction *HbMenu::addMenu(HbMenu *menu)
 {
     return insertMenu(0, menu);
 }
 
 /*!
-    Creates a new HbMenu with \a title and adds it to this menu.
-    \param title is the menu title.
-    \return the new menu.
+    Creates a new HbMenu with \a title and adds it to the current menu as a submenu.
+
+    \return The new menu.
 */
 HbMenu *HbMenu::addMenu(const QString &title)
 {
     HbMenu *menu = new HbMenu(title);
-    addMenu(menu);
+    if ( menu ) {
+        menu->setParent(this);
+        addMenu(menu);
+    }
     return menu;
 }
 
 /*!
-    Inserts \a menu before action \a before.
-    \param before is the action before which this new menu is inserted.
-    \param menu is the menu that is inserted.
+    Inserts \a menu into the current menu as a submenu before the \a before action.
+
     \return the action associated with the inserted menu.
- */
+*/
 HbAction *HbMenu::insertMenu(HbAction *before, HbMenu *menu)
 {    
     QObject::connect(menu, SIGNAL(triggered(HbAction*)), this, SLOT(_q_subMenuItemTriggered(HbAction*)));
@@ -592,8 +747,11 @@ HbAction *HbMenu::insertMenu(HbAction *before, HbMenu *menu)
 }
 
 /*!
-    \return the action associated with this menu.
- */
+    Returns the action that is directly associated with a menu (rather than actions that are contained
+    within the menu). Although all menus have an assoicated action, it is only actually used for submenus.
+    The parent menu uses a submenu's action to trigger the opening of the submenu. A submenu's action
+    also defines the submenu's title.
+*/
 HbAction *HbMenu::menuAction() const
 {
     Q_D(const HbMenu);
@@ -601,26 +759,27 @@ HbAction *HbMenu::menuAction() const
 }
 
 /*!
-    Creates a new separator action, which is an action that returns \c true from HbAction::isSeparator(),
-    and adds it to this menu's list of actions.
-    \return the new separator action
+    Creates a new separator and adds it to the current menu's list of actions. A separator
+    is an action for which HbAction::isSeparator() returns \c true.
 
-    \sa insertSeparator
- */
+    \return The new separator action.
+
+    \sa insertSeparator()
+*/
 HbAction *HbMenu::addSeparator()
 {
-    //functionality removed for now
+        //functionality removed for now
     //return insertSeparator(0);
     return 0;
 }
 
 /*!
-    Inserts a new separator action and inserts it into this menu's list of actions before \a action.
-    \param before is the action before which the separator is inserted.
-    \return the new action.
+    Creates a new separator and inserts it into the current menu's list of actions before \a before.
+    A separator is an action for which HbAction::isSeparator() returns \c true.
 
-    \sa addSeparator
- */
+    \return The new separator action.
+    \sa addSeparator()
+*/
 HbAction *HbMenu::insertSeparator(HbAction *before)
 {
     Q_UNUSED(before);
@@ -635,8 +794,9 @@ HbAction *HbMenu::insertSeparator(HbAction *before)
 }
 
 /*!
-    \return the current active action, or 0 if no action item is currently active.
- */
+    Returns the active action or 0 if no action item is currently active. The active action is
+    the last action that was triggered, unless this has been overridden by a call to setActiveAction().
+*/
 HbAction *HbMenu::activeAction() const
 {
     Q_D(const HbMenu);
@@ -644,8 +804,8 @@ HbAction *HbMenu::activeAction() const
 }
 
 /*!
-    Sets the active action in menu. If \a action is not found from the list of
-    menu actions then the current active action remains active.
+    Sets \a action as the current active action in the menu. If \a action is not
+    found in the list of menu actions, the action that is currently active remains active.
 
     \sa activeAction()
 */
@@ -658,17 +818,17 @@ void HbMenu::setActiveAction(HbAction *action)
 }
 
 /*!
-    \return \c true if the menu is empty (contains no actions) and \c false otherwise.
+    Returns \c true if the menu contains no actions and \c false otherwise.
 
-    \sa clear()
- */
+    \sa clearActions()
+*/
 bool HbMenu::isEmpty() const
 {
     return actions().isEmpty();
 }
 
 /*!
-    Sets the menu title. For a sub-menu, the title is the sub-menu action text.
+    Sets the menu title. For a submenu, the title is the submenu's action text.
 
     \sa title()
 */
@@ -678,9 +838,7 @@ void HbMenu::setTitle(const QString &title)
 }
 
 /*!
-    Returns the menu title. For a sub-menu, the title is the sub-menu action text.
-
-    \return the menu title.
+    Returns the menu title. For a submenu, the title is the submenu's action text.
 
     \sa setTitle()
 */
@@ -690,9 +848,8 @@ QString HbMenu::title() const
 }
 
 /*!
-    Returns the menu type. By default a menu is a context menu.
+    Returns the menu type. The default menu type is context menu.
 
-    \return the menu type.
 */
 HbMenu::MenuType HbMenu::menuType() const
 {
@@ -700,9 +857,6 @@ HbMenu::MenuType HbMenu::menuType() const
     return d->menuType;
 }
 
-/*!
-    \reimp
- */
 QVariant HbMenu::itemChange( GraphicsItemChange change, const QVariant & value )
 {
     Q_D(HbMenu);
@@ -711,7 +865,7 @@ QVariant HbMenu::itemChange( GraphicsItemChange change, const QVariant & value )
         d->closeMenu();
     }
     if (change == QGraphicsItem::ItemVisibleChange) {
-        if (value.toBool() && d->delayMenuConstruction) {
+        if (value.toBool() && d->polished) {
             d->delayedLayout();
         }
         if (value.toBool()) {
@@ -724,9 +878,6 @@ QVariant HbMenu::itemChange( GraphicsItemChange change, const QVariant & value )
     return HbPopup::itemChange(change,value);
 }
 
-/*!
-   \reimp
-*/
 bool HbMenu::event(QEvent *event)
 {
     Q_D(HbMenu);
@@ -754,74 +905,69 @@ bool HbMenu::event(QEvent *event)
     return HbPopup::event(event);
 }
 
-/*!
-  \reimp
-  */
 void HbMenu::polish(HbStyleParameters &params)
 {
-    Q_D(HbMenu);
-    const QString NumberOfCols = "number-of-columns";
-    params.addParameter(NumberOfCols);
+    if (isVisible()) {
+        Q_D(HbMenu);
+        const QLatin1String NumberOfCols("number-of-columns");
+        params.addParameter(NumberOfCols);
 
-    if (d->mSubMenuItem) {
-        const QString RightMargin = "submenu-right-offset";
-        const QString DownMargin = "submenu-bottom-margin";
-        params.addParameter(RightMargin);
-        params.addParameter(DownMargin);
+        if (d->mSubMenuItem) {
+            const QLatin1String RightMargin("submenu-right-offset");
+            const QLatin1String DownMargin("submenu-bottom-margin");
+            params.addParameter(RightMargin);
+            params.addParameter(DownMargin);
 
-        HbPopup::polish(params);
+            HbPopup::polish(params);
 
-        if (!params.value(RightMargin).isNull()) {
-            d->mRightMargin = params.value(RightMargin).toDouble();
+            if (!params.value(RightMargin).isNull()) {
+                d->mRightMargin = params.value(RightMargin).toDouble();
+            }
+            if (!params.value(DownMargin).isNull()) {
+                d->mDownMargin = params.value(DownMargin).toDouble();
+            }
+            d->setSubMenuPosition();
+        } else {
+            HbPopup::polish(params);
         }
-        if (!params.value(DownMargin).isNull()) {
-            d->mDownMargin = params.value(DownMargin).toDouble();
-        }
-        d->setSubMenuPosition();
-    } else {
-        HbPopup::polish(params);
-    }
 
-    if (!params.value(NumberOfCols).isNull()) {
-        int cols = params.value(NumberOfCols).toInt();
-        if (d->mNumberOfColumns != cols) {
-            d->mNumberOfColumns = cols;
-            if (d->menuItemView) {
-                d->menuItemView->updateContainer();
+        if (!params.value(NumberOfCols).isNull()) {
+            int cols = params.value(NumberOfCols).toInt();
+            if (d->mNumberOfColumns != cols) {
+                d->mNumberOfColumns = cols;
+                if (d->menuItemView) {
+                    d->menuItemView->updateContainer();
+                }
             }
         }
+        d->delayedLayout();
+    } else {
+        HbPopup::polish(params);
     }
 }
 
 /*!
-  \reimp
-  Returns the shape of this item as a QPainterPath.
- */
+    Returns the shape of this item as a QPainterPath.
+*/
 QPainterPath HbMenu::shape() const
 {
-    /*QRectF rect = QRectF(-1.0, -1.0, boundingRect().width() + 1.0, boundingRect().height() + 1.0);
+    QRectF rect = QRectF(-1.0, -1.0, boundingRect().width() + 1.0, boundingRect().height() + 1.0);
     QRectF clipRect = rect.intersected(mapRectFromParent(QRectF(pos().x() - 1.0, pos().y() - 1.0, size().width() + 1.0, size().height() + 1.0)));
 
     QPainterPath path;
     path.addRect(clipRect);
 
-    return path;*/
-    return HbPopup::shape();
+    return path;
+//    return HbPopup::shape();
 }
 
 /*!
- 
-  Opens the menu and returns immediately.
- 
-  Connects triggered(HbAction*) signal to the slot specified by \a
-  receiver and \a member. The signal will be disconnected when menu
-  is closed.
- 
-   An example of how to create a simple context menu and show it
-   \snippet{ultimatecodesnippet/ultimatecodesnippet.cpp,54}
- 
- 
- */
+    Displays the menu on the screen and returns immediately. It can also connect the HbMenu::triggered()
+    signal to a specified slot. The signal is disconnected when the menu closes.
+
+    \param receiver The object that is to receive the signal.
+    \param member The slot on the receiver to which the signal is to connect.
+*/
 void HbMenu::open( QObject *receiver, const char *member )
 {
     Q_D(HbMenu);
@@ -841,5 +987,42 @@ void HbMenu::open( QObject *receiver, const char *member )
     }
     HbMenu::show();
 }
+
+/*!
+    Overidden from popup. Sets the preferred position of the menu.
+
+    \param preferredPos Defines the coordinates of preferred position on the screen where
+           the menu is to open.
+    \param placement The corner or edge of the dialog that is to be placed at \a preferredPos.
+
+    \b Example:
+    \code
+    HbMenu *menu = new HbMenu();
+
+    menu->setPreferredPos( QPointF(x,y), HbPopup::BottomEdgeCenter );
+    menu->show();
+    \endcode
+ */
+void HbMenu::setPreferredPos( const QPointF& preferredPos,
+                               HbPopup::Placement placement )
+{
+    Q_D(HbMenu);
+    bool layoutFlag = false;
+    if (d->preferredPos != preferredPos ) {
+        d->preferredPos = preferredPos;
+        layoutFlag = true;
+    }
+    if (d->placement != placement) {
+        d->placement = placement;
+        layoutFlag = true;
+    }
+    d->preferredPosSet = true;
+    //If position updated, informing layoutproxy with layoutrequest
+    if (layoutFlag) {
+        QEvent layoutRequest = QEvent::LayoutRequest;
+        QApplication::sendEvent(this, &layoutRequest);
+    }
+}
+
 
 #include "moc_hbmenu.cpp"

@@ -40,6 +40,12 @@
 // 0-33% for low, 34-66% for medium and 67-100% for high
 static const int signalThreshold[] = {33, 66, 100};
 
+enum ThresholdLevel {
+    lowLevel = 0,
+    mediumLevel = 1,
+    highLevel = 2
+};
+
 HbSignalIndicatorPrivate::HbSignalIndicatorPrivate() :
     mLevelPercent(-1),
     mSignalBackgroundIcon(0),
@@ -139,9 +145,9 @@ int HbSignalIndicator::level() const
 void HbSignalIndicator::createPrimitives()
 {
     Q_D(HbSignalIndicator);
-    d->mSignalIcon = style()->createPrimitive(HbStyle::P_SignalIndicator_icon, this);
-    d->mSignalBackgroundIcon = style()->createPrimitive(HbStyle::P_SignalLevel_background, this);
-    d->mSignalLevelIcon = style()->createPrimitive(HbStyle::P_SignalLevel_icon, this);
+    d->mSignalIcon = HbStylePrivate::createPrimitive(HbStylePrivate::P_SignalIndicator_icon, this);
+    d->mSignalBackgroundIcon = HbStylePrivate::createPrimitive(HbStylePrivate::P_SignalLevel_background, this);
+    d->mSignalLevelIcon = HbStylePrivate::createPrimitive(HbStylePrivate::P_SignalLevel_icon, this);
 }
 
 void HbSignalIndicator::updatePrimitives()
@@ -149,9 +155,9 @@ void HbSignalIndicator::updatePrimitives()
     Q_D(HbSignalIndicator);
     HbStyleOptionSignalIndicator option;
     initStyleOption(&option);
-    style()->updatePrimitive(d->mSignalIcon, HbStyle::P_SignalIndicator_icon, &option);
-    style()->updatePrimitive(d->mSignalBackgroundIcon, HbStyle::P_SignalLevel_background, &option);
-    style()->updatePrimitive(d->mSignalLevelIcon, HbStyle::P_SignalLevel_icon, &option);
+    HbStylePrivate::updatePrimitive(d->mSignalIcon, HbStylePrivate::P_SignalIndicator_icon, &option);
+    HbStylePrivate::updatePrimitive(d->mSignalBackgroundIcon, HbStylePrivate::P_SignalLevel_background, &option);
+    HbStylePrivate::updatePrimitive(d->mSignalLevelIcon, HbStylePrivate::P_SignalLevel_icon, &option);
 }
 
 void HbSignalIndicator::initStyleOption(HbStyleOptionSignalIndicator *option) const
@@ -174,13 +180,13 @@ void HbSignalIndicator::initStyleOption(HbStyleOptionSignalIndicator *option) co
 #endif // HB_HAVE_QT_MOBILITY    
 
     //signal level setting
-    if (d->mLevelPercent >= 0 && d->mLevelPercent <= signalThreshold[0]) { // low
+    if (d->mLevelPercent >= 0 && d->mLevelPercent <= signalThreshold[lowLevel]) { 
         option->signalLevel = HbStyleOptionSignalIndicator::Low;
-    } else if (d->mLevelPercent >= signalThreshold[0] &&
-               d->mLevelPercent <= signalThreshold[1]) { // medium
+    } else if (d->mLevelPercent >= signalThreshold[lowLevel] &&
+               d->mLevelPercent <= signalThreshold[mediumLevel]) {
         option->signalLevel = HbStyleOptionSignalIndicator::Medium;
-    } else if (d->mLevelPercent >= signalThreshold[1] &&
-               d->mLevelPercent <= signalThreshold[2]) { // high
+    } else if (d->mLevelPercent >= signalThreshold[mediumLevel] &&
+               d->mLevelPercent <= signalThreshold[highLevel]) { 
         option->signalLevel = HbStyleOptionSignalIndicator::Full;
     } else {
         option->signalLevel = HbStyleOptionSignalIndicator::Zero;

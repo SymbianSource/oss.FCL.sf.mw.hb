@@ -29,6 +29,8 @@
 #include <hbwidget_p.h>
 #include "hbindicatorgroup_p.h"
 
+const int indicatorIconCount = 4;
+
 class HbIndicatorGroupPrivate : public HbWidgetPrivate
 {
     Q_DECLARE_PUBLIC(HbIndicatorGroup)
@@ -58,7 +60,7 @@ public:
 
 private:
     HbIndicatorGroup::IndicatorType mIndicatorType;
-    QList<QGraphicsItem*> mIcons;   
+    QGraphicsItem* mIcons[indicatorIconCount];
     QList<IndicatorClientInfo> mIndicators;
     bool mIndicatorAdded;
     QList<QPointF> mOriginalPos;

@@ -90,7 +90,8 @@ private:
     void WriteIndicatorInfoL();
     void WriteIndicatorDataL(const RMessage2 &aMessage);
     TInt DoWriteIndicatorInfoL(TInt &error);
-    QString indicatorTypeFromMessageL(const RMessage2 &aMessage, QVariant &parameter) const;
+    void indicatorTypeFromMessageL(const RMessage2 &aMessage, QString &indicatorType,
+        QVariant &parameter) const;
     HbIndicatorSessionHandler(HbDeviceDialogSession *aSession);
 
 private:

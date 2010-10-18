@@ -35,7 +35,7 @@ public:
             : errID(id) {}
 
     qint32 errorID() const
-	{
+    {
         return errID;
     }
 

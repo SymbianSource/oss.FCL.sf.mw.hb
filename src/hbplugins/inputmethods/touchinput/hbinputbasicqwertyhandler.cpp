@@ -83,6 +83,8 @@ bool HbInputBasicQwertyHandlerPrivate::buttonPressed(const QKeyEvent * event)
                 mButton = 0;
                 return true;
             }
+        } else {
+            mLongPressHappened = false;
         }
         mButton = event->key();
     } 

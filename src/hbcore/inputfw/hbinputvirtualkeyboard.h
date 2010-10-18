@@ -53,13 +53,11 @@ public:
     virtual QWidget *asWidget() = 0;
     virtual QGraphicsWidget *asGraphicsWidget() = 0;
     virtual QSizeF preferredKeyboardSize() = 0;
-    virtual QSizeF minimizedKeyboardSize() = 0;
 
     virtual void aboutToOpen(HbVkbHost *host) = 0;
     virtual void aboutToClose(HbVkbHost *host) = 0;
     virtual void keyboardOpened(HbVkbHost *host) = 0;
     virtual void keyboardClosed(HbVkbHost *host) = 0;
-    virtual void keyboardMinimized(HbVkbHost *host) = 0;
     virtual void keyboardAnimationFrame(HbVkbAnimationType type, qreal x) = 0;
 };
 

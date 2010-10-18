@@ -33,34 +33,34 @@
 class HB_CORE_EXPORT HbNgNormalNumber
 {
 public: 
-	struct CountryData {
-		QString decimal;
-		QString group;
-		QString pattern;
-		QList<int> patternBlockSizes;
-	};
-	
+    struct CountryData {
+        QString decimal;
+        QString group;
+        QString pattern;
+        QList<int> patternBlockSizes;
+    };
+    
     static QString normalNumberGrouping( const QString &number, const QLocale::Country &country );
     
 private:
-	static QList<int> checkingPattern( const QString &pattern );
-	static bool checkingNumber( const QString &number, 
-								int &firstNumber, 
-								int &lastNumber, 
-								int &dot, 
-								bool &sign ); 
-	static bool checkingXML( const QLocale::Country &country, 
-							 QString &decimal, 
-							 QString &group, 
-							 QList<int> &patternBlockSizes );
-	static QString formatingGroup( const QString &number, 
-								   const int &firstNumber, 
-								   const int &lastNumber, 
-								   const int &dot, 
-								   const bool &sign, 
-								   const QString &decimal, 
-								   const QString &group, 
-								   const QList<int> &patternBlockSizes );
+    static QList<int> checkingPattern( const QString &pattern );
+    static bool checkingNumber( const QString &number, 
+                                int &firstNumber, 
+                                int &lastNumber, 
+                                int &dot, 
+                                bool &sign ); 
+    static bool checkingXML( const QLocale::Country &country, 
+                             QString &decimal, 
+                             QString &group, 
+                             QList<int> &patternBlockSizes );
+    static QString formatingGroup( const QString &number, 
+                                   const int &firstNumber, 
+                                   const int &lastNumber, 
+                                   const int &dot, 
+                                   const bool &sign, 
+                                   const QString &decimal, 
+                                   const QString &group, 
+                                   const QList<int> &patternBlockSizes );
 };
 
 #endif // HBNGNORMALNUMBER_P_H

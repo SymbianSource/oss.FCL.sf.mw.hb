@@ -54,21 +54,31 @@ public:
     void init();
     void clear();
 
-    int textFlagsFromTextOption() const;
-
-    bool setLayoutDirection(Qt::LayoutDirection newDirection);
-    void setSize(const QSizeF &newSize);
+    void setDocumentWidth(qreal newWidth);
 
     void calculateOffset();
 
+    QSizeF minimumSizeHint(const QSizeF &constraint) const;
+    void clearPrefSizeCache();
+    QSizeF preferredSizeHint(const QSizeF &constraint) const;
+    bool   isAdjustHeightNeeded(qreal newWidth,
+                                qreal prefHeight,
+                                qreal minHeight,
+                                qreal maxHeight);
+
+    bool restoreDefaultHeightHint();
+
     QString mText;
-    Qt::Alignment mAlignment;
     QTextOption mTextOption; // used for alignment
-    bool mDontPrint;  // needed to fake text flags
-    bool mDontClip;   // needed to fake text flags
 
     QTextDocument  *mRtf;
     QPointF mOffset;
+
+    mutable QSizeF mPrefSize;
+    mutable QSizeF mPrefSizeConstraint;
+    mutable qreal  mMinWidthForAdjust;
+    mutable qreal  mMaxWidthForAdjust;
+    mutable qreal  mDefaultPrefHeight;
 
     QColor mColor;
     mutable QColor mDefaultColor;

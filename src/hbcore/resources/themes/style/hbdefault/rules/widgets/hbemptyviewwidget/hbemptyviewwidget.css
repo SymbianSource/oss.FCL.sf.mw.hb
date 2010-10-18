@@ -1,0 +1,17 @@
+HbEmptyViewWidget:landscape[!virtualKeyboardOpen]{
+	layout:default-landscape;
+}
+
+HbEmptyViewWidget:portrait[!virtualKeyboardOpen]{
+	layout:default-portrait;
+}
+
+HbEmptyViewWidget[virtualKeyboardOpen]{
+	layout:centered;
+}
+
+HbEmptyViewWidget::text{
+	text-height: var(hb-param-text-height-primary);
+	font-variant: primary;
+	text-align: center;
+}

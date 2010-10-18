@@ -56,6 +56,7 @@ class HB_WIDGETS_EXPORT HbAbstractEdit: public HbWidget {
                READ contextMenuFlags
                WRITE setContextMenuFlags)
     Q_PROPERTY(QString placeholderText READ placeholderText WRITE setPlaceholderText)
+    Q_PROPERTY(bool selectionControlEnabled READ isSelectionControlEnabled WRITE setSelectionControlEnabled)
 
 public:
     virtual ~HbAbstractEdit();
@@ -104,6 +105,9 @@ public:
     void setFormatDialog(HbFormatDialogPointer dialog);
 
     QChar characterAt(int pos) const;
+
+    void setSelectionControlEnabled(bool enabled);
+    bool isSelectionControlEnabled() const;
 
 signals:
     void contentsChanged();
@@ -194,7 +198,7 @@ private:
     Q_PRIVATE_SLOT(d_func(), void _q_updateBlock(QTextBlock))
     Q_PRIVATE_SLOT(d_func(), void _q_contentsChanged())
     Q_PRIVATE_SLOT(d_func(), void _q_contentsChange(int, int, int))
-    Q_PRIVATE_SLOT(d_func(), void _q_selectionChanged())
+    Q_PRIVATE_SLOT(d_func(), void _q_selectionChanged(const QTextCursor&, const QTextCursor&))
     Q_PRIVATE_SLOT(d_func(), void _q_scrollStarted())
     Q_PRIVATE_SLOT(d_func(), void _q_scrollEnded())
 

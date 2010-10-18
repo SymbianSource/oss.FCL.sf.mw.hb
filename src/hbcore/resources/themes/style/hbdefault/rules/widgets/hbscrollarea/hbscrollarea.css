@@ -1,10 +1,10 @@
 *{
 	speed-factor:0.0001;
-	inertia-speed-factor:1.0;
-	max-scroll-speed:3.0;
+	inertia-speed-factor:0.5;
+	max-scroll-speed:5.0;
 	spring-strength:0.0013;
 	spring-damping-factor:0.33;
-	friction:0.003;
+	friction:0.001;
 }
 
 HbScrollArea[scrollDirections="Horizontal"]
@@ -24,16 +24,16 @@ HbScrollArea[scrollDirections="Vertical"]::scrollbar-vertical
 {
 	left:0un;
 	right:0un;
-	top:-0.8un;
-	bottom:0.8un;
+	top:0un;
+	bottom:0un;
 }
 
 HbScrollArea::scrollbar-vertical
 {
 	left:0un;
 	right:0un;
-	top:-0.8un;
-	bottom:expr(var(hb-param-widget-scroll-bar-interactive-width)+0.8un);
+	top:0un;
+	bottom:var(hb-param-widget-scroll-bar-interactive-width);
 }
 
 HbScrollArea[scrollDirections="Horizontal"]::scrollbar-horizontal

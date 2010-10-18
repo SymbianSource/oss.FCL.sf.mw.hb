@@ -26,9 +26,10 @@
 #include <hbscrollbar.h>
 #include <hbscrollbar_p.h>
 #include <hbwidget_p.h>
-#include <hbstyleoptionscrollbar_p.h>
 #include <hbwidgetfeedback.h>
 #include <hbframeitem.h>
+#include <hbstyleframeprimitivedata.h>
+#include <hbstyletouchareaprimitivedata.h>
 
 #include <QGraphicsSceneMouseEvent>
 #include <QGesture>
@@ -41,50 +42,105 @@ bool HbScrollBarPrivate::effectsLoaded = false;
 #endif
 
 static const int REPEATION_TIME = 500;
-static const qreal THRESHOLD_VALUE = 2.0;
+static const qreal THRESHOLD_VALUE = 4.0;
 /*!
     @stable
     @hbcore
     \class HbScrollBar
-    \brief HbScrollBar represents a scrollbar that can be used in different kinds of lists, options
-    menus and editors.
+    \brief The HbScrollBar class provides a vertical or horizontal scroll bar.
 
-    A vertical scrollbar is created in this example to listview-parent and also shown:
+    Scroll bars indicate that more content is available than can fit within a container and
+    that the contents can be scrolled. A scroll bar consists of a groove and a handle (which
+    is sometimes called a thumb). The position of the handle on the groove indicates the
+    position of the visible content within the available contents. The size of the handle
+    indicates the amount of content that is visible relative to the total. For example, a
+    small handle indicates that there is a lot more content that is out of view.
+
+    Scroll bars float above the content and do not need reserved space. There are two types of
+    scroll bar:
+
+    - <b>Indicative</b>. These scroll bars simply give an indication that the content can be
+      scrolled and they do not provide features that enable scrolling (the ability to scroll
+      is provided by the widget to which the scroll bar is attached). Indicative scroll bars are
+      suitable for shorter lists and content that you expect the user to browse rather than to
+      search for specific items. This is the default type of scroll bar.
+
+    - <b>Interactive</b>. With this type of scroll bar, the user can drag the handle or press the
+      groove to change the scroll position. When used in an item model view (classes derived
+      from HbAbstractItemView), these scroll bars can provide index feedback (HbIndexFeedback
+      class) when the user drags the scroll bar or taps on the groove. The feedback is a popup
+      that shows, for example, the initial letter in an alphabetical list. Interactive scroll bars
+      are particularly suitable for long lists.
+
+    Call \link HbScrollBar::setInteractive() setInteractive(true)\endlink to make a scroll bar
+    interactive. Call isInteractive() to discover whether a scroll bar is interactive.
+
+    \image html hbscrollbar.png A list view with a vertical interactive scroll bar
+
+    %HbScrollBar provides other properties that control the following aspects of a scroll bar:
+
+    - <b>Value</b>. This is a real value in the range 0.0 to 1.0 that indicates how far the handle
+      is from the start of the groove. For example, 0.5 means the handle is half way along the
+      groove. Call setValue() to set this property.
+
+    - <b>Page size</b>. This is a real value in the range 0.0 to 1.0 that indicates how much of the
+      total contents are currently visible. This property also controls the size of the handle.
+      For example, a page size of 0.1 indicates that one out of ten pages are visible. Call
+      setPageSize() to set this property.
+
+    - <b>Orientation</b>. This controls whether the scroll bar is horizontal or vertical. Call
+      setOrientation() to set this property.
+
+    \section _usecases_hbscrollbar Using the HbScrollBar class
+
+    Although it is possible to create an HbScrollBar object directly, scroll bars are created
+    automatically when you create an HbScrollArea object or one of the item view classes that
+    are derived from it. This example demonstrates changing the default scroll bars
+    created for an HbScrollArea object from indicative to interactive:
 
     \code
-    //HbListView *listView is defined already
-    HbScrollBar *scrollbar = new HbScrollBar(Qt::Vertical, listView);
-    scrollbar->show();
+    scrollArea->verticalScrollBar()->setInteractive(true);
+    scrollArea->horizontalScrollBar()->setInteractive(true);
     \endcode
 
-    By default scrollbar is hidden.
-*/
+    You can replace the existing scroll bars by calling HbScrollArea::setHorizontalScrollBar()
+    and HbScrollArea::setVerticalScrollBar().
+
+    \sa HbScrollArea, HbAbstractItemView, HbIndexFeedback
+ */
 
 /*!
-    \reimp
     \fn int HbScrollBar::type() const
  */
 
 /*!
-    \fn void HbScrollBar::valueChanged( qreal value, Qt::Orientation orientation )
+    \fn void HbScrollBar::valueChanged( qreal value, Qt::Orientation orientation );
 
-    This signal is emitted when thumb position is changed by the user.
-*/
+    This signal is emitted when the user changes the position of the handle in an interactive
+    scroll bar.
+ */
 
 /*!
-    \fn void valueChangeRequested( qreal value, Qt::Orientation orientation );
+    \fn void HbScrollBar::valueChangeRequested( qreal value, Qt::Orientation orientation );
 
-    This signal is emitted when the user presses scrollbar groove.
+    This signal is emitted when the user presses an interactive scroll bar's groove. The widget
+    using the scroll bar must handle this signal (for example, by providing an animation that
+    scrolls to the target position).
 
-    \param value, the new value of scrollbar after the change
-  */
+    \param value The value to which the user wants to scroll.
+    \param orientation The scroll bar's orientation.
+
+    \sa HbScrollBar::setInteractive()
+ */
 
 /*!
     \primitives
-    \primitive{groove} HbFrameItem representing the groove of a scrollbar.
-    \primitive{handle} HbFrameItem representing the handle of a scrollbar.
-    \primitive{toucharea} HbTouchArea representing the scrollbar toucharea.
-  */
+    \primitive{groove} HbFrameItem representing the groove of a scroll bar.
+    \primitive{handle} HbFrameItem representing the handle of a scroll bar.
+    \primitive{toucharea} HbTouchArea representing the scroll bar toucharea.
+ */
+
+static const int TOUCHAREA_ZVALUE = 1000;
 
 HbScrollBarPrivate::HbScrollBarPrivate():
         mOrientation(Qt::Vertical),
@@ -100,6 +156,7 @@ HbScrollBarPrivate::HbScrollBarPrivate():
         mTouchArea(0),
         mLimitingFactor(0.0),
         mTopLeft(0.0),
+        hasEffects(false),
         lastEmittedPos(QPointF()),
         emittedPos(false)
 {
@@ -112,8 +169,7 @@ HbScrollBarPrivate::~HbScrollBarPrivate()
 void HbScrollBarPrivate::init()
 {
     Q_Q(HbScrollBar);
-    q->grabGesture(Qt::PanGesture);
-    q->grabGesture(Qt::TapGesture);
+    q->setFlag(QGraphicsItem::ItemHasNoContents, true);
 }
 
 void HbScrollBarPrivate::createPrimitives()
@@ -121,18 +177,16 @@ void HbScrollBarPrivate::createPrimitives()
     Q_Q(HbScrollBar);
 
     if ( !grooveItem ) {
-        grooveItem = q->style()->createPrimitive( HbStyle::P_ScrollBar_groove, q );
+        grooveItem = q->style()->createPrimitive(HbStyle::PT_FrameItem, "groove", q);
         grooveItem->setZValue(2);
-        HbStyle::setItemName( grooveItem, "groove" );
     }
-
     if ( !handleItem ) {
-        handleItem = q->style()->createPrimitive( HbStyle::P_ScrollBar_handle, q );
+        handleItem = q->style()->createPrimitive(HbStyle::PT_FrameItem, "handle", q);
         handleItem->setZValue(3);
-        HbStyle::setItemName( handleItem, "handle" );
     }
     if( !mTouchArea ) {
-        mTouchArea = q->style()->createPrimitive(HbStyle::P_ScrollBar_toucharea, q);
+        mTouchArea = q->style()->createPrimitive(HbStyle::PT_TouchArea, "toucharea", q);
+        mTouchArea->setFlags(QGraphicsItem::ItemIsFocusable);
     }
     q->updatePrimitives();
 }
@@ -179,6 +233,70 @@ void HbScrollBarPrivate::sizeHelper()
     }
 }
 
+void HbScrollBarPrivate::groovePrimitiveData(HbStyleFramePrimitiveData *data)
+{
+    if (mInteractive) {
+        if (mGroovePressed) {
+            if (mOrientation == Qt::Vertical) {
+                data->frameType = HbFrameDrawer::ThreePiecesVertical;
+                data->frameGraphicsName = QLatin1String("qtg_fr_scroll_v_active_frame_pressed");
+            } else {
+                data->frameType = HbFrameDrawer::ThreePiecesHorizontal;
+                data->frameGraphicsName = QLatin1String("qtg_fr_scroll_h_active_frame_pressed");
+            }
+        } else {
+            if (mOrientation == Qt::Vertical) {
+                data->frameType = HbFrameDrawer::ThreePiecesVertical;
+                data->frameGraphicsName = QLatin1String("qtg_fr_scroll_v_active_frame_normal");
+            } else {
+                data->frameType = HbFrameDrawer::ThreePiecesHorizontal;
+                data->frameGraphicsName = QLatin1String("qtg_fr_scroll_h_active_frame_normal");
+            }
+        }
+    } else {
+        if (mOrientation == Qt::Vertical) {
+            data->frameType = HbFrameDrawer::ThreePiecesVertical;
+            data->frameGraphicsName = QLatin1String("qtg_fr_scroll_v_frame");
+        } else {
+            data->frameType = HbFrameDrawer::ThreePiecesHorizontal;
+            data->frameGraphicsName = QLatin1String("qtg_fr_scroll_h_frame");
+        }
+    }
+    data->fillWholeRect = true;
+}
+
+void HbScrollBarPrivate::handlePrimitiveData(HbStyleFramePrimitiveData *data)
+{
+    if (mInteractive) {
+        if (mThumbPressed) {
+            if (mOrientation == Qt::Vertical) {
+                data->frameType = HbFrameDrawer::ThreePiecesVertical;
+                data->frameGraphicsName = QLatin1String("qtg_fr_scroll_v_active_handle_pressed");
+            } else {
+                data->frameType = HbFrameDrawer::ThreePiecesHorizontal;
+                data->frameGraphicsName = QLatin1String("qtg_fr_scroll_h_active_handle_pressed");
+            }
+        } else {
+            if (mOrientation == Qt::Vertical) {
+                data->frameType = HbFrameDrawer::ThreePiecesVertical;
+                data->frameGraphicsName = QLatin1String("qtg_fr_scroll_v_active_handle_normal");
+            } else {
+                data->frameType = HbFrameDrawer::ThreePiecesHorizontal;
+                data->frameGraphicsName = QLatin1String("qtg_fr_scroll_h_active_handle_normal");
+            }
+        }
+    } else {
+        if (mOrientation == Qt::Vertical) {
+            data->frameType = HbFrameDrawer::ThreePiecesVertical;
+            data->frameGraphicsName = QLatin1String("qtg_fr_scroll_v_handle");
+        } else {
+            data->frameType = HbFrameDrawer::ThreePiecesHorizontal;
+            data->frameGraphicsName = QLatin1String("qtg_fr_scroll_h_handle");
+        }
+    }
+    data->fillWholeRect = true;
+}
+
 void HbScrollBarPrivate::loadEffects()
 {
 #if defined(HB_EFFECTS)
@@ -222,8 +340,8 @@ void HbScrollBarPrivate::startHideEffect()
 }
 
 /*!
-    Constructs a scrollbar with \a parent.
-*/
+    Constructs a scroll bar with the given \a parent.
+ */
 HbScrollBar::HbScrollBar( QGraphicsItem *parent ) :
         HbWidget(*new HbScrollBarPrivate, parent)
 {
@@ -233,8 +351,8 @@ HbScrollBar::HbScrollBar( QGraphicsItem *parent ) :
 }
 
 /*!
-    Constructs a scrollbar with \a orientation and \a parent.
-*/
+    Constructs a scroll bar with the given \a orientation and \a parent.
+ */
 HbScrollBar::HbScrollBar( Qt::Orientation orientation, QGraphicsItem *parent ) :
         HbWidget( *new HbScrollBarPrivate, parent )
 {
@@ -245,15 +363,15 @@ HbScrollBar::HbScrollBar( Qt::Orientation orientation, QGraphicsItem *parent ) :
 }
 
 /*!
-    Destructor
+    Destructor.
  */
 HbScrollBar::~HbScrollBar()
 {
 }
 
 /*!
-    Returns the value of the scrollbar. The value is in range of 0.0 to 1.0.
-    The value corresponds to the position of the thumb.
+    Returns the scroll bar's \c value property. This indicates how far the handle is
+    from the start of the groove and can be in range of 0.0 to 1.0.
 
     \sa HbScrollBar::setValue()
  */
@@ -264,12 +382,12 @@ qreal HbScrollBar::value() const
 }
 
 /*!
-   Returns relative size of the visible area the scrollbar is attached to.
-   For example if the pageSize is 0.2 it means that the overall size of the content
-   is five times larger than what is shown currently.
+    Returns scroll bar's \c pageSize property. This is a real value in the range of 0.0 to
+    1.0, which indicates the size of the visible content relative to the whole content.
+    For example, a page size of 0.2 indicates that the overall size of the content is five
+    times larger than what is currently visible.
 
-   The size is in range of 0.0 to 1.0.
-   \sa HbScrollBar::setPageSize()
+    \sa HbScrollBar::setPageSize()
  */
 qreal HbScrollBar::pageSize() const
 {
@@ -278,7 +396,7 @@ qreal HbScrollBar::pageSize() const
 }
 
 /*!
-    Returns the orientation of scrollbar.
+    Returns the orientation of scroll bar.
 
     \sa HbScrollBar::setOrientation()
  */
@@ -289,26 +407,34 @@ Qt::Orientation HbScrollBar::orientation() const
 }
 
 /*!
-    Returns whether scrollbar is in interactive mode.
+    Returns true if the scroll bar is interactive and false if it is indicative.
 
     \sa HbScrollBar::setInteractive()
 */
 bool HbScrollBar::isInteractive() const
 {
-    const Q_D(HbScrollBar);
+    Q_D(const HbScrollBar);
     return d->mInteractive;
 }
 
 /*!
-    Sets the value of interactive property. If this value is set
-    to true scrollbar is interactive, the user can change the scroll position by
-    dragging the thumb or pressing the groove. Dragging the thumb emits valueChanged
-    signal and pressing the groove emits valueChangeRequested which means
-    that the widget using scrollbars should handle the value change (for example
-    by animating to the given target value).
+    Sets the value of the scroll bar's \c interactive property, which controls whether the
+    scroll bar is interactive or indicative (the default).
 
-    The default behavior is non interactive,
-    which means that the scrollbar is just indicative.
+    When the scroll bar is interactive, the user can drag the handle or press the groove to
+    change the scroll position. The following table lists the signals that an interactive
+    scroll bar emits when the user drags the handle or presses the groove.
+
+    <table border="1" style="border-collapse: collapse; border: solid;">
+    <tr><th>Signal</th><th>Description</th></tr>
+    <tr><td>valueChanged()</td><td>This signal is emitted when the user drags the handle.</td></tr>
+    <tr><td>valueChangeRequested()</td><td>This signal is emitted when the user presses the scroll
+    bar's groove. The widget using the scroll bar must handle this signal (for example, by
+    providing an animation that moves to the target position).</td></tr>
+    </table>
+
+    \param enabled A Boolean value; true for an interactive scroll bar, false for an indicative
+           scroll bar.
 
     \sa HbScrollBar::isInteractive()
 */
@@ -317,6 +443,13 @@ void HbScrollBar::setInteractive( bool enabled )
     Q_D( HbScrollBar );
     if( d->mInteractive != enabled){
         d->mInteractive = enabled;
+        if ( enabled ) {
+            grabGesture(Qt::PanGesture);
+            grabGesture(Qt::TapGesture);
+        } else {
+            ungrabGesture(Qt::PanGesture);
+            ungrabGesture(Qt::TapGesture);
+        }
         if(d->handleItem) {
             repolish();
             updatePrimitives();
@@ -325,11 +458,15 @@ void HbScrollBar::setInteractive( bool enabled )
 }
 
 /*!
-    Sets the value of the scrollbar. The given \avalue should be from 0.0 to 1.0.
-    The value is used to position the thumb.
+    Sets the scroll bar's \c value property, which controls how far the handle is from
+    the start of the groove.
+
+    \param value A real value in the range 0.0 to 1.0. A value of 0.0 indicates that the
+    handle is at the start of the groove and a value of 1.0 indicates that it is at the
+    end.
 
     \sa HbScrollBar::value()
-*/
+ */
 void HbScrollBar::setValue( qreal value )
 {
     Q_D(HbScrollBar);        
@@ -342,13 +479,13 @@ void HbScrollBar::setValue( qreal value )
 }
 
 /*!
-    Sets the page size for the scrollbar. The page size is relative size of the visible area
-    the scrollbar is attached to. For example if the pageSize is 0.2 it means that the
-    overall size of the content is five times larger than what is shown currently.
+    Sets the scroll bar's \c pageSize property, which indicates the size of the visible content
+    relative to the whole content. For example, a page size of 0.2 indicates that the
+    overall size of the content is five times larger than what is currently visible.
 
-    \asize should be in the range of 0.0 to 1.0.
+    \param size A real value in the range of 0.0 to 1.0.
     \sa HbScrollBar::pageSize()
-*/
+ */
 void HbScrollBar::setPageSize( qreal size )
 {
     Q_D(HbScrollBar);
@@ -361,7 +498,10 @@ void HbScrollBar::setPageSize( qreal size )
 }
 
 /*!
-    Sets the orientation of scrollbar.
+    Sets the scroll bar's \c orientation property.
+
+    \param orientation Set this to \c Qt::Horizontal for a horizontal scroll bar and
+            \c Qt::Vertical for a vertical scroll bar.
 
     \sa HbScrollBar::orientation()
 */
@@ -381,36 +521,38 @@ void HbScrollBar::updatePrimitives()
 {
     Q_D(HbScrollBar);
 
-    HbStyleOptionScrollBar option;
-    initStyleOption(&option);
     if (d->grooveItem) {
-        style()->updatePrimitive(d->grooveItem, HbStyle::P_ScrollBar_groove, &option);
+        HbStyleFramePrimitiveData data;
+        initPrimitiveData(&data, d->grooveItem);
+        style()->updatePrimitive(d->grooveItem, &data, this);
     }
     if (d->handleItem) {
-        style()->updatePrimitive(d->handleItem, HbStyle::P_ScrollBar_handle, &option);
+        HbStyleFramePrimitiveData data;
+        initPrimitiveData(&data, d->handleItem);
+        style()->updatePrimitive(d->handleItem, &data, this);
     }
-    if( d->mTouchArea ) {
-        style()->updatePrimitive(d->mTouchArea, HbStyle::P_ScrollBar_toucharea, &option);
+    if (d->mTouchArea) {
+        HbStyleTouchAreaPrimitiveData data;
+        initPrimitiveData(&data, d->mTouchArea);
+        style()->updatePrimitive(d->mTouchArea, &data, this);
+        d->mTouchArea->setZValue(TOUCHAREA_ZVALUE);
     }
 }
 
-/*!
-    \reimp
- */
-void HbScrollBar::initStyleOption( HbStyleOptionScrollBar *option ) const
+void HbScrollBar::initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive)
 {
-    Q_D(const HbScrollBar);
-    HbWidget::initStyleOption(option);
-
-    Q_ASSERT(option);
-    option->orientation = d->mOrientation;
-    option->thumbPressed = d->mThumbPressed;
-    option->groovePressed = d->mGroovePressed;
-    option->interactive = d->mInteractive;
+    Q_D(HbScrollBar);
+    HbWidget::initPrimitiveData(primitiveData, primitive);
+    QString itemName = HbStyle::itemName(primitive);
+    if (itemName == QLatin1String("groove")) {
+        d->groovePrimitiveData(hbstyleprimitivedata_cast<HbStyleFramePrimitiveData*>(primitiveData));
+    } else if (itemName == QLatin1String("handle")) {
+        d->handlePrimitiveData(hbstyleprimitivedata_cast<HbStyleFramePrimitiveData*>(primitiveData));
+    }
 }
 
 /*!
-    \reimp
+    Reimplemented from QGraphicsItem.
  */
 void HbScrollBar::mousePressEvent( QGraphicsSceneMouseEvent *event )
 {
@@ -420,8 +562,6 @@ void HbScrollBar::mousePressEvent( QGraphicsSceneMouseEvent *event )
     if ( !d->mInteractive ) {
         return;
     }
-
-    HbStyleOptionScrollBar opt;
 
     QRectF handleBounds = d->handleItem->boundingRect();
 
@@ -447,8 +587,9 @@ void HbScrollBar::mousePressEvent( QGraphicsSceneMouseEvent *event )
             d->repeatActionTimer.start(REPEATION_TIME, this);
         } else {
             HbWidgetFeedback::triggered(this, Hb::InstantPressed, Hb::ModifierSliderHandle);
-            initStyleOption(&opt);
-            style()->updatePrimitive(d->handleItem, HbStyle::P_ScrollBar_handle, &opt );
+            HbStyleFramePrimitiveData data;
+            initPrimitiveData(&data, d->handleItem);
+            style()->updatePrimitive(d->handleItem, &data, this);
             emit d->core.handlePressed();
         }
 
@@ -473,8 +614,9 @@ void HbScrollBar::mousePressEvent( QGraphicsSceneMouseEvent *event )
             d->repeatActionTimer.start(REPEATION_TIME, this);
         } else {
             HbWidgetFeedback::triggered(this, Hb::InstantPressed, Hb::ModifierSliderHandle);
-            initStyleOption(&opt);
-            style()->updatePrimitive(d->handleItem, HbStyle::P_ScrollBar_handle, &opt );
+            HbStyleFramePrimitiveData data;
+            initPrimitiveData(&data, d->handleItem);
+            style()->updatePrimitive(d->handleItem, &data, this);
             emit d->core.handlePressed();
         }
 
@@ -484,7 +626,7 @@ void HbScrollBar::mousePressEvent( QGraphicsSceneMouseEvent *event )
 }
 
 /*!
-    \reimp
+    Reimplemented from QGraphicsItem.
  */
 void HbScrollBar::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
 {
@@ -494,27 +636,28 @@ void HbScrollBar::mouseReleaseEvent( QGraphicsSceneMouseEvent *event )
     if ( !d->mInteractive ) {
         return;
     }
-    HbStyleOptionScrollBar opt;
     if (d->mThumbPressed) {
         d->mThumbPressed = false;
         HbWidgetFeedback::triggered(this, Hb::InstantReleased, Hb::ModifierSliderHandle);
         emit valueChanged(value(), orientation());
         emit d->core.handleReleased();
-        initStyleOption(&opt);
-        style()->updatePrimitive(d->handleItem, HbStyle::P_ScrollBar_handle, &opt );
+        HbStyleFramePrimitiveData data;
+        initPrimitiveData(&data, d->handleItem);
+        style()->updatePrimitive(d->handleItem, &data, this);
     } else if (d->mGroovePressed){
         HbWidgetFeedback::triggered(this, Hb::InstantReleased);
         d->repeatActionTimer.stop();
         d->mGroovePressed = false;
-        initStyleOption(&opt);
-        style()->updatePrimitive(d->grooveItem, HbStyle::P_ScrollBar_groove, &opt );
+        HbStyleFramePrimitiveData data;
+        initPrimitiveData(&data, d->grooveItem);
+        style()->updatePrimitive(d->grooveItem, &data, this);
     }
     d->emittedPos = false;
     event->accept();            
 }
 
 /*!
-    \reimp
+    Reimplemented from QGraphicsItem.
  */
 void HbScrollBar::mouseMoveEvent( QGraphicsSceneMouseEvent *event )
 {
@@ -554,7 +697,7 @@ void HbScrollBar::mouseMoveEvent( QGraphicsSceneMouseEvent *event )
 }
 
 /*!
-    \reimp
+    Reimplemented from QGraphicsWidget.
  */
 QRectF HbScrollBar::boundingRect() const
 {
@@ -579,7 +722,7 @@ QRectF HbScrollBar::boundingRect() const
 }
 
 /*!
-    \reimp
+    Reimplemented from QObject.
  */
 void HbScrollBar::timerEvent( QTimerEvent *event )
 {
@@ -605,7 +748,7 @@ void HbScrollBar::timerEvent( QTimerEvent *event )
 */
 bool HbScrollBar::event(QEvent *event)
 {
-    if (event && event->type() == QEvent::GraphicsSceneResize) {
+    if (event->type() == QEvent::GraphicsSceneResize) {
         Q_D(HbScrollBar);
         d->sizeHelper();
     }
@@ -675,7 +818,7 @@ void HbScrollBar::polish( HbStyleParameters& params )
 }
 
 /*!
-  \reimp
+    \reimp
 */
 void HbScrollBar::gestureEvent(QGestureEvent* event) 
 {

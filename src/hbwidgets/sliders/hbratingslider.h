@@ -34,11 +34,12 @@ class HB_WIDGETS_EXPORT HbRatingSlider : public HbWidget
 {
     Q_OBJECT
     Q_PROPERTY(bool readOnly READ isReadOnly WRITE setReadOnly)
-	Q_PROPERTY(int numberOfIcons READ numberOfIcons WRITE setNumberOfIcons)
-	Q_PROPERTY(int stepCount READ stepCount WRITE setStepCount)
-	Q_PROPERTY(int currentRating READ currentRating WRITE setCurrentRating)
-	Q_PROPERTY(QString unRatedIconName READ unRatedIconName WRITE setUnRatedIconName)
-	Q_PROPERTY(QString ratedIconName READ ratedIconName WRITE setRatedIconName)
+    Q_PROPERTY(int numberOfIcons READ numberOfIcons WRITE setNumberOfIcons)
+    Q_PROPERTY(int stepCount READ stepCount WRITE setStepCount)
+    Q_PROPERTY(int currentRating READ currentRating WRITE setCurrentRating)
+    Q_PROPERTY(QString unRatedIconName READ unRatedIconName WRITE setUnRatedIconName)
+    Q_PROPERTY(QString ratedIconName READ ratedIconName WRITE setRatedIconName)
+    Q_PROPERTY(QString toolTipText READ toolTipText WRITE setToolTipText)
 
 public:
     explicit HbRatingSlider(QGraphicsItem *parent = 0);
@@ -46,12 +47,12 @@ public:
 
     enum { Type = Hb::ItemType_RatingSlider };
     int type() const { return Type; }
-	
-	void setNumberOfIcons(int number);
-	int numberOfIcons() const;
+    
+    void setNumberOfIcons(int number);
+    int numberOfIcons() const;
 
-	void setStepCount(int count);
-	int stepCount()const;
+    void setStepCount(int count);
+    int stepCount()const;
 
     bool isReadOnly() const;
     void setReadOnly(bool value);
@@ -63,11 +64,14 @@ public:
     QString unRatedIconName() const;
 
     void setRatedIconName(const QString name);
-	QString ratedIconName() const;
+    QString ratedIconName() const;
 
-	QGraphicsItem * primitive(HbStyle::Primitive primitive) const; 
-	
-	void setGeometry(const QRectF &rect);
+    void setToolTipText(const QString tooltip);
+    QString toolTipText() const;
+
+    void setGeometry(const QRectF &rect);
+
+    QGraphicsItem *primitive(const QString &itemName) const;
 
 public slots :
     void updatePrimitives();
@@ -82,13 +86,13 @@ protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
 #ifndef HB_GESTURE_FW
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
-    void mouseMoveEvent (QGraphicsSceneMouseEvent *event) ;    
+    void mouseMoveEvent (QGraphicsSceneMouseEvent *event) ;
 #else
     virtual void gestureEvent(QGestureEvent *event);
 #endif
     void initStyleOption(HbStyleOption *option) const;
     void changeEvent(QEvent *event);
-	QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+    QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
 private:
     Q_DECLARE_PRIVATE_D( d_ptr, HbRatingSlider)

@@ -38,7 +38,7 @@
 
 HbVariant::HbVariantData::HbVariantData() :
     stringSize(0),
-    stringListCount(0),
+    listCount(0),
     mRef(1),
     mDataType(Invalid)
 {
@@ -58,7 +58,7 @@ void HbVariant::HbVariantData::setDataType(Type dataType)
     mDataType = dataType;
 #ifdef HB_BIN_CSS
     // Types that allocate memory from memory manager
-    if (mDataType == String || mDataType == StringList || mDataType == Color) {
+    if (mDataType == String || mDataType == StringList || mDataType == Color || mDataType == IntList) {
         // Does not matter if register same offset holder many times
         HbCssConverterUtils::registerOffsetHolder(&mData.offset);
     } else {
@@ -214,6 +214,20 @@ HbVariant::HbVariant( const QColor &col, HbMemoryManager::MemoryType type )
 }
 
 /*
+* C'tor taking intlist
+*/
+HbVariant::HbVariant(const QList<int> &val, HbMemoryManager::MemoryType type)
+    : mMemoryType( type ), mShared( false )
+{
+    initializeData();
+    fillIntListData(val);
+
+#ifdef HB_BIN_CSS
+    HbCssConverterUtils::registerOffsetHolder(&mDataOffset);
+#endif
+}
+
+/*
 * copy C'tor
 */
 HbVariant::HbVariant( const HbVariant &other )
@@ -279,6 +293,13 @@ int HbVariant::toInt() const
     case HbVariant::Color:
     case HbVariant::StringList:
         return 0;
+    case HbVariant::IntList:
+        if (data->listCount == 1) {
+            const char *address = getAddress<char>(mMemoryType, data->mData.offset, mShared);
+            return *((int*)address);
+        }
+        return 0;
+
     default:
         return 0;
     }
@@ -301,12 +322,17 @@ QString HbVariant::toString() const
     case HbVariant::Color:
         return getColor().name();
     case HbVariant::StringList:
-        if (data->stringListCount == 1) {
+        if (data->listCount == 1) {
             const char *address = getAddress<char>(mMemoryType, data->mData.offset, mShared);
             int length = *((int*)address);
             return QString((const QChar *)(address + sizeof(int)), length);
-        }
-        
+        }        
+        return QString();
+    case HbVariant::IntList:
+        if (data->listCount == 1) {
+            const char *address = getAddress<char>(mMemoryType, data->mData.offset, mShared);
+            return QString::number(*((int*)address));
+        }        
         return QString();
     default:
         return QString();
@@ -346,6 +372,7 @@ QColor HbVariant::toColor() const
     case HbVariant::StringList:
     case HbVariant::Int:
     case HbVariant::Double:
+    case HbVariant::IntList:
         return QColor();
     default:
         return QColor();
@@ -384,6 +411,11 @@ QStringList HbVariant::toStringList() const
                 list.append(string);
                 address += sizeof(QChar) * length;
             }
+        } else if (data->dataType() == HbVariant::IntList) {
+            QList<int> intList = toIntList();
+            for (int i=0; i<intList.count(); i++) {
+                list.append(QString::number(intList.at(i)));
+            }
         } else {
             list.append(toString());
         }
@@ -409,9 +441,40 @@ double HbVariant::toDouble() const
     case HbVariant::Color:
     case HbVariant::StringList:
         return double();
+    case HbVariant::IntList:
+        if (data->listCount == 1) {
+            return double(toInt());
+        }        
+        return double();
     default:
         return double();
     }
+}
+
+/*
+* to get int list 
+*/
+QList<int> HbVariant::toIntList() const
+{
+    HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
+    QList<int> list;
+
+    if (data) {
+        if (data->dataType() == HbVariant::IntList) {
+            const char *address = getAddress<char>(mMemoryType, data->mData.offset, mShared);
+            const char *end = address + data->listCount * sizeof(int);
+
+            // Append strings to stringlist
+            while (address < end) {
+                list.append(*(int *)address);
+                address += sizeof(int);
+            }
+        } else {
+            list.append(toInt());
+        }
+    }
+
+    return list;
 }
 
 /*
@@ -433,7 +496,7 @@ void HbVariant::fillStringData(const QChar *str, int size)
 {
     GET_MEMORY_MANAGER(mMemoryType);
     HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
-    int oldOffset = reservesMemory(data) ? data->mData.offset : -1;
+    qptrdiff oldOffset = reservesMemory(data) ? data->mData.offset : -1;
 
     if (size == 0) {
         data->mData.offset = -1;
@@ -459,7 +522,7 @@ void HbVariant::fillStringListData(const QStringList &stringList)
 {
     GET_MEMORY_MANAGER(mMemoryType);
     HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
-    int oldOffset = reservesMemory(data) ? data->mData.offset : -1;
+    qptrdiff oldOffset = reservesMemory(data) ? data->mData.offset : -1;
     int allocBytes = 0;
 
     if (stringList.isEmpty()) {
@@ -488,7 +551,7 @@ void HbVariant::fillStringListData(const QStringList &stringList)
 
     // In stringlist case, set stringSize to indicate size allocated for the whole stringlist buffer
     data->stringSize = allocBytes;
-    data->stringListCount = stringList.count();
+    data->listCount = stringList.count();
 
     data->setDataType(StringList);
     if (oldOffset != -1) {
@@ -505,7 +568,7 @@ void HbVariant::fillColorData( const QColor &col )
 {
     GET_MEMORY_MANAGER(mMemoryType);
     HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
-    int oldOffset = reservesMemory(data) ? data->mData.offset : -1;
+    qptrdiff oldOffset = reservesMemory(data) ? data->mData.offset : -1;
 
     if(data->dataType() == HbVariant::Color && data->mData.offset != -1) {
         oldOffset = -1; //use the preallocated memory.
@@ -518,6 +581,40 @@ void HbVariant::fillColorData( const QColor &col )
         HbMemoryUtils::freeMemory(mMemoryType, oldOffset);
     }
 }
+
+/*
+* fillIntListData
+*/
+void HbVariant::fillIntListData(const QList<int> &intList)
+{
+    GET_MEMORY_MANAGER(mMemoryType);
+    HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
+    qptrdiff oldOffset = reservesMemory(data) ? data->mData.offset : -1;
+
+    if (intList.isEmpty()) {
+        data->mData.offset = -1;
+    } else {
+        // allocate memory and copy data.
+        data->mData.offset = manager->alloc(intList.count() * sizeof(int));
+        char *address = getAddress<char>(mMemoryType, data->mData.offset, mShared);
+
+        for (int j=0; j<intList.count(); ++j) {
+            *((int*)address) = intList.at(j);
+            address += sizeof(int);
+        }        
+    }
+
+    data->stringSize = 0;
+    data->listCount = intList.count();
+
+    data->setDataType(IntList);
+    if (oldOffset != -1) {
+        // Free old memory block
+        HbMemoryUtils::freeMemory(mMemoryType, oldOffset);
+    }
+}
+
+
 
 /*
 * = operator taking int 
@@ -587,6 +684,15 @@ HbVariant& HbVariant::operator=(const QStringList& strList)
 }
 
 /*
+* = operator taking QList<int>
+*/
+HbVariant& HbVariant::operator=(const QList<int>& intList)
+{
+    fillIntListData(intList);
+    return *this;
+}
+
+/*
 * = operator taking HbVariant 
 */
 HbVariant &HbVariant::operator=(const HbVariant &other)
@@ -636,22 +742,38 @@ bool HbVariant::canConvert (HbVariant::Type t) const
     }
     switch(uint(t)) {
     case HbVariant::Int:
-        return data->dataType() == HbVariant::Double 
-            || data->dataType() == HbVariant::String;
+        if (data->dataType() == HbVariant::IntList) {
+            return data->listCount <= 1;
+        } else {
+            return data->dataType() == HbVariant::Double 
+                || data->dataType() == HbVariant::String;
+        }
     case HbVariant::Double:
-        return data->dataType() == HbVariant::Int
-            || data->dataType() == HbVariant::String;
+        if (data->dataType() == HbVariant::IntList) {
+            return data->listCount <= 1;
+        } else {
+            return data->dataType() == HbVariant::Int
+                || data->dataType() == HbVariant::String;
+        }
     case HbVariant::String:
-        if (data->dataType() == HbVariant::StringList) {
-            return data->stringListCount <= 1;
+        if (data->dataType() == HbVariant::StringList
+            || data->dataType() == HbVariant::IntList) {
+            return data->listCount <= 1;
         } else {
             return data->dataType() == HbVariant::Int
                 || data->dataType() == HbVariant::Double
                 || data->dataType() == HbVariant::Color;
         }
     case HbVariant::StringList:
+        return data->dataType() == HbVariant::String
+            || data->dataType() == HbVariant::IntList;
     case HbVariant::Color:
         return data->dataType() == HbVariant::String;
+    case HbVariant::IntList:
+        return data->dataType() == HbVariant::Int
+            || data->dataType() == HbVariant::Double
+            || data->dataType() == HbVariant::String
+            || data->dataType() == HbVariant::IntList;
     default :
         return false;
     }
@@ -666,10 +788,11 @@ bool HbVariant::convert (HbVariant::Type t)
     HbVariantData *data = getAddress<HbVariantData>(mMemoryType, mDataOffset, mShared);
 
     bool ok = true;
-    int tempOffset = -1;
+    qptrdiff tempOffset = -1;
     QColor col;
     QString str;
     QStringList strList;
+    QList<int> intList;
 
     if(data->dataType() == t) {
         return true;
@@ -728,7 +851,7 @@ bool HbVariant::convert (HbVariant::Type t)
         }
         case HbVariant::StringList:
             // canConvert checks that there is max 1 string in the stringlist
-            if (data->stringListCount == 0) {
+            if (data->listCount == 0) {
                 fillStringData(0, 0);
             } else {
                 QString string = toString();
@@ -766,6 +889,15 @@ bool HbVariant::convert (HbVariant::Type t)
         default:
             return false;
         }
+    case HbVariant::IntList:
+        switch(data->dataType()) {
+        case HbVariant::Int: 
+            intList.append(data->mData.i);
+            fillIntListData(intList);
+            return true;
+        default:
+            return false;
+        }
 
     default:
         return false;
@@ -792,6 +924,14 @@ HbVariant::operator QVariant() const
         QVariant var = getColor();
         return var;
     }
+    case HbVariant::IntList : {
+        QList<int> intList = toIntList();
+        QList<QVariant> variantList;
+        for (int i=0; i<intList.count(); i++) {
+            variantList.append(intList.at(i));
+        }
+        return QVariant(variantList);
+    }
     default:
         return QVariant();
     }
@@ -815,6 +955,7 @@ void HbVariant::clear()
     case HbVariant::String :
     case HbVariant::Color :
     case HbVariant::StringList : 
+    case HbVariant::IntList :
         HbMemoryUtils::freeMemory(mMemoryType, data->mData.offset);
         break;    
     default: 
@@ -847,6 +988,8 @@ void HbVariant::print() const
         break;
     case HbVariant::StringList:
         qDebug() << toStringList();
+    case HbVariant::IntList:
+        qDebug() << toIntList();
     default:
         qDebug() << "Invalid Type";
     }

@@ -28,12 +28,12 @@
 #include "hbpiciconprocessor_p.h"
 #include "hbthemeserverutils_p.h"
 #include "hbmemorymanager_p.h"
+#include "hbiconsource_p.h"
 #include "hbmemoryutils_p.h"
 #ifdef Q_OS_SYMBIAN
 #include "hbthemeserver_symbian_p_p.h"
 #endif
 #include <QFile>
-#include <QDebug>
 
 #ifdef HB_NVG_CS_ICON
 #include "hbnvgiconprocessor_p.h"
@@ -84,35 +84,23 @@ QString HbIconCacheItemCreator::KSgimage = "SGIMAGE";
     \a key denotes the unique identifier for the cache item
     \a options indicate different ways of loading icons
     \a format indicates the icon format e.g. svg/nvg etc.\
-    \a currentRenderingMode ThemeServer's current rendering mode state.
+    \a renderingMode rendering mode to be used for creating CacheItem.
  */
 HbIconCacheItem *HbIconCacheItemCreator::createCacheItem(const HbIconKey &key,
         HbIconLoader::IconLoaderOptions options,
         const QString &format,
-        HbRenderingMode currentRenderingMode,
+        HbRenderingMode renderMode,
         bool isMultiPiece)
 {
 #ifndef Q_OS_SYMBIAN
     Q_UNUSED(isMultiPiece)
-    Q_UNUSED(currentRenderingMode)
+    Q_UNUSED(renderMode)
 #endif
     QScopedPointer <HbIconCacheItem> tempIconCacheItem(new HbIconCacheItem);
     HbIconCacheItem *item = tempIconCacheItem.data();
     QScopedPointer <HbIconProcessor> rasterIcon;
     QScopedPointer <HbIconProcessor> vectorIcon;
     
-    // Set the render mode to EHWRendering, only if the client is requesting a HW rendered icon
-    // and ThemeServer is in HW rendering mode
-    HbRenderingMode renderMode = ESWRendering;
-#ifndef Q_OS_SYMBIAN
-    Q_UNUSED(renderMode)
-#endif   
-
-#if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)    
-    if((key.renderMode == EHWRendering) && (currentRenderingMode == EHWRendering)) {
-        renderMode = EHWRendering;
-    }
-#endif    
     bool isIconCreated = false;
 
     if ((format == KSvg) || (format == KPic)) {
@@ -131,7 +119,12 @@ HbIconCacheItem *HbIconCacheItemCreator::createCacheItem(const HbIconKey &key,
                 if (HbThemeServerPrivate::gpuMemoryState()) {
                     rasterIcon.reset(new HbSgimageIconProcessor(key, options, format));
                 }
-                vectorIcon.reset(new HbNvgIconProcessor(key, options, format));
+
+                if(!rasterIcon.data()) {
+                    rasterIcon.reset(new HbPixmapIconProcessor(key, options, format));
+                } else {
+                    vectorIcon.reset(new HbNvgIconProcessor(key, options, format));
+                }
             }
 #endif
             
@@ -157,24 +150,27 @@ HbIconCacheItem *HbIconCacheItemCreator::createCacheItem(const HbIconKey &key,
 #endif
     } else if (format == KBlob) {
         item->blobIconData.type = BLOB;
-        QFile f(key.filename);
         bool fail = true;
-        if (f.open(QIODevice::ReadOnly)) {
-            QByteArray content = f.readAll();
-            f.close();
-            GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
-            item->blobIconData.blobData.offset = manager->alloc(content.length());
-            if (item->blobIconData.blobData.offset != -1) {
-                fail = false;
-                // Store vector cost because blobs go into the "cpu" cache.
-                item->blobIconData.blobData.dataSize
-                = item->vectorIconDataCost
-                  = content.length();
-                memcpy(HbMemoryUtils::getAddress<char>(
-                           HbMemoryManager::SharedMemory,
-                           item->blobIconData.blobData.offset),
-                       content.data(),
-                       content.length());
+        HbIconSource *source = HbThemeServerUtils::getIconSource(key.filename);
+        if (source) {
+            QByteArray *content = source->byteArray();
+            if (content) {
+                GET_MEMORY_MANAGER(HbMemoryManager::SharedMemory);
+                item->blobIconData.blobData.offset = manager->alloc(content->length());
+                if (item->blobIconData.blobData.offset != -1) {
+                    fail = false;
+                    // Store vector cost because blobs go into the "cpu" cache.
+                    item->blobIconData.blobData.dataSize
+                    = item->vectorIconDataCost
+                    = content->length();
+                    item->blobIconData.renderingMode = ESWRendering;
+                    memcpy(HbMemoryUtils::getAddress<char>(
+                              HbMemoryManager::SharedMemory,
+                              item->blobIconData.blobData.offset),
+                              content->data(),
+                              content->length());
+                }   
+                
             }
         }
         if (fail) {
@@ -189,6 +185,17 @@ HbIconCacheItem *HbIconCacheItemCreator::createCacheItem(const HbIconKey &key,
         if (isIconCreated) {
             item->rasterIconData = rasterIcon.data()->sharedIconData();
             item->rasterIconDataCost = rasterIcon.data()->sharedIconDataCost();
+        } else if(format == KNvg && renderMode == EHWRendering){
+#ifdef HB_SGIMAGE_ICON
+            rasterIcon.reset(new HbPixmapIconProcessor(key, options, format));
+            if (rasterIcon.data()) {
+                isIconCreated = rasterIcon.data()->createIconData(key.filename);
+                if (isIconCreated) {
+                    item->rasterIconData = rasterIcon.data()->sharedIconData();
+                    item->rasterIconDataCost = rasterIcon.data()->sharedIconDataCost();
+                }
+            }
+#endif
         }
     }
 
@@ -257,7 +264,10 @@ void HbIconCacheItemCreator::createCacheItem(HbIconCacheItem &iconCacheItem,
                     rasterIcon.reset(new HbSgimageIconProcessor(key, iconCacheItem.iconOptions,
                                                                  format));
                 }
-            }else {
+                if(!rasterIcon.data()) {
+                    rasterIcon.reset(new HbPixmapIconProcessor(key, iconCacheItem.iconOptions, format));
+                } 
+            } else {
                 rasterIcon.reset(new HbPixmapIconProcessor(key, iconCacheItem.iconOptions,
                                                            format));
             }
@@ -271,12 +281,23 @@ void HbIconCacheItemCreator::createCacheItem(HbIconCacheItem &iconCacheItem,
             if (isIconCreated) {
                 iconCacheItem.rasterIconData = rasterIcon.data()->sharedIconData();
                 iconCacheItem.rasterIconDataCost = rasterIcon.data()->sharedIconDataCost();
+            } else if(format == KNvg && renderMode == EHWRendering){
+#ifdef HB_SGIMAGE_ICON
+                rasterIcon.reset(new HbPixmapIconProcessor(key, iconCacheItem.iconOptions, format));
+                if (rasterIcon.data()) {
+                    isIconCreated = rasterIcon.data()->createIconData(key.filename);
+                    if (isIconCreated) {
+                    iconCacheItem.rasterIconData = rasterIcon.data()->sharedIconData();
+                    iconCacheItem.rasterIconDataCost = rasterIcon.data()->sharedIconDataCost();
+                    }
+                }
+#endif
             }
         }
     }
 
     // If the item is already created on the GPU side but not on the CPU side
-    if (iconCacheItem.rasterIconData.type != INVALID_FORMAT &&
+    if (iconCacheItem.rasterIconData.type == SGIMAGE &&
             iconCacheItem.vectorIconData.type == INVALID_FORMAT) {
         if ((format == KSvg) || (format == KPic)) {
 #ifdef SVG_INTERMEDIATE_PIC
@@ -305,11 +326,11 @@ HbIconCacheItem * HbIconCacheItemCreator::createMultiPieceCacheItem(
     const QVector<HbSharedIconInfo> &multiPieceIconInfo,
     HbMultiIconParams &multiPieceIconParams,
     bool allNvg,
-    HbRenderingMode currentRenderingMode)
+    HbRenderingMode renderMode)
 {
 
 #ifndef Q_OS_SYMBIAN
-    Q_UNUSED(currentRenderingMode)
+    Q_UNUSED(renderMode)
 #endif   
     
     HbIconCacheItem *item = 0;
@@ -317,18 +338,6 @@ HbIconCacheItem * HbIconCacheItemCreator::createMultiPieceCacheItem(
     bool isIconCreated = false;
     QScopedPointer<HbIconProcessor> rasterIcon;
     
-    // Set the render mode to EHWRendering, only if the client is requesting a HW rendered icon
-    // and ThemeServer is in HW rendering mode
-    HbRenderingMode renderMode = ESWRendering;
-#ifndef Q_OS_SYMBIAN
-    Q_UNUSED(renderMode)
-#endif
-
-#if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
-    if((finalIconKey.renderMode == EHWRendering) && (currentRenderingMode == EHWRendering)) {
-        renderMode = EHWRendering;
-    }
-#endif
     if (allNvg) {
 #ifdef HB_SGIMAGE_ICON
         if(renderMode == EHWRendering){ 
@@ -337,6 +346,13 @@ HbIconCacheItem * HbIconCacheItemCreator::createMultiPieceCacheItem(
                                              finalIconKey,
                                              (HbIconLoader::IconLoaderOptions)multiPieceIconParams.options,
                                              KSgimage));
+                
+                if(!rasterIcon.data()) {
+                    rasterIcon.reset(new HbPixmapIconProcessor( 
+                                               finalIconKey, 
+                                               (HbIconLoader::IconLoaderOptions)multiPieceIconParams.options, 
+                                               KNvg));
+                }
             }
             
         } else {
@@ -361,7 +377,28 @@ HbIconCacheItem * HbIconCacheItemCreator::createMultiPieceCacheItem(
             item->rasterIconData = rasterIcon->sharedIconData();
             item->rasterIconDataCost = rasterIcon->sharedIconDataCost();
             item->iconOptions = options;
-        }
+        } else {
+#ifdef HB_SGIMAGE_ICON
+            if(renderMode == EHWRendering && allNvg ) { 
+               rasterIcon.reset(new HbPixmapIconProcessor( 
+                                                          finalIconKey, 
+                                                          (HbIconLoader::IconLoaderOptions)multiPieceIconParams.options, 
+                                                          KNvg));
+                
+                if (rasterIcon.data()) {
+                    isIconCreated = rasterIcon->createMultiPieceIconData(multiPieceIconInfo, multiPieceIconParams);
+                    if (isIconCreated) {
+                        tempIconCacheItem.reset(new HbIconCacheItem());
+                        item = tempIconCacheItem.data();
+                        item->rasterIconData = rasterIcon->sharedIconData();
+                        item->rasterIconDataCost = rasterIcon->sharedIconDataCost();
+                        item->iconOptions = options;
+                    }
+                }
+            }
+#endif         
+        } 
+        
     }
     tempIconCacheItem.take();
     return item;

@@ -1,0 +1,45 @@
+# /****************************************************************************
+# **
+# ** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+# ** Contact: Nokia Corporation (developer.feedback@nokia.com)
+# **
+# ****************************************************************************/
+
+# FLM to configure hb
+# set environment variable HB_CONFIG_PARAMS if custom configure parameters needs to be added
+
+
+HBDIR:=$(EXTENSION_ROOT)/$(HB_ROOT)
+
+ifneq ($(filter linux,$(HOSTPLATFORM)),)
+HOST_OPTIONS:=$(HOST_OPTIONS.LINUX)
+else
+HOST_OPTIONS:=$(HOST_OPTIONS.WIN32)
+endif
+
+CONFIGURE_OPTIONS:= $(OPTIONS) $(HB_CONFIG_PARAMS) $(OPTION_QMAKE) $(OPTION_QMKSPEC) $(OPTION_QFLAG) $(HOST_OPTIONS)
+
+GUARD:=done_$(call sanitise,$(HBDIR)/.qmake.cache)
+ifeq ($($(GUARD)),)
+$(GUARD):=1
+
+define hbconf
+FINAL:: $(HBDIR)/.qmake.cache
+
+$(HBDIR)/.qmake.cache : $(HBDIR)/hb.pro EXPORT
+	$(call startrule,hbconf) \
+	cd $(HBDIR) && \
+	$(SBS_PYTHON) configure.py $(CONFIGURE_OPTIONS) && \
+	$(GNUCP) hb.prf $(EPOCROOT)/epoc32/tools/qt/mkspecs/features && \
+	$(GNUCP) hb_install.prf $(EPOCROOT)/epoc32/tools/qt/mkspecs/features && \
+	$(GNUCP) mkspecs/hb_functions.prf $(EPOCROOT)/epoc32/tools/qt/mkspecs/features && \
+	$(GNUCP) mkspecs/docml2bin.prf $(EPOCROOT)/epoc32/tools/qt/mkspecs/features \
+	$(call endrule,hbconf)
+endef
+
+$(eval $(hbconf))
+
+# Covenience headers etc. this should be a call to make distclean on the $(HBDIR)
+$(eval $(call GenerateStandardCleanTarget, $(HBDIR)/.qmake.cache))
+endif
+

@@ -250,4 +250,12 @@ void HbSearchPanel::setCriteria(const QString &text)
     d->mLineEdit->setText(text);
 }
 
-
+bool HbSearchPanel::eventFilter(QObject *watched, QEvent *event)
+{
+    Q_D(HbSearchPanel);
+    if (watched == d->mLineEdit && event->type() == QEvent::FocusIn) {
+        d->mLineEdit->setInputMethodHints(inputMethodHints());
+        return false;
+    }
+    return HbWidget::eventFilter(watched, event);
+}

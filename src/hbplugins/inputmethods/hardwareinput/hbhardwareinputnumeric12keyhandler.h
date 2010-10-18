@@ -30,17 +30,17 @@
 class HbHardwareInputNumeric12KeyHandlerPrivate;
 class HbHardwareInputNumeric12KeyHandler: public HbInputNumericHandler
 {
-	Q_OBJECT
+    Q_OBJECT
 public:
-	HbHardwareInputNumeric12KeyHandler(HbInputAbstractMethod* inputMethod);
-	~HbHardwareInputNumeric12KeyHandler();
+    HbHardwareInputNumeric12KeyHandler(HbInputAbstractMethod* inputMethod);
+    ~HbHardwareInputNumeric12KeyHandler();
 
-	bool actionHandler(HbInputModeAction action);
-	bool filterEvent(const QKeyEvent * event);
+    bool actionHandler(HbInputModeAction action);
+    bool filterEvent(const QKeyEvent * event);
 
 private:
-	Q_DECLARE_PRIVATE(HbHardwareInputNumeric12KeyHandler)
-		Q_DISABLE_COPY(HbHardwareInputNumeric12KeyHandler)
+    Q_DECLARE_PRIVATE(HbHardwareInputNumeric12KeyHandler)
+        Q_DISABLE_COPY(HbHardwareInputNumeric12KeyHandler)
 };
 
 #endif //HB_HARDWARE_INPUT_NUMERIC_12KEY_HANDLER

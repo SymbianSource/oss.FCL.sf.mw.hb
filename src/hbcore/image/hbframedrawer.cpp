@@ -247,8 +247,13 @@ HbFrameDrawerPrivate::HbFrameDrawerPrivate(const HbFrameDrawerPrivate &other) :
 HbFrameDrawerPrivate::~HbFrameDrawerPrivate()
 {
     unLoadIcon();
-    //Unregister the HbFrameDrawerPrivate Instance to HbIconLoader
-    HbIconLoader::global()->removeFrameDrawerInfo(this);
+    // Unregister the HbFrameDrawerPrivate Instance to HbIconLoader.
+    // However it may already have been destroyed, if the app is shuting down
+    // so be prepared for null ptr too.
+    HbIconLoader *loader = HbIconLoader::global();
+    if (loader) {
+        loader->removeFrameDrawerInfo(this);
+    }
 }
 
 /*!
@@ -371,6 +376,9 @@ void HbFrameDrawerPrivate::createFrameIcon()
 
     // Create the frame icon and add it in the icon cache
     HbIconLoader *loader = HbIconLoader::global();
+    if (!loader) {
+        return;
+    }
 
     //If it's one-piece frame-item, it's loaded using HbIconLoader::loadIcon()
     if (frameParts == 1) {
@@ -397,8 +405,8 @@ void HbFrameDrawerPrivate::createFrameIcon()
 
         //For multi-piece frame-items, HbIocnLoader::loadMultipieceIcon is used
         //This function returns the consolidate (stitched) icon created on the themeserver.
-        //If the consolidated icon-creation on themeserver fails, then server returns a list
-        //of individual frame-items.
+        //If the consolidated icon-creation on themeserver fails, then the consolidated
+        //icon is created on the client-side (fallback)
         HbIconImpl *iconImpl = loader->loadMultiPieceIcon(multiPieceFileNames, data, frameIconSize,
                                Qt::IgnoreAspectRatio, QIcon::Normal, iconLoaderOptions(),
                                listOfIcons, color);
@@ -972,18 +980,20 @@ void HbFrameDrawerPrivate::reset(bool resetFrameCount, bool unloadedByServer)
 }
 
 /*!
-*   Resets the MaskableIcon
-*/
+ * Drops the underlying icon(s).  No need to send an unload req to server because the
+ * server drops the icon by itself in this case.
+ */
 void HbFrameDrawerPrivate::resetMaskableIcon()
 {
-#if defined(HB_SGIMAGE_ICON) || defined(HB_NVG_CS_ICON)
     HbIconLoader *loader = HbIconLoader::global();
     if (icon) {
         //consolidated icon case
         icon->decrementRefCount();
-        if (icon->refCount() == 0 && icon->isCreatedOnServer()) {
+        if (icon->refCount() == 0) {
             // remove the item from cache and delete the icon
-            loader->removeItemInCache(icon->iconImpl());
+            if (loader) {
+                loader->removeItemInCache(icon->iconImpl());
+            }
             icon->dispose();
         }
         icon = 0;
@@ -994,8 +1004,10 @@ void HbFrameDrawerPrivate::resetMaskableIcon()
             // remove the item in cache, dispose if needed.
             foreach(HbMaskableIconImpl * impl, fallbackMaskableIconList) {
                 impl->decrementRefCount();
-                if (impl->refCount() == 0 && impl->isCreatedOnServer()) {
-                    loader->removeItemInCache(impl->iconImpl());
+                if (impl->refCount() == 0) {
+                    if (loader) {
+                        loader->removeItemInCache(impl->iconImpl());
+                    }
                     impl->dispose();
                 }
             }
@@ -1003,7 +1015,6 @@ void HbFrameDrawerPrivate::resetMaskableIcon()
         }
     }
     frameParts = 0;
-#endif
 }
 
 HbIconLoader::IconLoaderOptions HbFrameDrawerPrivate::iconLoaderOptions()
@@ -1067,7 +1078,9 @@ void HbFrameDrawerPrivate::unLoadIcon(bool unloadedByServer)
     if (icon) {
         //If a consolidated (stitched) icon was created on the themeserver, then
         //HbIconLoader::unloadIcon() is used to unload it.
-        loader->unLoadIcon(icon->iconImpl(), unloadedByServer);
+        if (loader) {
+            loader->unLoadIcon(icon->iconImpl(), unloadedByServer);
+        }
         icon->dispose();
         icon = 0;
     }
@@ -1095,6 +1108,8 @@ void HbFrameDrawerPrivate::unLoadIcon(bool unloadedByServer)
     fallbackMaskableIconList.clear(); // vector of HbMaskableIconImpl*
 }
 
+// This is called from HbIconLoader when building for tools.
+// It is not in use in normal builds.
 void HbFrameDrawerPrivate::themeChange(const QStringList &updatedFiles)
 {
     bool unloadIcons = false;
@@ -1345,7 +1360,8 @@ void HbFrameDrawer::paint(QPainter *painter, const QRectF &rect) const
 {
     const_cast<HbFrameDrawer *>(this)->setRect(rect);
 
-    if (d->frameGraphicsName.isEmpty() || d->type == HbFrameDrawer::Undefined || d->rect.isEmpty()) {
+    HbIconLoader *loader = HbIconLoader::global();
+    if (d->frameGraphicsName.isEmpty() || d->type == HbFrameDrawer::Undefined || d->rect.isEmpty() || !loader) {
         return;
     }
 
@@ -1358,7 +1374,7 @@ void HbFrameDrawer::paint(QPainter *painter, const QRectF &rect) const
     // update the rendering mode
     QPaintEngine *paintEngine = painter->paintEngine();
     if (paintEngine) {
-        HbIconLoader::global()->updateRenderingMode(paintEngine->type());
+        loader->updateRenderingMode(paintEngine->type());
     }
     d->prepareFrameIcon();
     d->prevRect = rect.toRect();
@@ -1598,7 +1614,8 @@ QSize HbFrameDrawer::frameSize() const
 
 /*!
 * This function should be called when the theme changes. This clears the used frame
-* graphic.
+* graphics. This is typically handled by HbFrameItem so there is no need to call this function
+* manually when using the framedrawer with a HbFrameItem.
 */
 void HbFrameDrawer::themeChanged()
 {

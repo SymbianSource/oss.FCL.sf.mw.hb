@@ -31,6 +31,8 @@
 #include <hbscrollbar.h>
 #include <hbwidget_p.h>
 
+class HbStyleFramePrimitiveData;
+
 class HbScrollBarPrivateCore : public QObject
 {
     Q_OBJECT
@@ -55,6 +57,9 @@ public:
     void updatePosition();
     void sizeHelper();
 
+    void groovePrimitiveData(HbStyleFramePrimitiveData *data);
+    void handlePrimitiveData(HbStyleFramePrimitiveData *data);
+
     void startShowEffect();
     void startHideEffect();
     void loadEffects();
@@ -71,9 +76,9 @@ public:
     QBasicTimer repeatActionTimer;
     qreal mPressedTargetValue;
 
-    QGraphicsItem *grooveItem;
-    QGraphicsItem *handleItem;
-    QGraphicsItem *mTouchArea;
+    QGraphicsObject *grooveItem;
+    QGraphicsObject *handleItem;
+    QGraphicsObject *mTouchArea;
     qreal mLimitingFactor;
     qreal mTopLeft;
     bool hasEffects;
@@ -92,6 +97,7 @@ private:
         return bar->d_func();
     }
     friend class HbScrollAreaPrivate;
+    friend class HbMenuListViewPrivate;
 };
 
 #endif // HBSCROLLBAR_P_H

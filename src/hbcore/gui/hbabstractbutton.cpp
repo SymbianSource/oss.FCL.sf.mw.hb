@@ -36,6 +36,7 @@
 #include <QStyle>
 
 #include <hbwidgetfeedback.h>
+#include <hbstyleprimitivedata.h>
 
 #ifdef HB_GESTURE_FW
 #include <hbtapgesture.h>
@@ -293,11 +294,12 @@ void HbAbstractButtonPrivate::init()
 {
     Q_Q( HbAbstractButton );
 
-	q->setFocusPolicy(Qt::FocusPolicy(qApp->style()->styleHint(QStyle::SH_Button_FocusPolicy)));
+    q->setFocusPolicy(Qt::FocusPolicy(qApp->style()->styleHint(QStyle::SH_Button_FocusPolicy)));
 
 #ifdef HB_GESTURE_FW
     q->grabGesture(Qt::TapGesture);
 #endif
+    q->setFlag(QGraphicsItem::ItemHasNoContents, true);
 
     // FIXME: size policy is commented out b/c of a bug in Qt #236689, also in our bugtracker.
     //q->setSizePolicy(QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum, controlType));
@@ -518,6 +520,7 @@ bool HbAbstractButton::isDown() const
 
     return d->down;
 }
+
 
 /*!
     @beta
@@ -795,13 +798,21 @@ void HbAbstractButton::initStyleOption(HbStyleOption *option) const
     option->state |= (isChecked() | isDown() ? QStyle::State_On : QStyle::State_Off);
 }
 
+void HbAbstractButton::initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive)
+{
+    HbWidgetBase::initPrimitiveData(primitiveData, primitive);
+    Q_ASSERT(primitiveData);
+    primitiveData->state |= (isChecked() | isDown() ? QStyle::State_On : QStyle::State_Off);
+
+}
+
 /*!
     \reimp
  */
 bool HbAbstractButton::event(QEvent *event)
 {
     // as opposed to other widgets, disabled buttons accept mouse
-    // events. This avoids surprising click-through scenarios	
+    // events. This avoids surprising click-through scenarios   
     Q_D( HbAbstractButton );
     if (!isEnabled()) {
         switch(event->type()) {
@@ -954,7 +965,7 @@ void HbAbstractButton::gestureEvent(QGestureEvent *event)
     
     if (HbTapGesture *tap = qobject_cast<HbTapGesture *>(event->gesture(Qt::TapGesture))) {
         switch(tap->state()) {
-	        case Qt::GestureStarted:
+            case Qt::GestureStarted:
                 scene()->setProperty(HbPrivate::OverridingGesture.latin1(),Qt::TapGesture);
                 if (!tap->property(HbPrivate::ThresholdRect.latin1()).toRect().isValid()) {
                     tap->setProperty(HbPrivate::ThresholdRect.latin1(), mapRectToScene(boundingRect()).toRect());
@@ -1076,7 +1087,7 @@ void HbAbstractButton::keyReleaseEvent(QKeyEvent *event)
                 }
                 d->click();
             }
-	    break;
+        break;
         }
         default:
             event->ignore();
@@ -1167,9 +1178,14 @@ QSizeF HbAbstractButton::sizeHint(Qt::SizeHint which, const QSizeF &constraint) 
     if (d->mRepolishRequested && isVisible()) {
         d->mRepolishRequested = false;
         // force the polish event in order to get the real size
-        QEvent polishEvent(QEvent::Polish);
-        QCoreApplication::sendEvent(const_cast<HbAbstractButton *>(this), &polishEvent);
-        d->mSizeHintPolish = true;
+        if (!d->polished) {
+            QEvent polishEvent(QEvent::Polish);
+            QCoreApplication::sendEvent(const_cast<HbAbstractButton *>(this), &polishEvent);
+            d->mSizeHintPolish = true;
+        } else if (d->repolishOutstanding) {
+            QCoreApplication::sendPostedEvents(const_cast<HbAbstractButton *>(this), QEvent::Polish);
+        }
+        QCoreApplication::sendPostedEvents(const_cast<HbAbstractButton *>(this), QEvent::LayoutRequest);
     }
     return HbWidget::sizeHint(which, constraint);
 }

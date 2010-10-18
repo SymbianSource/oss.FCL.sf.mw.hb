@@ -77,6 +77,7 @@ symbian {
     TARGET.EPOCALLOWDLLDATA = 1
     TARGET.CAPABILITY = CAP_GENERAL_DLL
     TARGET.UID3=0x20022E9D
+    MMP_RULES += SMPSAFE
     # for touchfeedback headers
     INCLUDEPATH += $${EPOCROOT}epoc32/include/mw
 

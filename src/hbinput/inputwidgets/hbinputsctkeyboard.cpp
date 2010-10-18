@@ -34,18 +34,21 @@
 #include <hbinpututils.h>
 #include <hbframedrawer.h>
 #include <hbinputsettingproxy.h>
+#include <hbmainwindow.h>
+#include <hbwidgetfeedback.h>
 
 #include "hbinputbuttongroup.h"
 #include "hbinputbutton.h"
 
 const qreal HbPortraitKeyboardHeightInUnits = 45.9;
 const qreal HbPortraitKeyboardWidthInUnits = 53.8;
-const qreal HbLandscapeKeyboardHeightInUnits = 33.7;
+const qreal HbLandscapeKeyboardHeightInUnits = 27.0;
 const qreal HbLandscapeKeyboardWidthInUnits = 95.5;
 
 const int HbSctPortraitNumberOfRows = 5;
 const int HbSctPortraitNumberOfColumns = 5;
-const int HbPortraitButtonKeyCodeTable[HbSctPortraitNumberOfRows *HbSctPortraitNumberOfColumns] = {
+const int HbPortraitButtonCount = HbSctPortraitNumberOfRows * HbSctPortraitNumberOfColumns;
+const int HbPortraitButtonKeyCodeTable[HbPortraitButtonCount] = {
     HbInputButton::ButtonKeyCodeCharacter,
     HbInputButton::ButtonKeyCodeCharacter,
     HbInputButton::ButtonKeyCodeCharacter,
@@ -75,7 +78,8 @@ const int HbPortraitButtonKeyCodeTable[HbSctPortraitNumberOfRows *HbSctPortraitN
 
 const int HbSctLandscapeNumberOfRows = 4;
 const int HbSctLandscapeNumberOfColumns = 10;
-const int HbLandscapeButtonKeyCodeTable[HbSctLandscapeNumberOfRows *HbSctLandscapeNumberOfColumns] = {
+const int HbLandscapeButtonCount = HbSctLandscapeNumberOfRows * HbSctLandscapeNumberOfColumns - 1;
+const int HbLandscapeButtonKeyCodeTable[HbLandscapeButtonCount] = {
     HbInputButton::ButtonKeyCodeCharacter,
     HbInputButton::ButtonKeyCodeCharacter,
     HbInputButton::ButtonKeyCodeCharacter,
@@ -129,13 +133,14 @@ const QChar HbSctEnterGlyph = ' ';
 #endif
 
 /*!
-@proto
+@stable
 @hbinput
 \class HbSctKeyboard
-\brief Touch keyboard for special characters
+\brief The HbSctKeyboard class provides a touch keyboard for special characters.
 
-Implements special character keyboard. The keyboard knows how to set up button titles according to
-given key map data object and it also supports editor specific custom buttons.
+The class implements a special character keyboard. The keyboard supports setting up
+button titles according to a given keymap data object, and it also supports
+editor-specific custom buttons.
 
 \sa HbInputVkbWidget
 */
@@ -156,17 +161,26 @@ void HbSctKeyboardPrivate::init()
 
     HbInputVkbWidgetPrivate::init();
 
-    if (HbInputSettingProxy::instance()->activeKeyboard() & HbQwertyKeyboardMask) {
+    Qt::Orientation orientation = Qt::Horizontal;
+    if (q->mainWindow()) {
+        orientation = q->mainWindow()->orientation();
+    }
+
+    if (HbInputSettingProxy::instance()->activeKeyboard(orientation) & HbQwertyKeyboardMask) {
         mType = HbKeyboardSctLandscape;
+    } else {
+        mType = HbKeyboardSctPortrait;
     }
 
     HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(q->contentItem());
     if (buttonGroup) {
         mColumns = HbSctPortraitNumberOfColumns;
         mRows = HbSctPortraitNumberOfRows;
+        int count = HbPortraitButtonCount;
         if (mType == HbKeyboardSctLandscape) {
             mColumns = HbSctLandscapeNumberOfColumns;
             mRows = HbSctLandscapeNumberOfRows;
+            count = HbLandscapeButtonCount;
 
             buttonGroup->setButtonPreviewEnabled(HbInputSettingProxy::instance()->isCharacterPreviewForQwertyEnabled());
         }
@@ -175,7 +189,7 @@ void HbSctKeyboardPrivate::init()
 
         int key = 0;
         QList<HbInputButton *> buttons;
-        for (int i = 0; i < mColumns * mRows; ++i) {
+        for (int i = 0; i < count; ++i) {
             HbInputButton *item = new HbInputButton(keyCode(i), QPoint(key % mColumns, key / mColumns));
             buttons.append(item);
 
@@ -185,13 +199,13 @@ void HbSctKeyboardPrivate::init()
                 item->setSize(QSize(2, 1));
                 ++key;
             } else if (keyCode(i) == HbInputButton::ButtonKeyCodeDelete &&
-                       mType == HbKeyboardSctPortrait) {
+                       (mType == HbKeyboardSctPortrait || mType == HbKeyboardSctEmail || mType == HbKeyboardSctUrl )) {
                 // Portrait SCT has different delete icon from the default one
                 item->setIcon(HbIcon(HbInputButtonIconDelete2), HbInputButton::ButtonIconIndexPrimary);
             } else if (keyCode(i) == HbInputButton::ButtonKeyCodeAlphabet) {
                 // Button that is used to return to normal keypad should be shown as latched
                 item->setState(HbInputButton::ButtonStateLatched);
-                if (mType == HbKeyboardSctPortrait) {
+                if (mType == HbKeyboardSctPortrait || mType == HbKeyboardSctEmail || mType == HbKeyboardSctUrl ) {
                     // Portrait SCT has different symbol icon from the default one
                     item->setIcon(HbIcon(HbInputButtonIconSymbol2), HbInputButton::ButtonIconIndexPrimary);
                 }
@@ -212,28 +226,31 @@ void HbSctKeyboardPrivate::init()
 
 int HbSctKeyboardPrivate::keyCode(int buttonId)
 {
-    if (mType == HbKeyboardSctPortrait) {
-        return HbPortraitButtonKeyCodeTable[buttonId];
-    } else {
+    if (mType == HbKeyboardSctLandscape) {
         return HbLandscapeButtonKeyCodeTable[buttonId];
+    } else {
+        return HbPortraitButtonKeyCodeTable[buttonId];
     }
 }
+
 
 void HbSctKeyboardPrivate::applyEditorConstraints()
 {
     Q_Q(HbSctKeyboard);
-
     HbInputFocusObject *focusedObject = mOwner->focusObject();
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(q->contentItem());
+    applyEditorConstraints(focusedObject, buttonGroup);
+}
+
+void HbSctKeyboardPrivate::applyEditorConstraints(HbInputFocusObject *focusedObject, HbInputButtonGroup *buttonGroup)
+{
     if (!focusedObject) {
         return;
     }
-
-    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(q->contentItem());
     if (buttonGroup) {
-        QList<HbInputButton *> buttons = buttonGroup->buttons();
+        QList<HbInputButton*> buttons = buttonGroup->buttons();
         for (int i = 0; i < buttons.count(); ++i) {
             HbInputButton *item = buttons.at(i);
-
             HbInputButton::HbInputButtonState state = item->state();
             if (keyCode(i) == HbInputButton::ButtonKeyCodeCharacter) {
                 QString data = item->text(HbInputButton::ButtonTextIndexPrimary);
@@ -244,7 +261,6 @@ void HbSctKeyboardPrivate::applyEditorConstraints()
                 }
             } else if (keyCode(i) == HbInputButton::ButtonKeyCodeSmiley) {
                 if (focusedObject->editorInterface().isNumericEditor() ||
-                    !focusedObject->editorInterface().editorClass() == HbInputEditorClassUnknown ||
                     !isSmileysEnabled()) {
                     state = HbInputButton::ButtonStateDisabled;
                 } else if (item->state() == HbInputButton::ButtonStateDisabled) {
@@ -262,6 +278,7 @@ void HbSctKeyboardPrivate::applyEditorConstraints()
             }
             item->setState(state);
         }
+
         buttonGroup->setButtons(buttons);
     }
 }
@@ -270,19 +287,39 @@ void HbSctKeyboardPrivate::updateKeyCodes()
 {
     Q_Q(HbSctKeyboard);
 
+    HbInputFocusObject *focusedObject = mOwner->focusObject();
+    if (!focusedObject) {
+        return;
+    }
+
+    Qt::Orientation orientation = Qt::Horizontal;
+    if (q->mainWindow()) {
+        orientation = q->mainWindow()->orientation();
+    }
+
+    if (HbInputSettingProxy::instance()->activeKeyboard(orientation) & HbQwertyKeyboardMask){
+        mType = HbKeyboardSctLandscape;
+    } else if (focusedObject && focusedObject->editorInterface().editorClass() == HbInputEditorClassEmail &&
+               mKeymap->keyboard(HbKeyboardSctEmail)) {
+        mType = HbKeyboardSctEmail;
+    } else if (focusedObject && focusedObject->editorInterface().editorClass() == HbInputEditorClassUrl &&
+               mKeymap->keyboard(HbKeyboardSctUrl)) {
+        mType = HbKeyboardSctUrl;
+    } else {
+        mType = HbKeyboardSctPortrait;
+    }
+    
     mPages = 0;
     const HbKeyboardMap *keyboardMap = mKeymap->keyboard(q->keyboardType());
     if (keyboardMap) {
-        mPages = (int)ceil((float)(keyboardMap->keys.count() / mCharacterButtons));
+        mPages = (int)ceil((float)countActiveKeys() / mCharacterButtons);
     }
-
-    if (mPages > 1) {
-        mFlickAnimation = true;
-    }
-
+    
+    mFlickAnimation = mPages > 1;
+    
     HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(q->contentItem());
     if (buttonGroup) {
-        int key = mActivePage * mCharacterButtons;
+        int key = keyAtIndex(mActivePage * mCharacterButtons);
         QList<HbInputButton *> buttons = buttonGroup->buttons();
         for (int i = 0; i < buttons.count(); ++i) {
             if (keyCode(i) == HbInputButton::ButtonKeyCodeCharacter) {
@@ -290,12 +327,16 @@ void HbSctKeyboardPrivate::updateKeyCodes()
 
                 if (keyboardMap && key < keyboardMap->keys.count()) {
                     // Replace space and enter markers with correct keycodes
-                    if (keyboardMap->keys.at(key)->keycode.unicode() == HbSctSpaceMarker) {
-                        item->setKeyCode(HbInputButton::ButtonKeyCodeSpace);
-                    } else if (keyboardMap->keys.at(key)->keycode.unicode() == HbSctEnterMarker) {
-                        item->setKeyCode(HbInputButton::ButtonKeyCodeEnter);
+                    if (focusedObject->characterAllowedInEditor(keyboardMap->keys.at(key)->characters(HbModifierNone).at(0)) || mType == HbKeyboardSctLandscape){
+                        if (keyboardMap->keys.at(key)->keycode.unicode() == HbSctSpaceMarker) {
+                            item->setKeyCode(HbInputButton::ButtonKeyCodeSpace);
+                        } else if (keyboardMap->keys.at(key)->keycode.unicode() == HbSctEnterMarker) {
+                            item->setKeyCode(HbInputButton::ButtonKeyCodeEnter);
+                        } else {
+                            item->setKeyCode(keyboardMap->keys.at(key)->keycode.unicode());
+                        }
                     } else {
-                        item->setKeyCode(keyboardMap->keys.at(key)->keycode.unicode());
+                        i--;
                     }
                 } else {
                     item->setKeyCode(-1);
@@ -304,31 +345,40 @@ void HbSctKeyboardPrivate::updateKeyCodes()
             }
         }
     }
+    applyEditorConstraints();           
 }
 
 void HbSctKeyboardPrivate::updateButtons()
 {
     Q_Q(HbSctKeyboard);
 
+    HbInputFocusObject *focusedObject = mOwner->focusObject();
+    if (!focusedObject) {
+        return;
+    }
+
     HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup *>(q->contentItem());
     if (buttonGroup) {
-        int key = mActivePage * mCharacterButtons;
+        int key = keyAtIndex(mActivePage * mCharacterButtons);
         QList<HbInputButton *> buttons = buttonGroup->buttons();
         for (int i = 0; i < buttons.count(); ++i) {
             if (keyCode(i) == HbInputButton::ButtonKeyCodeCharacter) {
                 HbInputButton *item = buttons.at(i);
-
                 const HbKeyboardMap *keyboardMap = mKeymap->keyboard(q->keyboardType());
                 if (keyboardMap && key < keyboardMap->keys.count() && keyboardMap->keys.at(key)->characters(HbModifierNone) != QString("")) {
-                    QString keydata = keyboardMap->keys.at(key)->characters(HbModifierNone);
-                    // Replace space and enter markers with correct glyphs.
-                    // These only exist in symbian fonts, so if we are not using symbian, use blank.
-                    if (keydata.at(0) == HbSctSpaceMarker) {
-                        item->setText(HbSctSpaceGlyph, HbInputButton::ButtonTextIndexPrimary);
-                    } else if (keydata.at(0) == HbSctEnterMarker) {
-                        item->setText(HbSctEnterGlyph, HbInputButton::ButtonTextIndexPrimary);
+                    if (focusedObject->characterAllowedInEditor(keyboardMap->keys.at(key)->characters(HbModifierNone).at(0)) || mType == HbKeyboardSctLandscape){
+                        QString keydata = keyboardMap->keys.at(key)->characters(HbModifierNone);
+                        // Replace space and enter markers with correct glyphs.
+                        // These only exist in symbian fonts, so if we are not using symbian, use blank.
+                        if (keydata.at(0) == HbSctSpaceMarker) {
+                            item->setText(HbSctSpaceGlyph, HbInputButton::ButtonTextIndexPrimary);
+                        } else if (keydata.at(0) == HbSctEnterMarker) {
+                            item->setText(HbSctEnterGlyph, HbInputButton::ButtonTextIndexPrimary);
+                        } else {
+                            item->setText(keydata.at(0), HbInputButton::ButtonTextIndexPrimary);
+                        }
                     } else {
-                        item->setText(keydata.at(0), HbInputButton::ButtonTextIndexPrimary);
+                        i--;
                     }
                 } else {
                     item->setText("", HbInputButton::ButtonTextIndexPrimary);
@@ -344,11 +394,76 @@ void HbSctKeyboardPrivate::updateButtons()
     }
 }
 
+int HbSctKeyboardPrivate::keyAtIndex(int index)
+{
+    Q_Q(HbSctKeyboard);
+    
+    const HbKeyboardMap *keyboardMap = mKeymap->keyboard(q->keyboardType());
+    if (mType == HbKeyboardSctLandscape){
+        return index;
+    }
+    int totalKeys=0;
+    HbInputFocusObject *focusedObject = mOwner->focusObject();
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(q->contentItem());    
+    if (buttonGroup) {
+        if (keyboardMap && totalKeys < keyboardMap->keys.count()) {
+            while (index){
+                if (focusedObject->characterAllowedInEditor(keyboardMap->keys.at(totalKeys)->characters(HbModifierNone).at(0))){
+                    index--;                    
+                }
+                totalKeys++;
+            }            
+        }
+    }
+    return totalKeys;
+}
+
+int HbSctKeyboardPrivate::countActiveKeys()
+{
+    Q_Q(HbSctKeyboard);
+
+    const HbKeyboardMap *keyboardMap = mKeymap->keyboard(q->keyboardType());
+    if (mType == HbKeyboardSctLandscape){
+        return keyboardMap->keys.count();
+    }
+
+    int totalKeys=0;
+    HbInputFocusObject *focusedObject = mOwner->focusObject();
+    HbInputButtonGroup *buttonGroup = static_cast<HbInputButtonGroup*>(q->contentItem());
+    if (buttonGroup) {
+        if (keyboardMap && totalKeys < keyboardMap->keys.count()) {
+            foreach(HbMappedKey *key, keyboardMap->keys){  
+                if (focusedObject->characterAllowedInEditor(key->characters(HbModifierNone).at(0))){
+                    totalKeys++;
+                }
+            }    
+        }
+    }
+    return totalKeys;
+}
+
+void HbSctKeyboardPrivate::changePage(HbInputVkbWidget::HbFlickDirection flickDirection)
+{
+    if (mFlickAnimation) {
+        int direction = 1;
+        if (flickDirection == HbInputVkbWidget::HbFlickDirectionRight) {
+            direction = -1;
+        }
+
+        mActivePage = (mActivePage + direction) % mPages;
+        if (mActivePage < 0) {
+            mActivePage = mPages - 1;
+        }
+        updateButtons();
+        updateKeyCodes();
+    }
+}
+
 /*!
-Constructs the object. owner is the owning input method implementation. Keymap
-is key mapping data to be used to display button texts. Key mapping data can be
-changed later (for example when the input language changes) by calling
-setKeymap.
+Constructor. \a owner is the owning input method implementation, and
+\a keymap is the key mapping data that is used to display the button texts. Key mapping
+data can be changed later (for example when the input language changes) by calling
+the base class function HbInputVkbWidget::setKeymap.
 */
 HbSctKeyboard::HbSctKeyboard(HbInputMethod *owner, const HbKeymap *keymap, QGraphicsItem *parent)
     : HbInputVkbWidget(*new HbSctKeyboardPrivate, parent)
@@ -362,12 +477,10 @@ HbSctKeyboard::HbSctKeyboard(HbInputMethod *owner, const HbKeymap *keymap, QGrap
 
     const HbKeyboardMap *keyboardMap = keymap->keyboard(keyboardType());
     if (keyboardMap) {
-        d->mPages = (int)ceil((float)(keyboardMap->keys.count() / d->mCharacterButtons));
+        d->mPages = (int)ceil((float)d->countActiveKeys() / d->mCharacterButtons);
     }
 
-    if (d->mPages > 1) {
-        d->mFlickAnimation = true;
-    }
+    d->mFlickAnimation = d->mPages > 1;
 
     if (d->mType == HbKeyboardSctLandscape) {
         connect(HbInputSettingProxy::instance(), SIGNAL(characterPreviewStateForQwertyChanged(bool)), this, SLOT(updateButtonPreviewStatus(bool)));
@@ -376,10 +489,10 @@ HbSctKeyboard::HbSctKeyboard(HbInputMethod *owner, const HbKeymap *keymap, QGrap
 }
 
 /*!
-Constructs the object. owner is the owning input method implementation. Keymap
-is key mapping data to be used to display button texts. Key mapping data can be
-changed later (for example when the input language changes) by calling
-setKeymap.
+Constructor. \a owner is the owning input method implementation, and
+\a keymap is the key mapping data that is used to display the button texts. Key mapping
+data can be changed later (for example when the input language changes) by calling
+the base class function HbInputVkbWidget::setKeymap.
 */
 HbSctKeyboard::HbSctKeyboard(HbSctKeyboardPrivate &dd, HbInputMethod *owner,
                              const HbKeymap *keymap, QGraphicsItem *parent)
@@ -394,12 +507,11 @@ HbSctKeyboard::HbSctKeyboard(HbSctKeyboardPrivate &dd, HbInputMethod *owner,
 
     const HbKeyboardMap *keyboardMap = keymap->keyboard(keyboardType());
     if (keyboardMap) {
-        d->mPages = (int)ceil((float)(keyboardMap->keys.count() / d->mCharacterButtons));
+        d->mPages = (int)ceil((float)d->countActiveKeys() / d->mCharacterButtons);
     }
 
-    if (d->mPages > 1) {
-        d->mFlickAnimation = true;
-    }
+    d->mFlickAnimation = d->mPages > 1;
+    
 
     if (d->mType == HbKeyboardSctLandscape) {
         connect(HbInputSettingProxy::instance(), SIGNAL(characterPreviewStateForQwertyChanged(bool)), this, SLOT(updateButtonPreviewStatus(bool)));
@@ -408,24 +520,23 @@ HbSctKeyboard::HbSctKeyboard(HbSctKeyboardPrivate &dd, HbInputMethod *owner,
 }
 
 /*!
-Destructs the object.
+Destructor.
 */
 HbSctKeyboard::~HbSctKeyboard()
 {
 }
 
 /*!
-Returns keyboard type.
+Returns the keyboard type.
 */
 HbKeyboardType HbSctKeyboard::keyboardType() const
 {
     Q_D(const HbSctKeyboard);
-
     return d->mType;
 }
 
 /*!
-Returns preferred keyboard size. HbVkbHost uses this information when it opens the keyboard.
+Returns the preferred keyboard size. HbVkbHost uses this information when it opens the keyboard.
 */
 QSizeF HbSctKeyboard::preferredKeyboardSize()
 {
@@ -446,7 +557,9 @@ QSizeF HbSctKeyboard::preferredKeyboardSize()
 }
 
 /*!
-Sets the keypad to given mode. Possible values are EModeAbc, EModeNumeric and EModeSct.
+Sets the keypad to given \a mode. Possible values are EModeAbc and EModeNumeric.
+\a modifiers is a set of flags for shift, chr, and fn keys (see details in file
+<tt>hbinputdef.h</tt>).
 */
 void HbSctKeyboard::setMode(HbKeypadMode mode, HbModifiers modifiers)
 {
@@ -459,7 +572,7 @@ void HbSctKeyboard::setMode(HbKeypadMode mode, HbModifiers modifiers)
 }
 
 /*!
-Updates button preview status.
+Updates the button preview status.
 */
 void HbSctKeyboard::updateButtonPreviewStatus(bool status)
 {
@@ -470,31 +583,23 @@ void HbSctKeyboard::updateButtonPreviewStatus(bool status)
 }
 
 /*!
-Handles flick gesture
+Handles the flick gesture.
 */
 void HbSctKeyboard::changePage(HbInputVkbWidget::HbFlickDirection flickDirection)
 {
     Q_D(HbSctKeyboard);
 
-    if (flickDirection == HbInputVkbWidget::HbFlickDirectionRight ||
-        flickDirection == HbInputVkbWidget::HbFlickDirectionLeft) {
-        int direction = 1;
-        if (flickDirection == HbInputVkbWidget::HbFlickDirectionRight) {
-            direction = -1;
-        }
-
-        d->mActivePage = (d->mActivePage + direction) % d->mPages;
-        if (d->mActivePage < 0) {
-            d->mActivePage = d->mPages - 1;
-        }
-        d->updateKeyCodes();
-        d->updateButtons();
-        d->applyEditorConstraints();
+    if (d->mFlickAnimation &&
+        (flickDirection == HbInputVkbWidget::HbFlickDirectionRight ||
+        flickDirection == HbInputVkbWidget::HbFlickDirectionLeft)) {
+        
+        HbWidgetFeedback::triggered(this, Hb::InstantFlicked);
+        d->changePage(flickDirection);
     }
 }
 
 /*!
-Sends key event to owning input method.
+Sends the key press event to the owning input method.
 */
 void HbSctKeyboard::sendKeyPressEvent(const QKeyEvent &event)
 {
@@ -505,12 +610,14 @@ void HbSctKeyboard::sendKeyPressEvent(const QKeyEvent &event)
 }
 
 /*!
-Sends key event to owning input method.
+Sends the key release event to the owning input method.
 */
 void HbSctKeyboard::sendKeyReleaseEvent(const QKeyEvent &event)
 {
+    Q_D(HbSctKeyboard);
+
     if (event.key() == HbInputButton::ButtonKeyCodePageChange) {
-        changePage(HbInputVkbWidget::HbFlickDirectionLeft);
+        d->changePage(HbInputVkbWidget::HbFlickDirectionLeft);
     } else if (event.key() == HbInputButton::ButtonKeyCodeSmiley) {
         showSmileyPicker();
     } else {
@@ -519,8 +626,8 @@ void HbSctKeyboard::sendKeyReleaseEvent(const QKeyEvent &event)
 }
 
 /*!
-Sends key event to owning input method.
-Release event is ignored.
+Sends the key change event to the owning input method.
+The release event is ignored, and the press event is handled further.
 */
 void HbSctKeyboard::sendKeyChangeEvent(const QKeyEvent &releaseEvent, const QKeyEvent &pressEvent)
 {

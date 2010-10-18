@@ -35,15 +35,14 @@
 #include "hbdeviceprofile.h"
 #include "hbtapgesture.h"
 #include "hbnamespace_p.h"
+#include "hbstyle_p.h"
 #include <QCoreApplication>
 #include <QMetaType>
 #include <QAction>
-#include <QDebug>
 #include <QDynamicPropertyChangeEvent>
 #include <QGraphicsLayout>
 #include <QInputContext>
 
-#ifdef HB_TESTABILITY
 /*!
     \internal
  */
@@ -58,30 +57,56 @@ static void testabilitySignalEnabledChange(bool enabled, void *param)
         widget->setFlag(QGraphicsItem::ItemSendsGeometryChanges, enabled);
     }
 }
-#endif //HB_TESTABILITY
 
 HbWidgetPrivate::HbWidgetPrivate()
   : HbWidgetBasePrivate(),
     style(0),
-    backgroundPrimitiveType(HbStyle::P_None),
-    polished(false),
+    backgroundPrimitiveType(HbStylePrivate::P_None),
+    polished(0),
     polishPending(false),
     themingPending(true),
     repolishOutstanding(false),
     mHandlingRepolishSynchronously(false),
     notifyScene(false),
     focusGroup(0),
-    focusActiveType(HbStyle::P_None),
-    focusResidualType(HbStyle::P_None),
+    focusActiveType(HbStylePrivate::P_None),
+    focusResidualType(HbStylePrivate::P_None),
     highlightExpired(false),
     backgroundItem(0),
     focusActiveItem(0),
-    focusResidualItem(0)
+    focusResidualItem(0),
+    visibleBackground(0)
 {
     q_ptr = 0;
-#ifdef HB_TESTABILITY 
-	testabilitySignal = new HbTestabilitySignal_p();
-#endif //HB_TESTABILITY 
+    testabilitySignal = new HbTestabilitySignal_p();
+}
+
+void HbWidgetPrivate::init()
+{
+    Q_Q(HbWidget);
+    q->setAttribute(Hb::Widget, true);
+    notifySceneForPolish();
+    if (testabilitySignal) {
+        testabilitySignal->setParent(q);
+        testabilitySignal->notifySignalEnabled(testabilitySignalEnabledChange, q);
+    }
+}
+
+void HbWidgetPrivate::notifySceneForPolish(bool polishWidget)
+{
+    Q_Q(HbWidget);
+    // If no one is handling repolish/polish synchronously, lets make sure they are handled
+    // before painting. For example view items handle them synchronously.
+    QGraphicsScene *currentScene = q->scene();
+    if (!currentScene || mHandlingRepolishSynchronously || !q->isVisible())
+        return;
+    HbGraphicsScene *hbscene = qobject_cast<HbGraphicsScene*>(currentScene);
+    if (hbscene) {
+        if (polishWidget)
+            HbGraphicsScenePrivate::d_ptr(hbscene)->mPolishWidgets = true;
+        else
+            HbGraphicsScenePrivate::d_ptr(hbscene)->mRepolishWidgets = true;
+    }
 }
 
 HbWidgetPrivate::~HbWidgetPrivate()
@@ -92,25 +117,63 @@ HbWidgetPrivate::~HbWidgetPrivate()
     }
 }
 
-void HbWidgetPrivate::setBackgroundItem(HbStyle::Primitive type, int zValue)
+void HbWidgetPrivate::setBackgroundItem(HbStylePrivate::Primitive type, int zValue)
 {
     Q_Q(HbWidget);
-    if(type!=backgroundPrimitiveType || type == HbStyle::P_None) {
-        if (backgroundItem) {
-            delete backgroundItem;
-            backgroundItem = 0;
-        }
+    if(type!=backgroundPrimitiveType || type == HbStylePrivate::P_None) {
         backgroundPrimitiveType = type;
-        backgroundItem = q->style()->createPrimitive(backgroundPrimitiveType, const_cast<HbWidget*>(q));
-        if(backgroundItem) {
-            backgroundItem->setParentItem(q);
+        QGraphicsItem *item = HbStylePrivate::createPrimitive(type, const_cast<HbWidget*>(q));
+        storeBackgroundItem(backgroundItem, item, zValue);
+        if(!q->hasFocus()) {
+            setVisibleBackground(backgroundItem);
+            q->updatePrimitives();
         }
-    q->updatePrimitives();
-}
-    if(backgroundItem && zValue != backgroundItem->zValue()) {
-        backgroundItem->setZValue(zValue);
     }
 } 
+
+/*
+
+    Sets focus primitives defined in HbStyle. If FocusHighlightNone is set both active
+    and residual focus primitives are deleted.
+
+    \param type Defines the primitive for the highlight.
+    \param focusHighlight Defines the highlight the primitive is used.
+*/
+void HbWidgetPrivate::setFocusHighlight(HbStyle::Primitive type, HbWidget::FocusHighlight focusHighlight)
+{
+    if (focusHighlight == HbWidget::FocusHighlightNone) {
+        focusActiveType = HbStylePrivate::P_None;
+        focusResidualType = HbStylePrivate::P_None;
+
+        if (focusActiveItem == visibleBackground || focusResidualItem == visibleBackground) {
+            visibleBackground = 0;
+        }
+        delete focusActiveItem;
+        focusActiveItem = 0;
+        delete focusResidualItem;
+        focusResidualItem = 0;
+    } else if (focusHighlight == HbWidget::FocusHighlightActive) {
+        focusActiveType = (HbStylePrivate::Primitive)type;
+    } else {
+        focusResidualType = (HbStylePrivate::Primitive)type;
+    }
+}
+
+/*
+    Returns identifier of the focus primitive defined in HbStyle for focus highlight.
+    \param highlightType defines the highlight type.
+*/
+HbStyle::Primitive HbWidgetPrivate::focusHighlight(HbWidget::FocusHighlight highlightType)
+{
+    HbStylePrivate::Primitive primitive(HbStylePrivate::P_None);
+
+    if (highlightType == HbWidget::FocusHighlightActive) {
+        primitive = focusActiveType;
+    } else if (highlightType == HbWidget::FocusHighlightResidual) {
+        primitive = focusResidualType;
+    }
+    return (HbStyle::Primitive)primitive;
+}
 
 
 /*!
@@ -132,18 +195,12 @@ void HbWidgetPrivate::setBackgroundItem(HbStyle::Primitive type, int zValue)
 void HbWidget::setBackgroundItem(QGraphicsItem *item, int zValue)
 {
     Q_D(HbWidget);
-    if(d->backgroundItem) {
-        delete d->backgroundItem;
-        d->backgroundItem = 0;
+    d->backgroundPrimitiveType = HbStylePrivate::P_None;
+    d->storeBackgroundItem(d->backgroundItem, item, zValue);
+
+    if (d->visibleBackground == 0) {
+        d->setVisibleBackground(d->backgroundItem);
     }
-    d->backgroundPrimitiveType = HbStyle::P_None;
-    d->backgroundItem = item;
-    if(d->backgroundItem) {
-        d->backgroundItem->setParentItem(this);
-        d->backgroundItem->setZValue(zValue);
-        d->updateBackgroundItemSize();
-    }
-    updatePrimitives();
 }
 
 /*!
@@ -157,6 +214,65 @@ QGraphicsItem *HbWidget::backgroundItem() const
 }
 
 /*!
+    Sets the focus highlight item to the widget. The focus highligh item
+    replaces the background item when the widget is focused.
+
+    The item will be reparented to be child of the widget. Also Z-value
+    of the background item will be changed to be zValue. By default the
+    zValue is -1, which should be  behind other widget content.
+    Focus highlight item will be always resized to be same size as widgets
+    bounding rect. If the Focus highlight item is widget, the size will
+    be changed with setGeometry to allow e.g. maintaining aspect ratio of
+    images. If item is not widget, the size will be changed with
+    transformations.
+
+    If item is 0, the background item will be removed from the widget.
+
+    Previously set Focus highlight item will be deleted.
+ */
+void HbWidget::setFocusHighlightItem(QGraphicsItem *item, HbWidget::FocusHighlight focusHighlight, int zValue /*-1*/)
+{
+    Q_D(HbWidget);
+    if (focusHighlight == HbWidget::FocusHighlightActive) {
+        d->focusActiveType = HbStylePrivate::P_None;
+        d->storeBackgroundItem(d->focusActiveItem, item);
+        if (hasFocus()) {
+            d->setVisibleBackground(d->focusActiveItem);
+        }
+    } else if (focusHighlight == HbWidget::FocusHighlightResidual) {
+        d->focusResidualType = HbStylePrivate::P_None;
+        d->storeBackgroundItem(d->focusResidualItem, item, zValue);
+    }
+}
+
+/*!
+    Returns focus highlight item. 0 is returned if there isn't focus highlight
+    item in the widget.
+ */
+QGraphicsItem *HbWidget::focusHighlightItem(HbWidget::FocusHighlight focusHighlight) const
+{
+    Q_D( const HbWidget );
+    if (focusHighlight == HbWidget::FocusHighlightActive) {
+        if (d->focusActiveType != HbStylePrivate::P_None) {
+            return d->focusPrimitive(focusHighlight);
+        } else {
+            return d->focusActiveItem;
+        }
+    } else if (focusHighlight == HbWidget::FocusHighlightResidual) {
+        if (d->focusResidualType != HbStylePrivate::P_None) {
+            return d->focusPrimitive(focusHighlight);
+        } else {
+            return d->focusResidualItem;
+        }
+    }
+
+    // wrong FocusHighlight parameter
+    return 0;
+}
+
+
+
+/*!
     Returns focusItem primitive items.
     Focus primitive is created if has not been created already.
  */
@@ -165,15 +281,15 @@ QGraphicsItem *HbWidgetPrivate::focusPrimitive(HbWidget::FocusHighlight highligh
     Q_Q(const HbWidget);
 
     if (highlightType == HbWidget::FocusHighlightActive) {
-        if (!focusActiveItem && focusActiveType != HbStyle::P_None) {
-            focusActiveItem = q->style()->createPrimitive(
+        if (!focusActiveItem && focusActiveType != HbStylePrivate::P_None) {
+            focusActiveItem = HbStylePrivate::createPrimitive(
                                 focusActiveType, const_cast<HbWidget*>(q));
             focusActiveItem->hide();
         }
         return focusActiveItem;
     } else if (highlightType == HbWidget::FocusHighlightResidual) {
-        if (!focusResidualItem && focusResidualType != HbStyle::P_None) {
-            focusResidualItem = q->style()->createPrimitive(
+        if (!focusResidualItem && focusResidualType != HbStylePrivate::P_None) {
+            focusResidualItem = HbStylePrivate::createPrimitive(
                                 focusResidualType, const_cast<HbWidget*>(q));
             focusResidualItem->hide();
         }
@@ -189,8 +305,6 @@ QGraphicsItem *HbWidgetPrivate::focusPrimitive(HbWidget::FocusHighlight highligh
 void HbWidgetPrivate::focusChangeEvent(HbWidget::FocusHighlight focusHighlight)
 {
     Q_Q(HbWidget);
-    bool activeHighlight(false);
-    bool residualHighlight(false);
 
     HbFocusGroup *group = getFocusGroup();
 
@@ -204,27 +318,17 @@ void HbWidgetPrivate::focusChangeEvent(HbWidget::FocusHighlight focusHighlight)
         }
 
     if (focusHighlight == HbWidget::FocusHighlightActive) {
-        activeHighlight = true;
-
         if (group) {
            highlightExpired = false;
            group->startHighlightTimer(q);
         }
-
-    } else if (focusHighlight == HbWidget::FocusHighlightResidual) {
-        residualHighlight = true;
     }
 
-    if (focusActiveItem) {
-        focusActiveItem->setVisible(activeHighlight);
-        focusActiveItem->update();         
+    if (focusPrimitive(focusHighlight)) {
+        setVisibleBackground(focusPrimitive(focusHighlight));
+    } else {
+        setVisibleBackground(q->backgroundItem());
     }
-
-    if (focusResidualItem) {
-        focusResidualItem->setVisible(residualHighlight);
-        focusResidualItem->update();
-    }
-
 }
 
 /*!
@@ -290,14 +394,14 @@ bool HbWidgetPrivate::delegateFocus(QFocusEvent *event) const
 void HbWidgetPrivate::updateBackgroundItemSize()
 {
     Q_Q(HbWidget);
-    if(backgroundItem) {
-        if(backgroundItem->isWidget()) {
-            static_cast<QGraphicsWidget*>(backgroundItem)->setGeometry(q->boundingRect());
+    if(visibleBackground) {
+        if(visibleBackground->isWidget()) {
+            static_cast<QGraphicsWidget*>(visibleBackground)->setGeometry(q->boundingRect());
         } else {
             QRectF widgetRect = q->boundingRect();
-            QRectF backgroundRect = backgroundItem->boundingRect();
+            QRectF backgroundRect = visibleBackground->boundingRect();
             if(backgroundRect.width() != 0 && backgroundRect.height() != 0) {
-                backgroundItem->setTransform(
+                visibleBackground->setTransform(
                     QTransform().scale(widgetRect.width()/backgroundRect.width(), 
                                        widgetRect.height()/backgroundRect.height()));
             }
@@ -305,6 +409,49 @@ void HbWidgetPrivate::updateBackgroundItemSize()
     }
 }
 
+void HbWidgetPrivate::setVisibleBackground(QGraphicsItem* background)
+{
+   if (background != visibleBackground) {
+        if(visibleBackground) {
+            visibleBackground->hide();
+        }
+        visibleBackground = background;
+        if (visibleBackground) {
+            updateBackgroundItemSize();
+            visibleBackground->show();
+            visibleBackground->update();
+        }
+    }
+}
+
+void HbWidgetPrivate::storeBackgroundItem(QGraphicsItem *&storeItem, QGraphicsItem *item, int zValue)
+{
+    Q_Q(HbWidget);
+    if (storeItem) {
+        if (storeItem == visibleBackground) {
+            visibleBackground = 0;
+        }
+        delete storeItem;
+        storeItem = 0;
+    }
+
+    storeItem = item;
+    if (storeItem) {
+        storeItem->setParentItem(q);
+        storeItem->setZValue(zValue);
+        storeItem->hide();
+    }
+}
+
+void HbWidgetPrivate::setFocusHighlightVisible(HbWidget::FocusHighlight focusHighlight, bool enable)
+{
+    Q_Q(HbWidget);
+    if (enable) {
+        setVisibleBackground(focusPrimitive(focusHighlight));
+    } else {
+        setVisibleBackground(q->backgroundItem());
+    }
+}
 
 /*!
     \class HbWidget
@@ -402,14 +549,7 @@ HbWidget::HbWidget( QGraphicsItem *parent, Qt::WindowFlags wFlags ):
 {
     Q_D( HbWidget );
     d->q_ptr = this;
-    setAttribute(Hb::Widget, true);
-
-#ifdef HB_TESTABILITY 
-	if(d->testabilitySignal) {
-		d->testabilitySignal->setParent(this);
-		d->testabilitySignal->notifySignalEnabled(testabilitySignalEnabledChange, this);
-	}
-#endif //HB_TESTABILITY
+    d->init();
 }
 
 /*!
@@ -421,14 +561,7 @@ HbWidget::HbWidget(HbWidgetPrivate &dd, QGraphicsItem *parent, Qt::WindowFlags w
 {
     Q_D( HbWidget );
     d->q_ptr = this;
-    setAttribute(Hb::Widget, true);
-
-#ifdef HB_TESTABILITY 
-	if (d->testabilitySignal) {
-		d->testabilitySignal->setParent(this);
-		d->testabilitySignal->notifySignalEnabled(testabilitySignalEnabledChange, this);
-	}
-#endif //HB_TESTABILITY
+    d->init();
 }
 
 /*!
@@ -500,18 +633,19 @@ void HbWidget::resizeEvent(QGraphicsSceneResizeEvent *event)
 
 /*!
     Sets a custom style for the widget. 
-	When a new style is set for the widget the widget's primitives need to recreated and primitives and layout updated.
-	In order for the style change to work each widget needs to override recreatePrimitives() method and recreate the
-	primitives. 
+    When a new style is set for the widget the widget's primitives need to recreated and primitives and layout updated.
+    In order for the style change to work each widget needs to override recreatePrimitives() method and recreate the
+    primitives. 
     \param style Custom style for the widget, note that the ownership is not transferred
 */
 void HbWidget::setStyle( HbStyle *style )
 {
     Q_D( HbWidget );
     d->style = style;
-	recreatePrimitives();
-	updatePrimitives();
-	repolish();
+    recreatePrimitives();
+    repolish();
+    updatePrimitives();
+    
 }
 
 /*!
@@ -541,24 +675,6 @@ void HbWidget::clearActions()
         if (acts[i]->parent() == this && acts[i]->associatedGraphicsWidgets().isEmpty())
             delete acts[i];
     }
-}
-
-/*!
-    \deprecated HbWidget::pluginBaseId()
-        is deprecated. Style plugins are deprecated.
-*/
-int HbWidget::pluginBaseId() const
-{
-    return 0; // deprecated
-}
-
-/*!
-    \deprecated HbWidget::setPluginBaseId(int)
-        is deprecated. Style plugins are deprecated.
-*/
-void HbWidget::setPluginBaseId( int baseId )
-{
-    Q_UNUSED(baseId); // deprecated
 }
 
 /*!
@@ -594,12 +710,12 @@ HbMainWindow *HbWidget::mainWindow() const
 void HbWidget::recreatePrimitives()
 {
     Q_D(HbWidget);
-    if(d->backgroundPrimitiveType != HbStyle::P_None) {
+    if(d->backgroundPrimitiveType != HbStylePrivate::P_None) {
         if(d->backgroundItem) {
             delete d->backgroundItem;
             d->backgroundItem = 0;
         }
-        d->backgroundItem = style()->createPrimitive(d->backgroundPrimitiveType, const_cast<HbWidget*>(this));
+        d->backgroundItem = HbStylePrivate::createPrimitive(d->backgroundPrimitiveType, const_cast<HbWidget*>(this));
     }
 }
 
@@ -616,18 +732,18 @@ void HbWidget::updatePrimitives()
     initStyleOption(&option);
 
     if (backgroundItem()) {
-        if(d->backgroundPrimitiveType != HbStyle::P_None) {
-            style()->updatePrimitive(backgroundItem(), d->backgroundPrimitiveType, &option);
+        if(d->backgroundPrimitiveType != HbStylePrivate::P_None) {
+            HbStylePrivate::updatePrimitive(backgroundItem(), d->backgroundPrimitiveType, &option);
         }
         d->updateBackgroundItemSize();
     }
     if (d->focusPrimitive(HbWidget::FocusHighlightResidual)) {
-        style()->updatePrimitive(d->focusPrimitive(HbWidget::FocusHighlightResidual),
+        HbStylePrivate::updatePrimitive(d->focusPrimitive(HbWidget::FocusHighlightResidual),
             d->focusResidualType, &option);        
     }
 
     if (d->focusPrimitive(HbWidget::FocusHighlightActive)) {
-        style()->updatePrimitive(d->focusPrimitive(HbWidget::FocusHighlightActive),
+        HbStylePrivate::updatePrimitive(d->focusPrimitive(HbWidget::FocusHighlightActive),
             d->focusActiveType, &option);
     }
    
@@ -684,12 +800,22 @@ bool HbWidget::event(QEvent *event)
             return true;
 
         case QEvent::DynamicPropertyChange:             
-            if (!qstrcmp(static_cast<QDynamicPropertyChangeEvent *>(event)->propertyName(), "state")) {
+            if (!qstrcmp(static_cast<QDynamicPropertyChangeEvent *>(event)->propertyName(), "state") ||
+                !qstrcmp(static_cast<QDynamicPropertyChangeEvent *>(event)->propertyName(), "toolbutton_extension_layout")) {
                 if(!d->themingPending){
                     style()->updateThemedParams(this);                    
                 }
             }
             return true;
+
+        case QEvent::ToolTipChange: {
+            HbGraphicsScene *hbScene = qobject_cast<HbGraphicsScene *>(scene());
+            if (hbScene && !hbScene->d_ptr->mToolTip) {
+                //Tooltip needs to be created
+                hbScene->d_ptr->toolTip();
+            }
+            break;
+        }
 
         default:
             if (event->type() == HbEvent::ChildFocusIn) {
@@ -720,7 +846,7 @@ bool HbWidget::event(QEvent *event)
                 HbDeviceProfileChangedEvent* dpEvent = static_cast<HbDeviceProfileChangedEvent*>(event);
                 if ( dpEvent->profile().alternateProfileName() == dpEvent->oldProfile().name() ) {
                     // This is an orientation change event.
-                    if (style()->hasOrientationSpecificStyleRules(this)) {
+                    if (d->polished && style()->hasOrientationSpecificStyleRules(this)) {
                         polishEvent();
                     }
                 } else {
@@ -754,13 +880,20 @@ QVariant HbWidget::itemChange ( GraphicsItemChange change, const QVariant & valu
 {
     Q_D(HbWidget);
 
-#ifdef HB_TESTABILITY
     if (d->testabilitySignal && d->testabilitySignal->signalEnabled()) {
-    	emit d->testabilitySignal->propertyChanges(change, value);
+        emit d->testabilitySignal->propertyChanges(change, value);
     }
-#endif //HB_TESTABILITY
 
-	if (change == QGraphicsItem::ItemVisibleHasChanged) {
+    if (change == QGraphicsItem::ItemVisibleChange && value.toBool()) {
+        QVariant returnValue  = HbWidgetBase::itemChange(change, value);
+        bool resized = testAttribute(Qt::WA_Resized);
+        if (!resized) {
+            adjustSize();
+            setAttribute(Qt::WA_Resized, false);
+        }
+        return returnValue;
+    }
+    else if (change == QGraphicsItem::ItemVisibleHasChanged) {
         if (!d->polished && !value.toBool()) {
 
             // temporary solution starts -->>
@@ -768,7 +901,7 @@ QVariant HbWidget::itemChange ( GraphicsItemChange change, const QVariant & valu
             // when the defect is fixed, this needs to be removed to prevent calling the polish
             // twice.
 #if (QT_VERSION < QT_VERSION_CHECK(4, 6, 1))            
-			if ( !scene() ) {
+            if ( !scene() ) {
                 d->polishPending = true;
             }
 #endif
@@ -779,18 +912,21 @@ QVariant HbWidget::itemChange ( GraphicsItemChange change, const QVariant & valu
             // to be sent when the widget is not polished yet.
             return value;
         }
-        if (d->polishPending && value.toBool()) {
-            d->polishPending = false;
-            HbStyleParameters params;
-            polish( params );
-            if (scene()) {
-             // The widget is polished again or is beign polished now. As we set layout to widget in polishEvent,
-             // inform scene to polish any new child items and handle any resulting layoutrequest
-             // events before drawing.
-                HbGraphicsScene *hbscene = qobject_cast<HbGraphicsScene*>(scene());
-                if (hbscene) {
-                    HbGraphicsScenePrivate::d_ptr(hbscene)->mPolishWidgets = true;
-                }
+        if (value.toBool()) {
+            bool notifyGraphicsScene = d->polishPending;
+            if(d->polishPending) {
+                d->polishPending = false;
+                HbStyleParameters params;
+                polish( params );
+            }
+            //There could be situations where widget is becoming visible and has
+            //polish request pending in event queue.This make's sure we
+            //handle any pending repolish requests of widget before its drawn.
+            if ((notifyGraphicsScene || d->repolishOutstanding)) {
+                //Widget is polished again or is being polished now.
+                //As we set layout to widget in polishEvent,inform scene to polish any new
+                //child items and handle any resulting layoutrequest events before drawing.
+                d->notifySceneForPolish(!d->repolishOutstanding);
             }
         }
     }
@@ -817,16 +953,13 @@ QVariant HbWidget::itemChange ( GraphicsItemChange change, const QVariant & valu
         if (d->focusGroup) {
             d->focusGroup->registerChildren(this);
         }
-        if (d->notifyScene && scene()) {
+        if (d->notifyScene) {
             // The widget has been added to a new scene and this would result in
             // polishing widget. As we set layout to widget in polishEvent,
             // inform scene to handle polish and any resulting layoutrequest
             // events before drawing.
             d->notifyScene = false;
-            HbGraphicsScene *hbscene = qobject_cast<HbGraphicsScene*>(scene());
-            if (hbscene) {
-                HbGraphicsScenePrivate::d_ptr(hbscene)->mPolishWidgets = true;
-            }
+            d->notifySceneForPolish();
         }
     }
     else if( change == QGraphicsItem::ItemEnabledHasChanged) {
@@ -864,7 +997,7 @@ void HbWidget::polishEvent()
     backend). When overriding, always call the base classes 
     impelentation.
 
-    \param params, For querying (custom) style parameters from HbStyle.
+    \param params For querying (custom) style parameters from HbStyle.
 
     \sa polish()
 */
@@ -873,12 +1006,21 @@ void HbWidget::polish( HbStyleParameters& params )
     Q_D(HbWidget);
     if (isVisible()) {
         style()->polish(this, params);
-        d->polished = true;
+        d->polished = 1;
         d->repolishOutstanding = false;
         if (d->themingPending) {
             style()->updateThemedParams(this);
             d->themingPending = false;
         }
+        //make sure in case of item's positions being changed  or
+        //child items being added or deleted the complete region of
+        //widget is invalidated
+        prepareGeometryChange();
+        //invalidate cached sizehints of parentLayoutItem(in case we are managed by layout).
+        //This would eventually happen anyway but force it here to minimise the layout request iterations.
+        QGraphicsLayoutItem *parent = parentLayoutItem();
+        if (parent && parent->isLayout())
+            updateGeometry();
     } else {
         d->polishPending = true;
     }
@@ -897,24 +1039,17 @@ void HbWidget::repolish()
     // "d->polished" check removed because there's a bug in QGraphicsScene (Qt bug id 251309):
     // "polishEvent" is never sent to items that were invisible when added to scene.
 #if (QT_VERSION < QT_VERSION_CHECK(4, 6, 1))       
-	if (!d->repolishOutstanding) {
+    if (!d->repolishOutstanding) {
 #else
-	if (d->polished && !d->repolishOutstanding) {
+    if (d->polished && !d->repolishOutstanding) {
 #endif
         d->repolishOutstanding = true;
         QEvent* polishEvent = new QEvent( QEvent::Polish );
         QCoreApplication::postEvent(this, polishEvent);
-        // If no one is handling repolish synchronously, lets make sure they are handled
-        // before painting. For example view items handle them synchronously.
-        if (scene() && !d->mHandlingRepolishSynchronously) {
-            // The widget needs to be polished again. As we set layout to widget in polishEvent,
-            // inform scene to handle polish and any resulting layoutrequest
-            // events before drawing.
-            HbGraphicsScene *hbscene = qobject_cast<HbGraphicsScene*>(scene());
-            if (hbscene) {
-                HbGraphicsScenePrivate::d_ptr(hbscene)->mRepolishWidgets = true;
-            }
-        }
+        // The widget needs to be polished again. As we set layout to widget in polishEvent,
+        // inform scene to handle polish and any resulting layoutrequest
+        // events before drawing.
+        d->notifySceneForPolish(false);
     }
 }
 
@@ -926,13 +1061,14 @@ void HbWidget::repolish()
 QGraphicsItem *HbWidget::primitive(HbStyle::Primitive primitive) const
 {
     Q_D(const HbWidget);
-    if (primitive == d->backgroundPrimitiveType) {
+    const HbStylePrivate::Primitive p = (HbStylePrivate::Primitive)primitive;
+    if (p == d->backgroundPrimitiveType) {
         return backgroundItem();
     }
-    if (primitive == d->focusActiveType) {
+    if (p == d->focusActiveType) {
         return d->focusPrimitive(HbWidget::FocusHighlightActive);
     }
-    if (primitive == d->focusResidualType) {
+    if (p == d->focusResidualType) {
         return d->focusPrimitive(HbWidget::FocusHighlightResidual);
     }
 
@@ -1251,59 +1387,10 @@ HbWidget::FocusMode HbWidget::focusMode() const
     return group?group->focusMode():HbWidget::FocusModeNormal;
 }
 
-/*
-
-    \deprecated HbWidget::setFocusHighlight(HbStyle::Primitive, HbWidget::FocusHighlight)
-    is deprecated. This method will be made private and should not be used by public API users.
-
-    Sets focus primitives defined in HbStyle. If FocusHighlightNone is set both active
-    and residual focus primitives are deleted.
-
-    \param type Defines the primitive for the highlight.
-    \param focusHighlight Defines the highlight the primitive is used.
-*/
-void HbWidget::setFocusHighlight(HbStyle::Primitive type, HbWidget::FocusHighlight focusHighlight)
-{
-    Q_D(HbWidget);
-    if (focusHighlight == HbWidget::FocusHighlightNone) {
-        d->focusActiveType = HbStyle::P_None;
-        d->focusResidualType = HbStyle::P_None;
-
-        delete d->focusActiveItem;
-        d->focusActiveItem = 0;
-        delete d->focusResidualItem;
-        d->focusResidualItem = 0;
-    } else if (focusHighlight == HbWidget::FocusHighlightActive) {
-        d->focusActiveType = type;
-    } else {
-        d->focusResidualType = type;
-    }
-}
-
-/*!
-
-    \deprecated HbWidget::focusHighlight(HbWidget::FocusHighlight)
-    is deprecated. This method will be made private and should not be used by public API users.
-
-    Returns identifier of the focus primitive defined in HbStyle for focus highlight.
-    \param highlightType defines the highlight type.
-*/
-HbStyle::Primitive HbWidget::focusHighlight(HbWidget::FocusHighlight highlightType)
-{
-    Q_D(HbWidget);
-    HbStyle::Primitive primitive(HbStyle::P_None);
-
-    if (highlightType == HbWidget::FocusHighlightActive) {
-        primitive = d->focusActiveType;
-    } else if (highlightType == HbWidget::FocusHighlightResidual) {
-        primitive = d->focusResidualType;
-    }
-    return primitive;
-}
 
 bool HbWidget::sceneEventFilter (QGraphicsItem *watched, QEvent *event)
 {
-    if(event->type() == QEvent::Gesture && watched->type() == Hb::ItemType_TouchArea) {
+    if(isEnabled() && event->type() == QEvent::Gesture && watched->type() == Hb::ItemType_TouchArea) {
         QGestureEvent* ge = static_cast<QGestureEvent*>(event);
         HbTapGesture* tap = qobject_cast<HbTapGesture*>(ge->gesture(Qt::TapGesture));
 

@@ -33,20 +33,32 @@
 
 struct HbIconCacheItem
 {
-    HbIconCacheItem()
-    {
-        rasterIconData.type = INVALID_FORMAT;
-        vectorIconData.type = INVALID_FORMAT;
-        blobIconData.type = INVALID_FORMAT;
-        refCount = 0;
-        rasterIconDataCost = 0;
-        vectorIconDataCost = 0;
-        iconOptions = (HbIconLoader::ReturnUnknownIcon | HbIconLoader::BitmapIcons |
-                       HbIconLoader::VectorIcons);
+    HbIconCacheItem() 
+      : refCount(0),
+        rasterIconDataCost(0),
+        vectorIconDataCost(0),
+        iconOptions(HbIconLoader::ReturnUnknownIcon | HbIconLoader::BitmapIcons |
+                       HbIconLoader::VectorIcons)
+    {        
     }
 
     ~HbIconCacheItem()
     {
+    }
+
+    HbRenderingMode renderingMode()
+    {
+        HbRenderingMode rm = EHWRendering;
+        
+        if (rasterIconData.type != INVALID_FORMAT) {
+            rm = rasterIconData.renderingMode;
+        } else if (vectorIconData.type != INVALID_FORMAT) {
+            rm = vectorIconData.renderingMode;
+        } else if (blobIconData.type != INVALID_FORMAT) {
+            rm = blobIconData.renderingMode;
+        }
+        
+        return rm;
     }
 
     HbSharedIconInfo  rasterIconData;

@@ -30,7 +30,7 @@
 
 #include <QtCore/QDebug>
 #include <QtCore/QDir>
-#include <hbiniparser_p.h>
+#include <QtCore/QSettings>
 
 #define THEME_INDEX_FILE "index.theme"
 
@@ -69,21 +69,15 @@ void HbIconThemePrivate::loadThemeDescriptionFile()
     indexFileName.append(info.name);
     indexFileName.append("/" THEME_INDEX_FILE);
 
-    HbIniParser iniParser;
-    QFile themeFile(indexFileName);
-
-    if (!themeFile.open(QIODevice::ReadOnly) || !iniParser.read(&themeFile)) {
-#ifdef HB_THEME_SERVER_TRACES 
-        qDebug() << "HbIconTheme: Can't access file: " << indexFileName;
-#endif
-        return;
+    if (QFile::exists(indexFileName)) {
+        QSettings iniParser(indexFileName, QSettings::IniFormat);
+        iniParser.beginGroup("Icon Theme");
+        m_description = iniParser.value("Comment").toString().trimmed();
+        m_name = iniParser.value("Name").toString().trimmed();
+        iniParser.endGroup();
+    } else {
+        THEME_GENERIC_DEBUG() << "HbIconTheme: Can't access file: " << indexFileName;
     }
-    m_description = iniParser.value("Icon Theme", "Comment");
-    m_name = iniParser.value("Icon Theme", "Name");
-#ifdef Q_OS_SYMBIAN
-    m_description = m_description.left(m_description.indexOf("\n", 0));
-    m_name = m_name.left(m_name.indexOf("\n", 0));
-#endif
 }
 
 /*!

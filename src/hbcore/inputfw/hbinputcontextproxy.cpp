@@ -29,10 +29,12 @@
 #include <QGraphicsProxyWidget>
 #include <QGraphicsView>
 #include <hbinputmethod.h>
+#include <hbinputmethod_p.h>
 #include <hbinputsettingproxy.h>
+#include <hbinputmethodnull_p.h>
 
 /*!
-@alpha
+@stable
 @hbcore
 \class HbInputContextProxy
 \brief A proxy class forwarding calls from QInputContext to HbInputMethod
@@ -102,7 +104,7 @@ void HbInputContextProxy::setInputFrameworkFocus(QObject *widget)
                 // Already focused to given widget.                 
                 return;
             } 
-            mTarget->setFocusObject(new HbInputFocusObject(widget));
+            mTarget->setFocusObject(mTarget->d_func()->createAndSetupFocusObject(widget));
         }
     }
 }
@@ -112,13 +114,13 @@ void HbInputContextProxy::setInputFrameworkFocus(QObject *widget)
 \reimp
 */
 bool HbInputContextProxy::filterEvent(const QEvent *event)
-{
+{    
     if (mTarget) {
-        bool orientationCompleted = HbInputSettingProxy::instance()->orientationChangeCompleted();
-        if (event->type() == QEvent::CloseSoftwareInputPanel && orientationCompleted) {
+        bool focusLocked = mTarget->d_func()->mFocusLocked;
+        if (event->type() == QEvent::CloseSoftwareInputPanel && !focusLocked) {
             setInputFrameworkFocus(0);
             return true;
-        } else if (event->type() == QEvent::RequestSoftwareInputPanel && orientationCompleted) {
+        } else if (event->type() == QEvent::RequestSoftwareInputPanel && !focusLocked) {
             if (QWidget *focusedWidget =  qApp->focusWidget()) {
                 // see if the focused widget is graphics view, if so get the focused graphics item in the view
                 // and acivate inputmethod for the focused graphics item
@@ -164,6 +166,15 @@ bool HbInputContextProxy::filterEvent(const QEvent *event)
             }
         }
         return mTarget->filterEvent(event);
+    } else {
+        if (event->type() == QEvent::RequestSoftwareInputPanel) {
+            // There is no mTarget. It means that someone is displaying something before
+            // the input framework was initialized. Acknowledge the situation so that
+            // the initializer knows to resend it. See HbApplication::initialize()
+            // method. The empty proxy is installed there.
+            HbInputMethodNull::Instance()->setDelayedPanelRequest(true);
+            return true;
+        }
     }
 
     return false;
@@ -284,6 +295,12 @@ void HbInputContextProxy::setFocusWidget(QWidget *widget)
 {
     if (mTarget) {
         mTarget->setFocusWidget(widget);
+    } else {
+        // There is no mTarget. It means that someone is focusing something before
+        // the input framework was initialized. Acknowledge the situation so that
+        // the focus wont get lost. See HbApplication::initialize()
+        // method. The empty proxy is installed there.
+        HbInputMethodNull::Instance()->setFocusWidget(widget);
     }
 }
 

@@ -53,6 +53,7 @@ class HbStatusBar;
 class HbToolBar;
 class HbView;
 class HbScreen;
+class HbScreenshotItem;
 class HbDockWidget;
 class HbContentWidget;
 class HbTheTestUtility;
@@ -105,6 +106,8 @@ public:
     void addBackgroundItem();
     void removeBackgroundItem();
     void initFadeItem();
+    void initScreenshotItem();
+    HbScreenshotItem *screenshotItem();
 
     void postIdleEvent(int eventId);
 
@@ -119,9 +122,11 @@ public:
 #if defined(Q_WS_X11)
     bool x11HandleShowEvent(QShowEvent *event);
 #endif
+
     HbGraphicsScene *mScene;
     HbBackgroundItem *mBgItem;
     HbScreen *mClippingItem;
+    HbScreenshotItem *mScreenshotItem;
     HbContentWidget *mViewStackWidget;
     HbTitleBar *mTitleBar;
     HbStatusBar *mStatusBar;
@@ -166,6 +171,9 @@ public:
     bool mToolbarWasAdded;
     bool mAutomaticOrientationChangeAnimation;
     QTranslator mCommonTranslator;
+#ifdef Q_OS_SYMBIAN
+    QTranslator mQtTranslator;
+#endif
     bool mObscuredState;
 #ifdef Q_OS_SYMBIAN
     HbNativeWindow *mNativeWindow;
@@ -202,6 +210,8 @@ public:
     void setViewportSize(const QSizeF &newSize);
     QSizeF viewPortSize() const;
 
+    static bool shouldStopEvent(void *message, long *result);
+
     static HbMainWindowPrivate *d_ptr(HbMainWindow *mainWindow) {
         Q_ASSERT(mainWindow);
         return mainWindow->d_func();
@@ -212,12 +222,14 @@ signals:
 
 public slots:
     void menuClosed();
+    void fadeItemEffectFinished(const HbEffect::EffectStatus &status);
 #ifdef Q_OS_SYMBIAN
     void updateForegroundOrientationPSKey();
     void deviceDialogConnectionReady(RHbDeviceDialogClientSession *clientSession);
 #endif
 
     friend class HbShrinkingVkbHostPrivate;
+    friend class HbVkbHostContainerWidget;
     friend class HbForegroundWatcher;
     friend class HbDeviceDialogConnectHelperPrivate;
     friend class CssInspectorModel;

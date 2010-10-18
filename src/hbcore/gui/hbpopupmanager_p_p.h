@@ -89,6 +89,11 @@ private:
     HbDeviceFadeControl deviceFadeControl;
     HbGraphicsScene *scene;
     QMap<HbPopup *,HbPopupLayoutManager*> parentItems; 
+
+#ifdef HB_CSS_INSPECTOR
+    friend class CssInspectorModel;
+    friend class CssInspectorModelItem;
+#endif
 };
 
 class HbPopupLayoutSpacer: public HbWidgetBase
@@ -98,7 +103,6 @@ public:
     virtual ~HbPopupLayoutSpacer() {}
 protected:
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const;
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget );
 };
 
 class HbPopupLayoutProxy : public HbWidgetBase 
@@ -106,6 +110,7 @@ class HbPopupLayoutProxy : public HbWidgetBase
 public:
     HbPopupLayoutProxy( HbPopup *popup, QGraphicsItem *parent );
     virtual ~HbPopupLayoutProxy() {}
+    void activateParentLayout();
     QPointer<HbPopup> mPopup;
     QPointF mPreferredPos;
     bool mPreferredPosSet;
@@ -116,8 +121,6 @@ protected:
     void setGeometry(const QRectF &rect);
     bool event( QEvent *e );
     bool eventFilter(QObject *obj, QEvent *event);
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget );
-
 };
 
 class HbPopupLayoutManager : public HbWidget
@@ -132,7 +135,6 @@ public slots:
 protected:
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint) const;
     void changeEvent(QEvent *event);
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget );
 };
 
 #endif // HBPOPUPMANAGER_P_P_H

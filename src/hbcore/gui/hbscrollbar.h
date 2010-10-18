@@ -29,7 +29,6 @@
 #include <hbwidget.h>
 
 class HbScrollBarPrivate;
-class HbStyleOptionScrollBar;
 
 class HB_CORE_EXPORT HbScrollBar : public HbWidget
 {
@@ -68,7 +67,7 @@ signals:
     void valueChangeRequested( qreal value, Qt::Orientation orientation );
 
 protected:
-    void initStyleOption( HbStyleOptionScrollBar *option ) const;
+    void initPrimitiveData(HbStylePrimitiveData *primitiveData, const QGraphicsObject *primitive);
     void mousePressEvent( QGraphicsSceneMouseEvent *event );
     void mouseMoveEvent( QGraphicsSceneMouseEvent *event );
     void mouseReleaseEvent( QGraphicsSceneMouseEvent *event );

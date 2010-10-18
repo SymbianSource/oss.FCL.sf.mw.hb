@@ -47,6 +47,11 @@ public:
 
 private:
     HbPopupManagerPrivate *d;
+
+#ifdef HB_CSS_INSPECTOR
+    friend class CssInspectorModel;
+    friend class CssInspectorModelItem;
+#endif
 };
 
 #endif // HBPOPUPMANAGER_P_H

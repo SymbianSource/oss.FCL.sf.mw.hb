@@ -42,7 +42,7 @@
 /*!
   \class HbForegroundWatcher
 
-  \brief Listens for Symbian foreground-background notifications via CCoeEnv.
+  \brief Listens for foreground-background notifications.
 
   Note that this class cannot be used to safely determine if the application is
   in foreground or not. For example there may not be a foreground-gained
@@ -56,7 +56,8 @@
 /*!
   \fn void HbForegroundWatcher::foregroundLost()
 
-  This signal is emitted when application is moved to background
+  This signal is emitted when application is moved to background (i.e. loses
+  focus completely). It does not mean that the application is fully invisible.
 */
 
 /*!

@@ -230,6 +230,37 @@ void HbVolumeSliderPopup::keyReleaseEvent(QKeyEvent *keyevent)
       
  }
 
+
+/*!
+    @proto
+
+    Mutes or unmutes the volume output.
+    \sa isMuted()
+*/
+
+
+void HbVolumeSliderPopup::setMuted( bool mute )
+{
+    Q_D( const HbVolumeSliderPopup );
+    if( d->slider ) {
+        HbVolumeSlider* volumeslider = static_cast<HbVolumeSlider *>( d->slider );
+        volumeslider->setIconChecked( mute ) ;
+    }
+}
+
+/*!
+    @proto
+    Returns whether volume is muted or unmuted.
+
+    \sa setMute()
+*/
+
+bool HbVolumeSliderPopup::isMuted( ) const
+{
+    return( value( ) == minimum( ) ? true: false );
+}
+
+
 /*!
    \reimp
     Reimplemented from QGraphicsItem::keyPressEvent().
